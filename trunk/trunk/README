@@ -1,0 +1,5 @@
+1. How to compile
+   a. cd ./irobot (you will get this from symbrion repos) & make
+   b. cd ./src/base & make
+   c. cd ./src & make
+   
