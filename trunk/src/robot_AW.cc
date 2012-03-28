@@ -1027,7 +1027,7 @@ void RobotAW::Debugging()
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;
-    printf("Debuging %d\n", para.debug.mode);
+    printf("Debuging %d:\t", para.debug.mode);
 
     switch (para.debug.mode)
     {
@@ -1074,17 +1074,17 @@ void RobotAW::Debugging()
         case 9:
             if(timestamp ==40)
             {
-                MoveWheelsFront(para.debug.para1, para.debug.para2);
-                MoveWheelsRear(para.debug.para1, para.debug.para2);
+                MoveWheelsFront(para.debug.para[0], para.debug.para[1]);
+                MoveWheelsRear(para.debug.para[0], para.debug.para[1]);
             }
             break;
         case 10:
-            if(timestamp == para.debug.para1)
+            if(timestamp == para.debug.para[6])
             {
                 printf("lifting hinge\n");
                 SetHingeMotor(UP);
             }
-            else if(timestamp == para.debug.para2)
+            else if(timestamp == para.debug.para[7])
             {
                 printf("lowing hinge\n");
                 SetHingeMotor(DOWN);
