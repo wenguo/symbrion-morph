@@ -54,8 +54,7 @@ Parameter::Parameter():
     memset(docking_forward_speed, 0, 3);
     memset(docking_backward_speed, 0, 3);
     debug.mode = 0;
-    debug.para1 = 50;
-    debug.para2 = 100;
+    memset(debug.para, 0, 10* sizeof(int));
 }
 
 Parameter::~Parameter()

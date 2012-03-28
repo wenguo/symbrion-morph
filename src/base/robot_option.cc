@@ -125,8 +125,13 @@ bool Robot::LoadParameters(const char * filename)
         else if( strcmp( typestr, "Debugging" ) == 0 )
         {
             para.debug.mode = optionfile->ReadInt(entity, "mode", 0);
-            para.debug.para1 = optionfile->ReadInt(entity, "para1", 0);
-            para.debug.para2 = optionfile->ReadInt(entity, "para2", 0);
+
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "para" ) )
+            {
+                for(int i=0;i<10;i++)
+                    para.debug.para[i] =  atoi(optionfile->GetPropertyValue(prop, i));
+            }
+
         }
         else if( strcmp( typestr, "Global" ) == 0 )
         {        

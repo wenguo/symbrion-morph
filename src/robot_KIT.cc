@@ -1105,12 +1105,13 @@ void RobotKIT::MacroLocomotion()
 
 void RobotKIT::Debugging()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+   // leftspeed = 0;
+   // rightspeed = 0;
+   // sidespeed = 0;
 
-    Log();
-    printf("Debuging %d\n", para.debug.mode);
+    if(timestamp >40)
+        Log();
+    printf("%d Debuging %d:\t", timestamp,para.debug.mode);
 
     switch (para.debug.mode)
     {
@@ -1129,7 +1130,7 @@ void RobotKIT::Debugging()
                 for(int i=0;i<NUM_IRS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
             }
-            printf("%d %d %d %d\n",  proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg());
+            printf("%d\t%d\t%d\t%d\t%d\t%d\n",  proximity[0], proximity[1], beacon[0], beacon[1], reflective_hist[0].Avg(), reflective_hist[1].Avg());
             break;
         case 2: // simulate recruitment, stage 1, guiding signals
             if(timestamp == 40)
@@ -1144,12 +1145,34 @@ void RobotKIT::Debugging()
                 for(int i=0;i<NUM_IRS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
             }
-            printf("%d %d %d %d\n", reflective[0]-reflective_calibrated[0], reflective[1] - reflective_calibrated[1], beacon[0], beacon[1]);
+            printf("%d\t%d\t%d\t%d\t%d\t%d\n", reflective[0]-reflective_calibrated[0], reflective[1] - reflective_calibrated[1], beacon[0], beacon[1], proximity[0], proximity[1]);
             break;
-        case 4: 
+        case 4: // measuring beacon signals
             if(timestamp ==40)
             {
+                for(int i=0;i<NUM_IRS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                leftspeed = para.debug.para[3];
+                rightspeed = para.debug.para[4];
+                printf("set speed %d %d\n", leftspeed, rightspeed);
             }
+            else if(timestamp == para.debug.para[2])
+            {
+                leftspeed = 0;
+                rightspeed = 0;
+                current_state = RESTING;
+                last_state = DEBUGGING;
+            }
+            printf("%d\t%d\t%d\t%d\t%d\t%d\n", reflective[0]-reflective_calibrated[0], reflective[1] - reflective_calibrated[1], beacon[0], beacon[1], proximity[0], proximity[1]);
+            if(beacon[0] > para.debug.para[0])
+                SetRGBLED(3, GREEN, GREEN,0,0);
+            else
+                SetRGBLED(3, 0,0,0,0);
+            if(beacon[1] > para.debug.para[1])
+                SetRGBLED(1, GREEN, GREEN,0,0);
+            else
+                SetRGBLED(1, 0, 0, 0, 0);
+            break;
             break;
         case 5: 
             if(timestamp ==40)
@@ -1162,12 +1185,12 @@ void RobotKIT::Debugging()
             }
             break;
         case 10:
-            if(timestamp ==para.debug.para1)
+            if(timestamp ==para.debug.para[8])
             {
                 printf("lock motor\n");
                 SetDockingMotor(0, CLOSE);
             }
-            else if(timestamp == para.debug.para2)
+            else if(timestamp == para.debug.para[9])
             {
                 printf("unlock motor\n");
                 SetDockingMotor(0, OPEN);

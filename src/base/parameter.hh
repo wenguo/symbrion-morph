@@ -75,8 +75,7 @@ class Parameter
 
         struct{
             int mode;
-            int para1;
-            int para2;
+            int para[10];
         } debug;
 
 };
