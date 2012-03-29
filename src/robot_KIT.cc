@@ -1175,9 +1175,17 @@ void RobotKIT::Debugging()
             break;
             break;
         case 5: 
+            printf("\n");
             if(timestamp ==40)
             {
             }
+
+            if(isEthernetPortConnected(KaBot::Side(0)))
+            {
+                SetRGBLED(2, RED, RED,RED,RED);
+            }
+            else
+                SetRGBLED(2, 0,0,0,0);
             break;
         case 9:
             //      if(timestamp ==35)
