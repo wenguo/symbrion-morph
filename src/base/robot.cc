@@ -176,7 +176,7 @@ bool Robot::InitLog()
     ::time_t time_now = time(NULL);
     struct tm * timeinfo;
     timeinfo = localtime (&time_now);
-    time_string = datetime_to_string(*timeinfo, "%Y%m%d%H%M");
+    time_string = datetime_to_string(*timeinfo, "%Y%m%d%H%M%S");
     if(para.logtofile)
     {
         std::ostringstream oss;
