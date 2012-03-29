@@ -44,6 +44,8 @@ Robot::Robot()
     RegisterBehaviour(&Robot::Disassembly, DISASSEMBLY);
     RegisterBehaviour(&Robot::Undocking, UNDOCKING);
     RegisterBehaviour(&Robot::Recruitment, RECRUITMENT);
+    RegisterBehaviour(&Robot::Transforming, TRANSFORMING);
+    RegisterBehaviour(&Robot::Reshaping, RESHAPING);
     RegisterBehaviour(&Robot::MacroLocomotion, MACROLOCOMOTION);
     RegisterBehaviour(&Robot::Debugging, DEBUGGING);
 

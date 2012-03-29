@@ -586,6 +586,8 @@ void RobotAW::Recover()
         current_state = ALIGNMENT;
         last_state = RECOVER;
     }
+    leftspeed = 0;
+    rightspeed = 0;
 }
 void RobotAW::Docking()
 {
@@ -960,7 +962,28 @@ void RobotAW::Undocking()
             SetRGBLED(i, RED,RED,RED,RED);
     }
 
+    static int undocking_count=0;
+    undocking_count++;
+    if(undocking_count >= 120)
+    {
+        current_state = RECOVER;
+        last_state = UNDOCKING;
+    }
+
 }
+
+void RobotAW::Transforming()
+{
+    leftspeed = 0;
+    rightspeed = 0;
+    sidespeed = 0;
+}
+
+void RobotAW::Reshaping()
+{
+}
+
+
 void RobotAW::MacroLocomotion()
 {
     leftspeed = 0;

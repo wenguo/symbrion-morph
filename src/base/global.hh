@@ -79,6 +79,8 @@ enum fsm_state_t {
     UNDOCKING,
     INORGANISM, 
     RECRUITMENT, 
+    TRANSFORMING,
+    RESHAPING,
     MACROLOCOMOTION, 
     DEBUGGING, 
     STATE_COUNT
@@ -121,6 +123,8 @@ enum irmsg_type_t {
     IR_MSG_TYPE_DISASSEMBLY,
     IR_MSG_TYPE_NEWROBOT_JOINED,
     IR_MSG_TYPE_ORGANISM_FORMED,
+    IR_MSG_TYPE_TRANSFORMING,
+    IR_MSG_TYPE_RESHAPING,
 
     IR_MSG_TYPE_ACK,              //followed by acknowledged message type
     IR_MSG_TYPE_COUNT
