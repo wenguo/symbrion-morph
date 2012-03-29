@@ -18,6 +18,8 @@ const char* state_names[STATE_COUNT]={
     "Undocking",
     "InOrganism",
     "Recruitment",
+    "Transforming",
+    "Reshaping",
     "MacroLocomotion",
     "Debugging"
 };

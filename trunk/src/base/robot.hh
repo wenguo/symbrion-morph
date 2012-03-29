@@ -87,6 +87,8 @@ class Robot
     virtual void InOrganism()=0;
     virtual void Disassembly()=0;
     virtual void Recruitment()=0;
+    virtual void Transforming()=0;
+    virtual void Reshaping()=0;
     virtual void MacroLocomotion()=0;
 
     virtual void Debugging()=0;
@@ -128,6 +130,8 @@ class Robot
     static void Disassembly(Robot * robot){robot->Disassembly();}
     static void Undocking(Robot * robot){robot->Undocking();}
     static void Recruitment(Robot * robot){robot->Recruitment();}
+    static void Transforming(Robot * robot){robot->Transforming();}
+    static void Reshaping(Robot * robot){robot->Reshaping();}
     static void MacroLocomotion(Robot * robot){robot->MacroLocomotion();}
     static void Debugging(Robot * robot){robot->Debugging();}
     static void *IRCommTxThread(void* robot);
@@ -211,6 +215,7 @@ class Robot
     uint8_t robot_in_range_detected;
     uint8_t robot_in_range_replied;
     uint8_t msg_reshaping_received;
+    uint8_t msg_transforming_received;
     uint8_t msg_disassembly_received;
     uint8_t msg_locked_received;
     uint8_t msg_locked_expected;

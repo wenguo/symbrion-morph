@@ -233,6 +233,18 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                                     CPrintf1(SCR_GREEN,"%d -- organism formed !", timestamp);
                                 }
                                 break;
+                            case IR_MSG_TYPE_TRANSFORMING:
+                                {
+                                    msg_transforming_received |= 1<<channel;
+                                    CPrintf1(SCR_GREEN,"%d -- start to transform !", timestamp);
+                                }
+                                break;
+                            case IR_MSG_TYPE_RESHAPING:
+                                {
+                                    msg_reshaping_received |= 1<<channel;
+                                    CPrintf1(SCR_GREEN,"%d -- start to reshaping !", timestamp);
+                                }
+                                break;
                             default:
                                 valid = false;
                                 CPrintf1(SCR_GREEN, "%d -- received unknow message", timestamp);

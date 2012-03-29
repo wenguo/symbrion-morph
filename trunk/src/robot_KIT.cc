@@ -102,12 +102,16 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
             {
                 //change status to be opening
                 docking_motors_status[channel] = OPENING; //clear first
+//                OpenDocking(KaBot::Side(board_dev_num[channel]));
+                printf("open docking\n");
             }
             //or open -> close
             else if(docking_motors_status[channel]== OPENED &&  status == CLOSE )
             {
-                docking_motors_status[channel] = CLOSING; //clear first
                 //change status to be closing
+                docking_motors_status[channel] = CLOSING; //clear first
+//                CloseDocking(KaBot::Side(board_dev_num[channel]));
+                printf("close docking\n");
             }
             else
                 return false;
@@ -638,8 +642,8 @@ void RobotKIT::Recover()
     //      direction = FORWARD;
 
 
-    leftspeed = -40;
-    rightspeed = -40;
+    leftspeed = -30;
+    rightspeed = -30;
 
     if(beacon_signals_detected & 0x3)
     {
@@ -1048,7 +1052,25 @@ void RobotKIT::Undocking()
         else
             SetRGBLED(i, RED,RED,RED,RED);
     }
+
+    static int undocking_count=0;
+    undocking_count++;
+
+    if(undocking_count >= 160)
+    {
+        current_state = RECOVER;
+        last_state = UNDOCKING;
+    }
 }
+
+void RobotKIT::Transforming()
+{
+}
+
+void RobotKIT::Reshaping()
+{
+}
+
 void RobotKIT::MacroLocomotion()
 {
     leftspeed = 0;
@@ -1180,7 +1202,7 @@ void RobotKIT::Debugging()
             {
             }
 
-            if(isEthernetPortConnected(KaBot::Side(0)))
+            if(isEthernetPortConnected(KaBot::FRONT))
             {
                 SetRGBLED(2, RED, RED,RED,RED);
             }
