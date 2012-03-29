@@ -1232,15 +1232,15 @@ void RobotKIT::Log()
 {
     if (logFile.is_open())
     {
-        logFile << timestamp << "\t" << state_names[current_state] <<"\t";
-        logFile << reflective_hist[0].Avg()<<"\t";
-        logFile << reflective_hist[1].Avg()<<"\t";
+      //  logFile << timestamp << "\t" << state_names[current_state] <<"\t";
+      //  logFile << reflective_hist[0].Avg()<<"\t";
+      //  logFile << reflective_hist[1].Avg()<<"\t";
         logFile << beacon[0]<<"\t";
         logFile << beacon[1]<<"\t";
-        logFile << ambient_hist[0].Avg()<<"\t";
-        logFile << ambient_hist[1].Avg()<<"\t";
-        logFile << proximity[0]<<"\t";
-        logFile << proximity[1]<<"\t";
+      //  logFile << ambient_hist[0].Avg()<<"\t";
+      //  logFile << ambient_hist[1].Avg()<<"\t";
+      //  logFile << proximity[0]<<"\t";
+      //  logFile << proximity[1]<<"\t";
         logFile << std::endl;
     }
 
