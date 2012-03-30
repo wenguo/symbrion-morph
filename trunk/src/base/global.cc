@@ -42,6 +42,8 @@ const char * irmessage_names[IR_MSG_TYPE_COUNT]={
     "Disassembling",
     "NewRobot_Joined",
     "Organism_Formed",
+    "Transforming",
+    "Reshaping",
     "ACK"
 };
 

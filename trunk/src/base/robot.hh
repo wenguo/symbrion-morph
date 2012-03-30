@@ -201,6 +201,7 @@ class Robot
     uint32_t docking_count;
     uint32_t inorganism_count;
     uint32_t macrolocomotion_count;
+    uint32_t transforming_count;
     uint32_t undocking_count; //step for undocking, i.e. open connectors and wait a few steps
     uint32_t assembly_count;  //how long the robot detected last recruitment signals
     uint32_t waiting_count;
