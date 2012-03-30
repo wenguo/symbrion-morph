@@ -517,17 +517,41 @@ void RobotAW::Alignment()
         rightspeed = 0;
         sidespeed = 15 * sign(temp);
     }
+    else
+    {
+        if((timestamp/2)%2==0)
+            sidespeed = 10;
+        else
+            sidespeed = -10;
+    }
     if(abs(temp2)> 400)
     {
         leftspeed = -18 * sign(temp2);
         rightspeed = 18 * sign(temp2);
-        sidespeed = 0;
+ 
+        //in case too much friction introduced by side wheels
+        if((timestamp/2)%2==0)
+            sidespeed = 20;
+        else
+            sidespeed = -20;
     }
     else if(abs(temp2)>200)
     {
         leftspeed = -13 * sign(temp2);
         rightspeed = 13 * sign(temp2);
-        sidespeed = 0;
+
+        //in case too much friction introduced by side wheels
+        if((timestamp/2)%2==0)
+            sidespeed = 15;
+        else
+            sidespeed = -15;
+    }
+    else
+    {
+        if((timestamp/2)%2==0)
+            sidespeed = 10;
+        else
+            sidespeed = -10;
     }
 
     //lost signals
@@ -574,9 +598,9 @@ void RobotAW::Recover()
     leftspeed = -30;
     rightspeed = -30;
     if((timestamp/2)%2==0)
-        sidespeed = 20;
+        sidespeed = 10;
     else
-        sidespeed = -20;
+        sidespeed = -10;
 
     if(beacon_signals_detected & 0x3)
     {
@@ -588,6 +612,7 @@ void RobotAW::Recover()
     }
     leftspeed = 0;
     rightspeed = 0;
+    sidespeed = 0;
 }
 void RobotAW::Docking()
 {
@@ -966,8 +991,14 @@ void RobotAW::Undocking()
     undocking_count++;
     if(undocking_count >= 120)
     {
-        current_state = RECOVER;
-        last_state = UNDOCKING;
+        leftspeed = -30;
+        rightspeed = -30;
+        
+        if((timestamp/2)%2==0)
+            sidespeed = 10;
+        else
+            sidespeed = -10;
+
     }
 
 }
@@ -977,6 +1008,55 @@ void RobotAW::Transforming()
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;
+
+    if(timestamp == 40)
+    {
+        docked[0]=true;
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+    }
+       
+    //flashing RGB leds
+    static int index = 0;
+    index = (timestamp / 2) % 4;
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+        switch (index)
+        {
+            case 0:
+                SetRGBLED(i, RED, GREEN, 0, 0);
+                break;
+            case 1:
+                SetRGBLED(i, 0, RED, 0, GREEN);
+                break;
+            case 2:
+                SetRGBLED(i, 0, 0, GREEN, RED);
+                break;
+            case 3:
+                SetRGBLED(i, GREEN, 0, RED, 0);
+                break;
+            default:
+                break;
+        }
+    }
+
+    if(msg_transforming_received)
+    {
+        transforming_count++;
+    }
+
+    if(transforming_count==2)
+    {
+       SetHingeMotor(UP); 
+    }
+
+    if(transforming_count >=50)
+    {
+        current_state = MACROLOCOMOTION;
+        last_state = TRANSFORMING;
+    }
+
+
 }
 
 void RobotAW::Reshaping()
@@ -988,7 +1068,7 @@ void RobotAW::MacroLocomotion()
 {
     leftspeed = 0;
     rightspeed = 0;
-    sidespeed = 0;
+    sidespeed = -20;
 
     macrolocomotion_count++;
     //flashing RGB leds
@@ -1013,6 +1093,15 @@ void RobotAW::MacroLocomotion()
             default:
                 break;
         }
+    }
+
+    if(macrolocomotion_count >=30)
+    {
+        leftspeed = 0;
+        rightspeed = 0;
+        sidespeed = 0;
+        if(macrolocomotion_count ==35)
+            SetHingeMotor(DOWN);
     }
 
     if(seed && macrolocomotion_count >= 150)

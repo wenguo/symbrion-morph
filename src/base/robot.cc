@@ -87,6 +87,7 @@ Robot::Robot()
     recover_count = 0;
     inorganism_count = 0;
     macrolocomotion_count = 0;
+    transforming_count = 0;
 
     beacon_signals_detected=0;
     robot_in_range_replied=0;
@@ -103,6 +104,7 @@ Robot::Robot()
     msg_lockme_expected = 0;
     msg_disassembly_received = 0;
     msg_reshaping_received=0;
+    msg_transforming_received = 0;
     msg_guideme_received = 0;
     msg_organism_seq_received = false;
     msg_organism_seq_expected = false;

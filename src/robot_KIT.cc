@@ -1056,15 +1056,59 @@ void RobotKIT::Undocking()
     static int undocking_count=0;
     undocking_count++;
 
-    if(undocking_count >= 160)
+    if(undocking_count >= 120)
     {
-        current_state = RECOVER;
-        last_state = UNDOCKING;
+        leftspeed = -30;
+        rightspeed = -30;
+        sidespeed = 0;
     }
 }
 
 void RobotKIT::Transforming()
 {
+    leftspeed = 0;
+    rightspeed = 0;
+    sidespeed = 0;
+
+    if(transforming_count ==2)
+    {
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+        docked[0] = true;
+        docked[2] = true;
+        PropagateIRMessage(IR_MSG_TYPE_TRANSFORMING);
+    }
+
+    //flashing RGB leds
+    static int index = 0;
+    index = (timestamp / 2) % 4;
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+        switch (index)
+        {
+            case 0:
+                SetRGBLED(i, RED, GREEN, 0, 0);
+                break;
+            case 1:
+                SetRGBLED(i, 0, RED, 0, GREEN);
+                break;
+            case 2:
+                SetRGBLED(i, 0, 0, GREEN, RED);
+                break;
+            case 3:
+                SetRGBLED(i, GREEN, 0, RED, 0);
+                break;
+            default:
+                break;
+        }
+    }
+
+    if(transforming_count++ > 30 && MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
+    {
+        current_state = MACROLOCOMOTION;
+        last_state = TRANSFORMING;
+    }
+
 }
 
 void RobotKIT::Reshaping()
