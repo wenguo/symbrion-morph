@@ -1,0 +1,97 @@
+// 
+//
+// Author: Wenguo Liu
+// Date: 02/2012
+//
+//
+#include <string.h>
+#include "parameter.hh"
+
+
+Parameter::Parameter():
+    logtofile(false),
+    init_state(0),
+    speed_forward(30),
+    speed_sideward(2),
+    recruiting_ambient_offset1(500),
+    recruiting_ambient_offset2(500),
+    recruiting_proximity_offset1(500),
+    recruiting_proximity_offset2(500),
+    recruiting_reflective_offset1(20),
+    recruiting_reflective_offset2(20),
+    docking_reflective_offset1(300),
+    docking_reflective_offset2(300),
+    docking_reflective_diff(150),
+    docking_beacon_offset1(100),
+    docking_beacon_offset2(100),
+    docking_beacon_diff(70),
+    docking_motor_opening_time(30),
+    docking_motor_closing_time(40),
+    hinge_motor_lifting_time(30),
+    hinge_motor_lowing_time(40),
+    locking_proximity_offset1(630),
+    locking_proximity_offset2(630),
+    locking_proximity_diff1(30),
+    locking_proximity_diff2(30),
+    locking_reflective_offset1(250),
+    locking_reflective_offset2(250),
+    locking_reflective_diff(150),
+    print_proximity(false),
+    print_beacon(false),
+    print_reflective(false),
+    print_ambient(false),
+    print_status(false),
+    ir_msg_repeated_delay(30),
+    ir_msg_repeated_num(10),
+    ir_msg_ack_delay(10),
+    avoidance_threshold(10)
+{
+    memset(avoid_weightleft, 0, NUM_IRS);
+    memset(avoid_weightright, 0, NUM_IRS);
+    memset(avoid_weightside, 0, NUM_IRS);
+    memset(docking_turn_left_speed, 0, 3);
+    memset(docking_turn_right_speed, 0, 3);
+    memset(docking_forward_speed, 0, 3);
+    memset(docking_backward_speed, 0, 3);
+    debug.mode = 0;
+    memset(debug.para, 0, 10* sizeof(int));
+}
+
+Parameter::~Parameter()
+{
+}
+
+std::ostream& operator<<(std::ostream& os, const Parameter& para)
+{
+    os  << "init_state: "<< para.init_state<<std::endl
+        << "logtofile: "<< para.logtofile<<std::endl
+        << "speed_forward: "<< para.speed_forward<<std::endl
+        << "speed_sideward: "<< para.speed_sideward<<std::endl
+        << "recruiting_ambient_offset1: "<< para.recruiting_ambient_offset1<<std::endl
+        << "recruiting_ambient_offset2: "<< para.recruiting_ambient_offset2<<std::endl
+        << "recruiting_proximity_offset1: "<< para.recruiting_proximity_offset1<<std::endl
+        << "recruitint_proximity_offset2: "<< para.recruiting_proximity_offset2<<std::endl;
+    os  << "avoidance_weight_left: [";
+    for(int i=0;i<NUM_IRS;i++)
+    {
+        os << para.avoid_weightleft[i]<<" ";
+    }
+    os <<"]\n";
+    os  << "avoidance_weight_right: [";
+    for(int i=0;i<NUM_IRS;i++)
+    {
+        os << para.avoid_weightright[i]<<" ";
+    }
+    os <<"]\n";
+    os  << "avoidance_weight_side: [";
+    for(int i=0;i<NUM_IRS;i++)
+    {
+        os << para.avoid_weightside[i]<<" ";
+    }
+    os <<"]\n";
+
+
+
+    return os;
+
+}
