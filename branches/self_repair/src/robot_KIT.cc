@@ -247,6 +247,14 @@ void RobotKIT::UpdateActuators()
     SetSpeed(leftspeed, rightspeed,sidespeed); 
 }
 
+// for self-repair
+void RobotKIT::UpdateFailures()
+{
+
+
+
+}
+
 void RobotKIT::Avoidance()
 {
     leftspeed = 40;
@@ -931,8 +939,61 @@ void RobotKIT::InOrganism()
     rightspeed = 0;
     sidespeed = 0;
 
+    // for self-repair - needs to be replicated for all
+    // other states from which self-repair is possible.
+    if( module_failed )
+    {
+    	// Send 'failed' message to all neighbours
+    	for( int i=0; i<NUM_DOCKS; i++ )
+    	{
+    		if( docked[i] )
+    			SendFailureMsg(i);
+    	}
+
+    	last_state = INORGANISM;
+    	current_state = FAILED;
+    }
+    else if( msg_failed_received )
+    {
+    	msg_failed_received = 0;
+
+//    	for( int i=0; i<SIDE_COUNT; i++ )
+//    		waiting_on_side[i] = true;
+
+    	wait_side = FRONT;
+    	repair_stage = STAGE0;
+    	subog.Clear();
+    	best_score = 0;
+
+    	SendSubOGStr( FRONT, subog );
+
+    	last_state = INORGANISM;
+    	current_state = LEADREPAIR;
+    }
+    else if( msg_sub_og_seq_received )
+    {
+    	msg_sub_og_seq_received = 0;
+    	repair_stage = STAGE0;
+
+    	if( parent_side == FRONT )
+    	{
+    		SendSubOGStr( RIGHT, subog );
+    		wait_side = RIGHT;
+    	}
+    	else
+    	{
+    		SendSubOGStr( FRONT, subog );
+        	wait_side = FRONT;
+    	}
+
+    	last_state = INORGANISM;
+    	current_state = REPAIR;
+    }
+    //////// END self-repair ////////
+
+
     //seed robot monitoring total number of robots in the organism
-    if(seed)
+    else if(seed)
     {
         if( mytree.Edges() + 1 == (unsigned int)num_robots_inorganism)
         {
@@ -1111,8 +1172,238 @@ void RobotKIT::Transforming()
 
 }
 
+///////// Self-repair //////////
+
+void RobotKIT::Failed()
+{
+
+    leftspeed = 0;
+    rightspeed = 0;
+    sidespeed = 0;
+
+	if(!MessageWaitingAck(IR_MSG_TYPE_FAILED))
+	{
+		//check if need to unlocking docking faces which is connected to Activewheel
+		int num_docked = 0;
+		for(int i=0;i<NUM_DOCKS;i++)
+		{
+			if(docked[i])
+			{
+				num_docked++;
+				if(unlocking_required[i])
+				{
+					SetDockingMotor(i, OPEN);
+					unlocking_required[i]=false;
+				}
+				//TODO: how about two KIT robots docked to each other
+				else if(docking_motors_status[i]==OPENED)
+				{
+					BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+					docked[i]=false;
+					num_docked--;
+				}
+			}
+		}
+
+		//only one  or less
+		if(num_docked ==0)
+		{
+			current_state = UNDOCKING;
+			last_state = FAILED;
+		}
+	}
+}
+
+// TODO: Initial repair state of the robot nearest
+// to the failed module - not currently implemented
+void RobotKIT::Support()
+{
+
+
+
+}
+
+// Initial repair state of the robot nearest to the
+// the failed/support module
+void RobotKIT::LeadRepair()
+{
+
+	// notify other modules to enter repair
+	// and determine shape of sub-organism
+	if( repair_stage == STAGE0 )
+	{
+		if( wait_side < SIDE_COUNT )
+		{
+
+			if( msg_sub_og_seq_received || !docked[wait_side] )
+			{
+				// waiting_on_side[wait_side] = false;
+				msg_sub_og_seq_received = 0;
+				wait_side++;
+
+				SendSubOGStr( wait_side, subog );
+			}
+		}
+		else
+		{
+//	    	for( int i=0; i<SIDE_COUNT; i++ )
+//	    		waiting_on_side[i] = true;
+
+	    	wait_side = FRONT;
+	    	repair_stage = STAGE1;
+
+
+
+		}
+	}
+	// TODO: move away from failed module
+	else if( repair_stage == STAGE1 )
+	{
+		// when finished send score string to first neighbour
+
+	}
+	// TODO: determine sub-organism score
+	else if( repair_stage == STAGE2 )
+	{
+		if( wait_side < SIDE_COUNT )
+		{
+			if( msg_score_seq_received || !docked[wait_side] )
+			{
+				if( own_score < best_score ) own_score = 0;
+
+				wait_side++;
+
+				SendScoreStr( wait_side, subog, best_score );
+			}
+
+		}
+		else
+		{
+
+			// TODO: broadcast best score
+
+			repair_stage = STAGE0;
+			wait_side = FRONT;
+			current_state = BROADCASTSCORE;
+			last_state = LEADREPAIR;
+
+		}
+
+
+	}
+
+
+}
+
+// Initial repair state of remaining modules
+void RobotKIT::Repair()
+{
+	// determine sub-organism shape
+	if( repair_stage == STAGE0 )
+	{
+		// do not listen for messages on parent side
+//		if( wait_side == (int) parent_side ) wait_side++;
+
+		if( wait_side < SIDE_COUNT )
+		{
+			if( msg_sub_og_seq_received || !docked[wait_side] )
+			{
+				msg_sub_og_seq_received = 0;
+				wait_side++;
+
+				// don't send message back to parent yet
+				if( wait_side == (int) parent_side ) wait_side++;
+				SendSubOGStr( wait_side, subog );
+			}
+
+		}
+		else
+		{
+			SendSubOGStr( parent_side, subog );
+
+			own_score = -1;
+			wait_side = FRONT;
+			repair_stage = STAGE1;
+		}
+	}
+	// TODO: move away from failed module
+	else if( repair_stage == STAGE1 )
+	{
+
+
+
+	}
+	// TODO: determine sub-organism score
+	else if( repair_stage == STAGE2 )
+	{
+
+		if( own_score < 0 )
+		{
+			// wait for message from parent to determine own_score
+			if( (msg_score_seq_received & 1<<parent_side) == 0 )
+			{
+				msg_score_seq_received = 0;
+				own_score = calculateScore( subog, target );
+				own_score > best_score ? best_score = own_score : own_score = 0;
+			}
+		}
+		else
+		{
+			if( wait_side < SIDE_COUNT )
+			{
+				if( msg_score_seq_received || !docked[wait_side] )
+				{
+					if( own_score < best_score ) own_score = 0;
+
+					wait_side++;
+
+					// don't send message back to parent yet
+					if( wait_side == (int) parent_side ) wait_side++;
+
+					SendScoreStr( wait_side, subog, best_score );
+				}
+			}
+			else
+			{
+				SendScoreStr( parent_side, subog, best_score );
+
+				repair_stage = STAGE0;
+				wait_side = FRONT;
+				current_state = BROADCASTSCORE;
+				last_state = REPAIR;
+			}
+		}
+
+
+
+	}
+
+
+
+}
+
+void RobotKIT::BroadcastScore()
+{
+
+
+
+}
+
+
+
+/////// Self-repair END ///////
+
+
+
 void RobotKIT::Reshaping()
 {
+
+	// if received a message to disassemble - do so
+
+	// if received a new branch
+	//	send branches and disassembly messages to appropriate
+	//	neighbours and enter the INORGANISM/RECRUITMENT state
+
 }
 
 void RobotKIT::MacroLocomotion()

@@ -45,6 +45,7 @@ class RobotAW:public Robot, public ActiveWheel
         virtual void Transforming();
         virtual void Reshaping();
         virtual void MacroLocomotion();
+        virtual void LeadRepair();
         virtual void Debugging();
 
         virtual void Log();

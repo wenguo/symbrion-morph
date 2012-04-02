@@ -25,6 +25,8 @@ class RobotKIT:public Robot, public KaBot
         
         virtual void UpdateSensors();
         virtual void UpdateActuators();
+        // for self-repair
+        virtual void UpdateFailures();
 
         virtual void Exploring();
         virtual void Resting();
@@ -46,6 +48,13 @@ class RobotKIT:public Robot, public KaBot
         virtual void Reshaping();
         virtual void MacroLocomotion();
         virtual void Debugging();
+
+        // for self-repair
+        virtual void Failed()=0;
+        virtual void Support()=0;
+        virtual void LeadRepair()=0;
+        virtual void Repair()=0;
+        virtual void BroadcastScore()=0;
 
         virtual void Log();
     private:

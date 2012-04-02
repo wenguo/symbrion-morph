@@ -1059,6 +1059,17 @@ void RobotAW::Transforming()
 
 }
 
+///////// Self-repair //////////
+
+void RobotAW::LeadRepair()
+{
+
+
+}
+
+
+/////// Self-repair END ///////
+
 void RobotAW::Reshaping()
 {
 }
