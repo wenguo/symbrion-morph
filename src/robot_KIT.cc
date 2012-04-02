@@ -1235,6 +1235,7 @@ void RobotKIT::LeadRepair()
 		if( wait_side < SIDE_COUNT )
 		{
 
+
 			if( msg_sub_og_seq_received || !docked[wait_side] )
 			{
 				// waiting_on_side[wait_side] = false;
