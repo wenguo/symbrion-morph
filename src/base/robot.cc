@@ -23,6 +23,10 @@ Robot::Robot()
     powersource_found=false;
     seed=false;
     organism_formed=false;
+    module_failed=false;
+    wait_side = FRONT;
+    parent_side = SIDE_COUNT;
+    repair_stage = STAGE0;
 
     hinge_motor_status = LOWED;
     RGBLED_flashing = 0;
@@ -48,6 +52,14 @@ Robot::Robot()
     RegisterBehaviour(&Robot::Reshaping, RESHAPING);
     RegisterBehaviour(&Robot::MacroLocomotion, MACROLOCOMOTION);
     RegisterBehaviour(&Robot::Debugging, DEBUGGING);
+    // for self-repair
+    RegisterBehaviour(&Robot::Failed, FAILED);
+    RegisterBehaviour(&Robot::Support, SUPPORT);
+    RegisterBehaviour(&Robot::LeadRepair, LEADREPAIR);
+    RegisterBehaviour(&Robot::Repair, REPAIR);
+    RegisterBehaviour(&Robot::BroadcastScore, BROADCASTSCORE);
+
+
 
 
 
@@ -75,6 +87,7 @@ Robot::Robot()
         recruitment_stage[i] = STAGE0;
         docking_motor_operating_count[i]=0;
         docking_motors_status[i] = OPENED;
+        waiting_on_side[i] = true;
     }
 
 
@@ -111,7 +124,11 @@ Robot::Robot()
 
     //clear just in case 
     mytree.Clear();
+    subog.Clear();
     og = NULL;
+
+    // for self-repair
+    uint8_t sub_og_id = SIDE_COUNT;
 
     pthread_mutex_init(&mutex, NULL);
     pthread_mutex_init(&txqueue_mutex, NULL);
@@ -206,8 +223,12 @@ void Robot::RegisterBehaviour(robot_callback_t fnp, fsm_state_t state)
 
 void Robot::Update(const uint32_t& ts)
 {
+
     //update Sensors
     UpdateSensors();
+
+    //check for failures
+    UpdateFailures();
 
     //update status variable
     beacon_signals_detected = 0;

@@ -147,6 +147,8 @@ class OrganismSequence
         static rt_status changeConnection(OrganismSequence&, const unsigned int& edge_pos);
         static rt_status removeSequence(OrganismSequence&, const unsigned int& edge_pos, const bool&);
 
+        // for self-repair
+        void nextSeed();
 
         rt_status Scan(std::vector<Element>&, std::vector<unsigned int>&) const;
         rt_status getBranch(OrganismSequence&, const robot_side&);
