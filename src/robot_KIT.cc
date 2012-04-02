@@ -250,9 +250,8 @@ void RobotKIT::UpdateActuators()
 // for self-repair
 void RobotKIT::UpdateFailures()
 {
-
-
-
+	if( timestamp > para.debug.para[2] )
+		module_failed = true;
 }
 
 void RobotKIT::Avoidance()
@@ -952,39 +951,44 @@ void RobotKIT::InOrganism()
 
     	last_state = INORGANISM;
     	current_state = FAILED;
+
+    	// Light up some LEDs ?
+    	printf("%d Module failed!",timestamp);
+
     }
     else if( msg_failed_received )
     {
     	msg_failed_received = 0;
 
-//    	for( int i=0; i<SIDE_COUNT; i++ )
-//    		waiting_on_side[i] = true;
-
     	wait_side = FRONT;
     	repair_stage = STAGE0;
     	subog.Clear();
     	best_score = 0;
+    	subog_str[0] = 0;
 
-    	SendSubOGStr( FRONT, subog );
+    	// Find the first side at which another neighbour is docked
+    	while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == subog_id))
+    		wait_side++;
+
+    	if( wait_side < SIDE_COUNT )
+    		SendSubOGStr( wait_side, subog_str );
 
     	last_state = INORGANISM;
     	current_state = LEADREPAIR;
+
+    	printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d",timestamp,subog_id);
     }
     else if( msg_sub_og_seq_received )
     {
     	msg_sub_og_seq_received = 0;
     	repair_stage = STAGE0;
 
-    	if( parent_side == FRONT )
-    	{
-    		SendSubOGStr( RIGHT, subog );
-    		wait_side = RIGHT;
-    	}
-    	else
-    	{
-    		SendSubOGStr( FRONT, subog );
-        	wait_side = FRONT;
-    	}
+    	// Find the first side at which another neighbour is docked
+    	while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
+    		wait_side++;
+
+    	if( wait_side < SIDE_COUNT )
+    		SendSubOGStr( wait_side, subog_str );
 
     	last_state = INORGANISM;
     	current_state = REPAIR;
@@ -1181,6 +1185,7 @@ void RobotKIT::Failed()
     rightspeed = 0;
     sidespeed = 0;
 
+    /*
 	if(!MessageWaitingAck(IR_MSG_TYPE_FAILED))
 	{
 		//check if need to unlocking docking faces which is connected to Activewheel
@@ -1212,6 +1217,7 @@ void RobotKIT::Failed()
 			last_state = FAILED;
 		}
 	}
+	*/
 }
 
 // TODO: Initial repair state of the robot nearest
@@ -1232,29 +1238,24 @@ void RobotKIT::LeadRepair()
 	// and determine shape of sub-organism
 	if( repair_stage == STAGE0 )
 	{
+    	while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == subog_id))
+    		wait_side++;
+
 		if( wait_side < SIDE_COUNT )
 		{
-
-
-			if( msg_sub_og_seq_received || !docked[wait_side] )
+			if( msg_sub_og_seq_received )
 			{
-				// waiting_on_side[wait_side] = false;
-				msg_sub_og_seq_received = 0;
 				wait_side++;
-
-				SendSubOGStr( wait_side, subog );
+				msg_sub_og_seq_received = 0;
+				SendSubOGStr( wait_side, subog_str );
 			}
 		}
 		else
 		{
-//	    	for( int i=0; i<SIDE_COUNT; i++ )
-//	    		waiting_on_side[i] = true;
-
-	    	wait_side = FRONT;
+			wait_side = FRONT;
 	    	repair_stage = STAGE1;
-
-
-
+	    	printf("%d Shape determined",timestamp );
+	    	PrintSubOGString();
 		}
 	}
 	// TODO: move away from failed module
@@ -1266,31 +1267,25 @@ void RobotKIT::LeadRepair()
 	// TODO: determine sub-organism score
 	else if( repair_stage == STAGE2 )
 	{
+		/*
 		if( wait_side < SIDE_COUNT )
 		{
 			if( msg_score_seq_received || !docked[wait_side] )
 			{
 				if( own_score < best_score ) own_score = 0;
-
 				wait_side++;
-
 				SendScoreStr( wait_side, subog, best_score );
 			}
-
 		}
 		else
 		{
-
 			// TODO: broadcast best score
-
 			repair_stage = STAGE0;
 			wait_side = FRONT;
 			current_state = BROADCASTSCORE;
 			last_state = LEADREPAIR;
-
 		}
-
-
+		*/
 	}
 
 
@@ -1302,25 +1297,27 @@ void RobotKIT::Repair()
 	// determine sub-organism shape
 	if( repair_stage == STAGE0 )
 	{
-		// do not listen for messages on parent side
-//		if( wait_side == (int) parent_side ) wait_side++;
+
+		while( wait_side < SIDE_COUNT && ( wait_side == parent_side || !docked[wait_side] ) )
+			wait_side++;
 
 		if( wait_side < SIDE_COUNT )
 		{
-			if( msg_sub_og_seq_received || !docked[wait_side] )
+			if( msg_sub_og_seq_received )
 			{
-				msg_sub_og_seq_received = 0;
 				wait_side++;
+				msg_sub_og_seq_received = 0;
 
 				// don't send message back to parent yet
-				if( wait_side == (int) parent_side ) wait_side++;
-				SendSubOGStr( wait_side, subog );
-			}
+				if( wait_side == (int) parent_side )
+					wait_side++;
 
+				SendSubOGStr( wait_side, subog_str );
+			}
 		}
 		else
 		{
-			SendSubOGStr( parent_side, subog );
+			SendSubOGStr( parent_side, subog_str );
 
 			own_score = -1;
 			wait_side = FRONT;
@@ -1337,7 +1334,7 @@ void RobotKIT::Repair()
 	// TODO: determine sub-organism score
 	else if( repair_stage == STAGE2 )
 	{
-
+		/*
 		if( own_score < 0 )
 		{
 			// wait for message from parent to determine own_score
@@ -1374,13 +1371,8 @@ void RobotKIT::Repair()
 				last_state = REPAIR;
 			}
 		}
-
-
-
+		*/
 	}
-
-
-
 }
 
 void RobotKIT::BroadcastScore()

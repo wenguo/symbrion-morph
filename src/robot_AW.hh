@@ -45,8 +45,14 @@ class RobotAW:public Robot, public ActiveWheel
         virtual void Transforming();
         virtual void Reshaping();
         virtual void MacroLocomotion();
-        virtual void LeadRepair();
         virtual void Debugging();
+
+        // for self-repair
+        virtual void Failed()=0;
+        virtual void Support()=0;
+        virtual void LeadRepair()=0;
+        virtual void Repair()=0;
+        virtual void BroadcastScore()=0;
 
         virtual void Log();
     private:

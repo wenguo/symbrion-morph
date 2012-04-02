@@ -49,7 +49,7 @@ class Robot
     void PrintAmbient();
     void PrintRGB();
     void PrintStatus();
-
+    void PrintSubOGString();
 
     uint32_t CheckIRLEDStatus(int channel, int led);
     void CheckDockingMotor();
@@ -110,7 +110,7 @@ class Robot
 
     // for self-repair
     void SendFailureMsg( int i );
-    void SendSubOGStr( int i, const OrganismSequence &seq );
+    void SendSubOGStr( int i, uint8_t *seq_str );
     void SendScoreStr( int i, const OrganismSequence &seq, int score );
     uint32_t calculateScore( OrganismSequence &seq1, OrganismSequence &seq2 );
 
@@ -171,10 +171,12 @@ class Robot
     uint32_t id;
     robot_type type;
     char *name;
+
     // for self-repair
-    uint8_t sub_og_id;
-    uint32_t best_score;
-    uint32_t own_score;
+    uint8_t subog_str[MAX_IR_MESSAGE_SIZE];
+    uint8_t subog_id;
+    uint8_t best_score;
+    uint8_t own_score;
 
     fsm_state_t current_state;
     fsm_state_t last_state;
@@ -224,7 +226,6 @@ class Robot
 
     // for self-repair
     bool module_failed;
-    bool waiting_on_side[SIDE_COUNT];
     uint8_t wait_side;
     uint8_t parent_side;
     uint8_t repair_stage;

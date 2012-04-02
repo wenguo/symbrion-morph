@@ -87,7 +87,6 @@ Robot::Robot()
         recruitment_stage[i] = STAGE0;
         docking_motor_operating_count[i]=0;
         docking_motors_status[i] = OPENED;
-        waiting_on_side[i] = true;
     }
 
 
@@ -128,7 +127,8 @@ Robot::Robot()
     og = NULL;
 
     // for self-repair
-    uint8_t sub_og_id = SIDE_COUNT;
+    subog_id = SIDE_COUNT;
+    subog_str[0] = 0;
 
     pthread_mutex_init(&mutex, NULL);
     pthread_mutex_init(&txqueue_mutex, NULL);
@@ -560,4 +560,29 @@ void Robot::PrintStatus()
         << " speed (" << leftspeed << " , " << rightspeed << " )"  << std::endl;
 }
 
+void Robot::PrintSubOGString()
+{
+	printf("%d bytes in buf: %d",timestamp, (int)subog_str[0]);
+
+	// Print bitstring
+	printf("%d bitstring: ",timestamp);
+	for( int i=0; i<(int)subog_str[0]+1; i++ )
+	{
+		for( int j=7; j>=0; j-- )
+		{
+			if( (subog_str[i] & 1<<j) != 0 )
+				printf("1");
+			else
+				printf("0");
+		}
+		printf(" ");
+	}
+	printf("\n");
+
+	printf("%d Sequence: ",timestamp);
+	for( int i=0; i<(int)subog_str[0]+1; i++ )
+		std::cout << OrganismSequence::Symbol(subog_str[i]) << " ";
+
+	printf("\n");
+}
 

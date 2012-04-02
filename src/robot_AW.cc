@@ -1061,11 +1061,210 @@ void RobotAW::Transforming()
 
 ///////// Self-repair //////////
 
-void RobotAW::LeadRepair()
+void RobotAW::Failed()
+{
+
+    leftspeed = 0;
+    rightspeed = 0;
+    sidespeed = 0;
+
+    /*
+	if(!MessageWaitingAck(IR_MSG_TYPE_FAILED))
+	{
+		//check if need to unlocking docking faces which is connected to Activewheel
+		int num_docked = 0;
+		for(int i=0;i<NUM_DOCKS;i++)
+		{
+			if(docked[i])
+			{
+				num_docked++;
+				if(unlocking_required[i])
+				{
+					SetDockingMotor(i, OPEN);
+					unlocking_required[i]=false;
+				}
+				//TODO: how about two KIT robots docked to each other
+				else if(docking_motors_status[i]==OPENED)
+				{
+					BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+					docked[i]=false;
+					num_docked--;
+				}
+			}
+		}
+
+		//only one  or less
+		if(num_docked ==0)
+		{
+			current_state = UNDOCKING;
+			last_state = FAILED;
+		}
+	}
+	*/
+}
+
+// TODO: Initial repair state of the robot nearest
+// to the failed module - not currently implemented
+void RobotAW::Support()
 {
 
 
+
 }
+
+// Initial repair state of the robot nearest to the
+// the failed/support module
+void RobotAW::LeadRepair()
+{
+
+	// notify other modules to enter repair
+	// and determine shape of sub-organism
+	if( repair_stage == STAGE0 )
+	{
+    	while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == subog_id))
+    		wait_side++;
+
+		if( wait_side < SIDE_COUNT )
+		{
+			if( msg_sub_og_seq_received )
+			{
+				wait_side++;
+				msg_sub_og_seq_received = 0;
+				SendSubOGStr( wait_side, subog_str );
+			}
+		}
+		else
+		{
+			wait_side = FRONT;
+	    	repair_stage = STAGE1;
+	    	printf("%d Shape determined",timestamp );
+	    	PrintSubOGString();
+		}
+	}
+	// TODO: move away from failed module
+	else if( repair_stage == STAGE1 )
+	{
+		// when finished send score string to first neighbour
+
+	}
+	// TODO: determine sub-organism score
+	else if( repair_stage == STAGE2 )
+	{
+		/*
+		if( wait_side < SIDE_COUNT )
+		{
+			if( msg_score_seq_received || !docked[wait_side] )
+			{
+				if( own_score < best_score ) own_score = 0;
+				wait_side++;
+				SendScoreStr( wait_side, subog, best_score );
+			}
+		}
+		else
+		{
+			// TODO: broadcast best score
+			repair_stage = STAGE0;
+			wait_side = FRONT;
+			current_state = BROADCASTSCORE;
+			last_state = LEADREPAIR;
+		}
+		*/
+	}
+
+
+}
+
+// Initial repair state of remaining modules
+void RobotAW::Repair()
+{
+	// determine sub-organism shape
+	if( repair_stage == STAGE0 )
+	{
+
+		while( wait_side < SIDE_COUNT && ( wait_side == parent_side || !docked[wait_side] ) )
+			wait_side++;
+
+		if( wait_side < SIDE_COUNT )
+		{
+			if( msg_sub_og_seq_received )
+			{
+				wait_side++;
+				msg_sub_og_seq_received = 0;
+
+				// don't send message back to parent yet
+				if( wait_side == (int) parent_side )
+					wait_side++;
+
+				SendSubOGStr( wait_side, subog_str );
+			}
+		}
+		else
+		{
+			SendSubOGStr( parent_side, subog_str );
+
+			own_score = -1;
+			wait_side = FRONT;
+			repair_stage = STAGE1;
+		}
+	}
+	// TODO: move away from failed module
+	else if( repair_stage == STAGE1 )
+	{
+
+
+
+	}
+	// TODO: determine sub-organism score
+	else if( repair_stage == STAGE2 )
+	{
+		/*
+		if( own_score < 0 )
+		{
+			// wait for message from parent to determine own_score
+			if( (msg_score_seq_received & 1<<parent_side) == 0 )
+			{
+				msg_score_seq_received = 0;
+				own_score = calculateScore( subog, target );
+				own_score > best_score ? best_score = own_score : own_score = 0;
+			}
+		}
+		else
+		{
+			if( wait_side < SIDE_COUNT )
+			{
+				if( msg_score_seq_received || !docked[wait_side] )
+				{
+					if( own_score < best_score ) own_score = 0;
+
+					wait_side++;
+
+					// don't send message back to parent yet
+					if( wait_side == (int) parent_side ) wait_side++;
+
+					SendScoreStr( wait_side, subog, best_score );
+				}
+			}
+			else
+			{
+				SendScoreStr( parent_side, subog, best_score );
+
+				repair_stage = STAGE0;
+				wait_side = FRONT;
+				current_state = BROADCASTSCORE;
+				last_state = REPAIR;
+			}
+		}
+		*/
+	}
+}
+
+void RobotAW::BroadcastScore()
+{
+
+
+
+}
+
 
 
 /////// Self-repair END ///////
