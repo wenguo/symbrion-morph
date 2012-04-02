@@ -875,8 +875,65 @@ void RobotAW::InOrganism()
     rightspeed = 0;
     sidespeed = 0;
 
+    // for self-repair - needs to be replicated for all
+    // other states from which self-repair is possible.
+	if( module_failed )
+	{
+		// Send 'failed' message to all neighbours
+		for( int i=0; i<NUM_DOCKS; i++ )
+		{
+			if( docked[i] )
+				SendFailureMsg(i);
+		}
+
+		last_state = INORGANISM;
+		current_state = FAILED;
+
+		// Light up some LEDs ?
+		printf("%d Module failed!",timestamp);
+
+	}
+	else if( msg_failed_received )
+	{
+		msg_failed_received = 0;
+
+		wait_side = FRONT;
+		repair_stage = STAGE0;
+		subog.Clear();
+		best_score = 0;
+		subog_str[0] = 0;
+
+		// Find the first side at which another neighbour is docked
+		while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == subog_id))
+			wait_side++;
+
+		if( wait_side < SIDE_COUNT )
+			SendSubOGStr( wait_side, subog_str );
+
+		last_state = INORGANISM;
+		current_state = LEADREPAIR;
+
+		printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d",timestamp,subog_id);
+	}
+	else if( msg_sub_og_seq_received )
+	{
+		msg_sub_og_seq_received = 0;
+		repair_stage = STAGE0;
+
+		// Find the first side at which another neighbour is docked
+		while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
+			wait_side++;
+
+		if( wait_side < SIDE_COUNT )
+			SendSubOGStr( wait_side, subog_str );
+
+		last_state = INORGANISM;
+		current_state = REPAIR;
+	}
+	//////// END self-repair ////////
+
     //seed robot monitoring total number of robots in the organism
-    if(seed)
+    else if(seed)
     {
         if( mytree.Edges() + 1 == (unsigned int)num_robots_inorganism)
         {
