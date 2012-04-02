@@ -200,43 +200,24 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
         case IR_MSG_TYPE_FAILED:
 			{
 				msg_failed_received |= 1<<channel;
-				sub_og_id = data[1]; // is this correct?
+				subog_id = data[1];
 				ack_required = true;
 			}
 			break;
         case IR_MSG_TYPE_SUB_OG_STRING:
 			{
 				msg_sub_og_seq_received |= 1<<channel;
+				memcpy(subog_str,data+1,data[1]+1);
 
-				uint8_t buf[data[1]+2];
-				for( unsigned int i=0; i<(unsigned int)data[1]; i++ )
-					buf[i] = data[i];
-
-				// moving up the tree
-				if( current_state == LEADREPAIR || current_state == REPAIR )
+				if( current_state != LEADREPAIR && current_state != REPAIR )
 				{
-					// add two zeros
-					buf[(int)data[1]] = '0';
-					buf[data[1]+1] = '0';
-					//buf[data[1]] = '00';
-				}
-				// moving down the tree
-				else
-				{
-					// add name and type
-					buf[(int)data[1]] = robottype_names[type];
-					buf[data[1]+1] = side_names[channel];
-
-					parent_side = channel;
+					subog_str[subog_str[0]] |= type<<4;
+					subog_str[subog_str[0]] |= channel<<6;
 				}
 
-				rt_status ret = subog.reBuild(buf,data[1]+2);
-
-                if(ret.status >= RT_ERROR)
-                    printf("%d : Error in rebuilding sub-organism sequence!\n", timestamp);
-
-                ack_required = true;
-
+				ack_required = true;
+				printf("%dSub-organism string received",timestamp);
+				PrintSubOGString();
 			}
 			break;
         case IR_MSG_TYPE_SCORE_STRING:
@@ -413,46 +394,43 @@ void Robot::SendFailureMsg( int channel )
 	uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
 	buf[0] = channel;
 
-    BroadcastIRMessage(channel, IR_MSG_TYPE_FAILED, buf, 1, false);
-
+    BroadcastIRMessage(channel, IR_MSG_TYPE_FAILED, buf, 1, true);
 }
 
 /*
  * If a module is present on side 'channel' it
  * is sent the current sub-organism string.
  */
-void Robot::SendSubOGStr( int channel, const OrganismSequence& seq )
+void Robot::SendSubOGStr( int channel, uint8_t *seq )
 {
-	if( docked[channel] && channel < SIDE_COUNT )
+	if( channel < SIDE_COUNT && docked[channel] )
 	{
 	    uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
-	    buf[0] = seq.Size()+2;
 
-	    if(seq.Size() > MAX_IR_MESSAGE_SIZE-2)
+		buf[0] = seq[0]+1;
+
+	    if( buf[0] > MAX_IR_MESSAGE_SIZE-2 )
 	    {
-	        printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, seq.Size()+2);
+	        printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, (int) buf[0] );
 	        buf[0] = MAX_IR_MESSAGE_SIZE - 2;
 	    }
 
-	    for(int i=0; i < buf[0]-2;i++)
-	        buf[i+1] =seq.Encoded_Seq()[i].data;
+	    // copy previous string
+	    memcpy(buf+1,seq+1,seq[0]);
 
-		// Message being sent up the tree
-		if( channel == parent_side )
-		{
-			buf[seq.Size()] = 0;
-			buf[seq.Size()+1] = 0;
-		}
-		// Message being sent down the tree
-		else
-		{
-			// add robot type and side
-			buf[seq.Size()] = robottype_names[type];
-			buf[seq.Size()+1] = side_names[channel];
+	    buf[buf[0]] = 0;
 
-		}
+	    if( channel != parent_side )
+	    {
+	    	buf[buf[0]] |= type;	// 0:1
+	    	buf[buf[0]] |= channel<<2; // 2:3
+	    }
 
-	    BroadcastIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0] + 1, true);
+	    BroadcastIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+1, true);
+
+	    printf("%d Sending sug-og string",timestamp);
+    	PrintSubOGString();
+
 	}
 }
 
