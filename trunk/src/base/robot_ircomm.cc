@@ -197,6 +197,50 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 }
             }
             break;
+        case IR_MSG_TYPE_FAILED:
+			{
+				msg_failed_received |= 1<<channel;
+				subog_id = data[1];
+				parent_side = channel;
+                ack_required = true;
+            }
+	    break;
+        case IR_MSG_TYPE_SUB_OG_STRING:
+			{
+				// only copy string when it is expected
+				if( msg_subog_seq_expected & 1<<channel )
+				{
+					msg_subog_seq_expected &= ~(1<<channel);
+					msg_subog_seq_received |= 1<<channel;
+					memcpy(subog_str,data+1,data[1]+1);
+
+					// if module has not yet entered a repair state
+					if( parent_side >= SIDE_COUNT )
+					{
+						parent_side = channel;
+						subog_str[subog_str[0]] |= type<<4;     // 4:5
+						subog_str[subog_str[0]] |= channel<<6;  // 5:6
+					}
+
+					printf("%d Sub-organism string received\n",timestamp);
+					PrintSubOGString(subog_str);
+				}
+
+				ack_required = true;
+            }
+	    break;
+        case IR_MSG_TYPE_SCORE_STRING:
+			{
+				msg_score_seq_received |= 1<<channel;
+
+				// TODO: extract substring and score
+				//best_score =
+				//subog =
+
+				// Transform sequence to the perspective of current module
+				//subog.nextSeed();
+			}
+        	break;
         case IR_MSG_TYPE_PROPAGATED:
             {
                 //data[0] IR_MSG_TYPE_PROPAGATED
@@ -347,6 +391,89 @@ void Robot::PropagateIRMessage(uint8_t type, uint8_t *data, uint32_t len, int ex
             BroadcastIRMessage(i, IR_MSG_TYPE_PROPAGATED, buf, data_size + 5, true);
         }
     }
+}
+
+/*
+ * Sends a message containing the side from which the
+ * message was sent. Used to determine 'sub_og_id'.
+ * At a later stage more information may be sent.
+ */
+void Robot::SendFailureMsg( int channel )
+{
+	uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
+	buf[0] = channel;
+
+    BroadcastIRMessage(channel, IR_MSG_TYPE_FAILED, buf, 1, true);
+
+    printf("%d Sending failure message %d\n",timestamp,(int)buf[0]);
+}
+
+/*
+ * If a module is present on side 'channel' it
+ * is sent the current sub-organism string.
+ */
+void Robot::SendSubOGStr( int channel, uint8_t *seq )
+{
+	if( channel < SIDE_COUNT && docked[channel] )
+	{
+	    uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
+
+		buf[0] = seq[0]+1;
+
+	    if( buf[0] > MAX_IR_MESSAGE_SIZE-2 )
+	    {
+	        printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, (int) buf[0] );
+	        buf[0] = MAX_IR_MESSAGE_SIZE - 2;
+	    }
+
+	    // copy previous string
+	    memcpy(buf+1,seq+1,seq[0]);
+
+	    // if sending string back to parent
+        if( channel == parent_side )
+        {
+            // add zeros
+        	buf[buf[0]] = 0;
+        }
+        else
+	    {
+	        buf[buf[0]] = 0;
+	    	buf[buf[0]] |= type;	    // 0:1
+	    	buf[buf[0]] |= channel<<2;  // 2:3
+	    }
+
+	    BroadcastIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+1, true);
+
+	    printf("%d Sending sub-og string\n",timestamp);
+    	PrintSubOGString(buf);
+	}
+}
+
+void Robot::SendScoreStr( int channel, const OrganismSequence& seq, int score )
+{
+	/*
+	if( docked[channel] && channel < SIDE_COUNT )
+	{
+	    uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
+	    buf[0] = seq.Size()+2;
+
+	    if(seq.Size() > MAX_IR_MESSAGE_SIZE-2)
+	    {
+	        printf("Warning: only %d of %d bytes will be sent (SendScoreStr)\n", MAX_IR_MESSAGE_SIZE-2, seq.Size()+2);
+	        buf[0] = MAX_IR_MESSAGE_SIZE - 2;
+	    }
+
+	    for(int i=0; i < buf[0];i++)
+	        buf[i+1] =seq.Encoded_Seq()[i].data;
+
+	    // TODO: add score to the end of the string
+
+	    BroadcastIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0] + 1, false);
+
+
+	}
+	*/
+
 }
 
 void Robot::SendBranchTree(int channel, const OrganismSequence& seq)

@@ -23,6 +23,12 @@ Robot::Robot()
     powersource_found=false;
     seed=false;
     organism_formed=false;
+    module_failed=false;
+    wait_side = FRONT;
+    parent_side = SIDE_COUNT;
+    repair_stage = STAGE0;
+    repair_start=0;
+    repair_delay=30;
 
     hinge_motor_status = LOWED;
     RGBLED_flashing = 0;
@@ -48,6 +54,14 @@ Robot::Robot()
     RegisterBehaviour(&Robot::Reshaping, RESHAPING);
     RegisterBehaviour(&Robot::MacroLocomotion, MACROLOCOMOTION);
     RegisterBehaviour(&Robot::Debugging, DEBUGGING);
+    // for self-repair
+    RegisterBehaviour(&Robot::Failed, FAILED);
+    RegisterBehaviour(&Robot::Support, SUPPORT);
+    RegisterBehaviour(&Robot::LeadRepair, LEADREPAIR);
+    RegisterBehaviour(&Robot::Repair, REPAIR);
+    RegisterBehaviour(&Robot::BroadcastScore, BROADCASTSCORE);
+
+
 
 
 
@@ -109,9 +123,21 @@ Robot::Robot()
     msg_organism_seq_received = false;
     msg_organism_seq_expected = false;
 
+    // for self-repair
+    msg_failed_received = 0;
+    msg_subog_seq_received = 0;
+    msg_subog_seq_expected = 0;
+    msg_score_seq_received = 0;
+    msg_score_seq_expected = 0;
+
     //clear just in case 
     mytree.Clear();
+    subog.Clear();
     og = NULL;
+
+    // for self-repair
+    subog_id = SIDE_COUNT;
+    subog_str[0] = 0;
 
     pthread_mutex_init(&mutex, NULL);
     pthread_mutex_init(&txqueue_mutex, NULL);
@@ -206,8 +232,12 @@ void Robot::RegisterBehaviour(robot_callback_t fnp, fsm_state_t state)
 
 void Robot::Update(const uint32_t& ts)
 {
+
     //update Sensors
     UpdateSensors();
+
+    //check for failures
+    UpdateFailures();
 
     //update status variable
     beacon_signals_detected = 0;
@@ -239,7 +269,7 @@ void Robot::Update(const uint32_t& ts)
         PrintStatus();
 
     PrintBeacon();
-    PrintProximity();
+    //PrintProximity();
     PrintReflective();
     PrintAmbient();
     //PrintStatus();
@@ -539,4 +569,29 @@ void Robot::PrintStatus()
         << " speed (" << leftspeed << " , " << rightspeed << " )"  << std::endl;
 }
 
+void Robot::PrintSubOGString( uint8_t *seq)
+{
+	printf("%d length of sequence: %d\n",timestamp, (int)seq[0]);
+
+	// Print bitstring
+	printf("%d bitstring: ",timestamp);
+	for( int i=0; i<(int)seq[0]+1; i++ )
+	{
+		for( int j=7; j>=0; j-- )
+		{
+			if( (seq[i] & 1<<j) != 0 )
+				printf("1");
+			else
+				printf("0");
+		}
+		printf(" ");
+	}
+	printf("\n");
+
+	printf("%d Sequence: ",timestamp);
+	for( int i=1; i<(int)seq[0]+1; i++ )
+		std::cout << OrganismSequence::Symbol(seq[i]) << " ";
+        std::cout << std::endl;
+
+}
 

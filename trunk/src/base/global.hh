@@ -77,11 +77,16 @@ enum fsm_state_t {
     LOCKING, 
     DISASSEMBLY,
     UNDOCKING,
-    INORGANISM, 
+    INORGANISM,  // 15
     RECRUITMENT, 
     TRANSFORMING,
     RESHAPING,
-    MACROLOCOMOTION, 
+    MACROLOCOMOTION,
+    FAILED,
+    SUPPORT,
+    LEADREPAIR,
+    REPAIR,
+    BROADCASTSCORE,
     DEBUGGING, 
     STATE_COUNT
 };
@@ -125,6 +130,11 @@ enum irmsg_type_t {
     IR_MSG_TYPE_ORGANISM_FORMED,
     IR_MSG_TYPE_TRANSFORMING,
     IR_MSG_TYPE_RESHAPING,
+
+    // for self-repair
+    IR_MSG_TYPE_FAILED,
+    IR_MSG_TYPE_SUB_OG_STRING,
+    IR_MSG_TYPE_SCORE_STRING,
 
     IR_MSG_TYPE_ACK,              //followed by acknowledged message type
     IR_MSG_TYPE_COUNT
