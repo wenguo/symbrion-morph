@@ -198,29 +198,35 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
             }
             break;
         case IR_MSG_TYPE_FAILED:
-	    {
-	        msg_failed_received |= 1<<channel;
-		subog_id = data[1];
-		parent_side = channel;
+			{
+				msg_failed_received |= 1<<channel;
+				subog_id = data[1];
+				parent_side = channel;
                 ack_required = true;
             }
 	    break;
         case IR_MSG_TYPE_SUB_OG_STRING:
-	    {
-		msg_sub_og_seq_received |= 1<<channel;
-		memcpy(subog_str,data+1,data[1]+1);
-                                
-                // if module has not yet entered a repair state
-                if( parent_side >= SIDE_COUNT )
-                {
-                    parent_side = channel;		
-		    subog_str[subog_str[0]] |= type<<4;     // 4:5
-		    subog_str[subog_str[0]] |= channel<<6;  // 5:6
-		}
+			{
+				// only copy string when it is expected
+				if( msg_subog_seq_expected & 1<<channel )
+				{
+					msg_subog_seq_expected &= ~(1<<channel);
+					msg_subog_seq_received |= 1<<channel;
+					memcpy(subog_str,data+1,data[1]+1);
 
-		printf("%d Sub-organism string received\n",timestamp);
-		PrintSubOGString(subog_str);
-		ack_required = true;
+					// if module has not yet entered a repair state
+					if( parent_side >= SIDE_COUNT )
+					{
+						parent_side = channel;
+						subog_str[subog_str[0]] |= type<<4;     // 4:5
+						subog_str[subog_str[0]] |= channel<<6;  // 5:6
+					}
+
+					printf("%d Sub-organism string received\n",timestamp);
+					PrintSubOGString(subog_str);
+				}
+
+				ack_required = true;
             }
 	    break;
         case IR_MSG_TYPE_SCORE_STRING:
@@ -232,7 +238,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 				//subog =
 
 				// Transform sequence to the perspective of current module
-				subog.nextSeed();
+				//subog.nextSeed();
 			}
         	break;
         case IR_MSG_TYPE_PROPAGATED:
@@ -423,13 +429,13 @@ void Robot::SendSubOGStr( int channel, uint8_t *seq )
 	    // copy previous string
 	    memcpy(buf+1,seq+1,seq[0]);
 
-            // if sending string back to parent
-            if( channel == parent_side )
-            {
-                // add zeros
-	        buf[buf[0]] = 0;
-            }
-            else
+	    // if sending string back to parent
+        if( channel == parent_side )
+        {
+            // add zeros
+        	buf[buf[0]] = 0;
+        }
+        else
 	    {
 	        buf[buf[0]] = 0;
 	    	buf[buf[0]] |= type;	    // 0:1
@@ -439,13 +445,13 @@ void Robot::SendSubOGStr( int channel, uint8_t *seq )
 	    BroadcastIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+1, true);
 
 	    printf("%d Sending sub-og string\n",timestamp);
-    	    PrintSubOGString(buf);
-
+    	PrintSubOGString(buf);
 	}
 }
 
 void Robot::SendScoreStr( int channel, const OrganismSequence& seq, int score )
 {
+	/*
 	if( docked[channel] && channel < SIDE_COUNT )
 	{
 	    uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
@@ -466,6 +472,7 @@ void Robot::SendScoreStr( int channel, const OrganismSequence& seq, int score )
 
 
 	}
+	*/
 
 }
 
