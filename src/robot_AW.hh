@@ -10,7 +10,7 @@ class RobotAW:public Robot, public ActiveWheel
     public:
         RobotAW();
         virtual ~RobotAW();
-        int short_delay;
+
     protected:
         virtual void InitHardware();
         virtual void SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led);

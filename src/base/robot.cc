@@ -27,6 +27,8 @@ Robot::Robot()
     wait_side = FRONT;
     parent_side = SIDE_COUNT;
     repair_stage = STAGE0;
+    repair_start=0;
+    repair_delay=30;
 
     hinge_motor_status = LOWED;
     RGBLED_flashing = 0;
@@ -123,8 +125,10 @@ Robot::Robot()
 
     // for self-repair
     msg_failed_received = 0;
-    msg_sub_og_seq_received = 0;
-    msg_score_seq_received =0;
+    msg_subog_seq_received = 0;
+    msg_subog_seq_expected = 0;
+    msg_score_seq_received = 0;
+    msg_score_seq_expected = 0;
 
     //clear just in case 
     mytree.Clear();

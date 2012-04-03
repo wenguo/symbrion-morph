@@ -229,6 +229,8 @@ class Robot
     uint8_t wait_side;
     uint8_t parent_side;
     uint8_t repair_stage;
+    uint32_t repair_start;
+    uint16_t repair_delay;
 
     uint32_t recover_count;
     uint32_t recruitment_signal_interval_count[NUM_DOCKS];
@@ -266,8 +268,11 @@ class Robot
     bool msg_organism_seq_expected;
     // for self-repair
     uint8_t msg_failed_received;
-    uint8_t msg_sub_og_seq_received;
+    uint8_t msg_subog_seq_received;
+    uint8_t msg_subog_seq_expected;
     uint8_t msg_score_seq_received;
+    uint8_t msg_score_seq_expected;
+
 
 
     //all ir message in a queue
