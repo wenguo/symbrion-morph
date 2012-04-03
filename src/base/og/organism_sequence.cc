@@ -260,6 +260,38 @@ rt_status OrganismSequence::Scan(const OrganismSequence& og_seq, std::vector<Org
     return ret;
 }
 
+/*
+ * Changes the order of the sequence so that the
+ * second module replaces the first as the seed
+ */
+void OrganismSequence::nextSeed()
+{
+	std::vector<Element> eList;
+	std::vector<unsigned int> edges;
+	Scan(*this, eList, edges);
+
+	// get previous first element
+	Element first = eList.front();
+
+	// swap sides and types
+	uint8_t temp_type = first.symbol.type1;
+	uint8_t temp_side = first.symbol.side1;
+	first.symbol.type1 = first.symbol.type2;
+	first.symbol.side1 = first.symbol.side2;
+	first.symbol.type2 = temp_type;
+	first.symbol.side2 = temp_side;
+
+	// move symbol to position before its '0000' pair
+	eList[first.pair_pos] = first;
+	eList.erase( eList.begin() );
+
+	// move '0000' to end
+	eList.push_back( Element( Symbol(0) ) ) ;
+
+	//TODO: rebuild sequence from eList
+
+}
+
 rt_status OrganismSequence::Scan(std::vector<OrganismSequence::Element>& element_list, std::vector<unsigned int>& edges) const
 {
     return OrganismSequence::Scan(*this, element_list, edges);

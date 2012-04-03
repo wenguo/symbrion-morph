@@ -49,7 +49,7 @@ class Robot
     void PrintAmbient();
     void PrintRGB();
     void PrintStatus();
-
+    void PrintSubOGString( uint8_t* );
 
     uint32_t CheckIRLEDStatus(int channel, int led);
     void CheckDockingMotor();
@@ -69,6 +69,8 @@ class Robot
     virtual void UpdateSensors()=0;
     virtual void UpdateActuators()=0;
     virtual void Reset()=0;
+    // for self-repair
+    virtual void UpdateFailures()=0;
 
     virtual void Calibrating();
     virtual void Exploring()=0;
@@ -90,15 +92,28 @@ class Robot
     virtual void Transforming()=0;
     virtual void Reshaping()=0;
     virtual void MacroLocomotion()=0;
-
     virtual void Debugging()=0;
     virtual void Log()=0;
+    // for self-repair
+    virtual void Failed()=0;
+    virtual void Support()=0;
+    virtual void LeadRepair()=0;
+    virtual void Repair()=0;
+    virtual void BroadcastScore()=0;
+
 
 
     std::string ClockString();
 
     //  void BroadcastMessage(Message); //broadcast message via wired communication bus
     //  void SendMessage(int i, Message*);
+
+    // for self-repair
+    void SendFailureMsg( int i );
+    void SendSubOGStr( int i, uint8_t *seq_str );
+    void SendScoreStr( int i, const OrganismSequence &seq, int score );
+    uint32_t calculateScore( OrganismSequence &seq1, OrganismSequence &seq2 );
+
     void SendBranchTree(int i, const OrganismSequence& seq);
     bool isNeighboured(Robot *);
 
@@ -134,6 +149,14 @@ class Robot
     static void Reshaping(Robot * robot){robot->Reshaping();}
     static void MacroLocomotion(Robot * robot){robot->MacroLocomotion();}
     static void Debugging(Robot * robot){robot->Debugging();}
+    // for self-repair
+    static void Failed(Robot * robot){robot->Failed();}
+    static void Support(Robot * robot){robot->Support();}
+    static void LeadRepair(Robot * robot){robot->LeadRepair();}
+    static void Repair(Robot * robot){robot->Repair();}
+    static void BroadcastScore(Robot * robot){robot->BroadcastScore();}
+
+
     static void *IRCommTxThread(void* robot);
     static void *IRCommRxThread(void* robot);
     void RegisterBehaviour(robot_callback_t fnp, fsm_state_t state);
@@ -148,6 +171,12 @@ class Robot
     uint32_t id;
     robot_type type;
     char *name;
+
+    // for self-repair
+    uint8_t subog_str[MAX_IR_MESSAGE_SIZE];
+    uint8_t subog_id;
+    uint8_t best_score;
+    uint8_t own_score;
 
     fsm_state_t current_state;
     fsm_state_t last_state;
@@ -195,6 +224,14 @@ class Robot
     bool powersource_found;
     bool organism_formed;
 
+    // for self-repair
+    bool module_failed;
+    uint8_t wait_side;
+    uint8_t parent_side;
+    uint8_t repair_stage;
+    uint32_t repair_start;
+    uint16_t repair_delay;
+
     uint32_t recover_count;
     uint32_t recruitment_signal_interval_count[NUM_DOCKS];
     uint32_t recruitment_count[NUM_DOCKS];
@@ -229,6 +266,14 @@ class Robot
     uint8_t msg_guideme_received;
     bool msg_organism_seq_received;
     bool msg_organism_seq_expected;
+    // for self-repair
+    uint8_t msg_failed_received;
+    uint8_t msg_subog_seq_received;
+    uint8_t msg_subog_seq_expected;
+    uint8_t msg_score_seq_received;
+    uint8_t msg_score_seq_expected;
+
+
 
     //all ir message in a queue
     typedef std::vector<IRMessage> IRMessageQueue;
@@ -247,6 +292,8 @@ class Robot
 
     //organism related
     OrganismSequence mytree;
+    OrganismSequence subog;
+    OrganismSequence target;
     std::vector<OrganismSequence> mybranches;
     Organism * og;
     OrganismSequence::Symbol assembly_info; //information for which types of robot and which side is required by recruiting robots
