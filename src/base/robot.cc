@@ -121,6 +121,11 @@ Robot::Robot()
     msg_organism_seq_received = false;
     msg_organism_seq_expected = false;
 
+    // for self-repair
+    msg_failed_received = 0;
+    msg_sub_og_seq_received = 0;
+    msg_score_seq_received =0;
+
     //clear just in case 
     mytree.Clear();
     subog.Clear();
@@ -562,7 +567,7 @@ void Robot::PrintStatus()
 
 void Robot::PrintSubOGString()
 {
-	printf("%d bytes in buf: %d",timestamp, (int)subog_str[0]);
+	printf("%d bytes in buf: %d\n",timestamp, (int)subog_str[0]);
 
 	// Print bitstring
 	printf("%d bitstring: ",timestamp);
