@@ -25,6 +25,8 @@ class RobotAW:public Robot, public ActiveWheel
 
         virtual void UpdateSensors();
         virtual void UpdateActuators();
+        // for self-repair
+        virtual void UpdateFailures();
 
         virtual void Exploring();
         virtual void Resting();

@@ -77,7 +77,7 @@ enum fsm_state_t {
     LOCKING, 
     DISASSEMBLY,
     UNDOCKING,
-    INORGANISM, 
+    INORGANISM,  // 15
     RECRUITMENT, 
     TRANSFORMING,
     RESHAPING,
