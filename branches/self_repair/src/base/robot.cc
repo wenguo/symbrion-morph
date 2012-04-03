@@ -265,7 +265,7 @@ void Robot::Update(const uint32_t& ts)
         PrintStatus();
 
     PrintBeacon();
-    PrintProximity();
+    //PrintProximity();
     PrintReflective();
     PrintAmbient();
     //PrintStatus();
