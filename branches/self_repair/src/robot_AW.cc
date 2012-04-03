@@ -179,14 +179,17 @@ void RobotAW::UpdateActuators()
 {
     CheckHingeMotor();
     SetSpeed(leftspeed, rightspeed,sidespeed); 
-    printf("speed: %d %d %d\n", leftspeed, rightspeed, sidespeed);
+//printf("speed: %d %d %d\n", leftspeed, rightspeed, sidespeed);
 }
 
 // for self-repair
 void RobotAW::UpdateFailures()
 {
-	if( para.debug.para[2] > 0 && timestamp > para.debug.para[2] )
-		module_failed = true;
+	if( !module_failed )
+        {
+            if( para.debug.para[2] > 0 && timestamp > para.debug.para[2] )
+                module_failed = true;
+        }
 }
 
 void RobotAW::Avoidance()
@@ -906,8 +909,11 @@ void RobotAW::InOrganism()
 		last_state = INORGANISM;
 		current_state = FAILED;
 
-		// Light up some LEDs ?
-		printf("%d Module failed!",timestamp);
+		for( int i=0; i<SIDE_COUNT; i++ )
+                    SetRGBLED(i, RED, RED, RED, RED);
+
+
+		printf("%d Module failed!\n",timestamp);
 
 	}
 	else if( msg_failed_received )
@@ -930,7 +936,7 @@ void RobotAW::InOrganism()
 		last_state = INORGANISM;
 		current_state = LEADREPAIR;
 
-		printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d",timestamp,subog_id);
+		printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d\n",timestamp,subog_id);
 	}
 	else if( msg_sub_og_seq_received )
 	{
@@ -979,6 +985,7 @@ void RobotAW::InOrganism()
         {
             msg_organism_seq_received = 0;
             msg_organism_seq_expected = 0;
+
 
             for(int i=0;i<NUM_DOCKS;i++)
                 SetRGBLED(i, 0,0,0,0);
@@ -1216,7 +1223,7 @@ void RobotAW::LeadRepair()
 		{
 			wait_side = FRONT;
 	    	repair_stage = STAGE1;
-	    	printf("%d Shape determined",timestamp );
+	    	printf("%d Shape determined\n",timestamp );
 	    	PrintSubOGString();
 		}
 	}

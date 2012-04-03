@@ -395,6 +395,8 @@ void Robot::SendFailureMsg( int channel )
 	buf[0] = channel;
 
     BroadcastIRMessage(channel, IR_MSG_TYPE_FAILED, buf, 1, true);
+
+    printf("%d Sending failure message %s\n",timestamp,buf);
 }
 
 /*
@@ -428,7 +430,8 @@ void Robot::SendSubOGStr( int channel, uint8_t *seq )
 
 	    BroadcastIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+1, true);
 
-	    printf("%d Sending sug-og string",timestamp);
+            printf("%d module failed",timestamp);
+	    printf("%d Sending sug-og string\n",timestamp);
     	PrintSubOGString();
 
 	}

@@ -50,11 +50,11 @@ class RobotKIT:public Robot, public KaBot
         virtual void Debugging();
 
         // for self-repair
-        virtual void Failed()=0;
-        virtual void Support()=0;
-        virtual void LeadRepair()=0;
-        virtual void Repair()=0;
-        virtual void BroadcastScore()=0;
+        virtual void Failed();
+        virtual void Support();
+        virtual void LeadRepair();
+        virtual void Repair();
+        virtual void BroadcastScore();
 
         virtual void Log();
     private:
