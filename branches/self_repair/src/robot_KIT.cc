@@ -250,7 +250,7 @@ void RobotKIT::UpdateActuators()
 // for self-repair
 void RobotKIT::UpdateFailures()
 {
-	if( timestamp > para.debug.para[2] )
+	if( para.debug.para[2] > 0 && timestamp > para.debug.para[2] )
 		module_failed = true;
 }
 
@@ -938,6 +938,15 @@ void RobotKIT::InOrganism()
     rightspeed = 0;
     sidespeed = 0;
 
+    if( timestamp < 40 )
+    	return;
+
+    if(timestamp ==40)
+	{
+    	for(int i=0;i<NUM_IRS;i++)
+    		SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
+    }
+
     // for self-repair - needs to be replicated for all
     // other states from which self-repair is possible.
     if( module_failed )
@@ -995,9 +1004,13 @@ void RobotKIT::InOrganism()
     }
     //////// END self-repair ////////
 
+    else
+    {
+    	return;
+    }
 
     //seed robot monitoring total number of robots in the organism
-    else if(seed)
+    if(seed)
     {
         if( mytree.Edges() + 1 == (unsigned int)num_robots_inorganism)
         {
