@@ -565,17 +565,17 @@ void Robot::PrintStatus()
         << " speed (" << leftspeed << " , " << rightspeed << " )"  << std::endl;
 }
 
-void Robot::PrintSubOGString()
+void Robot::PrintSubOGString( uint8_t *seq)
 {
-	printf("%d bytes in buf: %d\n",timestamp, (int)subog_str[0]);
+	printf("%d length of sequence: %d\n",timestamp, (int)seq[0]);
 
 	// Print bitstring
 	printf("%d bitstring: ",timestamp);
-	for( int i=0; i<(int)subog_str[0]+1; i++ )
+	for( int i=0; i<(int)seq[0]+1; i++ )
 	{
 		for( int j=7; j>=0; j-- )
 		{
-			if( (subog_str[i] & 1<<j) != 0 )
+			if( (seq[i] & 1<<j) != 0 )
 				printf("1");
 			else
 				printf("0");
@@ -585,9 +585,9 @@ void Robot::PrintSubOGString()
 	printf("\n");
 
 	printf("%d Sequence: ",timestamp);
-	for( int i=0; i<(int)subog_str[0]+1; i++ )
-		std::cout << OrganismSequence::Symbol(subog_str[i]) << " ";
+	for( int i=1; i<(int)seq[0]+1; i++ )
+		std::cout << OrganismSequence::Symbol(seq[i]) << " ";
+        std::cout << std::endl;
 
-	printf("\n");
 }
 

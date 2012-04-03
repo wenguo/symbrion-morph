@@ -49,7 +49,7 @@ class Robot
     void PrintAmbient();
     void PrintRGB();
     void PrintStatus();
-    void PrintSubOGString();
+    void PrintSubOGString( uint8_t* );
 
     uint32_t CheckIRLEDStatus(int channel, int led);
     void CheckDockingMotor();

@@ -946,7 +946,7 @@ void RobotKIT::InOrganism()
 		 for(int i=0;i<NUM_IRS;i++)
 			 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
 
-		 docked[BACK] = true;
+		 docked[para.debug.para[0]] = true;
 	 }
 
 	// for self-repair - needs to be replicated for all
@@ -970,11 +970,17 @@ void RobotKIT::InOrganism()
 		printf("%d Module failed!\n",timestamp);
 
 	}
-	else if( msg_failed_received )
-	{
+	//else if( msg_failed_received )
+        else if( para.debug.para[1] > 0 )
+        {
+                // for testing only //
+                subog_id = 2;
+                parent_side = para.debug.para[1];
+                //////////////////////
+
 		msg_failed_received = 0;
 
-		wait_side = FRONT;
+		wait_side = 0;
 		repair_stage = STAGE0;
 		subog.Clear();
 		best_score = 0;
@@ -1009,7 +1015,13 @@ void RobotKIT::InOrganism()
 
 		last_state = INORGANISM;
 		current_state = REPAIR;
-	}
+	
+                
+		for( int i=0; i<SIDE_COUNT; i++ )
+                    SetRGBLED(i, YELLOW, YELLOW, YELLOW, YELLOW);
+
+
+        }
 	//////// END self-repair ////////
 
 	else
@@ -1259,6 +1271,8 @@ void RobotKIT::LeadRepair()
 	// and determine shape of sub-organism
 	if( repair_stage == STAGE0 )
 	{
+
+
     	while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
     		wait_side++;
 
@@ -1268,15 +1282,19 @@ void RobotKIT::LeadRepair()
 			{
 				wait_side++;
 				msg_sub_og_seq_received = 0;
-				SendSubOGStr( wait_side, subog_str );
+	                        
+				// don't send message back to failed module
+				if( wait_side == (int) parent_side )
+					wait_side++;
+
+                                SendSubOGStr( wait_side, subog_str );
 			}
 		}
 		else
 		{
 			wait_side = FRONT;
 	    	repair_stage = STAGE1;
-	    	printf("%d Shape determined\n",timestamp );
-	    	PrintSubOGString();
+	    	printf("%d Shape determined, entering STAGE1 \n",timestamp );
 		}
 	}
 	// TODO: move away from failed module
@@ -1319,6 +1337,8 @@ void RobotKIT::Repair()
 	if( repair_stage == STAGE0 )
 	{
 
+                
+
 		while( wait_side < SIDE_COUNT && ( wait_side == parent_side || !docked[wait_side] ) )
 			wait_side++;
 
@@ -1343,6 +1363,7 @@ void RobotKIT::Repair()
 			own_score = -1;
 			wait_side = FRONT;
 			repair_stage = STAGE1;
+                        printf("%d Shape determined, entering STAGE1 \n",timestamp);
 		}
 	}
 	// TODO: move away from failed module
