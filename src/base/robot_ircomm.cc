@@ -201,22 +201,26 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 			{
 				msg_failed_received |= 1<<channel;
 				subog_id = data[1];
-				ack_required = true;
-			}
+			        parent_side = channel;
+                                ack_required = true;
+                        }
 			break;
         case IR_MSG_TYPE_SUB_OG_STRING:
 			{
 				msg_sub_og_seq_received |= 1<<channel;
 				memcpy(subog_str,data+1,data[1]+1);
-
-				if( current_state != LEADREPAIR && current_state != REPAIR )
+                                
+                                if( parent_side >= SIDE_COUNT )
+                                    parent_side = channel;
+				
+                                if( current_state != LEADREPAIR && current_state != REPAIR )
 				{
 					subog_str[subog_str[0]] |= type<<4;
 					subog_str[subog_str[0]] |= channel<<6;
 				}
 
 				ack_required = true;
-				printf("%dSub-organism string received",timestamp);
+				printf("%d Sub-organism string received\n",timestamp);
 				PrintSubOGString();
 			}
 			break;
@@ -396,7 +400,7 @@ void Robot::SendFailureMsg( int channel )
 
     BroadcastIRMessage(channel, IR_MSG_TYPE_FAILED, buf, 1, true);
 
-    printf("%d Sending failure message %s\n",timestamp,buf);
+    printf("%d Sending failure message %d\n",timestamp,(int)buf[0]);
 }
 
 /*

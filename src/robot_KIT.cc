@@ -981,7 +981,7 @@ void RobotKIT::InOrganism()
 		subog_str[0] = 0;
 
 		// Find the first side at which another neighbour is docked
-		while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == subog_id))
+		while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
 			wait_side++;
 
 		if( wait_side < SIDE_COUNT )
@@ -1259,7 +1259,7 @@ void RobotKIT::LeadRepair()
 	// and determine shape of sub-organism
 	if( repair_stage == STAGE0 )
 	{
-    	while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == subog_id))
+    	while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
     		wait_side++;
 
 		if( wait_side < SIDE_COUNT )
