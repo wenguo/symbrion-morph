@@ -939,75 +939,83 @@ void RobotKIT::InOrganism()
     sidespeed = 0;
 
     if( timestamp < 40 )
-    	return;
+        	return;
 
-    if(timestamp ==40)
+	if(timestamp == 40)
+	 {
+		 for(int i=0;i<NUM_IRS;i++)
+			 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
+
+		 docked[BACK] = true;
+	 }
+
+	// for self-repair - needs to be replicated for all
+	// other states from which self-repair is possible.
+	if( module_failed )
 	{
-    	for(int i=0;i<NUM_IRS;i++)
-    		SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
-    }
+		// Send 'failed' message to all neighbours
+		for( int i=0; i<NUM_DOCKS; i++ )
+		{
+			if( docked[i] )
+				SendFailureMsg(i);
+		}
 
-    // for self-repair - needs to be replicated for all
-    // other states from which self-repair is possible.
-    if( module_failed )
-    {
-    	// Send 'failed' message to all neighbours
-    	for( int i=0; i<NUM_DOCKS; i++ )
-    	{
-    		if( docked[i] )
-    			SendFailureMsg(i);
-    	}
+		last_state = INORGANISM;
+		current_state = FAILED;
 
-    	last_state = INORGANISM;
-    	current_state = FAILED;
+		for( int i=0; i<SIDE_COUNT; i++ )
+			SetRGBLED(i, RED, RED, RED, RED);
 
-    	// Light up some LEDs ?
-    	printf("%d Module failed!",timestamp);
 
-    }
-    else if( msg_failed_received )
-    {
-    	msg_failed_received = 0;
+		printf("%d Module failed!\n",timestamp);
 
-    	wait_side = FRONT;
-    	repair_stage = STAGE0;
-    	subog.Clear();
-    	best_score = 0;
-    	subog_str[0] = 0;
+	}
+	else if( msg_failed_received )
+	{
+		msg_failed_received = 0;
 
-    	// Find the first side at which another neighbour is docked
-    	while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == subog_id))
-    		wait_side++;
+		wait_side = FRONT;
+		repair_stage = STAGE0;
+		subog.Clear();
+		best_score = 0;
+		subog_str[0] = 0;
 
-    	if( wait_side < SIDE_COUNT )
-    		SendSubOGStr( wait_side, subog_str );
+		// Find the first side at which another neighbour is docked
+		while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == subog_id))
+			wait_side++;
 
-    	last_state = INORGANISM;
-    	current_state = LEADREPAIR;
+		if( wait_side < SIDE_COUNT )
+			SendSubOGStr( wait_side, subog_str );
 
-    	printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d",timestamp,subog_id);
-    }
-    else if( msg_sub_og_seq_received )
-    {
-    	msg_sub_og_seq_received = 0;
-    	repair_stage = STAGE0;
+		last_state = INORGANISM;
+		current_state = LEADREPAIR;
 
-    	// Find the first side at which another neighbour is docked
-    	while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
-    		wait_side++;
+		printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d\n",timestamp,subog_id);
 
-    	if( wait_side < SIDE_COUNT )
-    		SendSubOGStr( wait_side, subog_str );
+		for( int i=0; i<SIDE_COUNT; i++ )
+			SetRGBLED(i, GREEN, GREEN, GREEN, GREEN);
+	}
+	else if( msg_sub_og_seq_received )
+	{
+		msg_sub_og_seq_received = 0;
+		repair_stage = STAGE0;
 
-    	last_state = INORGANISM;
-    	current_state = REPAIR;
-    }
-    //////// END self-repair ////////
+		// Find the first side at which another neighbour is docked
+		while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
+			wait_side++;
 
-    else
-    {
-    	return;
-    }
+		if( wait_side < SIDE_COUNT )
+			SendSubOGStr( wait_side, subog_str );
+
+		last_state = INORGANISM;
+		current_state = REPAIR;
+	}
+	//////// END self-repair ////////
+
+	else
+	{
+		return;
+	}
 
     //seed robot monitoring total number of robots in the organism
     if(seed)
@@ -1267,7 +1275,7 @@ void RobotKIT::LeadRepair()
 		{
 			wait_side = FRONT;
 	    	repair_stage = STAGE1;
-	    	printf("%d Shape determined",timestamp );
+	    	printf("%d Shape determined\n",timestamp );
 	    	PrintSubOGString();
 		}
 	}

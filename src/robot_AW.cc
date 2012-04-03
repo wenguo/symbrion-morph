@@ -893,6 +893,8 @@ void RobotAW::InOrganism()
 	 {
 		 for(int i=0;i<NUM_IRS;i++)
 			 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
+
+		 docked[FRONT] = true;
 	 }
 
     // for self-repair - needs to be replicated for all
