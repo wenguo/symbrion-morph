@@ -21,6 +21,11 @@ const char* state_names[STATE_COUNT]={
     "Transforming",
     "Reshaping",
     "MacroLocomotion",
+    "Failed",
+    "Support",
+    "LeadRepair",
+    "Repair",
+    "BroadcastScore",
     "Debugging"
 };
 
@@ -44,6 +49,9 @@ const char * irmessage_names[IR_MSG_TYPE_COUNT]={
     "Organism_Formed",
     "Transforming",
     "Reshaping",
+    "Failed",
+    "Sub_OG_String",
+    "Sub_OG_Score",
     "ACK"
 };
 

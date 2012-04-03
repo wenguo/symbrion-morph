@@ -198,32 +198,31 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
             }
             break;
         case IR_MSG_TYPE_FAILED:
-			{
-				msg_failed_received |= 1<<channel;
-				subog_id = data[1];
-			        parent_side = channel;
-                                ack_required = true;
-                        }
-			break;
+	    {
+	        msg_failed_received |= 1<<channel;
+		subog_id = data[1];
+		parent_side = channel;
+                ack_required = true;
+            }
+	    break;
         case IR_MSG_TYPE_SUB_OG_STRING:
-			{
-				msg_sub_og_seq_received |= 1<<channel;
-				memcpy(subog_str,data+1,data[1]+1);
+	    {
+		msg_sub_og_seq_received |= 1<<channel;
+		memcpy(subog_str,data+1,data[1]+1);
                                 
-                                if( parent_side >= SIDE_COUNT )
-                                    parent_side = channel;
-				
-                                if( current_state != LEADREPAIR && current_state != REPAIR )
-				{
-					subog_str[subog_str[0]] |= type<<4;
-					subog_str[subog_str[0]] |= channel<<6;
-				}
+                // if module has not yet entered a repair state
+                if( parent_side >= SIDE_COUNT )
+                {
+                    parent_side = channel;		
+		    subog_str[subog_str[0]] |= type<<4;     // 4:5
+		    subog_str[subog_str[0]] |= channel<<6;  // 5:6
+		}
 
-				ack_required = true;
-				printf("%d Sub-organism string received\n",timestamp);
-				PrintSubOGString();
-			}
-			break;
+		printf("%d Sub-organism string received\n",timestamp);
+		PrintSubOGString(subog_str);
+		ack_required = true;
+            }
+	    break;
         case IR_MSG_TYPE_SCORE_STRING:
 			{
 				msg_score_seq_received |= 1<<channel;
@@ -424,19 +423,23 @@ void Robot::SendSubOGStr( int channel, uint8_t *seq )
 	    // copy previous string
 	    memcpy(buf+1,seq+1,seq[0]);
 
-	    buf[buf[0]] = 0;
-
-	    if( channel != parent_side )
+            // if sending string back to parent
+            if( channel == parent_side )
+            {
+                // add zeros
+	        buf[buf[0]] = 0;
+            }
+            else
 	    {
-	    	buf[buf[0]] |= type;	// 0:1
-	    	buf[buf[0]] |= channel<<2; // 2:3
+	        buf[buf[0]] = 0;
+	    	buf[buf[0]] |= type;	    // 0:1
+	    	buf[buf[0]] |= channel<<2;  // 2:3
 	    }
 
 	    BroadcastIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+1, true);
 
-            printf("%d module failed",timestamp);
-	    printf("%d Sending sug-og string\n",timestamp);
-    	PrintSubOGString();
+	    printf("%d Sending sub-og string\n",timestamp);
+    	    PrintSubOGString(buf);
 
 	}
 }

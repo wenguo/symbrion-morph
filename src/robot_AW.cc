@@ -19,6 +19,8 @@ RobotAW::RobotAW():Robot()
     IR_PULSE1 = 0x2;
     IR_PULSE2 = 0x4;
     printf("Consctruction RobotAW\n");
+
+    short_delay = 0;
 }
 
 RobotAW::~RobotAW()
@@ -892,9 +894,9 @@ void RobotAW::InOrganism()
     if(timestamp == 40)
 	 {
 		 for(int i=0;i<NUM_IRS;i++)
-			 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
+			 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
 
-		 docked[0] = true;
+		 docked[para.debug.para[0]] = true;
 	 }
 
     // for self-repair - needs to be replicated for all
@@ -918,8 +920,15 @@ void RobotAW::InOrganism()
 		printf("%d Module failed!\n",timestamp);
 
 	}
-	else if( msg_failed_received )
-	{
+	//else if( msg_failed_received )
+        else if( para.debug.para[1] > 0 )
+        {
+                // for testing only //
+                subog_id = 2;
+                parent_side = para.debug.para[1];
+                //////////////////////
+
+
 		msg_failed_received = 0;
 
 		wait_side = FRONT;
@@ -929,7 +938,7 @@ void RobotAW::InOrganism()
 		subog_str[0] = 0;
 
 		// Find the first side at which another neighbour is docked
-		while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == subog_id))
+		while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
 			wait_side++;
 
 		if( wait_side < SIDE_COUNT )
@@ -942,7 +951,10 @@ void RobotAW::InOrganism()
 	}
 	else if( msg_sub_og_seq_received )
 	{
-		msg_sub_og_seq_received = 0;
+	        if( short_delay++ < 30 )
+                    return;
+
+                msg_sub_og_seq_received = 0;
 		repair_stage = STAGE0;
 
 		// Find the first side at which another neighbour is docked
@@ -954,7 +966,12 @@ void RobotAW::InOrganism()
 
 		last_state = INORGANISM;
 		current_state = REPAIR;
-	}
+	
+                
+		for( int i=0; i<SIDE_COUNT; i++ )
+                    SetRGBLED(i, YELLOW, YELLOW, YELLOW, YELLOW);
+
+        }
 	//////// END self-repair ////////
 
 	else
@@ -1209,7 +1226,9 @@ void RobotAW::LeadRepair()
 	// and determine shape of sub-organism
 	if( repair_stage == STAGE0 )
 	{
-    	while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == subog_id))
+        
+
+    	while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
     		wait_side++;
 
 		if( wait_side < SIDE_COUNT )
@@ -1218,6 +1237,11 @@ void RobotAW::LeadRepair()
 			{
 				wait_side++;
 				msg_sub_og_seq_received = 0;
+                                
+				// don't send message back to failed module
+				if( wait_side == (int) parent_side )
+					wait_side++;
+
 				SendSubOGStr( wait_side, subog_str );
 			}
 		}
@@ -1225,8 +1249,7 @@ void RobotAW::LeadRepair()
 		{
 			wait_side = FRONT;
 	    	repair_stage = STAGE1;
-	    	printf("%d Shape determined\n",timestamp );
-	    	PrintSubOGString();
+	    	printf("%d Shape determined, entering STAGE1\n",timestamp );
 		}
 	}
 	// TODO: move away from failed module
@@ -1269,6 +1292,9 @@ void RobotAW::Repair()
 	if( repair_stage == STAGE0 )
 	{
 
+                
+
+
 		while( wait_side < SIDE_COUNT && ( wait_side == parent_side || !docked[wait_side] ) )
 			wait_side++;
 
@@ -1293,6 +1319,7 @@ void RobotAW::Repair()
 			own_score = -1;
 			wait_side = FRONT;
 			repair_stage = STAGE1;
+                        printf("%d Shape determined, entering STAGE1\n",timestamp);
 		}
 	}
 	// TODO: move away from failed module
