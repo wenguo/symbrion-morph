@@ -87,6 +87,7 @@ Robot::Robot()
         recruitment_stage[i] = STAGE0;
         docking_motor_operating_count[i]=0;
         docking_motors_status[i] = OPENED;
+        neighbours_IP[i] = 0;
     }
 
 
@@ -174,6 +175,8 @@ bool Robot::Init(const char * optionfile)
     InitLog();
 
     InitHardware();
+
+    my_IP = Ethernet::GetLocalIP();
 
     pthread_attr_t attributes;
     pthread_attr_init(&attributes);
