@@ -49,13 +49,6 @@ class RobotAW:public Robot, public ActiveWheel
         virtual void MacroLocomotion();
         virtual void Debugging();
 
-        // for self-repair
-        virtual void Failed();
-        virtual void Support();
-        virtual void LeadRepair();
-        virtual void Repair();
-        virtual void BroadcastScore();
-
         virtual void Log();
     private:
         void Avoidance();

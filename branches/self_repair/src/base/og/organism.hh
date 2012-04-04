@@ -153,6 +153,7 @@ class OrganismSequence
 
         rt_status Scan(std::vector<Element>&, std::vector<unsigned int>&) const;
         rt_status getBranch(OrganismSequence&, const robot_side&);
+        rt_status getBranch(OrganismSequence&, const robot_side&, bool );
         const Symbol getSymbol(const unsigned int& pos) const;
         inline unsigned int Size() const {return encoded_seq.size();}
         const unsigned int Edges() const;

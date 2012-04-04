@@ -372,6 +372,7 @@ rt_status OrganismSequence::fillBranches(const OrganismSequence& og_seq, std::ve
     return ret;
 }
 
+
 rt_status OrganismSequence::getBranch(OrganismSequence& branch, const robot_side& side)
 {
     std::vector<Element> eList;
@@ -403,6 +404,41 @@ rt_status OrganismSequence::getBranch(OrganismSequence& branch, const robot_side
     }
 
     return ret;
+}
+
+
+// Same as rt_status getBranch(OrganismSequence&, const robot_side&)
+// but with the option to include or exclude the root of the branch
+rt_status OrganismSequence::getBranch(OrganismSequence &branch, const robot_side& side, bool inclusive )
+{
+
+	std::vector<Element> eList;
+	std::vector<unsigned int> edges;
+	rt_status ret = Scan(eList, edges);
+
+	std::vector<Element>::iterator start, end;
+	start = eList.begin();
+
+	ret.status = RT_OK_EMPTY_BRANCH;
+	ret.data = 0;
+	while(start!=eList.end())
+	{
+		end = eList.begin() + start->pair_pos + 1;
+		if(end > eList.end())
+			break;
+
+		if( start->symbol.side1 ==side)
+		{
+			std::vector<Element> e;
+			inclusive ? e.assign(start, end) : e.assign(start+1,end-1);
+			branch = OrganismSequence(e);
+			ret.status = RT_OK;
+			ret.data = e.size();
+		}
+		start = end;
+	}
+
+	return ret;
 }
 
 
@@ -511,25 +547,24 @@ bool OrganismSequence::SingleNodeSequence(const OrganismSequence& og_seq)
         return false;
 }
 
+// Returns the number of modules (excluding the root) in the largest
+// common sub-tree of seq1 and seq2. For trees larger than 1 module.
 uint8_t OrganismSequence::maxCommonTreeSize( OrganismSequence& seq1, OrganismSequence& seq2 )
 {
 
 	uint8_t s = 0;
 	for( int i=0; i<SIDE_COUNT; i++ )
-	{       
-                
-		OrganismSequence b1, b2;
-		if( seq1.Encoded_Seq().size() > 0 )
-                seq1.getBranch(b1, (robot_side) i);
-                if( seq2.Encoded_Seq().size() > 0 )
-		seq2.getBranch(b2, (robot_side) i);
+	{
+		OrganismSequence b1,b2;
+		seq1.getBranch(b1, (robot_side) i, true);
+		seq2.getBranch(b2, (robot_side) i, true);
 
 		if( b1.Encoded_Seq().size() > 0 && b2.Encoded_Seq().size() > 0 &&
 		    b1.Encoded_Seq().front() == b2.Encoded_Seq().front() )
 		{
-			OrganismSequence b3, b4;
-			OrganismSequence::extractChildSequence(b1,b3,0,false);
-			OrganismSequence::extractChildSequence(b2,b4,0,false);
+			OrganismSequence b3,b4;
+			seq1.getBranch(b3, (robot_side) i, false);
+			seq2.getBranch(b4, (robot_side) i, false);
 
 			s += 1+maxCommonTreeSize( b3, b4 );
 		}

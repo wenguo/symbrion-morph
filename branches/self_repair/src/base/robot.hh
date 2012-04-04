@@ -94,12 +94,15 @@ class Robot
     virtual void MacroLocomotion()=0;
     virtual void Debugging()=0;
     virtual void Log()=0;
+
     // for self-repair
-    virtual void Failed()=0;
-    virtual void Support()=0;
-    virtual void LeadRepair()=0;
-    virtual void Repair()=0;
-    virtual void BroadcastScore()=0;
+    bool StartRepair();
+    void Failed();
+    void Support();
+    void LeadRepair();
+    void Repair();
+    void BroadcastScore();
+
 
     std::string ClockString();
 
