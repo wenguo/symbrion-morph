@@ -516,9 +516,12 @@ uint8_t OrganismSequence::maxCommonTreeSize( OrganismSequence& seq1, OrganismSeq
 
 	uint8_t s = 0;
 	for( int i=0; i<SIDE_COUNT; i++ )
-	{
+	{       
+                
 		OrganismSequence b1, b2;
-		seq1.getBranch(b1, (robot_side) i);
+		if( seq1.Encoded_Seq().size() > 0 )
+                seq1.getBranch(b1, (robot_side) i);
+                if( seq2.Encoded_Seq().size() > 0 )
 		seq2.getBranch(b2, (robot_side) i);
 
 		if( b1.Encoded_Seq().size() > 0 && b2.Encoded_Seq().size() > 0 &&

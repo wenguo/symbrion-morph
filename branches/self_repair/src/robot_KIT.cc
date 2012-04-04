@@ -952,8 +952,10 @@ void RobotKIT::InOrganism()
 			SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
 
 		docked[para.debug.para[0]] = true;
-        msg_subog_seq_expected = 1<<para.debug.para[0];
-	}
+                msg_subog_seq_expected = 1<<para.debug.para[0];
+	        target = para.og_seq_list[0];
+                std::cout << "%d Target Shape: " << target << std::endl;
+        }
 
 	// for self-repair - needs to be replicated for all
 	// other states from which self-repair is possible.
@@ -976,7 +978,7 @@ void RobotKIT::InOrganism()
 
 	}
 	//else if( msg_failed_received )
-	else if( para.debug.para[1] > 0 )
+	else if( para.debug.para[1] >= 0 )
 	{
 		// for testing only //
 		subog_id = 2;
@@ -1342,10 +1344,12 @@ void RobotKIT::LeadRepair()
 
 			// convert sub-organism string to OrganismSequence
 			subog.reBuild(subog_str+1,subog_str[0]);
-			best_score = own_score = calculateSubOGScore( subog, target );
-
-            std::cout << "OrganismSequence: " << subog << " score: " << own_score << std::endl;
-
+                        //best_score = own_score = calculateSubOGScore( subog, target );
+                        //std::cout << "OrganismSequence: " << subog << " score: " << own_score << std::endl;
+                        subog = OrganismSequence::getNextSeedSeq(target);
+                        std::cout << "subog: " << subog << " target: " << target << std::endl;
+                        
+                        return;
             wait_side = 0;
 			// Find next neighbour (not including the failed module)
 			while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
@@ -1480,7 +1484,8 @@ void RobotKIT::Repair()
 
 			// convert sub-organism string to OrganismSequence
 			subog.reBuild(subog_str+1,subog_str[0]);
-			subog = OrganismSequence::getNextSeedSeq(subog);
+			return;
+                        subog = OrganismSequence::getNextSeedSeq(subog);
 			own_score = calculateSubOGScore( subog, target );
 
 			own_score > best_score ? best_score = own_score : own_score = 0;
