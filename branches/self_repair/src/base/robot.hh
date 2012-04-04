@@ -112,7 +112,7 @@ class Robot
     void SendFailureMsg( int i );
     void SendSubOGStr( int i, uint8_t *seq_str );
     void SendScoreStr( int i, const OrganismSequence &seq, int score );
-    uint32_t calculateScore( OrganismSequence &seq1, OrganismSequence &seq2 );
+    uint32_t calculateSubOGScore( OrganismSequence &seq1, OrganismSequence &seq2 );
 
     void SendBranchTree(int i, const OrganismSequence& seq);
     bool isNeighboured(Robot *);
