@@ -14,6 +14,11 @@ RobotKIT::RobotKIT():Robot(),KaBot()
     board_dev_num[BACK] = KaBot::REAR;
     board_dev_num[LEFT] = KaBot::LEFT;
 
+    robot_side_dev_num[KaBot::FRONT] = FRONT;
+    robot_side_dev_num[KaBot::RIGHT] = RIGHT;
+    robot_side_dev_num[KaBot::REAR] = BACK;
+    robot_side_dev_num[KaBot::LEFT] = LEFT;
+
     LED0 = 0x1;
     LED1 = 0x2;
     LED2 = 0x4;
