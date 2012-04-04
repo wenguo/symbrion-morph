@@ -72,7 +72,7 @@ void * Robot::IRCommTxThread(void * para)
 void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 {
     int size = msg.get()->GetDataLength();
-    uint8_t channel = msg.get()->GetSender();
+    uint8_t channel = robot_side_dev_num[msg.get()->GetSender()];
     char * data = (char *)msg.get()->GetData();
     /* printf("%d received message %d: ", channel, size);
        for(int i=0;i<size;i++)
