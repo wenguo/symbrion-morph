@@ -311,6 +311,7 @@ class Robot
     pthread_t ircomm_tx_thread;
 
     uint8_t board_dev_num[SIDE_COUNT]; //store the right spi device number for robot_side
+    uint8_t robot_side_dev_num[SIDE_COUNT]; //store the corresponding robot_side of spi device
 
     uint8_t LED0;
     uint8_t LED1;
