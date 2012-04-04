@@ -231,14 +231,16 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 	    break;
         case IR_MSG_TYPE_SCORE_STRING:
 			{
-				msg_score_seq_received |= 1<<channel;
+				if( msg_score_seq_expected & 1<<channel )
+				{
+					msg_score_seq_expected &= ~(1<<channel);
+					msg_score_seq_expected |= 1<<channel;
 
-				// TODO: extract substring and score
-				//best_score =
-				//subog =
-
-				// Transform sequence to the perspective of current module
-				//subog.nextSeed();
+					// extract subog_str and best_score
+					memcpy(subog_str,data+1,data[1]+1);
+					best_score = atoi(&data[data[1]+2]);
+				}
+				ack_required = true;
 			}
         	break;
         case IR_MSG_TYPE_PROPAGATED:
@@ -449,30 +451,29 @@ void Robot::SendSubOGStr( int channel, uint8_t *seq )
 	}
 }
 
-void Robot::SendScoreStr( int channel, const OrganismSequence& seq, int score )
+void Robot::SendScoreStr( int channel, const OrganismSequence& seq, uint8_t score )
 {
-	/*
-	if( docked[channel] && channel < SIDE_COUNT )
+
+	if( channel < SIDE_COUNT && docked[channel] )
 	{
-	    uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
-	    buf[0] = seq.Size()+2;
+		uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
+		buf[0] = seq.Size();
 
-	    if(seq.Size() > MAX_IR_MESSAGE_SIZE-2)
-	    {
-	        printf("Warning: only %d of %d bytes will be sent (SendScoreStr)\n", MAX_IR_MESSAGE_SIZE-2, seq.Size()+2);
-	        buf[0] = MAX_IR_MESSAGE_SIZE - 2;
-	    }
 
-	    for(int i=0; i < buf[0];i++)
+		if( buf[0] > MAX_IR_MESSAGE_SIZE-2 )
+		{
+			printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, (int) buf[0] );
+			buf[0] = MAX_IR_MESSAGE_SIZE - 2;
+		}
+
+	    for(unsigned int i=0; i < buf[0];i++)
 	        buf[i+1] =seq.Encoded_Seq()[i].data;
 
-	    // TODO: add score to the end of the string
+	    buf[buf[0]+1] = score;
 
-	    BroadcastIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0] + 1, false);
-
+	    BroadcastIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0] + 2, true);
 
 	}
-	*/
 
 }
 

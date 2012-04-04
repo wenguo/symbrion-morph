@@ -63,10 +63,6 @@ Robot::Robot()
     RegisterBehaviour(&Robot::Repair, REPAIR);
     RegisterBehaviour(&Robot::BroadcastScore, BROADCASTSCORE);
 
-
-
-
-
     for (int i = 0; i < NUM_IRS; i++)
     {
         reflective[i]=0;
@@ -446,6 +442,24 @@ bool Robot::isNeighboured(Robot * r)
 
     return false;
 }
+
+uint8_t Robot::calculateSubOGScore( OrganismSequence &seq1, OrganismSequence &seq2 )
+{
+
+	// get size of largest common sub-tree
+	uint8_t score = OrganismSequence::maxCommonTreeSize( seq1, seq2 );
+
+	// Add one if the seed matches
+	if( seq1.Encoded_Seq().size() > 0 && seq2.Encoded_Seq().size() > 0 )
+	{
+		if( seq1.Encoded_Seq().front().type1 == seq2.Encoded_Seq().front().type1 )
+			score++;
+	}
+
+	return score;
+
+}
+
 
 
 /*

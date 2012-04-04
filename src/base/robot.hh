@@ -101,8 +101,6 @@ class Robot
     virtual void Repair()=0;
     virtual void BroadcastScore()=0;
 
-
-
     std::string ClockString();
 
     //  void BroadcastMessage(Message); //broadcast message via wired communication bus
@@ -111,8 +109,8 @@ class Robot
     // for self-repair
     void SendFailureMsg( int i );
     void SendSubOGStr( int i, uint8_t *seq_str );
-    void SendScoreStr( int i, const OrganismSequence &seq, int score );
-    uint32_t calculateSubOGScore( OrganismSequence &seq1, OrganismSequence &seq2 );
+    void SendScoreStr( int i, const OrganismSequence &seq, uint8_t score );
+    uint8_t calculateSubOGScore( OrganismSequence &seq1, OrganismSequence &seq2 );
 
     void SendBranchTree(int i, const OrganismSequence& seq);
     bool isNeighboured(Robot *);
