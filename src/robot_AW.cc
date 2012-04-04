@@ -7,15 +7,15 @@ RobotAW::RobotAW():Robot()
     name = strdup("RobotAW");
     type = ROBOT_AW;
 
-    board_dev_num[::FRONT] = ActiveWheel::FRONT;
-    board_dev_num[::RIGHT] = ActiveWheel::RIGHT;
-    board_dev_num[::BACK] = ActiveWheel::REAR;
-    board_dev_num[::LEFT] = ActiveWheel::LEFT;
+    board_dev_num[::FRONT] = ActiveWheel::RIGHT; 
+    board_dev_num[::RIGHT] = ActiveWheel::REAR; 
+    board_dev_num[::BACK] = ActiveWheel::LEFT; 
+    board_dev_num[::LEFT] = ActiveWheel::FRONT;   
 
-    robot_side_dev_num[ActiveWheel::FRONT] = ::FRONT;
-    robot_side_dev_num[ActiveWheel::RIGHT] = ::RIGHT;
-    robot_side_dev_num[ActiveWheel::REAR] = ::BACK;
-    robot_side_dev_num[ActiveWheel::LEFT] = ::LEFT;
+    robot_side_dev_num[ActiveWheel::RIGHT] = ::FRONT;
+    robot_side_dev_num[ActiveWheel::REAR] = ::RIGHT;
+    robot_side_dev_num[ActiveWheel::LEFT] = ::BACK;
+    robot_side_dev_num[ActiveWheel::FRONT] = ::LEFT;
 
     LED0 = 0x1;
     LED1 = 0x4;
@@ -902,7 +902,9 @@ void RobotAW::InOrganism()
 
     	docked[para.debug.para[0]] = true;
         msg_subog_seq_expected = 1<<para.debug.para[0];
-	}
+        target = para.og_seq_list[0];
+        std::cout << "%d Target Shape: " << target << std::endl;
+    }
 
     // for self-repair - needs to be replicated for all
     // other states from which self-repair is possible.
@@ -954,8 +956,8 @@ void RobotAW::InOrganism()
 
 		// Turn side at which failed module detected red
 		SetRGBLED(parent_side,RED,RED,RED,RED);
-
-		last_state = INORGANISM;
+		
+                last_state = INORGANISM;
 		current_state = LEADREPAIR;
 
 		printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d\n",timestamp,subog_id);
@@ -1298,7 +1300,7 @@ void RobotAW::LeadRepair()
 			subog.reBuild(subog_str+1,subog_str[0]);
 			best_score = own_score = calculateSubOGScore( subog, target );
         
-            std::cout << "OrganismSequence: " << subog << " score: " << own_score << std::endl;
+            std::cout << "OrganismSequence: " << subog << " score: " << (int) own_score << std::endl;
 
             wait_side = 0;
 			// Find next neighbour (not including the failed module)
@@ -1439,7 +1441,8 @@ void RobotAW::Repair()
 
 			// convert sub-organism string to OrganismSequence
 			subog.reBuild(subog_str+1,subog_str[0]);
-			subog = OrganismSequence::getNextSeedSeq(subog);
+			return;
+                        subog = OrganismSequence::getNextSeedSeq(subog);
 			own_score = calculateSubOGScore( subog, target );
 
 			own_score > best_score ? best_score = own_score : own_score = 0;
