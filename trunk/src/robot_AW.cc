@@ -12,6 +12,11 @@ RobotAW::RobotAW():Robot()
     board_dev_num[BACK] = ActiveWheel::REAR;
     board_dev_num[LEFT] = ActiveWheel::LEFT;
 
+    robot_side_dev_num[ActiveWheel::FRONT] = FRONT;
+    robot_side_dev_num[ActiveWheel::RIGHT] = RIGHT;
+    robot_side_dev_num[ActiveWheel::REAR] = BACK;
+    robot_side_dev_num[ActiveWheel::LEFT] = LEFT;
+
     LED0 = 0x1;
     LED1 = 0x4;
     LED2 = 0x2;
