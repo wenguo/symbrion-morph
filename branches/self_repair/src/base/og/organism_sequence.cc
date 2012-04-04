@@ -264,11 +264,11 @@ rt_status OrganismSequence::Scan(const OrganismSequence& og_seq, std::vector<Org
  * Changes the order of the sequence so that the
  * second module replaces the first as the seed
  */
-void OrganismSequence::nextSeed()
+OrganismSequence OrganismSequence::getNextSeedSeq( OrganismSequence &seq )
 {
 	std::vector<Element> eList;
 	std::vector<unsigned int> edges;
-	Scan(*this, eList, edges);
+	Scan(seq, eList, edges);
 
 	// get previous first element
 	Element first = eList.front();
@@ -288,7 +288,7 @@ void OrganismSequence::nextSeed()
 	// move '0000' to end
 	eList.push_back( Element( Symbol(0) ) ) ;
 
-	//TODO: rebuild sequence from eList
+	return OrganismSequence(eList);
 
 }
 
@@ -510,6 +510,31 @@ bool OrganismSequence::SingleNodeSequence(const OrganismSequence& og_seq)
     else
         return false;
 }
+
+uint8_t OrganismSequence::maxCommonTreeSize( OrganismSequence& seq1, OrganismSequence& seq2 )
+{
+
+	uint8_t s = 0;
+	for( int i=0; i<SIDE_COUNT; i++ )
+	{
+		OrganismSequence b1, b2;
+		seq1.getBranch(b1, (robot_side) i);
+		seq2.getBranch(b2, (robot_side) i);
+
+		if( b1.Encoded_Seq().size() > 0 && b2.Encoded_Seq().size() > 0 &&
+		    b1.Encoded_Seq().front() == b2.Encoded_Seq().front() )
+		{
+			OrganismSequence b3, b4;
+			OrganismSequence::extractChildSequence(b1,b3,0,false);
+			OrganismSequence::extractChildSequence(b2,b4,0,false);
+
+			s += 1+maxCommonTreeSize( b3, b4 );
+		}
+	}
+	return s;
+
+}
+
 
 
 rt_status OrganismSequence::removeChildSequence( const OrganismSequence& orig_seq, OrganismSequence &og_seq, const unsigned int& edge_pos)

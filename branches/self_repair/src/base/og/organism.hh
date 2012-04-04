@@ -141,6 +141,7 @@ class OrganismSequence
         static rt_status checkNodeConnection(const OrganismSequence& og_seq, const unsigned int& edge_pos, const bool& parentNode);
         static bool SingleNodeSequence(const OrganismSequence& og_seq);
 
+		static uint8_t maxCommonTreeSize( OrganismSequence& seq1, OrganismSequence& seq2 );
 
         static rt_status changeNodeType(OrganismSequence&, const robot_type&, const unsigned int& edge_pos, const bool&);
         static rt_status addNode(OrganismSequence&, const unsigned int& edge_pos, const bool& parentNode, const robot_type& type, const robot_side& parentSide, const robot_side& childSide);
@@ -148,7 +149,7 @@ class OrganismSequence
         static rt_status removeSequence(OrganismSequence&, const unsigned int& edge_pos, const bool&);
 
         // for self-repair
-        void nextSeed();
+        static OrganismSequence getNextSeedSeq(OrganismSequence&);
 
         rt_status Scan(std::vector<Element>&, std::vector<unsigned int>&) const;
         rt_status getBranch(OrganismSequence&, const robot_side&);

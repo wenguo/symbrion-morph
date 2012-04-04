@@ -9,15 +9,15 @@ RobotKIT::RobotKIT():Robot(),KaBot()
     type = ROBOT_KIT;
 
     //point to right SPI device number
-    board_dev_num[FRONT] = KaBot::FRONT;
-    board_dev_num[RIGHT] = KaBot::RIGHT;
-    board_dev_num[BACK] = KaBot::REAR;
-    board_dev_num[LEFT] = KaBot::LEFT;
+    board_dev_num[::FRONT] = KaBot::FRONT;
+    board_dev_num[::RIGHT] = KaBot::RIGHT;
+    board_dev_num[::BACK] = KaBot::REAR;
+    board_dev_num[::LEFT] = KaBot::LEFT;
 
-    robot_side_dev_num[KaBot::FRONT] = FRONT;
-    robot_side_dev_num[KaBot::RIGHT] = RIGHT;
-    robot_side_dev_num[KaBot::REAR] = BACK;
-    robot_side_dev_num[KaBot::LEFT] = LEFT;
+    robot_side_dev_num[KaBot::FRONT] = ::FRONT;
+    robot_side_dev_num[KaBot::RIGHT] = ::RIGHT;
+    robot_side_dev_num[KaBot::REAR] = ::BACK;
+    robot_side_dev_num[KaBot::LEFT] = ::LEFT;
 
     LED0 = 0x1;
     LED1 = 0x2;
@@ -1315,6 +1315,7 @@ void RobotKIT::LeadRepair()
 	{
 		if( timestamp < move_start+move_delay )
 		{
+			// Flash LEDs whilst moving
 			int index;
 			index = (timestamp / 2) % 4;
 			for( int i=0; i<NUM_DOCKS; i++ )
@@ -1341,7 +1342,7 @@ void RobotKIT::LeadRepair()
 
 			// convert sub-organism string to OrganismSequence
 			subog.reBuild(subog_str+1,subog_str[0]);
-			//best_score = own_score = calculateSubOGScore( subog, target );
+			best_score = own_score = calculateSubOGScore( subog, target );
 
             std::cout << "OrganismSequence: " << subog << " score: " << own_score << std::endl;
 
@@ -1359,7 +1360,7 @@ void RobotKIT::LeadRepair()
 		}
 
 	}
-	// TODO: determine sub-organism score
+	// Determine sub-organism score
 	else if( repair_stage == STAGE2 )
 	{
 		// still waiting for some branches
@@ -1370,13 +1371,18 @@ void RobotKIT::LeadRepair()
 			{
 				if( msg_score_seq_received & 1<<wait_side )
 				{
+					// check if own_score no longer best
 					if( own_score < best_score ) own_score = 0;
 
 					do // Find next neighbour (not including the failed module)
 					{
 						wait_side++;
+					}
+					while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side));
 
-					}while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side));
+					// rebuild next sequence
+					subog.reBuild(subog_str+1,subog_str[0]);
+					subog = OrganismSequence::getNextSeedSeq(subog);
 
 					if( wait_side < SIDE_COUNT )
 						SendScoreStr( wait_side, subog, best_score );
@@ -1392,8 +1398,7 @@ void RobotKIT::LeadRepair()
 			repair_stage = STAGE0;
 			current_state = BROADCASTSCORE;
 			last_state = REPAIR;
-			printf("%d Score determined, entering BROADCASTSCORE\n",timestamp);
-
+			printf("%d Score determined (%d), entering BROADCASTSCORE\n",timestamp,best_score);
 		}
 	}
 
@@ -1414,10 +1419,10 @@ void RobotKIT::Repair()
 				if( msg_subog_seq_received & 1<<wait_side )
 				{
 					do // Find next neighbour (not including the parent module)
-                                        {
-                                            wait_side++;
-                                        }
-                                        while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side));
+					{
+						wait_side++;
+					}
+					while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side));
 
 					if( wait_side < SIDE_COUNT )
 						SendSubOGStr( wait_side, subog_str );
@@ -1447,54 +1452,56 @@ void RobotKIT::Repair()
 	else if( repair_stage == STAGE1 )
 	{
 
-		if( 1 )
+		if( !(msg_score_seq_received & 1<<parent_side) )
 		{
-
-                    int index;
-                    index = (timestamp / 2) % 4;
-                    for( int i=0; i<NUM_DOCKS; i++ )
-                    {
-                        switch(index)
-                        {
-                            case 0:
-                            case 1:
-                                SetRGBLED(i,BLUE,BLUE,BLUE,BLUE);
-                                break;
-                            case 2:
-                            case 3:
-                                SetRGBLED(i,0,0,0,0);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
+			int index;
+			index = (timestamp / 2) % 4;
+			for( int i=0; i<NUM_DOCKS; i++ )
+			{
+				switch(index)
+				{
+					case 0:
+					case 1:
+						SetRGBLED(i,BLUE,BLUE,BLUE,BLUE);
+						break;
+					case 2:
+					case 3:
+						SetRGBLED(i,0,0,0,0);
+						break;
+					default:
+						break;
+				}
+			}
 		}
 		else
 		{
-			if( msg_score_seq_received & 1<<parent_side )
-			{
-				own_score = calculateSubOGScore( subog, target );
-				own_score > best_score ? best_score = own_score : own_score = 0;
+			for( int i=0; i<NUM_DOCKS; i++ )
+				SetRGBLED(i,YELLOW,YELLOW,YELLOW,YELLOW);
 
-				// Find next neighbour (not including the parent module)
-				while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
-					wait_side++;
+			// convert sub-organism string to OrganismSequence
+			subog.reBuild(subog_str+1,subog_str[0]);
+			subog = OrganismSequence::getNextSeedSeq(subog);
+			own_score = calculateSubOGScore( subog, target );
 
-				if( wait_side < SIDE_COUNT )
-					SendScoreStr( wait_side, subog, best_score );
+			own_score > best_score ? best_score = own_score : own_score = 0;
 
-				repair_stage = STAGE2;
-				repair_start = timestamp;
-				msg_score_seq_received = 0;
-				msg_score_seq_expected |= 1<<wait_side;
-			}
+			wait_side = 0;
+			// Find next neighbour (not including the parent module)
+			while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
+				wait_side++;
+
+			if( wait_side < SIDE_COUNT )
+				SendScoreStr( wait_side, subog, best_score );
+
+			repair_stage = STAGE2;
+			repair_start = timestamp;
+			msg_score_seq_received = 0;
+			msg_score_seq_expected |= 1<<wait_side;
 		}
 
 	}
-	// TODO: determine sub-organism score
 	else if( repair_stage == STAGE2 )
 	{
-
 		// still waiting for some branches
 		if( wait_side < SIDE_COUNT )
 		{
@@ -1505,9 +1512,11 @@ void RobotKIT::Repair()
 				{
 					if( own_score < best_score ) own_score = 0;
 
-					// Find next neighbour (not including the parent module)
-					while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
+					do // Find next neighbour (not including the parent module)
+					{
 						wait_side++;
+					}
+					while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side));
 
 					if( wait_side < SIDE_COUNT )
 						SendScoreStr( wait_side, subog, best_score );
@@ -1529,7 +1538,6 @@ void RobotKIT::Repair()
 				repair_stage = STAGE0;
 				current_state = BROADCASTSCORE;
 				last_state = REPAIR;
-				printf("%d Score determined, entering BROADCASTSCORE\n",timestamp);
 			}
 		}
 	}
