@@ -893,9 +893,10 @@ void RobotAW::InOrganism()
     if(timestamp == 40)
     {
     	for(int i=0;i<NUM_IRS;i++)
-    		SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+    		SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
 
     	docked[para.debug.para[0]] = true;
+        msg_subog_seq_expected = 0xF;
 	}
 
     // for self-repair - needs to be replicated for all
@@ -928,7 +929,7 @@ void RobotAW::InOrganism()
 
 		msg_failed_received = 0;
 
-		wait_side = FRONT;
+		wait_side = 0;
 		repair_stage = STAGE0;
 		subog.Clear();
 		best_score = 0;
@@ -943,6 +944,12 @@ void RobotAW::InOrganism()
 
 		last_state = INORGANISM;
 		current_state = LEADREPAIR;
+                msg_subog_seq_expected = 1<<wait_side;
+
+                for( int i=0; i<SIDE_COUNT; i++ )
+                    SetRGBLED(i,GREEN,GREEN,GREEN,GREEN);
+
+                SetRGBLED(parent_side,RED,RED,RED,RED);
 
 		printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d\n",timestamp,subog_id);
 	}
@@ -965,6 +972,7 @@ void RobotAW::InOrganism()
 		for( int i=0; i<SIDE_COUNT; i++ )
 			SetRGBLED(i, YELLOW, YELLOW, YELLOW, YELLOW);
 
+                msg_subog_seq_expected = 1<<wait_side;
 	}
 	//////// END self-repair ////////
 	else
@@ -1226,9 +1234,11 @@ void RobotAW::LeadRepair()
 			{
 				if( msg_subog_seq_received & 1<<wait_side )
 				{
-					// Find next neighbour (not including the failed module)
-					while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
-						wait_side++;
+                                        do // Find next neighbour (not including the failed module)
+                                        {
+                                            wait_side++;
+                                        }
+                                        while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side));
 
 					if( wait_side < SIDE_COUNT )
 						SendSubOGStr( wait_side, subog_str );
@@ -1244,21 +1254,45 @@ void RobotAW::LeadRepair()
 			repair_stage = STAGE1;
 			msg_subog_seq_expected = 0;
 			printf("%d Shape determined, entering STAGE1\n",timestamp );
-		}
+		        move_start = timestamp;
+                }
+
 
 	}
 	// TODO: move away from failed module
 	else if( repair_stage == STAGE1 )
 	{
-		if( 1 )
+		if( timestamp < move_start+move_delay )
 		{
-
+                    int index;
+                    index = (timestamp / 2) % 4;
+                    for( int i=0; i<NUM_DOCKS; i++ )
+                    {
+                        switch(index)
+                        {
+                            case 0:
+                            case 1:
+                                SetRGBLED(i,BLUE,BLUE,BLUE,BLUE);
+                                break;
+                            case 2:
+                            case 3:
+                                SetRGBLED(i,0,0,0,0);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
 		}
 		else
 		{
+                        for( int i=0; i<NUM_DOCKS; i++ )
+                            SetRGBLED(i,0,0,0,0);
+
 			// convert sub-organism string to OrganismSequence
 			subog.reBuild(subog_str+1,subog_str[0]);
-			best_score = own_score = calculateScore( subog, target );
+			//best_score = own_score = calculateScore( subog, target );
+        
+                        std::cout << "OrganismSequence: " << subog << std::endl;
 
 			// Find next neighbour (not including the failed module)
 			while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
@@ -1325,10 +1359,12 @@ void RobotAW::Repair()
 			if( !MessageWaitingAck(IR_MSG_TYPE_SUB_OG_STRING, wait_side) )
 			{
 				if( msg_subog_seq_received & 1<<wait_side )
-				{
-					// Find next neighbour (not including the parent module)
-					while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
-						wait_side++;
+				{       
+                                        do // Find next neighbour (not including parent module
+                                        {
+                                            wait_side++;    
+                                        }
+					while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side));
 
 					if( wait_side < SIDE_COUNT )
 						SendSubOGStr( wait_side, subog_str );
@@ -1360,6 +1396,24 @@ void RobotAW::Repair()
 		if( 1 )
 		{
 
+                    int index;
+                    index = (timestamp / 2) % 4;
+                    for( int i=0; i<NUM_DOCKS; i++ )
+                    {
+                        switch(index)
+                        {
+                            case 0:
+                            case 1:
+                                SetRGBLED(i,BLUE,BLUE,BLUE,BLUE);
+                                break;
+                            case 2:
+                            case 3:
+                                SetRGBLED(i,0,0,0,0);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
 		}
 		else
 		{

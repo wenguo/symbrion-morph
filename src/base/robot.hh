@@ -231,6 +231,8 @@ class Robot
     uint8_t repair_stage;
     uint32_t repair_start;
     uint16_t repair_delay;
+    uint32_t move_start;
+    uint16_t move_delay;
 
     uint32_t recover_count;
     uint32_t recruitment_signal_interval_count[NUM_DOCKS];

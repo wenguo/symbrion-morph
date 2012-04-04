@@ -28,7 +28,9 @@ Robot::Robot()
     parent_side = SIDE_COUNT;
     repair_stage = STAGE0;
     repair_start=0;
-    repair_delay=30;
+    repair_delay=50;
+    move_start=0;
+    move_delay=100;
 
     hinge_motor_status = LOWED;
     RGBLED_flashing = 0;
