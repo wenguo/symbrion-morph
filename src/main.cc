@@ -40,7 +40,7 @@ int main(int argc, char * argv[])
         return -1;
     }
 
-    RobotBase::RobotType robot_type = RobotBase::Initialize();
+    RobotBase::RobotType robot_type = RobotBase::Initialize("morph");
 
     //create robot object
     Robot * robot;
