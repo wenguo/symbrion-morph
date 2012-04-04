@@ -16,6 +16,7 @@
 #include <pthread.h>
 
 #include <comm/IRComm.h>
+#include <comm/Ethernet.h>
 #include "parameter.hh"
 #include "global.hh"
 #include "og/organism.hh"
@@ -54,6 +55,10 @@ class Robot
     uint32_t CheckIRLEDStatus(int channel, int led);
     void CheckDockingMotor();
     void CheckHingeMotor();
+    
+    void CheckEthCommunication();
+    void EthSendMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
+
 
     void BroadcastIRMessage(int channel, uint8_t type, bool ack_required = false);
     void BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required = false);
@@ -164,6 +169,7 @@ class Robot
     robot_callback_t behaviours[STATE_COUNT];
 
     void ProcessIRMessage(std::auto_ptr<Message>);
+    static void *ProcessEthMessage();
 
     protected:
 
@@ -315,6 +321,9 @@ class Robot
 
     uint8_t board_dev_num[SIDE_COUNT]; //store the right spi device number for robot_side
     uint8_t robot_side_dev_num[SIDE_COUNT]; //store the corresponding robot_side of spi device
+
+    uint32_t my_IP;
+    uint32_t neighbours_IP[SIDE_COUNT];
     
 
     uint8_t LED0;

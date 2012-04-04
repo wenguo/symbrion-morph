@@ -43,6 +43,8 @@ const char * irmessage_names[IR_MSG_TYPE_COUNT]={
     "Organism_Sequence",
     "Assembly_Info",
     "Assembly_Info_REQ",
+    "IP_Addr",
+    "IP_Addr_REQ",
     "Propagated",
     "Disassembling",
     "NewRobot_Joined",
