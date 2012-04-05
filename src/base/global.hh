@@ -138,6 +138,7 @@ enum irmsg_type_t {
     IR_MSG_TYPE_FAILED,
     IR_MSG_TYPE_SUB_OG_STRING,
     IR_MSG_TYPE_SCORE_STRING,
+    IR_MSG_TYPE_SCORE,
 
     IR_MSG_TYPE_ACK,              //followed by acknowledged message type
     IR_MSG_TYPE_COUNT

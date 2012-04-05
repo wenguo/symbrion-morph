@@ -547,8 +547,7 @@ bool OrganismSequence::SingleNodeSequence(const OrganismSequence& og_seq)
         return false;
 }
 
-// Returns the number of modules (excluding the root) in the largest
-// common sub-tree of seq1 and seq2. For trees larger than 1 module.
+// Returns the number of modules (excluding the root) in the largest common sub-tree of seq1 and seq2
 uint8_t OrganismSequence::maxCommonTreeSize( OrganismSequence& seq1, OrganismSequence& seq2 )
 {
 

@@ -13,7 +13,7 @@ uint8_t Robot::calculateSubOGScore( OrganismSequence &seq1, OrganismSequence &se
 	// get size of largest common sub-tree
 	uint8_t score = OrganismSequence::maxCommonTreeSize( seq1, seq2 );
 
-	// Add one if the seed matches
+	// Add one if the root matches
 	if( seq1.Encoded_Seq().size() > 0 && seq2.Encoded_Seq().size() > 0 )
 	{
 		if( seq1.Encoded_Seq().front().type1 == seq2.Encoded_Seq().front().type1 )
@@ -116,10 +116,10 @@ void Robot::LeadRepair()
 		// still waiting for some branches
 		if( wait_side < SIDE_COUNT )
 		{      
-                        // not waiting for acknowledgment from the previous message
+            // not waiting for acknowledgment from the previous message
 			if( !MessageWaitingAck(wait_side, IR_MSG_TYPE_SUB_OG_STRING) )
 			{
-                                if( msg_subog_seq_received & 1<<wait_side )
+                if( msg_subog_seq_received & 1<<wait_side )
 				{
 					do // Find next neighbour (not including the failed module)
 					{
@@ -148,7 +148,7 @@ void Robot::LeadRepair()
 	else if( repair_stage == STAGE1 )
 	{
 		// Flash LEDs whilst moving
-		if( timestamp < move_start+move_delay )
+		if( timestamp < move_start+move_duration )
 		{
 			int index;
 			index = (timestamp / 2) % 4;
@@ -229,14 +229,73 @@ void Robot::LeadRepair()
 		else
 		{
 			wait_side = 0;
-			repair_stage = STAGE0;
-			current_state = BROADCASTSCORE;
-			last_state = REPAIR;
-			printf("%d Score determined (%d), entering BROADCASTSCORE\n",timestamp,best_score);
+			repair_stage = STAGE3;
+			printf("%d Score determined (%d), entering STAGE3\n",timestamp,best_score);
 
 			for( int i=0; i<NUM_DOCKS; i++ )
 				SetRGBLED(i,MAGENTA,MAGENTA,MAGENTA,MAGENTA);
 
+			best_id = subog_id;
+			PropagateScore( best_id, best_score, parent_side );
+
+		}
+	}
+	// TODO: Broadcast and listen for sub-organism scores
+	else if( repair_stage == STAGE3 )
+	{
+		if( timestamp < broadcast_start+broadcast_duration )
+		{
+			// Broadcast
+			if( timestamp % broadcast_period == 0 )
+			{
+				BroadcastScore( parent_side, best_score, best_id );
+			}
+			// Listen
+			else
+			{
+				// until a reshaping message is received
+				//	- listen for sub-organism scores
+				if( !(msg_reshaping_received & 1<<parent_side) )
+				{
+					int new_score_side = -1;
+					for( int i=0; i<SIDE_COUNT; i++ )
+					{
+						if( msg_score_received & 1<<i && new_id[i] != best_id )
+						{
+							msg_score_received &= ~(1<<i);
+
+							if( new_score[i] > best_score ||
+							  ( new_score[i] == best_score && new_id[i] < best_id) )
+							{
+								best_score = new_score[i];
+								best_id = new_id[i];
+								new_score_side = i;
+							}
+
+							new_score[i] = 0;
+							new_id[i] = SIDE_COUNT;
+						}
+					}
+
+					// If best score has changed, propagate messages to every
+					// side - bar that which the new best score came from
+					if( new_score_side > 0 )
+						PropagateScore( best_id, best_score, new_score_side );
+				}
+			}
+		}
+		else
+		{
+
+			// If this is the winning organism
+			if( best_id == subog_id )
+				printf("%d This is the winning organism\n", timestamp );
+			else
+				printf("%d This is NOT the winning organism\n", timestamp );
+
+			current_state = RESHAPING;
+			last_state = LEADREPAIR;
+			printf("%d negotiation finished, entering RESHAPING\n",timestamp);
 		}
 	}
 }
@@ -282,12 +341,12 @@ void Robot::Repair()
 		{
 			// make sure enough time has passed before
 			// sending message back to parent module
-			if( timestamp > repair_start+repair_delay )
+			if( timestamp > repair_start+repair_duration )
 			{
 				SendSubOGStr( parent_side, subog_str );
 
 				wait_side = 0;
-				own_score = -1;
+				own_score = 0; // was -1
 				repair_stage = STAGE1;
 				msg_score_seq_expected = 1 << parent_side;
 				printf("%d Shape determined, entering STAGE1\n",timestamp);
@@ -298,6 +357,7 @@ void Robot::Repair()
 	else if( repair_stage == STAGE1 )
 	{
 
+		// Flash LEDs to signify that robots are moving
 		if( !(msg_score_seq_received & 1<<parent_side) )
 		{
 			int index;
@@ -376,25 +436,63 @@ void Robot::Repair()
 		{
 			// make sure enough time has passed before
 			// sending message back to parent module
-			if( timestamp > repair_start+repair_delay )
+			if( timestamp > repair_start+repair_duration )
 			{
 				SendScoreStr( parent_side, subog, best_score );
 
 				wait_side = 0;
-				repair_stage = STAGE0;
-				current_state = BROADCASTSCORE;
-				last_state = REPAIR;
+				repair_stage = STAGE3;
+
+				printf("%d Entering STAGE3\n",timestamp);
+
+				for( int i=0; i<NUM_DOCKS; i++ )
+					SetRGBLED(i,WHITE,WHITE,WHITE,WHITE);
 			}
+		}
+	}
+	// Listen for sub-organism scores
+	else if( repair_stage == STAGE3 )
+	{
+		// until a reshaping message is received
+		//	- listen for sub-organism scores
+		if( !(msg_reshaping_received & 1<<parent_side) )
+		{
+			int new_score_side = -1;
+			for( int i=0; i<SIDE_COUNT; i++ )
+			{
+				if( msg_score_received & 1<<i && new_id[i] != best_id )
+				{
+					msg_score_received &= ~(1<<i);
+
+					if( new_score[i] > best_score ||
+					  ( new_score[i] == best_score && new_id[i] < best_id) )
+					{
+						best_score = new_score[i];
+						best_id = new_id[i];
+						new_score_side = i;
+					}
+
+					new_score[i] = 0;
+					new_id[i] = SIDE_COUNT;
+				}
+			}
+
+			// If best score has changed, propagate messages to every
+			// side - bar that which the new best score came from
+			if( new_score_side > 0 )
+				PropagateScore( best_id, best_score, new_score_side );
+		}
+		else
+		{
+			// TODO: reset everything to how it was before
+			current_state = RESHAPING;
+			last_state = REPAIR;
+			printf("%d negotiation finished, entering RESHAPING\n",timestamp);
+
 		}
 	}
 }
 
-void Robot::BroadcastScore()
-{
-
-
-
-}
 
 void Robot::Failed()
 {

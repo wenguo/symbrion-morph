@@ -53,6 +53,7 @@ const char * irmessage_names[IR_MSG_TYPE_COUNT]={
     "Reshaping",
     "Failed",
     "Sub_OG_String",
+    "Sub_OG_Score_String",
     "Sub_OG_Score",
     "ACK"
 };
