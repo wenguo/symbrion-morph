@@ -189,9 +189,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 OrganismSequence::Symbol sym = OrganismSequence::Symbol(data[1]);
                 if(channel == sym.side1 && type == sym.type1)
                 {
-                    neighbours_IP[channel] = data[2] << 24 | data[3] << 16 | data[4] << 8 |data[5];
-                    //memcpy((uint8_t*)&neighbours_IP[channel], (uint8_t*)&data[2], 4);
-                    printf("get neighbours_IP[%d]:%#x\n", channel, neighbours_IP[channel]);
+                    memcpy((uint8_t*)&neighbours_IP[channel], (uint8_t*)&data[2], 4);
                     ack_required = true;
                 }
             }
@@ -205,22 +203,12 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 {
                     uint8_t replied_data[5];
                     replied_data[0] = data[1];
-                    replied_data[1] = (my_IP >> 24) & 0xFF;
-                    replied_data[2] = (my_IP >> 16) & 0xFF;
-                    replied_data[3] = (my_IP >> 8) & 0xFF;
-                    replied_data[4] = my_IP & 0xFF;
-                    //memcpy((uint8_t*)&replied_data[1], (uint8_t*)&my_IP, 4);
+                    memcpy((uint8_t*)&replied_data[1], (uint8_t*)&my_IP, 4);
                     BroadcastIRMessage(channel, IR_MSG_TYPE_IP_ADDR, replied_data, 5, true);
-                    
-                    neighbours_IP[channel] = data[2] << 24 | data[3] << 16 | data[4] << 8 |data[5];
-                    printf("request from neighbours_IP[%d]:%#x\n", channel, neighbours_IP[channel]);
+                    memcpy((uint8_t*)&neighbours_IP[channel], (uint8_t*)&data[2], 4);
+                    //TODO: be careful, this may cause some dead lock, need more test
+                    ack_required = true;
                 }
-
-               // uint8_t data[5];
-               // data[0] = channel;
-               // memcpy(data+1, &my_IP, 4);
-               // BroadcastIRMessage(channel, IR_MSG_TYPE_IP_ADDR, data, 5, true);
-                
             }
             break;
         case IR_MSG_TYPE_ACK:

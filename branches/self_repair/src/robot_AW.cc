@@ -1185,7 +1185,7 @@ void RobotAW::Debugging()
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;
-    printf("Debuging %d:\t", para.debug.mode);
+    //printf("Debuging %d:\t", para.debug.mode);
 
     switch (para.debug.mode)
     {
