@@ -255,7 +255,7 @@ void RobotKIT::UpdateActuators()
 // for self-repair
 void RobotKIT::UpdateFailures()
 {
-	if( para.debug.para[2] > 0 && timestamp > para.debug.para[2] )
+	if( para.debug.para[0] > 0 && timestamp > para.debug.para[0] )
 		module_failed = true;
 }
 
@@ -985,9 +985,16 @@ void RobotKIT::InOrganism()
 		for(int i=0;i<NUM_IRS;i++)
 			SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
 
-		docked[para.debug.para[0]] = true;
-        msg_subog_seq_expected = 1<<para.debug.para[0];
-	    target = para.og_seq_list[0];
+        int num_neighbours = para.debug.para[2];
+        for( int i=0; i<num_neighbours; i++ )
+        {
+            docked[para.debug.para[3+i]] = true;
+            msg_subog_seq_expected |= 1<<(int)para.debug.para[3+i];
+            std::cout << "expected: " << (int)msg_subog_seq_expected << std::endl;
+            std::cout << timestamp << " neighbour at: " << para.debug.para[3+i] << std::endl;
+        }	
+	
+        target = para.og_seq_list[0];
         std::cout << timestamp << " Target Shape: " << target << std::endl;
 
         }
