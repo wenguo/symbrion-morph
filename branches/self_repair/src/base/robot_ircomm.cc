@@ -238,8 +238,14 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
 					// extract subog_str and best_score
 					memcpy(subog_str,data+1,data[1]+1);
-					best_score = atoi(&data[data[1]+2]);
-				}
+					best_score = data[(int)(data[1])+2];
+			                	
+                                        std::cout << "Score received: " << (int)best_score << std::endl;
+                                        PrintSubOGString(subog_str);
+                                        
+
+                                          
+                                }
 				ack_required = true;
 			}
         	break;
@@ -469,9 +475,12 @@ void Robot::SendScoreStr( int channel, const OrganismSequence& seq, uint8_t scor
 	    for(unsigned int i=0; i < buf[0];i++)
 	        buf[i+1] =seq.Encoded_Seq()[i].data;
 
-	    buf[buf[0]+1] = score;
+	    buf[(int)(buf[0])+1] = score;
 
-	    BroadcastIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0] + 2, true);
+	    
+            std::cout << "sending score: " << (int) score << " and seq: " << seq << std::endl;
+
+            BroadcastIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0] + 2, true);
 
 	}
 

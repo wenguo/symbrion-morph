@@ -910,7 +910,8 @@ void RobotAW::InOrganism()
 	if( StartRepair()  )
 	{
 		last_state = INORGANISM;
-		// do housekeeping
+	        return;
+                // do housekeeping
 	}
 	else
 	{
