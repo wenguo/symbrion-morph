@@ -747,6 +747,21 @@ void RobotAW::Locking()
            // RobotBase::SetIRRX(board_dev_num[docking_side], false);
             SetRGBLED(docking_side, 0,0,0,0);
         }
+
+        printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
+                (my_IP >> 24) & 0xFF,
+                (my_IP >> 16) & 0xFF,
+                (my_IP >> 8) & 0xFF,
+                my_IP & 0xFF);
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
+                    (neighbours_IP[i] >> 24) & 0xFF,
+                    (neighbours_IP[i] >> 16) & 0xFF,
+                    (neighbours_IP[i] >> 8) & 0xFF,
+                    neighbours_IP[i] & 0xFF);
+        }
+
     }
 }
 void RobotAW::Recruitment()
@@ -864,6 +879,13 @@ void RobotAW::Recruitment()
                     PropagateIRMessage(IR_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
                 }
 
+                //request IP addr
+                uint8_t data[5];
+                data[0] = it1->getSymbol(0).data;
+                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                BroadcastIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, true);
+
+
                 erase_required = true;
             }
         }
@@ -875,15 +897,27 @@ void RobotAW::Recruitment()
     }
 
     //recruitment done?
-    if(mybranches.empty())
+    if(mybranches.empty() &&!MessageWaitingAck(IR_MSG_TYPE_IP_ADDR_REQ))
     {
         current_state = INORGANISM;
         last_state = RECRUITMENT;
         memset(docking_done, 0, NUM_DOCKS);
         robot_in_range_replied = 0;
 
+        printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
+                (my_IP >> 24) & 0xFF,
+                (my_IP >> 16) & 0xFF,
+                (my_IP >> 8) & 0xFF,
+                my_IP & 0xFF);
         for(int i=0;i<NUM_DOCKS;i++)
+        {
+            printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
+                    (neighbours_IP[i] >> 24) & 0xFF,
+                    (neighbours_IP[i] >> 16) & 0xFF,
+                    (neighbours_IP[i] >> 8) & 0xFF,
+                    neighbours_IP[i] & 0xFF);
             SetRGBLED(i, 0, 0, 0, 0);
+        }
     }
 }
 void RobotAW::InOrganism()
