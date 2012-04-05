@@ -184,6 +184,45 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                     printf("Error in getting branch, no Assembly info be sent\n");
             }
             break;
+        case IR_MSG_TYPE_IP_ADDR:
+            {
+                OrganismSequence::Symbol sym = OrganismSequence::Symbol(data[1]);
+                if(channel == sym.side1 && type == sym.type1)
+                {
+                    neighbours_IP[channel] = data[2] << 24 | data[3] << 16 | data[4] << 8 |data[5];
+                    //memcpy((uint8_t*)&neighbours_IP[channel], (uint8_t*)&data[2], 4);
+                    printf("get neighbours_IP[%d]:%#x\n", channel, neighbours_IP[channel]);
+                    ack_required = true;
+                }
+            }
+            break;
+        case IR_MSG_TYPE_IP_ADDR_REQ:
+            {
+                //REQ: data[1] -- child_side:child_type:parent_side:parent_type 
+                //only respond to the valid request
+                OrganismSequence::Symbol sym = OrganismSequence::Symbol(data[1]);
+                if( channel == sym.side2 && type == sym.type2)
+                {
+                    uint8_t replied_data[5];
+                    replied_data[0] = data[1];
+                    replied_data[1] = (my_IP >> 24) & 0xFF;
+                    replied_data[2] = (my_IP >> 16) & 0xFF;
+                    replied_data[3] = (my_IP >> 8) & 0xFF;
+                    replied_data[4] = my_IP & 0xFF;
+                    //memcpy((uint8_t*)&replied_data[1], (uint8_t*)&my_IP, 4);
+                    BroadcastIRMessage(channel, IR_MSG_TYPE_IP_ADDR, replied_data, 5, true);
+                    
+                    neighbours_IP[channel] = data[2] << 24 | data[3] << 16 | data[4] << 8 |data[5];
+                    printf("request from neighbours_IP[%d]:%#x\n", channel, neighbours_IP[channel]);
+                }
+
+               // uint8_t data[5];
+               // data[0] = channel;
+               // memcpy(data+1, &my_IP, 4);
+               // BroadcastIRMessage(channel, IR_MSG_TYPE_IP_ADDR, data, 5, true);
+                
+            }
+            break;
         case IR_MSG_TYPE_ACK:
             {
                 std::vector<IRMessage>::iterator it=TXMsgQueue[channel].begin();
