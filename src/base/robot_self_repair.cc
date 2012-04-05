@@ -237,7 +237,7 @@ void Robot::LeadRepair()
 
 			best_id = subog_id;
 			PropagateScore( best_id, best_score, parent_side );
-
+                        broadcast_start = timestamp;
 		}
 	}
 	// TODO: Broadcast and listen for sub-organism scores
@@ -270,7 +270,8 @@ void Robot::LeadRepair()
 								best_score = new_score[i];
 								best_id = new_id[i];
 								new_score_side = i;
-							}
+						                printf("%f received better score: %d %d\n",timestamp, best_id, best_score);
+                                                        }
 
 							new_score[i] = 0;
 							new_id[i] = SIDE_COUNT;
@@ -470,7 +471,9 @@ void Robot::Repair()
 						best_score = new_score[i];
 						best_id = new_id[i];
 						new_score_side = i;
-					}
+					        printf("%f received better score: %d %d\n",timestamp, best_id, best_score);
+                                        }
+
 
 					new_score[i] = 0;
 					new_id[i] = SIDE_COUNT;

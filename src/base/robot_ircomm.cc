@@ -278,7 +278,8 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 				msg_score_received |= 1<<channel;
 				new_id[channel] = data[1];
 				new_score[channel] = data[2];
-			}
+                    	        printf("%d Received id score %d %d\n",data[7],data[8]);
+                        }
         break;
         case IR_MSG_TYPE_PROPAGATED:
             {
@@ -333,7 +334,8 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                     				msg_score_received |= 1<<channel;
                     				new_id[channel] = data[7];
                     				new_score[channel] = data[8];
-                    			}
+                    			        printf("%d Received id score %d %d\n",data[7],data[8]);
+                                        }
                             break;
                             default:
                                 valid = false;
@@ -528,6 +530,8 @@ void Robot::PropagateScore( uint8_t id, uint8_t score, int ignore_side )
 	buf[0] = id;
 	buf[1] = score;
 
+        printf("%d Propagating id score: %d %d\n",id,score);
+
 	PropagateIRMessage(IR_MSG_TYPE_SCORE, buf, 2, ignore_side);
 
 }
@@ -537,6 +541,8 @@ void Robot::BroadcastScore( int i, uint8_t score, uint8_t id )
 	uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
 	buf[0] = id;
 	buf[1] = score;
+
+        printf("%d Broadcasting id score %d %d\n",id,score);
 
 	BroadcastIRMessage( i, IR_MSG_TYPE_SCORE, buf, 2, false );
 
