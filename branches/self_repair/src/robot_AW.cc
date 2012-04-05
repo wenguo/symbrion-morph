@@ -1229,6 +1229,16 @@ void RobotAW::Debugging()
             {
             }
             break;
+        case 6: //testing request ip via ircomm
+            if(timestamp == 40)
+            {
+                for(int i=0;i<NUM_DOCKS;i++)
+                {
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                    RobotBase::SetIRRX(board_dev_num[i], false);
+                }
+            }
+            break;
         case 9:
             if(timestamp ==40)
             {

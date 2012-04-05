@@ -88,10 +88,10 @@ class OrganismSequence
                 {
                     uint8_t data;
                     struct{
-                        uint8_t type1:2; //bits: 0 - 1
-                        uint8_t side1:2; //bits: 2 - 3
-                        uint8_t type2:2; //bits: 4 - 5
-                        uint8_t side2:2; //bits: 6 - 7
+                        uint8_t type1:2; //bits: 0 - 1 parent_type
+                        uint8_t side1:2; //bits: 2 - 3 parent_side
+                        uint8_t type2:2; //bits: 4 - 5 child_type
+                        uint8_t side2:2; //bits: 6 - 7 child_side
                     };
                 };
             private:

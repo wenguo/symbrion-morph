@@ -1299,6 +1299,30 @@ void RobotKIT::Debugging()
             else
                 SetRGBLED(2, 0,0,0,0);
             break;
+        case 6: //testing request ip via ircomm
+            if(timestamp == 40)
+            {
+                for(int i=0;i<NUM_DOCKS;i++)
+                {
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                    RobotBase::SetIRRX(board_dev_num[i], false);
+                }
+                printf("my_IP %#x\n", my_IP);
+                OrganismSequence::Symbol sym;
+                sym.type1 = ROBOT_KIT;
+                sym.side1 = ::BACK;
+                sym.type2 = ROBOT_AW;
+                sym.side2 = ::FRONT;
+                uint8_t data[5];
+                data[0] = sym.data;
+                data[1] = (my_IP >> 24) & 0xFF;
+                data[2] = (my_IP >> 16) & 0xFF;
+                data[3] = (my_IP >> 8) & 0xFF;
+                data[4] = my_IP & 0xFF;
+                BroadcastIRMessage(::BACK, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+            }
+
+            break;
         case 9:
             //      if(timestamp ==35)
             {
@@ -1352,15 +1376,15 @@ void RobotKIT::Log()
 {
     if (logFile.is_open())
     {
-      //  logFile << timestamp << "\t" << state_names[current_state] <<"\t";
-      //  logFile << reflective_hist[0].Avg()<<"\t";
-      //  logFile << reflective_hist[1].Avg()<<"\t";
+        //  logFile << timestamp << "\t" << state_names[current_state] <<"\t";
+        //  logFile << reflective_hist[0].Avg()<<"\t";
+        //  logFile << reflective_hist[1].Avg()<<"\t";
         logFile << beacon[0]<<"\t";
         logFile << beacon[1]<<"\t";
-      //  logFile << ambient_hist[0].Avg()<<"\t";
-      //  logFile << ambient_hist[1].Avg()<<"\t";
-      //  logFile << proximity[0]<<"\t";
-      //  logFile << proximity[1]<<"\t";
+        //  logFile << ambient_hist[0].Avg()<<"\t";
+        //  logFile << ambient_hist[1].Avg()<<"\t";
+        //  logFile << proximity[0]<<"\t";
+        //  logFile << proximity[1]<<"\t";
         logFile << std::endl;
     }
 
