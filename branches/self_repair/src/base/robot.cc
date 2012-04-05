@@ -27,10 +27,13 @@ Robot::Robot()
     wait_side = FRONT;
     parent_side = SIDE_COUNT;
     repair_stage = STAGE0;
-    repair_start=0;
-    repair_delay=50;
-    move_start=0;
-    move_delay=100;
+    repair_start = 0;
+    repair_duration = 50;
+    move_start = 0;
+    move_duration = 100;
+    broadcast_start = 0;
+    broadcast_duration = 200;
+    broadcast_period = 20;
 
     hinge_motor_status = LOWED;
     RGBLED_flashing = 0;
@@ -61,7 +64,6 @@ Robot::Robot()
     RegisterBehaviour(&Robot::Support, SUPPORT);
     RegisterBehaviour(&Robot::LeadRepair, LEADREPAIR);
     RegisterBehaviour(&Robot::Repair, REPAIR);
-    RegisterBehaviour(&Robot::BroadcastScore, BROADCASTSCORE);
 
     for (int i = 0; i < NUM_IRS; i++)
     {
@@ -88,6 +90,8 @@ Robot::Robot()
         docking_motor_operating_count[i]=0;
         docking_motors_status[i] = OPENED;
         neighbours_IP[i] = 0;
+        new_id[i] = SIDE_COUNT;
+        new_score[i] = 0;
     }
 
 
@@ -137,6 +141,9 @@ Robot::Robot()
     // for self-repair
     subog_id = SIDE_COUNT;
     subog_str[0] = 0;
+    best_score = 0;
+    best_id = SIDE_COUNT;
+    own_score = 0;
 
     pthread_mutex_init(&mutex, NULL);
     pthread_mutex_init(&txqueue_mutex, NULL);

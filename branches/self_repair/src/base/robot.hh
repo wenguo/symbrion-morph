@@ -106,8 +106,6 @@ class Robot
     void Support();
     void LeadRepair();
     void Repair();
-    void BroadcastScore();
-
 
     std::string ClockString();
 
@@ -119,6 +117,9 @@ class Robot
     void SendSubOGStr( int i, uint8_t *seq_str );
     void SendScoreStr( int i, const OrganismSequence &seq, uint8_t score );
     uint8_t calculateSubOGScore( OrganismSequence &seq1, OrganismSequence &seq2 );
+    void PropagateScore( uint8_t score, uint8_t id, int ignore_side );
+    void BroadcastScore( int i, uint8_t score, uint8_t id );
+
 
     void SendBranchTree(int i, const OrganismSequence& seq);
     bool isNeighboured(Robot *);
@@ -160,7 +161,6 @@ class Robot
     static void Support(Robot * robot){robot->Support();}
     static void LeadRepair(Robot * robot){robot->LeadRepair();}
     static void Repair(Robot * robot){robot->Repair();}
-    static void BroadcastScore(Robot * robot){robot->BroadcastScore();}
 
 
     static void *IRCommTxThread(void* robot);
@@ -183,7 +183,10 @@ class Robot
     uint8_t subog_str[MAX_IR_MESSAGE_SIZE];
     uint8_t subog_id;
     uint8_t best_score;
+    uint8_t best_id;
     uint8_t own_score;
+    uint8_t new_id[NUM_DOCKS];
+    uint8_t new_score[NUM_DOCKS];
 
     fsm_state_t current_state;
     fsm_state_t last_state;
@@ -237,9 +240,12 @@ class Robot
     uint8_t parent_side;
     uint8_t repair_stage;
     uint32_t repair_start;
-    uint16_t repair_delay;
+    uint16_t repair_duration;
     uint32_t move_start;
-    uint16_t move_delay;
+    uint16_t move_duration;
+    uint32_t broadcast_start;
+    uint16_t broadcast_duration;
+    uint8_t broadcast_period;
 
     uint32_t recover_count;
     uint32_t recruitment_signal_interval_count[NUM_DOCKS];
@@ -281,6 +287,7 @@ class Robot
     uint8_t msg_subog_seq_expected;
     uint8_t msg_score_seq_received;
     uint8_t msg_score_seq_expected;
+    uint8_t msg_score_received;
 
 
 

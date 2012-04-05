@@ -267,15 +267,19 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 					memcpy(subog_str,data+1,data[1]+1);
 					best_score = data[(int)(data[1])+2];
 			                	
-                                        std::cout << "Score received: " << (int)best_score << std::endl;
-                                        PrintSubOGString(subog_str);
-                                        
-
-                                          
-                                }
+					std::cout << "Score received: " << (int)best_score << std::endl;
+					PrintSubOGString(subog_str);
+				}
 				ack_required = true;
 			}
         	break;
+        case IR_MSG_TYPE_SCORE:
+			{
+				msg_score_received |= 1<<channel;
+				new_id[channel] = data[1];
+				new_score[channel] = data[2];
+			}
+        break;
         case IR_MSG_TYPE_PROPAGATED:
             {
                 //data[0] IR_MSG_TYPE_PROPAGATED
@@ -324,6 +328,13 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                                     CPrintf1(SCR_GREEN,"%d -- start to reshaping !", timestamp);
                                 }
                                 break;
+                            case IR_MSG_TYPE_SCORE:
+                    			{
+                    				msg_score_received |= 1<<channel;
+                    				new_id[channel] = data[7];
+                    				new_score[channel] = data[8];
+                    			}
+                            break;
                             default:
                                 valid = false;
                                 CPrintf1(SCR_GREEN, "%d -- received unknow message", timestamp);
@@ -504,12 +515,30 @@ void Robot::SendScoreStr( int channel, const OrganismSequence& seq, uint8_t scor
 
 	    buf[(int)(buf[0])+1] = score;
 
-	    
-            std::cout << "sending score: " << (int) score << " and seq: " << seq << std::endl;
 
-            BroadcastIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0] + 2, true);
-
+		std::cout << "sending score: " << (int) score << " and seq: " << seq << std::endl;
+		BroadcastIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0] + 2, true);
 	}
+}
+
+void Robot::PropagateScore( uint8_t id, uint8_t score, int ignore_side )
+{
+
+	uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
+	buf[0] = id;
+	buf[1] = score;
+
+	PropagateIRMessage(IR_MSG_TYPE_SCORE, buf, 2, ignore_side);
+
+}
+void Robot::BroadcastScore( int i, uint8_t score, uint8_t id )
+{
+
+	uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
+	buf[0] = id;
+	buf[1] = score;
+
+	BroadcastIRMessage( i, IR_MSG_TYPE_SCORE, buf, 2, false );
 
 }
 
