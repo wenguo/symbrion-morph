@@ -288,6 +288,8 @@ class Robot
     uint8_t msg_score_seq_received;
     uint8_t msg_score_seq_expected;
     uint8_t msg_score_received;
+    uint8_t msg_ip_addr_received;
+    uint8_t msg_ip_addr_expected;
 
 
 

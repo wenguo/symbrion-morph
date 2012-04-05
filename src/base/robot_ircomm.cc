@@ -189,6 +189,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 OrganismSequence::Symbol sym = OrganismSequence::Symbol(data[1]);
                 if(channel == sym.side1 && type == sym.type1)
                 {
+                    msg_ip_addr_received |= 1<<channel;
                     memcpy((uint8_t*)&neighbours_IP[channel], (uint8_t*)&data[2], 4);
                     ack_required = true;
                 }
@@ -206,8 +207,6 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                     memcpy((uint8_t*)&replied_data[1], (uint8_t*)&my_IP, 4);
                     BroadcastIRMessage(channel, IR_MSG_TYPE_IP_ADDR, replied_data, 5, true);
                     memcpy((uint8_t*)&neighbours_IP[channel], (uint8_t*)&data[2], 4);
-                    //TODO: be careful, this may cause some dead lock, need more test
-                    ack_required = true;
                 }
             }
             break;
