@@ -198,10 +198,10 @@ void RobotKIT::UpdateSensors()
     //5 -- rear right
     //6 -- right rear
     //7 -- right front
-    IRValues ret_A = GetIRValues(FRONT);
-    IRValues ret_B = GetIRValues(LEFT);
-    IRValues ret_C = GetIRValues(REAR);
-    IRValues ret_D = GetIRValues(RIGHT);
+    IRValues ret_A = GetIRValues(KaBot::FRONT);
+    IRValues ret_B = GetIRValues(KaBot::LEFT);
+    IRValues ret_C = GetIRValues(KaBot::REAR);
+    IRValues ret_D = GetIRValues(KaBot::RIGHT);
     ambient[1] = ret_A.sensor[0].ambient;
     ambient[0] = ret_A.sensor[1].ambient;
     reflective[1] = ret_A.sensor[0].reflective;
@@ -1223,7 +1223,7 @@ void RobotKIT::Debugging()
 
     if(timestamp >40)
         Log();
-    printf("%d Debuging %d:\t", timestamp,para.debug.mode);
+    //printf("%d Debuging %d:\t", timestamp,para.debug.mode);
 
     switch (para.debug.mode)
     {
@@ -1315,11 +1315,8 @@ void RobotKIT::Debugging()
                 sym.side2 = ::FRONT;
                 uint8_t data[5];
                 data[0] = sym.data;
-                data[1] = (my_IP >> 24) & 0xFF;
-                data[2] = (my_IP >> 16) & 0xFF;
-                data[3] = (my_IP >> 8) & 0xFF;
-                data[4] = my_IP & 0xFF;
-                BroadcastIRMessage(::BACK, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                BroadcastIRMessage(::BACK, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, true);
             }
 
             break;
