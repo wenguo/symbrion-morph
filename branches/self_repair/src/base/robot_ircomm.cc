@@ -266,7 +266,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 					memcpy(subog_str,data+1,data[1]+1);
 					best_score = data[(int)(data[1])+2];
 			                	
-					std::cout << "Score received: " << (int)best_score << std::endl;
+					std::cout << "Score received: " << (int) best_score << std::endl;
 					PrintSubOGString(subog_str);
 				}
 				ack_required = true;
@@ -277,8 +277,8 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 				msg_score_received |= 1<<channel;
 				new_id[channel] = data[1];
 				new_score[channel] = data[2];
-                    	        printf("%d Received id score %d %d\n",data[7],data[8]);
-                        }
+                printf("%d Received id score %d %d\n",timestamp,new_id[channel],new_score[channel]);
+			}
         break;
         case IR_MSG_TYPE_PROPAGATED:
             {
@@ -331,11 +331,14 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                             case IR_MSG_TYPE_SCORE:
                     			{
                     				msg_score_received |= 1<<channel;
-                    				new_id[channel] = data[7];
-                    				new_score[channel] = data[8];
-                    			        printf("%d Received id score %d %d\n",data[7],data[8]);
-                                        }
-                            break;
+                    				// check what positions these should be
+                    				// I don't send the length so I think
+                    				// 6 and 7 is correct in this instance
+                    				new_id[channel] = data[6];    // was 7
+                    				new_score[channel] = data[7]; // was 8
+                    			    printf("%d Received id score %d %d\n",timestamp,new_id[channel],new_score[channel]);
+                    			}
+                    			break;
                             default:
                                 valid = false;
                                 CPrintf1(SCR_GREEN, "%d -- received unknow message", timestamp);

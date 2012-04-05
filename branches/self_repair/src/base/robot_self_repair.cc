@@ -7,6 +7,11 @@
 
 #include "robot.hh"
 
+// TODO:
+//  1. Test broadcasting
+//  2. Reduce code duplication
+//	3. Integrate ethernet
+
 uint8_t Robot::calculateSubOGScore( OrganismSequence &seq1, OrganismSequence &seq2 )
 {
 
@@ -43,15 +48,15 @@ bool Robot::StartRepair()
 
 		printf("%d Module failed!\n",timestamp);
 		ret = true;
-
 	}
 	//else if( msg_failed_received )
+	//////// for testing only ////////
 	else if( para.debug.para[1] >= 0 )
 	{
-		// for testing only //
 		subog_id = 2;
 		parent_side = para.debug.para[1];
-		//////////////////////
+
+	//////// for testing only ////////
 
 		msg_failed_received = 0;
 
@@ -103,7 +108,7 @@ bool Robot::StartRepair()
 		ret = true;
 
 	}
-        return ret;
+    return ret;
 }
 
 // Initial repair state of the robot nearest to the
@@ -237,7 +242,7 @@ void Robot::LeadRepair()
 
 			best_id = subog_id;
 			PropagateScore( best_id, best_score, parent_side );
-                        broadcast_start = timestamp;
+            broadcast_start = timestamp;
 		}
 	}
 	// TODO: Broadcast and listen for sub-organism scores
@@ -270,8 +275,8 @@ void Robot::LeadRepair()
 								best_score = new_score[i];
 								best_id = new_id[i];
 								new_score_side = i;
-						                printf("%f received better score: %d %d\n",timestamp, best_id, best_score);
-                                                        }
+						        printf("%f received better score: %d %d\n",timestamp, best_id, best_score);
+                            }
 
 							new_score[i] = 0;
 							new_id[i] = SIDE_COUNT;
@@ -389,6 +394,7 @@ void Robot::Repair()
 			subog.reBuild(subog_str+1,subog_str[0]);
             subog = OrganismSequence::getNextSeedSeq(subog);
 			own_score = calculateSubOGScore( subog, target );
+            std::cout << "OrganismSequence: " << subog << " score: " << (int) own_score << std::endl;
 
 			own_score > best_score ? best_score = own_score : own_score = 0;
 
@@ -471,9 +477,8 @@ void Robot::Repair()
 						best_score = new_score[i];
 						best_id = new_id[i];
 						new_score_side = i;
-					        printf("%f received better score: %d %d\n",timestamp, best_id, best_score);
-                                        }
-
+					    printf("%f received better score: %d %d\n",timestamp, best_id, best_score);
+					}
 
 					new_score[i] = 0;
 					new_id[i] = SIDE_COUNT;
