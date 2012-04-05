@@ -652,8 +652,6 @@ void RobotKIT::Recover()
     //      direction = BACKWARD;
     //  else if(reflective_hist[4].Avg() > AVOIDANCE_THRESHOLD || reflective_hist[5].Avg()>AVOIDANCE_THRESHOLD)
     //      direction = FORWARD;
-
-
     leftspeed = -30;
     rightspeed = -30;
 
@@ -788,20 +786,6 @@ void RobotKIT::Locking()
             current_state = INORGANISM;
             last_state = LOCKING;
 
-            printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-                    (my_IP >> 24) & 0xFF,
-                    (my_IP >> 16) & 0xFF,
-                    (my_IP >> 8) & 0xFF,
-                    my_IP & 0xFF);
-            for(int i=0;i<NUM_DOCKS;i++)
-            {
-                printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-                        (neighbours_IP[i] >> 24) & 0xFF,
-                        (neighbours_IP[i] >> 16) & 0xFF,
-                        (neighbours_IP[i] >> 8) & 0xFF,
-                        neighbours_IP[i] & 0xFF);
-            }
-
         }
     }
 
@@ -914,7 +898,7 @@ void RobotKIT::Recruitment()
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_ORGANISM_SEQ))
                 {
                     docked[i] = true;
-                    recruitment_stage[i] = STAGE0;
+                    recruitment_stage[i] = STAGE5;
                     docking_done[i] = false;
 
                     //SetRGBLED(i, RED, 0, 0, 0);
@@ -922,19 +906,32 @@ void RobotKIT::Recruitment()
                     //RobotBase::SetIRRX(board_dev_num[i], false);
 
                     num_robots_inorganism++;
-                    //prepare the newrobot_joined messages
-                    if(!seed)
-                        PropagateIRMessage(IR_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
 
-                    //request IP addr
-                    uint8_t data[5];
-                    data[0] = it1->getSymbol(0).data;
-                    memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                    BroadcastIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, true);
-
-                    //remove branches since it has been sent to newly joined robot
-                    erase_required = true;
+                    msg_ip_addr_expected |= 1<<i;
                 }
+            }
+        }
+        else if(recruitment_stage[i] == STAGE5)
+        {
+            //get new ip address?
+            if(msg_ip_addr_received & (1<<i))
+            {
+                //prepare the newrobot_joined messages
+                if(!seed)
+                    PropagateIRMessage(IR_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+
+                msg_ip_addr_received &= ~(1<<i);
+
+                //remove branches since it has been sent to newly joined robot
+                erase_required = true;
+            }
+            else if(timestamp % 10 ==0)
+            {
+                //request IP addr
+                uint8_t data[5];
+                data[0] = it1->getSymbol(0).data;
+                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                BroadcastIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
             }
         }
 
@@ -977,12 +974,28 @@ void RobotKIT::InOrganism()
     rightspeed = 0;
     sidespeed = 0;
 
-    if( timestamp < 40 )
-		return;
+    //for testing
+    printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
+            (my_IP >> 24) & 0xFF,
+            (my_IP >> 16) & 0xFF,
+            (my_IP >> 8) & 0xFF,
+            my_IP & 0xFF);
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+        printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
+                (neighbours_IP[i] >> 24) & 0xFF,
+                (neighbours_IP[i] >> 16) & 0xFF,
+                (neighbours_IP[i] >> 8) & 0xFF,
+                neighbours_IP[i] & 0xFF);
+    }
 
-	if(timestamp == 40)
-	{
-		for(int i=0;i<NUM_IRS;i++)
+
+    if( timestamp < 40 )
+        return;
+
+    if(timestamp == 40)
+    {
+        for(int i=0;i<NUM_IRS;i++)
 			SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
 
         int num_neighbours = para.debug.para[2];
