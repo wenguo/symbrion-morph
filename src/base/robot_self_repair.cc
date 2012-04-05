@@ -36,7 +36,6 @@ bool Robot::StartRepair()
 				SendFailureMsg(i);
 		}
 
-		last_state = INORGANISM;
 		current_state = FAILED;
 
 		for( int i=0; i<SIDE_COUNT; i++ )
@@ -47,7 +46,7 @@ bool Robot::StartRepair()
 
 	}
 	//else if( msg_failed_received )
-	else if( para.debug.para[1] > 0 )
+	else if( para.debug.para[1] >= 0 )
 	{
 		// for testing only //
 		subog_id = 2;
@@ -77,7 +76,6 @@ bool Robot::StartRepair()
 		// Turn side at which failed module detected red
 		SetRGBLED(parent_side,RED,RED,RED,RED);
 
-				last_state = INORGANISM;
 		current_state = LEADREPAIR;
 
 		printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d\n",timestamp,subog_id);
@@ -95,7 +93,6 @@ bool Robot::StartRepair()
 		if( wait_side < SIDE_COUNT )
 			SendSubOGStr( wait_side, subog_str );
 
-		last_state = INORGANISM;
 		current_state = REPAIR;
 		repair_start = timestamp;
 
@@ -106,23 +103,23 @@ bool Robot::StartRepair()
 		ret = true;
 
 	}
+        return ret;
 }
 
 // Initial repair state of the robot nearest to the
 // the failed/support module
 void Robot::LeadRepair()
 {
-
 	// notify other modules to enter repair and determine shape of sub-organism
 	if( repair_stage == STAGE0 )
 	{
 		// still waiting for some branches
 		if( wait_side < SIDE_COUNT )
-		{
-			// not waiting for acknowledgment from the previous message
-			if( !MessageWaitingAck(IR_MSG_TYPE_SUB_OG_STRING, wait_side) )
+		{      
+                        // not waiting for acknowledgment from the previous message
+			if( !MessageWaitingAck(wait_side, IR_MSG_TYPE_SUB_OG_STRING) )
 			{
-				if( msg_subog_seq_received & 1<<wait_side )
+                                if( msg_subog_seq_received & 1<<wait_side )
 				{
 					do // Find next neighbour (not including the failed module)
 					{
@@ -204,7 +201,7 @@ void Robot::LeadRepair()
 		if( wait_side < SIDE_COUNT )
 		{
 			// not waiting for acknowldgement from the previous message
-			if( !MessageWaitingAck(IR_MSG_TYPE_SCORE_STRING, wait_side) )
+			if( !MessageWaitingAck(wait_side, IR_MSG_TYPE_SCORE_STRING) )
 			{
 				if( msg_score_seq_received & 1<<wait_side )
 				{
@@ -263,7 +260,7 @@ void Robot::Repair()
 		if( wait_side < SIDE_COUNT )
 		{
 			// not waiting for acknowldgement from the previous message
-			if( !MessageWaitingAck(IR_MSG_TYPE_SUB_OG_STRING, wait_side) )
+			if( !MessageWaitingAck(wait_side,IR_MSG_TYPE_SUB_OG_STRING) )
 			{
 				if( msg_subog_seq_received & 1<<wait_side )
 				{
@@ -355,7 +352,7 @@ void Robot::Repair()
 		if( wait_side < SIDE_COUNT )
 		{
 			// not waiting for acknowldgement from the previous message
-			if( !MessageWaitingAck(IR_MSG_TYPE_SCORE_STRING, wait_side) )
+			if( !MessageWaitingAck(wait_side, IR_MSG_TYPE_SCORE_STRING) )
 			{
 				if( msg_score_seq_received & 1<<wait_side )
 				{

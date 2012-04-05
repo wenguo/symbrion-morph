@@ -956,12 +956,13 @@ void RobotKIT::InOrganism()
 	    target = para.og_seq_list[0];
         std::cout << timestamp << " Target Shape: " << target << std::endl;
 
-	}
+        }
 
 	if( StartRepair() )
 	{
 		last_state = INORGANISM;
 		// do housekeeping
+                return;
 	}
 	else
 	{
