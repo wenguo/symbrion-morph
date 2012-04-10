@@ -271,13 +271,36 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 				}
 				ack_required = true;
 			}
-        	break;
+        break;
         case IR_MSG_TYPE_SCORE:
 			{
 				msg_score_received |= 1<<channel;
 				new_id[channel] = data[1];
 				new_score[channel] = data[2];
                 printf("%d Received id score %d %d\n",timestamp,new_id[channel],new_score[channel]);
+				ack_required = true;
+
+			}
+        break;
+        case IR_MSG_TYPE_RESHAPING:
+			{
+				if( msg_reshaping_expected & 1<<channel )
+				{
+					msg_reshaping_expected &= ~(1<<channel);
+					msg_reshaping_received |= 1<<channel;
+
+					// if message received whilst in the repair state, expect
+					// it to contain the best_score value, used to determine
+					// which robot should become the next seed module.
+					if( current_state == REPAIR )
+					{
+						best_score = data[1];
+						if( best_score == own_score )
+							seed = true;
+					}
+				}
+
+				ack_required = true;
 			}
         break;
         case IR_MSG_TYPE_PROPAGATED:
@@ -328,17 +351,6 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                                     CPrintf1(SCR_GREEN,"%d -- start to reshaping !", timestamp);
                                 }
                                 break;
-                            case IR_MSG_TYPE_SCORE:
-                    			{
-                    				msg_score_received |= 1<<channel;
-                    				// check what positions these should be
-                    				// I don't send the length so I think
-                    				// 6 and 7 is correct in this instance
-                    				new_id[channel] = data[6];    // was 7
-                    				new_score[channel] = data[7]; // was 8
-                    			    printf("%d Received id score %d %d\n",timestamp,new_id[channel],new_score[channel]);
-                    			}
-                    			break;
                             default:
                                 valid = false;
                                 CPrintf1(SCR_GREEN, "%d -- received unknow message", timestamp);
@@ -419,26 +431,52 @@ void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, i
     pthread_mutex_unlock(&txqueue_mutex);
 }
 
+// Propagates IR message on single channel
+void Robot::PropagateSingleIRMessage(uint8_t type, int channel, uint8_t *data, uint32_t len )
+{
+	if( docked[channel] )
+	{
+		uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
+		buf[0] = type;
+		buf[1] = timestamp;
+		buf[2] = timestamp;
+		buf[3] = timestamp;
+		buf[4] = timestamp;
+		int data_size = len;
+		if(data_size > MAX_IR_MESSAGE_SIZE - 6 )
+		{
+			printf("Warning: only %d of %d bytes will be sent\n", MAX_IR_MESSAGE_SIZE - 5, data_size);
+			data_size = MAX_IR_MESSAGE_SIZE - 6;
+		}
+		memcpy(buf + 5, data, data_size);
+		BroadcastIRMessage(channel, IR_MSG_TYPE_PROPAGATED, buf, data_size + 5, true);
+	}
+}
+
 void Robot::PropagateIRMessage(uint8_t type, uint8_t *data, uint32_t len, int excluded_channel)
 {
     for(uint8_t i=0;i<NUM_DOCKS;i++)
     {
         if(docked[i] && i != excluded_channel)
         {
-            uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
-            buf[0] = type;
-            buf[1] = timestamp;
-            buf[2] = timestamp;
-            buf[3] = timestamp;
-            buf[4] = timestamp;
-            int data_size = len;
-            if(data_size > MAX_IR_MESSAGE_SIZE - 6 )
-            {
-                printf("Warning: only %d of %d bytes will be sent\n", MAX_IR_MESSAGE_SIZE - 5, data_size);
-                data_size = MAX_IR_MESSAGE_SIZE - 6;
-            }
-            memcpy(buf + 5, data, data_size);
-            BroadcastIRMessage(i, IR_MSG_TYPE_PROPAGATED, buf, data_size + 5, true);
+        	PropagateSingleIRMessage( type, i, data, len );
+
+// 			  MOVED TO 'PropagateSingleIRMessage'
+//
+//            uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
+//            buf[0] = type;
+//            buf[1] = timestamp;
+//            buf[2] = timestamp;
+//            buf[3] = timestamp;
+//            buf[4] = timestamp;
+//            int data_size = len;
+//            if(data_size > MAX_IR_MESSAGE_SIZE - 6 )
+//            {
+//                printf("Warning: only %d of %d bytes will be sent\n", MAX_IR_MESSAGE_SIZE - 5, data_size);
+//                data_size = MAX_IR_MESSAGE_SIZE - 6;
+//            }
+//            memcpy(buf + 5, data, data_size);
+//            BroadcastIRMessage(i, IR_MSG_TYPE_PROPAGATED, buf, data_size + 5, true);
         }
     }
 }
@@ -462,7 +500,7 @@ void Robot::SendFailureMsg( int channel )
  * If a module is present on side 'channel' it
  * is sent the current sub-organism string.
  */
-void Robot::SendSubOGStr( int channel, uint8_t *seq )
+void Robot::SendSubOrgStr( int channel, uint8_t *seq )
 {
 	if( channel < SIDE_COUNT && docked[channel] )
 	{
@@ -525,17 +563,41 @@ void Robot::SendScoreStr( int channel, const OrganismSequence& seq, uint8_t scor
 	}
 }
 
-void Robot::PropagateScore( uint8_t id, uint8_t score, int ignore_side )
+
+void Robot::PropagateReshapeScore( uint8_t score, int ignore_side )
+{
+	uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
+	buf[0] = score;
+
+    for( int i=0; i<SIDE_COUNT; i++ )
+    {
+    	if( docked[i] && i != ignore_side )
+    	{
+    		BroadcastIRMessage(i, IR_MSG_TYPE_RESHAPING, buf, 1, true);
+    	}
+    }
+
+    printf("%d Propagating reshaping score: %d\n",timestamp, score);
+
+}
+
+
+void Robot::PropagateSubOrgScore( uint8_t id, uint8_t score, int ignore_side )
 {
 
 	uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
 	buf[0] = id;
 	buf[1] = score;
 
-        printf("%d Propagating id score: %d %d\n",id,score);
+    for( int i=0; i<SIDE_COUNT; i++ )
+    {
+    	if( docked[i] && i != ignore_side )
+    	{
+    		BroadcastIRMessage(i, IR_MSG_TYPE_SCORE, buf, 2, true);
+    	}
+    }
 
-	PropagateIRMessage(IR_MSG_TYPE_SCORE, buf, 2, ignore_side);
-
+    printf("%d Propagating id score: %d %d\n",timestamp,id,score);
 }
 void Robot::BroadcastScore( int i, uint8_t score, uint8_t id )
 {
@@ -544,7 +606,7 @@ void Robot::BroadcastScore( int i, uint8_t score, uint8_t id )
 	buf[0] = id;
 	buf[1] = score;
 
-        printf("%d Broadcasting id score %d %d\n",id,score);
+        printf("%d Broadcasting id score %d %d\n",timestamp,id,score);
 
 	BroadcastIRMessage( i, IR_MSG_TYPE_SCORE, buf, 2, false );
 

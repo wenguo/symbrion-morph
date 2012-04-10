@@ -65,6 +65,8 @@ class Robot
     void BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
     void BroadcastIRAckMessage(int channel, uint8_t type);
     void PropagateIRMessage(uint8_t type, uint8_t *data = NULL, uint32_t size = 0, int excluded_channel = -1);
+    void PropagateSingleIRMessage(uint8_t type, int channel, uint8_t *data = NULL, uint32_t size = 0 );
+
     void IRSendMessage(const IRMessage& msg);
     bool MessageWaitingAck(int channel, uint8_t type);
     bool MessageWaitingAck(uint8_t type);
@@ -114,10 +116,11 @@ class Robot
 
     // for self-repair
     void SendFailureMsg( int i );
-    void SendSubOGStr( int i, uint8_t *seq_str );
+    void SendSubOrgStr( int i, uint8_t *seq_str );
     void SendScoreStr( int i, const OrganismSequence &seq, uint8_t score );
-    uint8_t calculateSubOGScore( OrganismSequence &seq1, OrganismSequence &seq2 );
-    void PropagateScore( uint8_t score, uint8_t id, int ignore_side );
+    uint8_t calculateSubOrgScore( OrganismSequence &seq1, OrganismSequence &seq2 );
+    void PropagateSubOrgScore( uint8_t score, uint8_t id, int ignore_side );
+    void PropagateReshapeScore( uint8_t score, int ignore_side );
     void BroadcastScore( int i, uint8_t score, uint8_t id );
 
 
@@ -268,6 +271,7 @@ class Robot
     uint8_t robot_in_range_detected;
     uint8_t robot_in_range_replied;
     uint8_t msg_reshaping_received;
+    uint8_t msg_reshaping_expected;
     uint8_t msg_transforming_received;
     uint8_t msg_disassembly_received;
     uint8_t msg_locked_received;
