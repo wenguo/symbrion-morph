@@ -193,7 +193,7 @@ void RobotAW::UpdateFailures()
 {
 	if( !module_failed )
         {
-            if( para.debug.para[0] > 0 && timestamp > para.debug.para[0] )
+            if( para.debug.para[0] > 0 && timestamp > (unsigned) para.debug.para[0] )
                 module_failed = true;
         }
 }
@@ -962,8 +962,9 @@ void RobotAW::InOrganism()
 	if( StartRepair()  )
 	{
 		last_state = INORGANISM;
-	        return;
-                // do housekeeping
+		seed = false;
+	    return;
+	    // do housekeeping
 	}
 	else
 	{
@@ -1159,6 +1160,91 @@ void RobotAW::Transforming()
 
 void RobotAW::Reshaping()
 {
+
+	return;
+
+	// NOT TESTED
+	if( seed || msg_organism_seq_received )
+	{
+		// Prepare branches sequence
+		rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
+		if(ret.status >= RT_ERROR)
+		{
+			std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
+		}
+
+		// disable all LEDs
+	    for(int i=0;i<NUM_DOCKS;i++)
+	        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
+
+		for(int i=0; i<SIDE_COUNT; i++)
+		{
+			recruitment_stage[i]=STAGE0;
+			recruitment_count[i] = 0;
+			recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
+
+			// check if branch needs to be sent
+			uint8_t branch_side = SIDE_COUNT;
+			std::vector<OrganismSequence>::iterator it;
+			for(it = mybranches.begin() ; it != mybranches.end(); it++)
+			{
+				if( it->getSymbol(0).side1 == i )
+				{
+					branch_side = it->getSymbol(0).side1;
+					break;
+				}
+			}
+
+			// if there is a neighbour and there should be
+			if( docked[i] && branch_side == i )
+			{
+				// send branch
+                SendBranchTree(i, mytree);  // should this just be the branch instead? (*it).
+                recruitment_stage[i]=STAGE4;
+			}
+			// if there is a neighbour but there shouldn't be
+			else if( docked[i] && branch_side == SIDE_COUNT )
+			{
+				// send disassembly
+		        PropagateSingleIRMessage(IR_MSG_TYPE_DISASSEMBLY,i);
+			}
+		    // if there isn't a neighbour but there should be
+			else if( !docked[i] && branch_side == i )
+			{
+				// start recruiting
+		        SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
+			}
+
+		}
+
+		// If there is no new tree - disassemble
+		if( seed && mytree.Size() <= 0 )
+		{
+			current_state = DISASSEMBLY;
+		}
+		else
+		{
+			current_state = RECRUITMENT;
+		}
+
+		last_state = RESHAPING;
+
+	}
+	else if( msg_disassembly_received )
+	{
+		current_state = DISASSEMBLY;
+		last_state = RESHAPING;
+
+		msg_disassembly_received = 0;
+
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            SetRGBLED(i, 0, 0, 0, 0);
+            if( docked[i] )
+                msg_unlocked_expected |=1<<i;
+        }
+	}
+
 }
 
 
