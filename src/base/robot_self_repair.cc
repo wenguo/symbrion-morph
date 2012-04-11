@@ -53,8 +53,8 @@ bool Robot::StartRepair()
 	//////// for testing only ////////
 	else if( para.debug.para[1] >= 0 )
 	{
-		subog_id = 2;
-		parent_side = para.debug.para[1];
+		//subog_id = 2;
+		subog_id = parent_side = para.debug.para[1];
 
 	//////// for testing only ////////
 
@@ -178,10 +178,16 @@ void Robot::LeadRepair()
 		{
 			for( int i=0; i<NUM_DOCKS; i++ )
 				SetRGBLED(i,GREEN,GREEN,GREEN,GREEN);
+  
+                        // if there is only one module, create single module sequence
+                        if( subog_str[0] == 0 )
+                            subog = OrganismSequence(type);
 
-			// convert sub-organism string to OrganismSequence
-			subog.reBuild(subog_str+1,subog_str[0]);
-			best_score = own_score = calculateSubOrgScore( subog, target );
+                        // else rebuild sequence from the subog_str
+                        else
+                            subog.reBuild(subog_str+1,subog_str[0]);
+			
+                        best_score = own_score = calculateSubOrgScore( subog, target );
 
             std::cout << "OrganismSequence: " << subog << " score: " << (int) own_score << std::endl;
 
@@ -241,27 +247,32 @@ void Robot::LeadRepair()
 				SetRGBLED(i,MAGENTA,MAGENTA,MAGENTA,MAGENTA);
 
 			best_id = subog_id;
-			PropagateSubOrgScore( best_id, best_score, parent_side );
-            broadcast_start = timestamp;
+			broadcast_start = timestamp;
+
+                        // To avoid interference, don't propagate score at this stage
+                        //PropagateSubOrgScore( best_id, best_score, parent_side );
 		}
 	}
-	// TODO: Broadcast and listen for sub-organism scores
+	// Broadcast and listen for sub-organism scores
 	else if( repair_stage == STAGE3 )
 	{
 		if( timestamp < broadcast_start+broadcast_duration )
 		{
 			// Broadcast
-			if( timestamp % broadcast_period == 0 )
+			if( timestamp % broadcast_period < (broadcast_period/5) )
 			{
+                            if( timestamp % 3 == 0 )
+                            {
+                                SetRGBLED(parent_side,0,0,0,0);
 				BroadcastScore( parent_side, best_score, best_id );
-			}
+			    }
+                        }
 			// Listen
 			else
 			{
-				// until a reshaping message is received
-				//	- listen for sub-organism scores
-				if( !(msg_reshaping_received & 1<<parent_side) )
-				{
+                                SetRGBLED(parent_side,RED,RED,RED,RED);
+				//if( !(msg_reshaping_received & 1<<parent_side) )
+				//{
 					int new_score_side = -1;
 					for( int i=0; i<SIDE_COUNT; i++ )
 					{
@@ -275,7 +286,7 @@ void Robot::LeadRepair()
 								best_score = new_score[i];
 								best_id = new_id[i];
 								new_score_side = i;
-						        printf("%f received better score: %d %d\n",timestamp, best_id, best_score);
+						        printf("%d received better score: %d %d\n",timestamp, best_id, best_score);
                             }
 
 							new_score[i] = 0;
@@ -287,7 +298,7 @@ void Robot::LeadRepair()
 					// side - bar that which the new best score came from
 					if( new_score_side > 0 )
 						PropagateSubOrgScore( best_id, best_score, new_score_side );
-				}
+				//}
 			}
 		}
 		else
@@ -479,7 +490,7 @@ void Robot::Repair()
 						best_score = new_score[i];
 						best_id = new_id[i];
 						new_score_side = i;
-					    printf("%f received better score: %d %d\n",timestamp, best_id, best_score);
+					    printf("%d received better score: %d %d\n",timestamp, best_id, best_score);
 					}
 
 					new_score[i] = 0;

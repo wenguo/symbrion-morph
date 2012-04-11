@@ -999,14 +999,16 @@ void RobotKIT::InOrganism()
 			SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
 
         int num_neighbours = para.debug.para[2];
+        std::cout << timestamp << " neighbour(s) at: "; 
         for( int i=0; i<num_neighbours; i++ )
         {
             docked[para.debug.para[3+i]] = true;
             msg_subog_seq_expected |= 1<<(int)para.debug.para[3+i];
             std::cout << "expected: " << (int)msg_subog_seq_expected << std::endl;
-            std::cout << timestamp << " neighbour at: " << para.debug.para[3+i] << std::endl;
+            std::cout << para.debug.para[3+i] << " ";
         }	
-	
+        std::cout << std::endl;
+
         target = para.og_seq_list[0];
         std::cout << timestamp << " Target Shape: " << target << std::endl;
 
