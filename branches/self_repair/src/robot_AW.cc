@@ -943,16 +943,23 @@ void RobotAW::InOrganism()
 
     if(timestamp == 40)
     {
+        RobotBase::SetIRRX(board_dev_num[0], true);
+        RobotBase::SetIRRX(board_dev_num[1], true);
+        RobotBase::SetIRRX(board_dev_num[2], true);
+        RobotBase::SetIRRX(board_dev_num[3], true);
+
         for(int i=0;i<NUM_IRS;i++)
     		SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
 
         int num_neighbours = para.debug.para[2];
+        std::cout << timestamp << " neighbour(s) at: ";
         for( int i=0; i<num_neighbours; i++ )
         {
             docked[para.debug.para[3+i]] = true;
             msg_subog_seq_expected = 1<<para.debug.para[3+i];
-            std::cout << timestamp << " neighbour at: " << para.debug.para[3+i];
+            std::cout << para.debug.para[3+i] << " ";
         }
+        std::cout << std::endl;
 
         target = para.og_seq_list[0];
         std::cout << timestamp << " Target Shape: " << target << std::endl;

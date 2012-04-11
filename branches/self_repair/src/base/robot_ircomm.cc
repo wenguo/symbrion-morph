@@ -277,8 +277,12 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 				msg_score_received |= 1<<channel;
 				new_id[channel] = data[1];
 				new_score[channel] = data[2];
-                printf("%d Received id score %d %d\n",timestamp,new_id[channel],new_score[channel]);
-				ack_required = true;
+                                printf("%d Received id score %d %d\n",timestamp,new_id[channel],new_score[channel]);
+			       
+                                // only acknowledge messages sent by 
+                                // other members of the sub-organism 
+                                if( docked[channel] )
+                                    ack_required = true;
 
 			}
         break;
@@ -574,10 +578,10 @@ void Robot::PropagateReshapeScore( uint8_t score, int ignore_side )
     	if( docked[i] && i != ignore_side )
     	{
     		BroadcastIRMessage(i, IR_MSG_TYPE_RESHAPING, buf, 1, true);
-    	}
+    	        printf("%d Propagating reshaping score: %d on side %d\n",timestamp, score,i);
+        }
     }
 
-    printf("%d Propagating reshaping score: %d\n",timestamp, score);
 
 }
 
@@ -594,10 +598,10 @@ void Robot::PropagateSubOrgScore( uint8_t id, uint8_t score, int ignore_side )
     	if( docked[i] && i != ignore_side )
     	{
     		BroadcastIRMessage(i, IR_MSG_TYPE_SCORE, buf, 2, true);
-    	}
+    	        printf("%d Propagating id score: %d %d on side %d\n",timestamp,id,score,i);
+        }
     }
 
-    printf("%d Propagating id score: %d %d\n",timestamp,id,score);
 }
 void Robot::BroadcastScore( int i, uint8_t score, uint8_t id )
 {

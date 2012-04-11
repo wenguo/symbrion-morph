@@ -33,7 +33,7 @@ Robot::Robot()
     move_duration = 100;
     broadcast_start = 0;
     broadcast_duration = 200;
-    broadcast_period = 20;
+    broadcast_period = 50;
 
     hinge_motor_status = LOWED;
     RGBLED_flashing = 0;
