@@ -257,8 +257,14 @@ void RobotKIT::UpdateActuators()
 // for self-repair
 void RobotKIT::UpdateFailures()
 {
-	if( para.debug.para[0] > 0 && timestamp > (unsigned) para.debug.para[0] )
-		module_failed = true;
+	if( !module_failed )
+	{
+		if( current_state == MACROLOCOMOTION )
+		{
+			if( para.debug.para[0] > 0 && timestamp > (unsigned) para.debug.para[0] )
+				module_failed = true;
+		}
+	}
 }
 
 void RobotKIT::Avoidance()
@@ -993,47 +999,6 @@ void RobotKIT::InOrganism()
     }
     */
 
-
-    if( timestamp < 40 )
-        return;
-
-    if(timestamp == 40)
-    {
-        for(int i=0;i<NUM_IRS;i++)
-			SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-
-        RobotBase::SetIRRX(board_dev_num[0], false);
-        RobotBase::SetIRRX(board_dev_num[1], false);
-        RobotBase::SetIRRX(board_dev_num[2], false);
-        RobotBase::SetIRRX(board_dev_num[3], false);
-
-        int num_neighbours = para.debug.para[2];
-        std::cout << timestamp << " neighbour(s) at: "; 
-        for( int i=0; i<num_neighbours; i++ )
-        {
-            docked[para.debug.para[3+i]] = true;
-            msg_subog_seq_expected |= 1<<(int)para.debug.para[3+i];
-            std::cout << para.debug.para[3+i] << " ";
-        }	
-        std::cout << std::endl;
-
-        target = para.og_seq_list[0];
-        std::cout << timestamp << " Target Shape: " << target << std::endl;
-
-        }
-
-	if( StartRepair() )
-	{
-		last_state = INORGANISM;
-		seed = false;
-	    return;
-	    // do housekeeping
-	}
-	else
-	{
-		return;
-	}
-
     //seed robot monitoring total number of robots in the organism
     if(seed)
     {
@@ -1167,6 +1132,42 @@ void RobotKIT::Undocking()
     }
 }
 
+
+void RobotKIT::Lowering()
+{
+	lowering_count++;
+
+	if(seed && lowering_count >= 150)
+	{
+		PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
+
+		current_state = DISASSEMBLY;
+		last_state = LOWERING;
+
+		for(int i=0;i<NUM_DOCKS;i++)
+		{
+			SetRGBLED(i, 0, 0, 0, 0);
+			if(docked[i])
+				msg_unlocked_expected |=1<<i;
+		}
+	}
+	else if(msg_disassembly_received)
+	{
+		current_state = DISASSEMBLY;
+		last_state = LOWERING;
+
+		msg_disassembly_received = 0;
+
+		for(int i=0;i<NUM_DOCKS;i++)
+		{
+			SetRGBLED(i, 0, 0, 0, 0);
+			if(docked[i])
+				msg_unlocked_expected |=1<<i;
+		}
+	}
+
+}
+
 void RobotKIT::Raising()
 {
     leftspeed = 0;
@@ -1213,11 +1214,6 @@ void RobotKIT::Raising()
         current_state = MACROLOCOMOTION;
         last_state = RAISING;
     }
-
-}
-
-void RobotKIT::Lowering()
-{
 
 }
 
@@ -1314,11 +1310,19 @@ void RobotKIT::Reshaping()
 
 void RobotKIT::MacroLocomotion()
 {
+	if( StartRepair()  )
+	{
+		last_state = MACROLOCOMOTION;
+		seed = false;
+		return;
+		// do housekeeping
+	}
+
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;
-    macrolocomotion_count++;
 
+    macrolocomotion_count++;
     //flashing RGB leds
     static int index = 0;
     index = (timestamp / 2) % 4;
@@ -1343,25 +1347,30 @@ void RobotKIT::MacroLocomotion()
         }
     }
 
-    if(seed && macrolocomotion_count >= 150)
+    if( seed && macrolocomotion_count >= 100 )
     {
-        PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
+    	// Stop moving
+        leftspeed = 0;
+        rightspeed = 0;
+        sidespeed = 0;
 
-        current_state = DISASSEMBLY;
-        last_state = MACROLOCOMOTION;
+        // Propagate lowering messages
+    	PropagateIRMessage(IR_MSG_TYPE_LOWERING);
 
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetRGBLED(i, 0, 0, 0, 0);
+    	last_state = MACROLOCOMOTION;
+    	current_state = LOWERING;
+    	lowering_count = 0;
     }
-    else if(msg_disassembly_received)
+    else if( msg_lowering_received )
     {
-        current_state = DISASSEMBLY;
-        last_state = MACROLOCOMOTION;
+    	// Stop moving
+        leftspeed = 0;
+        rightspeed = 0;
+        sidespeed = 0;
 
-        msg_disassembly_received = 0;
-
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetRGBLED(i, 0, 0, 0, 0);
+    	last_state = MACROLOCOMOTION;
+    	current_state = LOWERING;
+    	lowering_count = 0;
     }
 
 }
@@ -1489,6 +1498,36 @@ void RobotKIT::Debugging()
                 SetDockingMotor(0, OPEN);
             }
             break;
+        case 11:
+			if( timestamp < 40 )
+				return;
+
+			if(timestamp == 40)
+			{
+				// Setup LEDs and receivers
+				for(int i=0;i<NUM_DOCKS;i++)
+				{
+					SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+					RobotBase::SetIRRX(board_dev_num[i], false);
+				}
+
+				int num_neighbours = para.debug.para[2];
+				msg_subog_seq_expected = 0;
+				std::cout << timestamp << " neighbour(s) at: ";
+				for( int i=0; i<num_neighbours; i++ )
+				{
+					docked[para.debug.para[3+i]] = true;
+					msg_subog_seq_expected |= 1<<para.debug.para[3+i];
+					std::cout << para.debug.para[3+i] << " ";
+				}
+				std::cout << std::endl;
+
+				target = para.og_seq_list[0];
+				std::cout << timestamp << " Target Shape: " << target << std::endl;
+
+				current_state = MACROLOCOMOTION;
+			}
+			break;
         default:
             break;
     }

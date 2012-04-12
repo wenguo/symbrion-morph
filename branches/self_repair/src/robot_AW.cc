@@ -193,10 +193,13 @@ void RobotAW::UpdateActuators()
 void RobotAW::UpdateFailures()
 {
 	if( !module_failed )
-        {
-            if( para.debug.para[0] > 0 && timestamp > (unsigned) para.debug.para[0] )
-                module_failed = true;
-        }
+	{
+		if( current_state == MACROLOCOMOTION )
+		{
+			if( para.debug.para[0] > 0 && timestamp > (unsigned) para.debug.para[0] )
+				module_failed = true;
+		}
+	}
 }
 
 void RobotAW::Avoidance()
@@ -940,48 +943,6 @@ void RobotAW::InOrganism()
     }
     */
 
-
-    if( timestamp < 40 )
-        return;
-
-    if(timestamp == 40)
-    {
-        RobotBase::SetIRRX(board_dev_num[0], true);
-        RobotBase::SetIRRX(board_dev_num[1], true);
-        RobotBase::SetIRRX(board_dev_num[2], false);
-        RobotBase::SetIRRX(board_dev_num[3], true);
-
-        for(int i=0;i<NUM_IRS;i++)
-    		SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-
-        int num_neighbours = para.debug.para[2];
-        msg_subog_seq_expected = 0;
-        std::cout << timestamp << " neighbour(s) at: ";
-        for( int i=0; i<num_neighbours; i++ )
-        {
-            docked[para.debug.para[3+i]] = true;
-            msg_subog_seq_expected |= 1<<para.debug.para[3+i];
-            std::cout << para.debug.para[3+i] << " ";
-        }
-        std::cout << std::endl;
-
-        target = para.og_seq_list[0];
-        std::cout << timestamp << " Target Shape: " << target << std::endl;
-
-    }
-
-	if( StartRepair()  )
-	{
-		last_state = INORGANISM;
-		seed = false;
-	    return;
-	    // do housekeeping
-	}
-	else
-	{
-		return;
-	}
-
     //seed robot monitoring total number of robots in the organism
     if(seed)
     {
@@ -1111,6 +1072,46 @@ void RobotAW::Undocking()
 
 }
 
+void RobotAW::Lowering()
+{
+	lowering_count++;
+
+	if( lowering_count <= 30 )
+	{
+        if( lowering_count == 30 )
+            SetHingeMotor(DOWN);
+	}
+	else if(seed && lowering_count >= 150)
+	{
+		PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
+
+		current_state = DISASSEMBLY;
+		last_state = LOWERING;
+
+		for(int i=0;i<NUM_DOCKS;i++)
+		{
+			SetRGBLED(i, 0, 0, 0, 0);
+			if(docked[i])
+				msg_unlocked_expected |=1<<i;
+		}
+	}
+	else if(msg_disassembly_received)
+	{
+		current_state = DISASSEMBLY;
+		last_state = LOWERING;
+
+		msg_disassembly_received = 0;
+
+		for(int i=0;i<NUM_DOCKS;i++)
+		{
+			SetRGBLED(i, 0, 0, 0, 0);
+			if(docked[i])
+				msg_unlocked_expected |=1<<i;
+		}
+	}
+}
+
+
 void RobotAW::Raising()
 {
     leftspeed = 0;
@@ -1167,11 +1168,6 @@ void RobotAW::Raising()
 
 }
 
-
-void RobotAW::Lowering()
-{
-
-}
 
 void RobotAW::Reshaping()
 {
@@ -1265,71 +1261,69 @@ void RobotAW::Reshaping()
 
 void RobotAW::MacroLocomotion()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = -20;
 
-    macrolocomotion_count++;
-    //flashing RGB leds
-    static int index = 0;
-    index = (timestamp / 2) % 4;
-    for(int i=0;i<NUM_DOCKS;i++)
-    {
-        switch (index)
-        {
-            case 0:
-                SetRGBLED(i, RED, GREEN, 0, 0);
-                break;
-            case 1:
-                SetRGBLED(i, 0, RED, 0, GREEN);
-                break;
-            case 2:
-                SetRGBLED(i, 0, 0, GREEN, RED);
-                break;
-            case 3:
-                SetRGBLED(i, GREEN, 0, RED, 0);
-                break;
-            default:
-                break;
-        }
-    }
+	if( StartRepair()  )
+	{
+		last_state = MACROLOCOMOTION;
+		seed = false;
+		return;
+		// do housekeeping
+	}
 
-    if(macrolocomotion_count >=30)
+	leftspeed = 0;
+	rightspeed = 0;
+	//sidespeed = -20; // don't move
+
+	macrolocomotion_count++;
+	//flashing RGB leds
+	static int index = 0;
+	index = (timestamp / 2) % 4;
+	for(int i=0;i<NUM_DOCKS;i++)
+	{
+		switch (index)
+		{
+			case 0:
+				SetRGBLED(i, RED, GREEN, 0, 0);
+				break;
+			case 1:
+				SetRGBLED(i, 0, RED, 0, GREEN);
+				break;
+			case 2:
+				SetRGBLED(i, 0, 0, GREEN, RED);
+				break;
+			case 3:
+				SetRGBLED(i, GREEN, 0, RED, 0);
+				break;
+			default:
+				break;
+		}
+	}
+
+
+    if(seed && macrolocomotion_count >=100)
     {
+    	// Stop moving
         leftspeed = 0;
         rightspeed = 0;
         sidespeed = 0;
-        if(macrolocomotion_count ==35)
-            SetHingeMotor(DOWN);
+
+        // Propagate lowering messages
+    	PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+
+    	last_state = MACROLOCOMOTION;
+    	current_state = LOWERING;
+    	lowering_count = 0;
     }
-
-    if(seed && macrolocomotion_count >= 150)
+    else if( msg_lowering_received )
     {
-        PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
+    	// Stop moving
+        leftspeed = 0;
+        rightspeed = 0;
+        sidespeed = 0;
 
-        current_state = DISASSEMBLY;
-        last_state = MACROLOCOMOTION;
-
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            SetRGBLED(i, 0, 0, 0, 0);
-            if(docked[i])
-                msg_unlocked_expected |=1<<i;
-        }
-    }
-    else if(msg_disassembly_received)
-    {
-        current_state = DISASSEMBLY;
-        last_state = MACROLOCOMOTION;
-
-        msg_disassembly_received = 0;
-
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            SetRGBLED(i, 0, 0, 0, 0);
-            if(docked[i])
-                msg_unlocked_expected |=1<<i;
-        }
+    	last_state = MACROLOCOMOTION;
+    	current_state = LOWERING;
+    	lowering_count = 0;
     }
 }
 
@@ -1411,6 +1405,36 @@ void RobotAW::Debugging()
                 SetHingeMotor(DOWN);
             }
             break;
+        case 11:
+        	if( timestamp < 40 )
+        		return;
+
+			if(timestamp == 40)
+			{
+				// Setup LEDs and receivers
+				for(int i=0;i<NUM_DOCKS;i++)
+				{
+					SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+					RobotBase::SetIRRX(board_dev_num[i], true);
+				}
+
+				int num_neighbours = para.debug.para[2];
+				msg_subog_seq_expected = 0;
+				std::cout << timestamp << " neighbour(s) at: ";
+				for( int i=0; i<num_neighbours; i++ )
+				{
+					docked[para.debug.para[3+i]] = true;
+					msg_subog_seq_expected |= 1<<para.debug.para[3+i];
+					std::cout << para.debug.para[3+i] << " ";
+				}
+				std::cout << std::endl;
+
+				target = para.og_seq_list[0];
+				std::cout << timestamp << " Target Shape: " << target << std::endl;
+
+				current_state = MACROLOCOMOTION;
+			}
+        	break;
         default:
             break;
     }
