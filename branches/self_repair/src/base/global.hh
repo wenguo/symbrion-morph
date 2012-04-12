@@ -79,7 +79,8 @@ enum fsm_state_t {
     UNDOCKING,
     INORGANISM,  // 15
     RECRUITMENT, 
-    TRANSFORMING,
+    RAISING,
+    LOWERING,
     RESHAPING,
     MACROLOCOMOTION,
     FAILED,
@@ -87,7 +88,7 @@ enum fsm_state_t {
     LEADREPAIR,
     REPAIR,
     BROADCASTSCORE,
-    DEBUGGING, 
+    DEBUGGING, //26
     STATE_COUNT
 };
 enum robot_mode_t {
@@ -131,7 +132,8 @@ enum irmsg_type_t {
     IR_MSG_TYPE_DISASSEMBLY,
     IR_MSG_TYPE_NEWROBOT_JOINED,
     IR_MSG_TYPE_ORGANISM_FORMED,
-    IR_MSG_TYPE_TRANSFORMING,
+    IR_MSG_TYPE_RAISING,
+    IR_MSG_TYPE_LOWERING,
     IR_MSG_TYPE_RESHAPING,
 
     // for self-repair

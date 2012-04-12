@@ -59,15 +59,19 @@ class Robot
     void CheckEthCommunication();
     void EthSendMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
 
-
-    void BroadcastIRMessage(int channel, uint8_t type, bool ack_required = false);
-    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required = false);
-    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
-    void BroadcastIRAckMessage(int channel, uint8_t type);
+    //send to specified receiver (defined in docked[i]), ack may be required
+    void SendIRMessage(int channel, uint8_t type, bool ack_required = true);
+    void SendIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required = true);
+    void SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = true);
+    void SendIRAckMessage(int channel, uint8_t type);
     void PropagateIRMessage(uint8_t type, uint8_t *data = NULL, uint32_t size = 0, int excluded_channel = -1);
     void PropagateSingleIRMessage(uint8_t type, int channel, uint8_t *data = NULL, uint32_t size = 0 );
 
-    void IRSendMessage(const IRMessage& msg);
+    //no specified reciever, ack is not required
+    void BroadcastIRMessage(int channel, uint8_t type);
+    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t data);
+    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size=1);
+
     bool MessageWaitingAck(int channel, uint8_t type);
     bool MessageWaitingAck(uint8_t type);
 
@@ -96,7 +100,8 @@ class Robot
     virtual void InOrganism()=0;
     virtual void Disassembly()=0;
     virtual void Recruitment()=0;
-    virtual void Transforming()=0;
+    virtual void Raising()=0;
+    virtual void Lowering()=0;
     virtual void Reshaping()=0;
     virtual void MacroLocomotion()=0;
     virtual void Debugging()=0;
@@ -155,7 +160,8 @@ class Robot
     static void Disassembly(Robot * robot){robot->Disassembly();}
     static void Undocking(Robot * robot){robot->Undocking();}
     static void Recruitment(Robot * robot){robot->Recruitment();}
-    static void Transforming(Robot * robot){robot->Transforming();}
+    static void Raising(Robot * robot){robot->Raising();}
+    static void Lowering(Robot * robot){robot->Lowering();}
     static void Reshaping(Robot * robot){robot->Reshaping();}
     static void MacroLocomotion(Robot * robot){robot->MacroLocomotion();}
     static void Debugging(Robot * robot){robot->Debugging();}
@@ -171,6 +177,7 @@ class Robot
     void RegisterBehaviour(robot_callback_t fnp, fsm_state_t state);
     robot_callback_t behaviours[STATE_COUNT];
 
+    void SendIRMessage(const IRMessage& msg);
     void ProcessIRMessage(std::auto_ptr<Message>);
     static void *ProcessEthMessage();
 
@@ -218,7 +225,11 @@ class Robot
     //status
     uint8_t bumped;
     uint8_t RGBLED_flashing;
-    bool docked[NUM_DOCKS];
+    uint8_t docked[NUM_DOCKS];
+    //bits 0-1: mytype
+    //bits 2-3: myside
+    //bits 4-5: neighbour's type
+    //bits 6-7: neighbour's side
     bool docking_done[NUM_DOCKS];   
     bool unlocking_required[NUM_DOCKS];
     uint8_t recruitment_stage[NUM_DOCKS];//using an array in case parallel docking is enabled
@@ -256,7 +267,8 @@ class Robot
     uint32_t docking_count;
     uint32_t inorganism_count;
     uint32_t macrolocomotion_count;
-    uint32_t transforming_count;
+    uint32_t raising_count;
+    uint32_t lowering_count;
     uint32_t undocking_count; //step for undocking, i.e. open connectors and wait a few steps
     uint32_t assembly_count;  //how long the robot detected last recruitment signals
     uint32_t waiting_count;
@@ -272,7 +284,8 @@ class Robot
     uint8_t robot_in_range_replied;
     uint8_t msg_reshaping_received;
     uint8_t msg_reshaping_expected;
-    uint8_t msg_transforming_received;
+    uint8_t msg_raising_received;
+    uint8_t msg_lowering_received;
     uint8_t msg_disassembly_received;
     uint8_t msg_locked_received;
     uint8_t msg_locked_expected;
