@@ -676,7 +676,7 @@ void RobotAW::Docking()
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED2, 0);
         RobotBase::SetIRRX(board_dev_num[assembly_info.side2], false);
 
-        BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_LOCKME,  true);
+        Robot::SendIRMessage(assembly_info.side2, IR_MSG_TYPE_LOCKME,  true);
         msg_locked_expected |= 1<<assembly_info.side2;
 
         //TODO depend which types of robot it docks to, it may be required to send lockme messages
@@ -715,7 +715,7 @@ void RobotAW::Docking()
             if(proximity[0] < 50 && proximity[1]<50)
             {
                 //          SetRGBLED(0, 0, 0, 0, 0);
-                BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME, false);
+                Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
                 //              SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
             } 
             break;
@@ -738,7 +738,7 @@ void RobotAW::Locking()
     if(msg_locked_received & (1<<docking_side)) //replace 0 with the correct docking face numer, currently 0 (FRONT)
     {
         msg_locked_received &= ~(1<<docking_side);
-        docked[docking_side] = true;
+        docked[docking_side] = assembly_info.type2 | assembly_info.side2 >> 2 | assembly_info.type1 >> 4 | assembly_info.side1 >> 6;//true;
         msg_organism_seq_expected = true;
         current_state = INORGANISM;
         last_state = LOCKING;
@@ -778,7 +778,7 @@ void RobotAW::Recruitment()
                 SetRGBLED(i, 0,0,0,0);
                 if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == i)
                 {
-                    BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data);
+                    Robot::BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data);
                 }
             }
         }
@@ -827,7 +827,7 @@ void RobotAW::Recruitment()
             if(msg_locked_received & (1<<i))
             {
                 msg_locked_received &=~(1<<i);
-                docked[i]=true;
+                docked[i] = it1->getSymbol(0).data;//true;
 
                 SendBranchTree(i, mytree);
 
@@ -849,7 +849,7 @@ void RobotAW::Recruitment()
             //recevied acks after sending sequence information?
             if(!MessageWaitingAck(i, IR_MSG_TYPE_ORGANISM_SEQ))
             {
-                docked[i] = true;
+                //docked[i] = it1->getSymbol(0).data;//true;
                 recruitment_stage[i] = STAGE5;
                 docking_done[i] = false;
 
@@ -881,7 +881,7 @@ void RobotAW::Recruitment()
                 uint8_t data[5];
                 data[0] = it1->getSymbol(0).data;
                 memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                BroadcastIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+                Robot::BroadcastIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5);
             }
         }
 
@@ -1063,7 +1063,7 @@ void RobotAW::Disassembly()
                 num_docked++;
                 if(msg_unlocked_received & (1<<i))
                 {
-                    docked[i]=false;
+                    docked[i]=0;//false;
                     num_docked--;
                 }
             }
@@ -1111,7 +1111,7 @@ void RobotAW::Undocking()
 
 }
 
-void RobotAW::Transforming()
+void RobotAW::Raising()
 {
     leftspeed = 0;
     rightspeed = 0;
@@ -1148,26 +1148,30 @@ void RobotAW::Transforming()
         }
     }
 
-    if(msg_transforming_received)
+    if(msg_raising_received)
     {
-        transforming_count++;
+        raising_count++;
     }
 
-    if(transforming_count==2)
+    if(raising_count==2)
     {
        SetHingeMotor(UP); 
     }
 
-    if(transforming_count >=50)
+    if(raising_count >=50)
     {
         current_state = MACROLOCOMOTION;
-        last_state = TRANSFORMING;
+        last_state = RAISING;
     }
 
 
 }
 
 
+void RobotAW::Lowering()
+{
+
+}
 
 void RobotAW::Reshaping()
 {
@@ -1331,10 +1335,10 @@ void RobotAW::MacroLocomotion()
 
 void RobotAW::Debugging()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
-    //printf("Debuging %d:\t", para.debug.mode);
+    //leftspeed = 0;
+    //rightspeed = 0;
+    //sidespeed = 0;
+    printf("Debuging %d:\n", para.debug.mode);
 
     switch (para.debug.mode)
     {

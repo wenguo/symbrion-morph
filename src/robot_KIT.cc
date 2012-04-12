@@ -747,7 +747,7 @@ void RobotKIT::Docking()
             if(proximity[0] < 50 && proximity[1]<50)
             {
                 //          SetRGBLED(0, 0, 0, 0, 0);
-                BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME, false);
+                Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
                 //              SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
             } 
             break;
@@ -770,9 +770,9 @@ void RobotKIT::Locking()
     //docking motor is done?
     if(docking_motors_status[docking_side] == CLOSED) //replace 0 with corresponding docking face
     {
-        if(docked[docking_side]==false)
+        if(docked[docking_side]==0)
         {
-            docked[docking_side] = true;
+            docked[docking_side] = assembly_info.type2  | assembly_info.side2 >>2 | assembly_info.type1 >>4 | assembly_info.side1 >> 6;
             unlocking_required[docking_side] = true;
             //for(int i=0;i<NUM_DOCKS;i++)
             {
@@ -780,7 +780,7 @@ void RobotKIT::Locking()
                 // RobotBase::SetIRRX(board_dev_num[docking_side], false);
 
             }
-            BroadcastIRMessage(docking_side, IR_MSG_TYPE_LOCKED, true);
+            Robot::SendIRMessage(docking_side, IR_MSG_TYPE_LOCKED, true);
         }
         else if(docked[docking_side]==true && !MessageWaitingAck(docking_side, IR_MSG_TYPE_LOCKED))
         {
@@ -819,7 +819,7 @@ void RobotKIT::Recruitment()
                 SetRGBLED(i, 0,0,0,0);
                 if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == i)
                 {
-                    BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data);
+                    Robot::BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data);
                 }
             }
         }
@@ -880,13 +880,13 @@ void RobotKIT::Recruitment()
         else if(recruitment_stage[i]==STAGE4)
         {
             // printf("%d STAGE4\n", timestamp);
-            if(docking_motors_status[i] == CLOSED && docked[i]==false)
+            if(docking_motors_status[i] == CLOSED && docked[i]==0)
             {
-                BroadcastIRMessage(i, IR_MSG_TYPE_LOCKED, true);
+                Robot::SendIRMessage(i, IR_MSG_TYPE_LOCKED, true);
                 unlocking_required[i] = true;
-                docked[i]=true;
+                docked[i]= it1->getSymbol(0).data;
             }
-            else if(docked[i]==true && !docking_done[i])
+            else if(docked[i]!=0 && !docking_done[i])
             {
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_LOCKED))
                 {
@@ -899,7 +899,7 @@ void RobotKIT::Recruitment()
                 //recevied acks after sending sequence information?
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_ORGANISM_SEQ))
                 {
-                    docked[i] = true;
+                    docked[i]= it1->getSymbol(0).data;
                     recruitment_stage[i] = STAGE5;
                     docking_done[i] = false;
 
@@ -933,7 +933,7 @@ void RobotKIT::Recruitment()
                 uint8_t data[5];
                 data[0] = it1->getSymbol(0).data;
                 memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                BroadcastIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+                Robot::BroadcastIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5);
             }
         }
 
@@ -1122,8 +1122,8 @@ void RobotKIT::Disassembly()
                 //TODO: how about two KIT robots docked to each other
                 else if(docking_motors_status[i]==OPENED)
                 {
-                    BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
-                    docked[i]=false;
+                    Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+                    docked[i]=0;
                     num_docked--;
                 }
             }
@@ -1167,20 +1167,22 @@ void RobotKIT::Undocking()
     }
 }
 
-void RobotKIT::Transforming()
+void RobotKIT::Raising()
 {
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;
 
-    if(transforming_count ==2)
+    /*
+    if(raising_count ==2)
     {
         for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
         docked[0] = true;
         docked[2] = true;
-        PropagateIRMessage(IR_MSG_TYPE_TRANSFORMING);
+        PropagateIRMessage(IR_MSG_TYPE_RAISING);
     }
+    */
 
     //flashing RGB leds
     static int index = 0;
@@ -1206,14 +1208,18 @@ void RobotKIT::Transforming()
         }
     }
 
-    if(transforming_count++ > 30 && MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
+    if(raising_count++ > 30 && MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
     {
         current_state = MACROLOCOMOTION;
-        last_state = TRANSFORMING;
+        last_state = RAISING;
     }
 
 }
 
+void RobotKIT::Lowering()
+{
+
+}
 
 void RobotKIT::Reshaping()
 {
@@ -1461,14 +1467,14 @@ void RobotKIT::Debugging()
                 uint8_t data[5];
                 data[0] = sym.data;
                 memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                BroadcastIRMessage(::BACK, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, true);
+                Robot::SendIRMessage(::BACK, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, true);
             }
 
             break;
         case 9:
             if(timestamp > 40)
             {
-                BroadcastIRMessage(::FRONT, IR_MSG_TYPE_SCORE);
+                Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_SCORE);
             }
             break;
         case 10:

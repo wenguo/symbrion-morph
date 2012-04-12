@@ -55,7 +55,8 @@ Robot::Robot()
     RegisterBehaviour(&Robot::Disassembly, DISASSEMBLY);
     RegisterBehaviour(&Robot::Undocking, UNDOCKING);
     RegisterBehaviour(&Robot::Recruitment, RECRUITMENT);
-    RegisterBehaviour(&Robot::Transforming, TRANSFORMING);
+    RegisterBehaviour(&Robot::Raising, RAISING);
+    RegisterBehaviour(&Robot::Lowering, LOWERING);
     RegisterBehaviour(&Robot::Reshaping, RESHAPING);
     RegisterBehaviour(&Robot::MacroLocomotion, MACROLOCOMOTION);
     RegisterBehaviour(&Robot::Debugging, DEBUGGING);
@@ -78,7 +79,7 @@ Robot::Robot()
     for (int i = 0; i < NUM_DOCKS; i++)
     {
         comm_status[i] = 0;
-        docked[i] = false;
+        docked[i] = 0;
         docking_done[i] = false;
         unlocking_required[i] = false;
         recruitment_signal_interval_count[i]=0;//DEFAULT_RECRUITMENT_COUNT;
@@ -104,7 +105,7 @@ Robot::Robot()
     recover_count = 0;
     inorganism_count = 0;
     macrolocomotion_count = 0;
-    transforming_count = 0;
+    raising_count = 0;
 
     beacon_signals_detected=0;
     robot_in_range_replied=0;
@@ -121,7 +122,8 @@ Robot::Robot()
     msg_lockme_expected = 0;
     msg_disassembly_received = 0;
     msg_reshaping_received=0;
-    msg_transforming_received = 0;
+    msg_raising_received = 0;
+    msg_lowering_received = 0;
     msg_guideme_received = 0;
     msg_organism_seq_received = false;
     msg_organism_seq_expected = false;

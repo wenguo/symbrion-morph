@@ -44,7 +44,8 @@ class RobotKIT:public Robot, public KaBot
         virtual void Disassembly();
         virtual void Undocking();
         virtual void Recruitment();
-        virtual void Transforming();
+        virtual void Raising();
+        virtual void Lowering();
         virtual void Reshaping();
         virtual void MacroLocomotion();
         virtual void Debugging();
