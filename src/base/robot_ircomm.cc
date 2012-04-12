@@ -250,9 +250,10 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
 					printf("%d Sub-organism string received\n",timestamp);
 					PrintSubOGString(subog_str);
-				}
+                                }
 
-				ack_required = true;
+                                if( docked[channel] )
+                                    ack_required = true;
             }
 	    break;
         case IR_MSG_TYPE_SCORE_STRING:
@@ -268,8 +269,11 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 			                	
 					std::cout << "Score received: " << (int) best_score << std::endl;
 					PrintSubOGString(subog_str);
-				}
-				ack_required = true;
+				
+                                }
+
+                                if( docked[channel] )
+                                    ack_required = true;
 			}
         break;
         case IR_MSG_TYPE_SCORE:
@@ -302,9 +306,11 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 						if( best_score == own_score )
 							seed = true;
 					}
-				}
+                                }
 
-				ack_required = true;
+                                if( docked[channel] )
+                                    ack_required = true;
+
 			}
         break;
         case IR_MSG_TYPE_PROPAGATED:
