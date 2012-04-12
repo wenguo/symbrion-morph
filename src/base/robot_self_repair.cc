@@ -105,8 +105,8 @@ bool Robot::StartRepair()
 			SetRGBLED(i, YELLOW, YELLOW, YELLOW, YELLOW);
 
 		msg_subog_seq_expected = 1<<wait_side;
-		ret = true;
-                printf("%d Detected subog_seq, entering REPAIR\n",timestamp);
+        printf("%d Detected subog_seq, entering REPAIR\n",timestamp);
+        ret = true;
 	}
     return ret;
 }
@@ -176,18 +176,21 @@ void Robot::LeadRepair()
 		}
 		else
 		{
+			// No longer docked to failed module
+			docked[parent_side] = false;
+
 			for( int i=0; i<NUM_DOCKS; i++ )
 				SetRGBLED(i,GREEN,GREEN,GREEN,GREEN);
   
-                        // if there is only one module, create single module sequence
-                        if( subog_str[0] == 0 )
-                            subog = OrganismSequence(type);
+			// if there is only one module, create single module sequence
+			if( subog_str[0] == 0 )
+				subog = OrganismSequence(type);
 
-                        // else rebuild sequence from the subog_str
-                        else
-                            subog.reBuild(subog_str+1,subog_str[0]);
-			
-                        best_score = own_score = calculateSubOrgScore( subog, target );
+			// else rebuild sequence from the subog_str
+			else
+				subog.reBuild(subog_str+1,subog_str[0]);
+
+			best_score = own_score = calculateSubOrgScore( subog, target );
 
             std::cout << "OrganismSequence: " << subog << " score: " << (int) own_score << std::endl;
 
@@ -249,8 +252,8 @@ void Robot::LeadRepair()
 			best_id = subog_id;
 			broadcast_start = timestamp;
 
-                        // To avoid interference, don't propagate score at this stage
-                        //PropagateSubOrgScore( best_id, best_score, parent_side );
+			// To avoid interference, don't propagate score at this stage
+			//PropagateSubOrgScore( best_id, best_score, parent_side );
 		}
 	}
 	// Broadcast and listen for sub-organism scores
@@ -261,49 +264,46 @@ void Robot::LeadRepair()
 			// Broadcast
 			if( timestamp % broadcast_period < (broadcast_period/5) )
 			{
-                            if( timestamp % 3 == 0 )
-                            {
-                                SetRGBLED(parent_side,0,0,0,0);
-				BroadcastScore( parent_side, best_score, best_id );
+				if( timestamp % 3 == 0 )
+              	{
+					SetRGBLED(parent_side,0,0,0,0);
+					BroadcastScore( parent_side, best_score, best_id );
 			    }
-                        }
+         	}
 			// Listen
 			else
 			{
-                                SetRGBLED(parent_side,RED,RED,RED,RED);
-				//if( !(msg_reshaping_received & 1<<parent_side) )
-				//{
-					int new_score_side = -1;
-					for( int i=0; i<SIDE_COUNT; i++ )
+            	SetRGBLED(parent_side,RED,RED,RED,RED);
+
+				int new_score_side = -1;
+				for( int i=0; i<SIDE_COUNT; i++ )
+				{
+					if( msg_score_received & 1<<i && new_id[i] != best_id )
 					{
-						if( msg_score_received & 1<<i && new_id[i] != best_id )
+						msg_score_received &= ~(1<<i);
+
+						if( new_score[i] > best_score ||
+						  ( new_score[i] == best_score && new_id[i] < best_id) )
 						{
-							msg_score_received &= ~(1<<i);
-
-							if( new_score[i] > best_score ||
-							  ( new_score[i] == best_score && new_id[i] < best_id) )
-							{
-								best_score = new_score[i];
-								best_id = new_id[i];
-								new_score_side = i;
-						        printf("%d received better score: %d %d\n",timestamp, best_id, best_score);
-                            }
-
-							new_score[i] = 0;
-							new_id[i] = SIDE_COUNT;
+							best_score = new_score[i];
+							best_id = new_id[i];
+							new_score_side = i;
+							printf("%d received better score: %d %d\n",timestamp, best_id, best_score);
 						}
-					}
 
-					// If best score has changed, propagate messages to every
-					// side - bar that which the new best score came from
-					if( new_score_side > 0 )
-						PropagateSubOrgScore( best_id, best_score, new_score_side );
-				//}
+						new_score[i] = 0;
+						new_id[i] = SIDE_COUNT;
+					}
+				}
+
+				// If best score has changed, propagate messages to every
+				// side - bar that which the new best score came from
+				if( new_score_side > 0 )
+					PropagateSubOrgScore( best_id, best_score, new_score_side );
 			}
 		}
 		else
 		{
-
 			// If  this is the winning organism
 			if( best_id == subog_id )
 			{
@@ -399,6 +399,7 @@ void Robot::Repair()
 		}
 		else
 		{
+
 			for( int i=0; i<NUM_DOCKS; i++ )
 				SetRGBLED(i,YELLOW,YELLOW,YELLOW,YELLOW);
 

@@ -106,6 +106,7 @@ Robot::Robot()
     inorganism_count = 0;
     macrolocomotion_count = 0;
     raising_count = 0;
+    lowering_count = 0;
 
     beacon_signals_detected=0;
     robot_in_range_replied=0;

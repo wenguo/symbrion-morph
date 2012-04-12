@@ -250,10 +250,10 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
 					printf("%d Sub-organism string received\n",timestamp);
 					PrintSubOGString(subog_str);
-                                }
+				}
 
-                                if( docked[channel] )
-                                    ack_required = true;
+				if( docked[channel] )
+					ack_required = true;
             }
 	    break;
         case IR_MSG_TYPE_SCORE_STRING:
@@ -269,11 +269,10 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 			                	
 					std::cout << "Score received: " << (int) best_score << std::endl;
 					PrintSubOGString(subog_str);
-				
-                                }
+			 	}
 
-                                if( docked[channel] )
-                                    ack_required = true;
+				if( docked[channel] )
+					ack_required = true;
 			}
         break;
         case IR_MSG_TYPE_SCORE:
@@ -281,13 +280,12 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 				msg_score_received |= 1<<channel;
 				new_id[channel] = data[1];
 				new_score[channel] = data[2];
-                                printf("%d Received id score %d %d\n",timestamp,new_id[channel],new_score[channel]);
-			       
-                                // only acknowledge messages sent by 
-                                // other members of the sub-organism 
-                                if( docked[channel] )
-                                    ack_required = true;
+				printf("%d Received id score %d %d\n",timestamp,new_id[channel],new_score[channel]);
 
+				// only acknowledge messages sent by
+				// other members of the sub-organism
+				if( docked[channel] )
+					ack_required = true;
 			}
         break;
         case IR_MSG_TYPE_RESHAPING:
@@ -306,10 +304,10 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 						if( best_score == own_score )
 							seed = true;
 					}
-                                }
+				}
 
-                                if( docked[channel] )
-                                    ack_required = true;
+				if( docked[channel] )
+					ack_required = true;
 
 			}
         break;
@@ -352,7 +350,13 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                             case IR_MSG_TYPE_RAISING:
                                 {
                                     msg_raising_received |= 1<<channel;
-                                    CPrintf1(SCR_GREEN,"%d -- start to transform !", timestamp);
+                                    CPrintf1(SCR_GREEN,"%d -- start to raise !", timestamp);
+								}
+                                break;
+                            case IR_MSG_TYPE_LOWERING:
+                                {
+                                    msg_lowering_received |= 1<<channel;
+                                    CPrintf1(SCR_GREEN,"%d -- start to lower !", timestamp);
                                 }
                                 break;
                             case IR_MSG_TYPE_RESHAPING:
@@ -634,8 +638,7 @@ void Robot::BroadcastScore( int i, uint8_t score, uint8_t id )
 	buf[0] = id;
 	buf[1] = score;
 
-        printf("%d Broadcasting id score %d %d\n",timestamp,id,score);
-
+	printf("%d Broadcasting id score %d %d\n",timestamp,id,score);
 	BroadcastIRMessage( i, IR_MSG_TYPE_SCORE, buf, 2);
 
 }
