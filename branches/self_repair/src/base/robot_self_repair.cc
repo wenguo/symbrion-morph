@@ -106,7 +106,7 @@ bool Robot::StartRepair()
 
 		msg_subog_seq_expected = 1<<wait_side;
 		ret = true;
-
+                printf("%d Detected subog_seq, entering REPAIR\n",timestamp);
 	}
     return ret;
 }

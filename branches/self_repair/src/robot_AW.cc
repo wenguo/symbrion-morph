@@ -40,6 +40,7 @@ void RobotAW::InitHardware()
         SetPrintEnabled(i, false);
     }
 
+    EnableMotors(true);
     //RobotBase::SetIRRX(board_dev_num[2], false);
 
     IRComm::Initialize();
@@ -923,6 +924,7 @@ void RobotAW::InOrganism()
     sidespeed = 0;
     
     //for testing
+    /*
     printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
             (my_IP >> 24) & 0xFF,
             (my_IP >> 16) & 0xFF,
@@ -936,6 +938,7 @@ void RobotAW::InOrganism()
                 (neighbours_IP[i] >> 8) & 0xFF,
                 neighbours_IP[i] & 0xFF);
     }
+    */
 
 
     if( timestamp < 40 )
@@ -945,18 +948,19 @@ void RobotAW::InOrganism()
     {
         RobotBase::SetIRRX(board_dev_num[0], true);
         RobotBase::SetIRRX(board_dev_num[1], true);
-        RobotBase::SetIRRX(board_dev_num[2], true);
+        RobotBase::SetIRRX(board_dev_num[2], false);
         RobotBase::SetIRRX(board_dev_num[3], true);
 
         for(int i=0;i<NUM_IRS;i++)
-    		SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
+    		SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
 
         int num_neighbours = para.debug.para[2];
+        msg_subog_seq_expected = 0;
         std::cout << timestamp << " neighbour(s) at: ";
         for( int i=0; i<num_neighbours; i++ )
         {
             docked[para.debug.para[3+i]] = true;
-            msg_subog_seq_expected = 1<<para.debug.para[3+i];
+            msg_subog_seq_expected |= 1<<para.debug.para[3+i];
             std::cout << para.debug.para[3+i] << " ";
         }
         std::cout << std::endl;

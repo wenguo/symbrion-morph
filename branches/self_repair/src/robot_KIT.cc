@@ -41,6 +41,8 @@ void RobotKIT::InitHardware()
         SetPrintEnabled(i, false); 
     }
 
+    EnableMotors(true);
+
     IRComm::Initialize();
 }
 
@@ -974,7 +976,8 @@ void RobotKIT::InOrganism()
     rightspeed = 0;
     sidespeed = 0;
 
-    //for testing
+    //for testing 
+    /*
     printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
             (my_IP >> 24) & 0xFF,
             (my_IP >> 16) & 0xFF,
@@ -988,6 +991,7 @@ void RobotKIT::InOrganism()
                 (neighbours_IP[i] >> 8) & 0xFF,
                 neighbours_IP[i] & 0xFF);
     }
+    */
 
 
     if( timestamp < 40 )
@@ -996,7 +1000,12 @@ void RobotKIT::InOrganism()
     if(timestamp == 40)
     {
         for(int i=0;i<NUM_IRS;i++)
-			SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
+			SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+
+        RobotBase::SetIRRX(board_dev_num[0], false);
+        RobotBase::SetIRRX(board_dev_num[1], false);
+        RobotBase::SetIRRX(board_dev_num[2], false);
+        RobotBase::SetIRRX(board_dev_num[3], false);
 
         int num_neighbours = para.debug.para[2];
         std::cout << timestamp << " neighbour(s) at: "; 
@@ -1004,7 +1013,6 @@ void RobotKIT::InOrganism()
         {
             docked[para.debug.para[3+i]] = true;
             msg_subog_seq_expected |= 1<<(int)para.debug.para[3+i];
-            std::cout << "expected: " << (int)msg_subog_seq_expected << std::endl;
             std::cout << para.debug.para[3+i] << " ";
         }	
         std::cout << std::endl;
@@ -1458,8 +1466,9 @@ void RobotKIT::Debugging()
 
             break;
         case 9:
-            //      if(timestamp ==35)
+            if(timestamp > 40)
             {
+                BroadcastIRMessage(::FRONT, IR_MSG_TYPE_SCORE);
             }
             break;
         case 10:
