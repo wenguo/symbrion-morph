@@ -261,7 +261,7 @@ void RobotKIT::UpdateFailures()
 	{
 		if( current_state == MACROLOCOMOTION )
 		{
-			if( para.debug.para[0] > 0 && timestamp > (unsigned) para.debug.para[0] )
+			if( para.debug.para[0] > 0 && macrolocomotion_count > (unsigned) para.debug.para[0] )
 				module_failed = true;
 		}
 	}
@@ -1130,6 +1130,19 @@ void RobotKIT::Undocking()
         rightspeed = -30;
         sidespeed = 0;
     }
+    
+    if( undocking_count >= 150 )
+    {
+        leftspeed = 0;
+        rightspeed = 0;
+        sidespeed = 0;
+
+        last_state = UNDOCKING;
+        current_state = FORAGING;
+
+    }
+
+
 }
 
 
@@ -1220,8 +1233,6 @@ void RobotKIT::Raising()
 void RobotKIT::Reshaping()
 {
 
-	return;
-
 	// NOT TESTED
 
 	// If this is the seed or branch received from other module
@@ -1244,36 +1255,51 @@ void RobotKIT::Reshaping()
 			recruitment_count[i] = 0;
 			recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
 
+                        // unless this is the seed do not
+                        // send messages to parent_side
+                        if( !seed && i == parent_side )
+                            continue;
+
 			// check if branch needs to be sent
 			uint8_t branch_side = SIDE_COUNT;
+                        OrganismSequence new_branch;
 			std::vector<OrganismSequence>::iterator it;
 			for(it = mybranches.begin() ; it != mybranches.end(); it++)
 			{
 				if( it->getSymbol(0).side1 == i )
 				{
 					branch_side = it->getSymbol(0).side1;
-					break;
+					new_branch = (*it);
+                                        break;
 				}
 			}
 
-			// if there is a neighbour and there should be
+                        // TODO: Check that neighbour is correct type and orientation!
+                        //  - can be done using new implementation of 'docked' array
+			//
+                        // if there is a neighbour and there should be
 			if( docked[i] && branch_side == i )
 			{
 				// send branch
-                SendBranchTree(i, mytree);  // should this just be the branch instead? (*it).
+                SendBranchTree(i, new_branch);  // should this just be the branch instead? (*it).
                 recruitment_stage[i]=STAGE4;
-			}
+		docking_done[i] = true;
+                printf("%d Sending branch to side %d\n",timestamp, i);
+                        }
+
 			// if there is a neighbour but there shouldn't be
 			else if( docked[i] && branch_side == SIDE_COUNT )
 			{
 				// send disassembly
 		        PropagateSingleIRMessage(IR_MSG_TYPE_DISASSEMBLY,i);
-			}
+			printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
+                        }
 		    // if there isn't a neighbour but there should be
 			else if( !docked[i] && branch_side == i )
 			{
 				// start recruiting
 		        SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
+                        printf("%d Preparing to recruit upon side %d\n",timestamp,i);
 			}
 
 		}
@@ -1282,10 +1308,14 @@ void RobotKIT::Reshaping()
 		if( seed && mytree.Size() <= 0 )
 		{
 			current_state = DISASSEMBLY;
+                        printf("%d No new tree to assemble, entering disassembly\n",timestamp);
 		}
 		else
 		{
 			current_state = RECRUITMENT;
+                        for(int i=0; i<NUM_DOCKS; i++)
+                            SetRGBLED(i, 0, 0, 0, 0);
+
 		}
 
 		last_state = RESHAPING;
@@ -1346,6 +1376,9 @@ void RobotKIT::MacroLocomotion()
                 break;
         }
     }
+
+    // For testing - return after flashing LEDs
+    return;
 
     if( seed && macrolocomotion_count >= 100 )
     {
@@ -1516,7 +1549,7 @@ void RobotKIT::Debugging()
 				std::cout << timestamp << " neighbour(s) at: ";
 				for( int i=0; i<num_neighbours; i++ )
 				{
-					docked[para.debug.para[3+i]] = true;
+					docked[para.debug.para[3+i]] = 1; //true;
 					msg_subog_seq_expected |= 1<<para.debug.para[3+i];
 					std::cout << para.debug.para[3+i] << " ";
 				}

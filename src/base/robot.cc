@@ -135,6 +135,7 @@ Robot::Robot()
     msg_subog_seq_expected = 0;
     msg_score_seq_received = 0;
     msg_score_seq_expected = 0;
+    msg_score_received = 0;
 
     //clear just in case 
     mytree.Clear();

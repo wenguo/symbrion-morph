@@ -49,13 +49,14 @@ bool Robot::StartRepair()
 		printf("%d Module failed!\n",timestamp);
 		ret = true;
 	}
-	//else if( msg_failed_received )
+	else if( msg_failed_received )
+        {
 	//////// for testing only ////////
-	else if( para.debug.para[1] >= 0 )
-	{
-		//subog_id = 2;
-		subog_id = parent_side = para.debug.para[1];
-
+	//else if( para.debug.para[1] >= 0 )
+	//{
+	//	//subog_id = 2;
+	//	subog_id = parent_side = para.debug.para[1];
+        //    
 	//////// for testing only ////////
 
 		msg_failed_received = 0;
@@ -177,7 +178,7 @@ void Robot::LeadRepair()
 		else
 		{
 			// No longer docked to failed module
-			docked[parent_side] = false;
+			docked[parent_side] = 0;
 
 			for( int i=0; i<NUM_DOCKS; i++ )
 				SetRGBLED(i,GREEN,GREEN,GREEN,GREEN);
@@ -250,7 +251,7 @@ void Robot::LeadRepair()
 				SetRGBLED(i,MAGENTA,MAGENTA,MAGENTA,MAGENTA);
 
 			best_id = subog_id;
-			broadcast_start = timestamp;
+			broadcast_start = 0;
 
 			// To avoid interference, don't propagate score at this stage
 			//PropagateSubOrgScore( best_id, best_score, parent_side );
@@ -259,7 +260,31 @@ void Robot::LeadRepair()
 	// Broadcast and listen for sub-organism scores
 	else if( repair_stage == STAGE3 )
 	{
-		if( timestamp < broadcast_start+broadcast_duration )
+                if( broadcast_start == 0 )
+                {
+                    if( msg_score_received )
+                    {  
+                        msg_score_received = 0;
+                        broadcast_start = timestamp;
+                        printf("%d Starting broadcast period\n",timestamp);
+                    }
+                    // Broadcast
+		    else if( timestamp % broadcast_period < (broadcast_period/5) )
+		    {
+		        if( timestamp % 3 == 0 )
+              	        {
+			    SetRGBLED(parent_side,0,0,0,0);
+			    BroadcastScore( parent_side, best_score, best_id );
+                        }
+                    }
+                    else
+                    {
+            	        SetRGBLED(parent_side,RED,RED,RED,RED);
+                    }
+
+
+                }
+                else if( timestamp < broadcast_start+broadcast_duration )
 		{
 			// Broadcast
 			if( timestamp % broadcast_period < (broadcast_period/5) )
@@ -309,7 +334,17 @@ void Robot::LeadRepair()
 			{
 				printf("%d This is the winning organism\n", timestamp );
 				PropagateReshapeScore( best_score, parent_side );
-			}
+			
+                                if( best_score == own_score )
+                                {
+                                    seed = true;
+                                    mytree = target;
+                                }
+                                else // not the seed so expect to receive org seq
+                                {
+                                    msg_organism_seq_expected = true;
+                                }
+                        }
 			else
 			{
 				printf("%d This is NOT the winning organism\n", timestamp );

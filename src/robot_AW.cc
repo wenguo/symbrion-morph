@@ -196,7 +196,7 @@ void RobotAW::UpdateFailures()
 	{
 		if( current_state == MACROLOCOMOTION )
 		{
-			if( para.debug.para[0] > 0 && timestamp > (unsigned) para.debug.para[0] )
+			if( para.debug.para[0] > 0 && macrolocomotion_count  > (unsigned) para.debug.para[0] )
 				module_failed = true;
 		}
 	}
@@ -1070,6 +1070,17 @@ void RobotAW::Undocking()
 
     }
 
+    if( undocking_count >= 150 )
+    {
+        leftspeed = 0;
+        rightspeed = 0;
+        sidespeed = 0;
+
+        last_state = UNDOCKING;
+        current_state = FORAGING;
+
+    }
+
 }
 
 void RobotAW::Lowering()
@@ -1172,8 +1183,6 @@ void RobotAW::Raising()
 void RobotAW::Reshaping()
 {
 
-	return;
-
 	// NOT TESTED
 	if( seed || msg_organism_seq_received )
 	{
@@ -1184,6 +1193,8 @@ void RobotAW::Reshaping()
 			std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
 		}
 
+                std::cout << timestamp << " this is the seed, tree: " << mytree << std::endl;
+
 		// disable all LEDs
 	    for(int i=0;i<NUM_DOCKS;i++)
 	        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
@@ -1193,37 +1204,53 @@ void RobotAW::Reshaping()
 			recruitment_stage[i]=STAGE0;
 			recruitment_count[i] = 0;
 			recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
+                        
+                        // unless this is the seed do not
+                        // send messages to parent_side
+                        if( !seed && i == parent_side )
+                            continue;
 
 			// check if branch needs to be sent
 			uint8_t branch_side = SIDE_COUNT;
-			std::vector<OrganismSequence>::iterator it;
+			OrganismSequence new_branch;
+                        std::vector<OrganismSequence>::iterator it;
 			for(it = mybranches.begin() ; it != mybranches.end(); it++)
 			{
+
+                                std::cout << timestamp << "branch: " << (*it) << " side: " << i << std::endl;
 				if( it->getSymbol(0).side1 == i )
 				{
 					branch_side = it->getSymbol(0).side1;
-					break;
-				}
+				        new_branch = (*it);
+                                        std::cout << timestamp << " found branch on side " << i << ": " << new_branch << std::endl;
+                                        break;
+                                }
 			}
-
-			// if there is a neighbour and there should be
+                        
+                        // TODO: Check that neighbour is correct type and orientation!
+                        //  - can be done using new implementation of 'docked' array
+			//
+                        // if there is a neighbour and there should be
 			if( docked[i] && branch_side == i )
 			{
 				// send branch
-                SendBranchTree(i, mytree);  // should this just be the branch instead? (*it).
-                recruitment_stage[i]=STAGE4;
-			}
+                                SendBranchTree(i, new_branch);  
+                                recruitment_stage[i]=STAGE4;
+			        printf("%d Sending branch to side %d\n",timestamp, i);
+                        }
 			// if there is a neighbour but there shouldn't be
 			else if( docked[i] && branch_side == SIDE_COUNT )
 			{
 				// send disassembly
 		        PropagateSingleIRMessage(IR_MSG_TYPE_DISASSEMBLY,i);
+                                printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
 			}
 		    // if there isn't a neighbour but there should be
 			else if( !docked[i] && branch_side == i )
 			{
 				// start recruiting
 		        SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
+                                printf("%d Preparing to recruit upon side %d\n",timestamp,i);
 			}
 
 		}
@@ -1232,11 +1259,14 @@ void RobotAW::Reshaping()
 		if( seed && mytree.Size() <= 0 )
 		{
 			current_state = DISASSEMBLY;
+                        printf("%d No new tree to assemble, entering disassembly\n",timestamp);
 		}
 		else
 		{
 			current_state = RECRUITMENT;
-		}
+		        for(int i=0; i<NUM_DOCKS; i++)
+                            SetRGBLED(i, 0, 0, 0, 0);
+                }
 
 		last_state = RESHAPING;
 
@@ -1299,6 +1329,8 @@ void RobotAW::MacroLocomotion()
 		}
 	}
 
+        // For testing - return after flashing LEDs
+        return;
 
     if(seed && macrolocomotion_count >=100)
     {
@@ -1423,7 +1455,7 @@ void RobotAW::Debugging()
 				std::cout << timestamp << " neighbour(s) at: ";
 				for( int i=0; i<num_neighbours; i++ )
 				{
-					docked[para.debug.para[3+i]] = true;
+					docked[para.debug.para[3+i]] = 1;
 					msg_subog_seq_expected |= 1<<para.debug.para[3+i];
 					std::cout << para.debug.para[3+i] << " ";
 				}
