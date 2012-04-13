@@ -83,7 +83,7 @@ bool Robot::StartRepair()
 		SetRGBLED(parent_side,RED,RED,RED,RED);
 
 		current_state = LEADREPAIR;
-
+                msg_unlocked_expected |= 1<<parent_side;
 		printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d\n",timestamp,subog_id);
 		ret = true;
 	}
@@ -153,6 +153,16 @@ void Robot::LeadRepair()
 	// TODO: move away from failed module
 	else if( repair_stage == STAGE1 )
 	{
+                if( msg_unlocked_received )
+                {
+                        leftspeed = -30;
+                        rightspeed = -30;
+                                            
+                        if((timestamp/2)%2==0)
+                            sidespeed = 10;
+                        else
+                            sidespeed = -10;
+                }
 		// Flash LEDs whilst moving
 		if( timestamp < move_start+move_duration )
 		{
@@ -177,7 +187,10 @@ void Robot::LeadRepair()
 		}
 		else
 		{
-			// No longer docked to failed module
+		        leftspeed = 0;
+                        rightspeed = 0;
+                        sidespeed = 0;
+                        // No longer docked to failed module
 			docked[parent_side] = 0;
 
 			for( int i=0; i<NUM_DOCKS; i++ )
@@ -564,7 +577,7 @@ void Robot::Failed()
     rightspeed = 0;
     sidespeed = 0;
 
-    /*
+    
 	if(!MessageWaitingAck(IR_MSG_TYPE_FAILED))
 	{
 		//check if need to unlocking docking faces which is connected to Activewheel
@@ -583,7 +596,7 @@ void Robot::Failed()
 				else if(docking_motors_status[i]==OPENED)
 				{
 					BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
-					docked[i]=false;
+					docked[i]=0;
 					num_docked--;
 				}
 			}
@@ -596,7 +609,7 @@ void Robot::Failed()
 			last_state = FAILED;
 		}
 	}
-	*/
+	
 }
 
 // TODO: Initial repair state of the robot nearest

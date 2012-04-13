@@ -82,7 +82,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     bool ack_required = false;
     bool valid_message = true;
 
-    if(data[0] !=0 && (data[0] & 0xF) == ((docked[channel] >>4) & 0xF))
+    if(data[0] !=0 && (data[0] & 0xF) != ((docked[channel] >>4) & 0xF))
     {
         printf("%d channel %d received message %s, expected receiver is %#x but I have %#x, skip it\n",
                 timestamp, channel, irmessage_names[data[1]], data[0]&0xF, (docked[channel]>>4) & 0xF);
@@ -272,9 +272,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                     msg_score_seq_expected &= ~(1<<channel);
                     msg_score_seq_received |= 1<<channel;
 
-                    // extract subog_str and best_score
+                    
                     memcpy(subog_str,data+2,data[2]+1);
-                    best_score = data[(int)(data[2])+2];
+                    best_score = data[(int)(data[2])+3];
 
                     std::cout << "Score received: " << (int) best_score << std::endl;
                     PrintSubOGString(subog_str);
@@ -287,8 +287,10 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
         case IR_MSG_TYPE_SCORE:
             {
                 msg_score_received |= 1<<channel;
+
                 new_id[channel] = data[2];
                 new_score[channel] = data[3];
+                
                 printf("%d Received id score %d %d\n",timestamp,new_id[channel],new_score[channel]);
 
                 // only acknowledge messages sent by
