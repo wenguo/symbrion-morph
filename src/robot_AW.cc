@@ -84,8 +84,8 @@ void RobotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t
 
 void RobotAW::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
 {
-    MoveWheelsFront(-leftspeed * direction, -sidespeed);
-    MoveWheelsRear(rightspeed * direction,sidespeed);
+    //MoveWheelsFront(-leftspeed * direction, -sidespeed);
+    //MoveWheelsRear(rightspeed * direction,sidespeed);
 }
 
 bool RobotAW::SetDockingMotor(int channel, int status)
@@ -741,8 +741,9 @@ void RobotAW::Locking()
     if(msg_locked_received & (1<<docking_side)) //replace 0 with the correct docking face numer, currently 0 (FRONT)
     {
         msg_locked_received &= ~(1<<docking_side);
-        docked[docking_side] = assembly_info.type2 | assembly_info.side2 >> 2 | assembly_info.type1 >> 4 | assembly_info.side1 >> 6;//true;
+        docked[docking_side] = assembly_info.type2 | assembly_info.side2 << 2 | assembly_info.type1 << 4 | assembly_info.side1 << 6;//true;
         msg_organism_seq_expected = true;
+        msg_subog_seq_expected |= 1<<docking_side;
         current_state = INORGANISM;
         last_state = LOCKING;
         //for(int i=0;i<NUM_DOCKS;i++)
@@ -832,7 +833,7 @@ void RobotAW::Recruitment()
                 msg_locked_received &=~(1<<i);
                 docked[i] = it1->getSymbol(0).data;//true;
 
-                SendBranchTree(i, mytree);
+                SendBranchTree(i, (*it1)); // was mytree
 
                 recruitment_stage[i]=STAGE4;
                 printf("%d -- Recruitment: switch to Stage%d\n\n", timestamp, recruitment_stage[i]);
@@ -1452,14 +1453,17 @@ void RobotAW::Debugging()
 
 				int num_neighbours = para.debug.para[2];
 				msg_subog_seq_expected = 0;
-				std::cout << timestamp << " neighbour(s) at: ";
+			        msg_unlocked_expected = 0;
 				for( int i=0; i<num_neighbours; i++ )
 				{
-					docked[para.debug.para[3+i]] = 1;
-					msg_subog_seq_expected |= 1<<para.debug.para[3+i];
-					std::cout << para.debug.para[3+i] << " ";
-				}
-				std::cout << std::endl;
+                                        uint8_t side = para.debug.para[3+(i*3)];
+                                        uint8_t n_type = para.debug.para[4+(i*3)];
+                                        uint8_t n_side = para.debug.para[5+(i*3)];
+					docked[side] = n_type | n_side << 2 | type << 4 | side << 6;
+					msg_subog_seq_expected |= 1 << side;
+				        msg_unlocked_expected |= 1 << side;
+			                printf("%d neighbour %c docked on side %c using side %c\n",timestamp,robottype_names[n_type],side_names[side],side_names[n_side]);
+                                }
 
 				target = para.og_seq_list[0];
 				std::cout << timestamp << " Target Shape: " << target << std::endl;

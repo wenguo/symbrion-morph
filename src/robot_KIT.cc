@@ -778,7 +778,7 @@ void RobotKIT::Locking()
     {
         if(docked[docking_side]==0)
         {
-            docked[docking_side] = assembly_info.type2  | assembly_info.side2 >>2 | assembly_info.type1 >>4 | assembly_info.side1 >> 6;
+            docked[docking_side] = assembly_info.type2  | assembly_info.side2 << 2 | assembly_info.type1 << 4 | assembly_info.side1 << 6;
             unlocking_required[docking_side] = true;
             //for(int i=0;i<NUM_DOCKS;i++)
             {
@@ -791,6 +791,7 @@ void RobotKIT::Locking()
         else if(docked[docking_side]==true && !MessageWaitingAck(docking_side, IR_MSG_TYPE_LOCKED))
         {
             msg_organism_seq_expected = true;
+            msg_subog_seq_expected |= 1<<docking_side;
             current_state = INORGANISM;
             last_state = LOCKING;
 
@@ -897,7 +898,7 @@ void RobotKIT::Recruitment()
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_LOCKED))
                 {
                     docking_done[i] = true;
-                    SendBranchTree(i, mytree);
+                    SendBranchTree(i, (*it)); // was mytree
                 }
             }
             else if(docking_done[i])
@@ -1546,14 +1547,17 @@ void RobotKIT::Debugging()
 
 				int num_neighbours = para.debug.para[2];
 				msg_subog_seq_expected = 0;
-				std::cout << timestamp << " neighbour(s) at: ";
+			        msg_unlocked_expected = 0;
 				for( int i=0; i<num_neighbours; i++ )
 				{
-					docked[para.debug.para[3+i]] = 1; //true;
-					msg_subog_seq_expected |= 1<<para.debug.para[3+i];
-					std::cout << para.debug.para[3+i] << " ";
-				}
-				std::cout << std::endl;
+                                        uint8_t side = para.debug.para[3+(i*3)];
+                                        uint8_t n_type = para.debug.para[4+(i*3)];
+                                        uint8_t n_side = para.debug.para[5+(i*3)];
+					docked[side] = n_type | n_side << 2 | type << 4 | side << 6;
+					msg_subog_seq_expected |= 1 << side;
+				        msg_unlocked_expected |= 1 << side;
+			                printf("%d neighbour %c docked on side %c using side %c\n",timestamp,robottype_names[n_type],side_names[side],side_names[n_side]);
+                                }
 
 				target = para.og_seq_list[0];
 				std::cout << timestamp << " Target Shape: " << target << std::endl;
