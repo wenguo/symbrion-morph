@@ -8,9 +8,8 @@
 #include "robot.hh"
 
 // TODO:
-//  1. Test broadcasting
-//  2. Reduce code duplication
-//	3. Integrate ethernet
+//  1. Reduce code duplication
+//	2. Integrate ethernet
 
 uint8_t Robot::calculateSubOrgScore( OrganismSequence &seq1, OrganismSequence &seq2 )
 {
@@ -50,7 +49,7 @@ bool Robot::StartRepair()
 		ret = true;
 	}
 	else if( msg_failed_received )
-        {
+	{
 	//////// for testing only ////////
 	//else if( para.debug.para[1] >= 0 )
 	//{
@@ -153,16 +152,17 @@ void Robot::LeadRepair()
 	// TODO: move away from failed module
 	else if( repair_stage == STAGE1 )
 	{
-                if( msg_unlocked_received )
-                {
-                        leftspeed = -30;
-                        rightspeed = -30;
-                                            
-                        if((timestamp/2)%2==0)
-                            sidespeed = 10;
-                        else
-                            sidespeed = -10;
-                }
+		// Move away
+		if( msg_unlocked_received )
+		{
+			leftspeed = -30;
+			rightspeed = -30;
+
+			if((timestamp/2)%2==0)
+				sidespeed = 10;
+			else
+				sidespeed = -10;
+		}
 		// Flash LEDs whilst moving
 		if( timestamp < move_start+move_duration )
 		{
@@ -187,10 +187,11 @@ void Robot::LeadRepair()
 		}
 		else
 		{
-		        leftspeed = 0;
-                        rightspeed = 0;
-                        sidespeed = 0;
-                        // No longer docked to failed module
+			leftspeed = 0;
+           	rightspeed = 0;
+           	sidespeed = 0;
+
+           	// No longer docked to failed module
 			docked[parent_side] = 0;
 
 			for( int i=0; i<NUM_DOCKS; i++ )
@@ -273,32 +274,31 @@ void Robot::LeadRepair()
 	// Broadcast and listen for sub-organism scores
 	else if( repair_stage == STAGE3 )
 	{
-                if( broadcast_start == 0 )
-                {
-                    if( msg_score_received )
-                    {  
-                        msg_score_received = 0;
-                        broadcast_start = timestamp;
-                        printf("%d Starting broadcast period\n",timestamp);
-                    }
-                    // Broadcast
-		    else if( timestamp % broadcast_period < (broadcast_period/5) )
-		    {
-		        if( timestamp % 3 == 0 )
-              	        {
-			    SetRGBLED(parent_side,0,0,0,0);
-			    BroadcastScore( parent_side, best_score, best_id );
-                        }
-                    }
-                    else
-                    {
-            	        SetRGBLED(parent_side,RED,RED,RED,RED);
-                    }
-
-
-                }
-                else if( timestamp < broadcast_start+broadcast_duration )
-		{
+			// Wait until first message received before starting 'timer'
+			if( broadcast_start == 0 )
+			{
+				if( msg_score_received )
+				{
+					msg_score_received = 0;
+					broadcast_start = timestamp;
+					printf("%d Starting broadcast period\n",timestamp);
+				}
+                // Broadcast
+				else if( timestamp % broadcast_period < (broadcast_period/5) )
+				{
+					if( timestamp % 3 == 0 )
+					{
+						SetRGBLED(parent_side,0,0,0,0);
+						BroadcastScore( parent_side, best_score, best_id );
+					}
+				}
+				else
+				{
+					SetRGBLED(parent_side,RED,RED,RED,RED);
+				}
+			}
+			else if( timestamp < broadcast_start+broadcast_duration )
+			{
 			// Broadcast
 			if( timestamp % broadcast_period < (broadcast_period/5) )
 			{
@@ -348,16 +348,16 @@ void Robot::LeadRepair()
 				printf("%d This is the winning organism\n", timestamp );
 				PropagateReshapeScore( best_score, parent_side );
 			
-                                if( best_score == own_score )
-                                {
-                                    seed = true;
-                                    mytree = target;
-                                }
-                                else // not the seed so expect to receive org seq
-                                {
-                                    msg_organism_seq_expected = true;
-                                }
-                        }
+				if( best_score == own_score )
+				{
+					seed = true;
+					mytree = target;
+				}
+				else // not the seed so expect to receive org seq
+				{
+					msg_organism_seq_expected = true;
+				}
+			}
 			else
 			{
 				printf("%d This is NOT the winning organism\n", timestamp );

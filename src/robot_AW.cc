@@ -84,8 +84,8 @@ void RobotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t
 
 void RobotAW::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
 {
-    //MoveWheelsFront(-leftspeed * direction, -sidespeed);
-    //MoveWheelsRear(rightspeed * direction,sidespeed);
+    MoveWheelsFront(-leftspeed * direction, -sidespeed);
+    MoveWheelsRear(rightspeed * direction,sidespeed);
 }
 
 bool RobotAW::SetDockingMotor(int channel, int status)
@@ -1180,21 +1180,23 @@ void RobotAW::Raising()
 
 }
 
-
+/*
+ * Can be used outside of self-repair too. To convert an organism to another shape just make
+ *  sure that only one robot is the seed and that that robot's tree (mytree) reflects the
+ *  desired shape. Can also be used to initiate disassembly if the seed robot's tree is empty.
+ */
 void RobotAW::Reshaping()
 {
 
-	// NOT TESTED
+	// If this is the seed or branch received from other module
 	if( seed || msg_organism_seq_received )
 	{
-		// Prepare branches sequence
+		// Prepare branch sequences
 		rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
 		if(ret.status >= RT_ERROR)
 		{
 			std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
 		}
-
-                std::cout << timestamp << " this is the seed, tree: " << mytree << std::endl;
 
 		// disable all LEDs
 	    for(int i=0;i<NUM_DOCKS;i++)
@@ -1206,52 +1208,48 @@ void RobotAW::Reshaping()
 			recruitment_count[i] = 0;
 			recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
                         
-                        // unless this is the seed do not
-                        // send messages to parent_side
-                        if( !seed && i == parent_side )
-                            continue;
+			// unless this is the seed do not
+			// send messages to parent_side
+			if( !seed && i == parent_side )
+				continue;
 
 			// check if branch needs to be sent
 			uint8_t branch_side = SIDE_COUNT;
-			OrganismSequence new_branch;
-                        std::vector<OrganismSequence>::iterator it;
+			OrganismSequence next_branch;
+            std::vector<OrganismSequence>::iterator it;
 			for(it = mybranches.begin() ; it != mybranches.end(); it++)
 			{
-
-                                std::cout << timestamp << "branch: " << (*it) << " side: " << i << std::endl;
 				if( it->getSymbol(0).side1 == i )
 				{
 					branch_side = it->getSymbol(0).side1;
-				        new_branch = (*it);
-                                        std::cout << timestamp << " found branch on side " << i << ": " << new_branch << std::endl;
-                                        break;
-                                }
+					next_branch = (*it);
+					break;
+				}
 			}
                         
-                        // TODO: Check that neighbour is correct type and orientation!
-                        //  - can be done using new implementation of 'docked' array
-			//
-                        // if there is a neighbour and there should be
+            // TODO: Check that neighbour is correct type and orientation!
+
+            // if there is a neighbour and there should be
 			if( docked[i] && branch_side == i )
 			{
 				// send branch
-                                SendBranchTree(i, new_branch);  
-                                recruitment_stage[i]=STAGE4;
-			        printf("%d Sending branch to side %d\n",timestamp, i);
-                        }
+                SendBranchTree(i, next_branch);
+                recruitment_stage[i]=STAGE4;
+                printf("%d Sending branch to side %d\n",timestamp, i);
+			}
 			// if there is a neighbour but there shouldn't be
 			else if( docked[i] && branch_side == SIDE_COUNT )
 			{
 				// send disassembly
 		        PropagateSingleIRMessage(IR_MSG_TYPE_DISASSEMBLY,i);
-                                printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
+		        printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
 			}
 		    // if there isn't a neighbour but there should be
 			else if( !docked[i] && branch_side == i )
 			{
 				// start recruiting
 		        SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
-                                printf("%d Preparing to recruit upon side %d\n",timestamp,i);
+		        printf("%d Preparing to recruit upon side %d\n",timestamp,i);
 			}
 
 		}
@@ -1260,14 +1258,16 @@ void RobotAW::Reshaping()
 		if( seed && mytree.Size() <= 0 )
 		{
 			current_state = DISASSEMBLY;
-                        printf("%d No new tree to assemble, entering disassembly\n",timestamp);
+			printf("%d No new tree to assemble, entering disassembly\n",timestamp);
 		}
 		else
 		{
 			current_state = RECRUITMENT;
-		        for(int i=0; i<NUM_DOCKS; i++)
-                            SetRGBLED(i, 0, 0, 0, 0);
-                }
+
+			// turn off LEDs
+			for(int i=0; i<NUM_DOCKS; i++)
+				SetRGBLED(i, 0, 0, 0, 0);
+		}
 
 		last_state = RESHAPING;
 
@@ -1296,9 +1296,9 @@ void RobotAW::MacroLocomotion()
 	if( StartRepair()  )
 	{
 		last_state = MACROLOCOMOTION;
+		// do housekeeping
 		seed = false;
 		return;
-		// do housekeeping
 	}
 
 	leftspeed = 0;
@@ -1330,8 +1330,8 @@ void RobotAW::MacroLocomotion()
 		}
 	}
 
-        // For testing - return after flashing LEDs
-        return;
+	// For testing - return after flashing LEDs
+	return;
 
     if(seed && macrolocomotion_count >=100)
     {
@@ -1438,6 +1438,7 @@ void RobotAW::Debugging()
                 SetHingeMotor(DOWN);
             }
             break;
+        // For testing self-repair - starting from MacroLocomotion
         case 11:
         	if( timestamp < 40 )
         		return;
@@ -1453,17 +1454,17 @@ void RobotAW::Debugging()
 
 				int num_neighbours = para.debug.para[2];
 				msg_subog_seq_expected = 0;
-			        msg_unlocked_expected = 0;
+			    msg_unlocked_expected = 0;
 				for( int i=0; i<num_neighbours; i++ )
 				{
-                                        uint8_t side = para.debug.para[3+(i*3)];
-                                        uint8_t n_type = para.debug.para[4+(i*3)];
-                                        uint8_t n_side = para.debug.para[5+(i*3)];
+					uint8_t side = para.debug.para[3+(i*3)];
+					uint8_t n_type = para.debug.para[4+(i*3)];
+					uint8_t n_side = para.debug.para[5+(i*3)];
 					docked[side] = n_type | n_side << 2 | type << 4 | side << 6;
 					msg_subog_seq_expected |= 1 << side;
-				        msg_unlocked_expected |= 1 << side;
-			                printf("%d neighbour %c docked on side %c using side %c\n",timestamp,robottype_names[n_type],side_names[side],side_names[n_side]);
-                                }
+				    msg_unlocked_expected |= 1 << side;
+				    printf("%d neighbour %c docked on side %c using side %c\n",timestamp,robottype_names[n_type],side_names[side],side_names[n_side]);
+				}
 
 				target = para.og_seq_list[0];
 				std::cout << timestamp << " Target Shape: " << target << std::endl;

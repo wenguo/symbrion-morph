@@ -272,7 +272,6 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                     msg_score_seq_expected &= ~(1<<channel);
                     msg_score_seq_received |= 1<<channel;
 
-                    
                     memcpy(subog_str,data+2,data[2]+1);
                     best_score = data[(int)(data[2])+3];
 
