@@ -164,6 +164,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                             printf("%d : Error in filling branches!\n", timestamp);
 
                         std::cout<<ClockString()<<": "<<name<<" receive new subtree: "<<mytree<<std::endl;
+                        
+                        // for reshaping
+                        parent_side = channel;
                     }
                 }
             }
@@ -302,7 +305,10 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 					{
 						best_score = data[1];
 						if( best_score == own_score )
-							seed = true;
+                                                {
+                                                    seed = true;
+                                                    mytree = target;
+                                                }
 					}
 				}
 
