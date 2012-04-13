@@ -898,7 +898,7 @@ void RobotKIT::Recruitment()
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_LOCKED))
                 {
                     docking_done[i] = true;
-                    SendBranchTree(i, (*it)); // was mytree
+                    SendBranchTree(i, (*it1)); // was mytree
                 }
             }
             else if(docking_done[i])
