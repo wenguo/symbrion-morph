@@ -1016,7 +1016,7 @@ void RobotKIT::InOrganism()
             //prepare organism_formed_messages
             PropagateIRMessage(IR_MSG_TYPE_ORGANISM_FORMED);
 
-            current_state = MACROLOCOMOTION;
+            current_state = RAISING;
             last_state = INORGANISM;
         }
     }
@@ -1060,7 +1060,7 @@ void RobotKIT::InOrganism()
             textcolor(RESET, SCR_WHITE, SCR_BLACK); 
 
             macrolocomotion_count=0;
-            current_state = MACROLOCOMOTION;
+            current_state = RAISING;
             last_state = INORGANISM;
         }
     }
@@ -1190,38 +1190,45 @@ void RobotKIT::Raising()
     rightspeed = 0;
     sidespeed = 0;
 
-    /*
-    if(raising_count ==2)
+    //temp solution, hardcoded to force KIT4 as the coordinator
+    if(para.debug.para[9]==3)
     {
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-        docked[0] = true;
-        docked[2] = true;
-        PropagateIRMessage(IR_MSG_TYPE_RAISING);
-    }
-    */
+        raising_count++;
 
-    //flashing RGB leds
-    static int index = 0;
-    index = (timestamp / 2) % 4;
-    for(int i=0;i<NUM_DOCKS;i++)
-    {
-        switch (index)
+        if(raising_count ==2)
         {
-            case 0:
-                SetRGBLED(i, RED, GREEN, 0, 0);
-                break;
-            case 1:
-                SetRGBLED(i, 0, RED, 0, GREEN);
-                break;
-            case 2:
-                SetRGBLED(i, 0, 0, GREEN, RED);
-                break;
-            case 3:
-                SetRGBLED(i, GREEN, 0, RED, 0);
-                break;
-            default:
-                break;
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+            PropagateIRMessage(IR_MSG_TYPE_RAISING);
+        }
+    }
+    else if(msg_raising_received)
+        raising_count++;
+
+    if(raising_count >=2)
+    {
+        //flashing RGB leds
+        static int index = 0;
+        index = (timestamp / 2) % 4;
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            switch (index)
+            {
+                case 0:
+                    SetRGBLED(i, YELLOW, YELLOW, 0, 0);
+                    break;
+                case 1:
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                case 2:
+                    SetRGBLED(i, 0, 0, YELLOW, YELLOW);
+                    break;
+                case 3:
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 

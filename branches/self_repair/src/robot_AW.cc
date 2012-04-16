@@ -545,9 +545,9 @@ void RobotAW::Alignment()
             rightspeed = para.speed_forward;
             //in case too much friction introduced by side wheels
             if((timestamp/2)%2==0)
-                sidespeed = 10;
+                sidespeed = 15;
             else
-                sidespeed = -10;
+                sidespeed = -15;
         }
     }
     else if(abs(temp2)<200)
@@ -555,9 +555,9 @@ void RobotAW::Alignment()
         leftspeed = -14 * sign(temp2);
         rightspeed = 14 * sign(temp2);
         if((timestamp/2)%2==0)
-            sidespeed = 10;
+            sidespeed = 13;
         else
-            sidespeed = -10;
+            sidespeed = -13;
     }
     else
     {
@@ -566,9 +566,9 @@ void RobotAW::Alignment()
  
         //in case too much friction introduced by side wheels
         if((timestamp/2)%2==0)
-            sidespeed = 10;
+            sidespeed = 13;
         else
-            sidespeed = -10;
+            sidespeed = -13;
     }
 
 
@@ -956,7 +956,7 @@ void RobotAW::InOrganism()
             //prepare organism_formed_messages
             PropagateIRMessage(IR_MSG_TYPE_ORGANISM_FORMED);
 
-            current_state = MACROLOCOMOTION;
+            current_state = RAISING;
             last_state = INORGANISM;
         }
     }
@@ -1001,7 +1001,7 @@ void RobotAW::InOrganism()
             textcolor(RESET, SCR_WHITE, SCR_BLACK); 
 
             macrolocomotion_count=0;
-            current_state = MACROLOCOMOTION;
+            current_state = RAISING;
             last_state = INORGANISM;
         }
     }
@@ -1135,32 +1135,32 @@ void RobotAW::Raising()
             SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
     }
        
-    //flashing RGB leds
-    static int index = 0;
-    index = (timestamp / 2) % 4;
-    for(int i=0;i<NUM_DOCKS;i++)
-    {
-        switch (index)
-        {
-            case 0:
-                SetRGBLED(i, RED, GREEN, 0, 0);
-                break;
-            case 1:
-                SetRGBLED(i, 0, RED, 0, GREEN);
-                break;
-            case 2:
-                SetRGBLED(i, 0, 0, GREEN, RED);
-                break;
-            case 3:
-                SetRGBLED(i, GREEN, 0, RED, 0);
-                break;
-            default:
-                break;
-        }
-    }
-
     if(msg_raising_received)
     {
+        //flashing RGB leds
+        static int index = 0;
+        index = (timestamp / 2) % 4;
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            switch (index)
+            {
+                case 0:
+                    SetRGBLED(i, YELLOW, YELLOW, 0, 0);
+                    break;
+                case 1:
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                case 2:
+                    SetRGBLED(i, 0, 0, YELLOW, YELLOW);
+                    break;
+                case 3:
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                default:
+                    break;
+            }
+        }
+
         raising_count++;
     }
 
