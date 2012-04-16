@@ -513,67 +513,64 @@ void RobotAW::LocateBeacon()//same as RobotKIT
 
 void RobotAW::Alignment()
 {
-    leftspeed = para.speed_forward;
-    rightspeed = para.speed_forward;
-    sidespeed = 0;
-
     int temp = beacon[0]-beacon[1];
     int temp2 = (reflective_hist[0].Avg())-(reflective_hist[1].Avg());
 
-    if(abs(temp) > 40)
+
+    //not closed to object?
+    if(abs(temp2) < 100)
     {
-        leftspeed = 0;
-        rightspeed=0;
-        sidespeed = 20 * sign(temp);
+        //adjust if not aligned to docking beacon
+        if(abs(temp) > 40)
+        {
+            leftspeed = 0;
+            rightspeed=0;
+            sidespeed = 20 * sign(temp);
+        }
+        else if(abs(temp) > 20)
+        {
+            leftspeed = 0;
+            rightspeed = 0;
+            sidespeed = 18 * sign(temp);
+        }
+        else if(abs(temp) > 10)
+        {
+            leftspeed = 0;
+            rightspeed = 0;
+            sidespeed = 15 * sign(temp);
+        }
+        else
+        {
+            leftspeed = para.speed_forward;
+            rightspeed = para.speed_forward;
+            //in case too much friction introduced by side wheels
+            if((timestamp/2)%2==0)
+                sidespeed = 10;
+            else
+                sidespeed = -10;
+        }
     }
-    else if(abs(temp) > 20)
+    else if(abs(temp2)<200)
     {
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 20 * sign(temp);
-    }
-    else if(abs(temp) > 10)
-    {
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 15 * sign(temp);
-    }
-    else
-    {
+        leftspeed = -14 * sign(temp2);
+        rightspeed = 14 * sign(temp2);
         if((timestamp/2)%2==0)
             sidespeed = 10;
         else
             sidespeed = -10;
     }
-    if(abs(temp2)> 400)
+    else
     {
-        leftspeed = -18 * sign(temp2);
-        rightspeed = 18 * sign(temp2);
+        leftspeed = -19 * sign(temp2);
+        rightspeed = 19 * sign(temp2);
  
         //in case too much friction introduced by side wheels
         if((timestamp/2)%2==0)
-            sidespeed = 20;
-        else
-            sidespeed = -20;
-    }
-    else if(abs(temp2)>200)
-    {
-        leftspeed = -13 * sign(temp2);
-        rightspeed = 13 * sign(temp2);
-
-        //in case too much friction introduced by side wheels
-        if((timestamp/2)%2==0)
-            sidespeed = 15;
-        else
-            sidespeed = -15;
-    }
-    else
-    {
-        if((timestamp/2)%2==0)
             sidespeed = 10;
         else
             sidespeed = -10;
     }
+
 
     //lost signals
     //if(beacon_signals_detected==0)
@@ -793,6 +790,7 @@ void RobotAW::Recruitment()
                         && ambient_hist[2*i+1].Avg()>para.recruiting_ambient_offset1
                         && reflective_hist[2*i].Avg()>20 && reflective_hist[2*i+1].Avg()>20))
             {
+                msg_locked_expected |= 1<<i;
                 recruitment_stage[i]=STAGE2;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 proximity_hist[2*i].Reset();
@@ -803,7 +801,7 @@ void RobotAW::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE2)
         {
-            printf("%d %d\r", ambient_calibrated[2*i]-ambient[2*i], ambient_calibrated[2*i+1]-ambient[2*i+1]);
+            printf("%d %d\n", ambient_calibrated[2*i]-ambient[2*i], ambient_calibrated[2*i+1]-ambient[2*i+1]);
 
             proximity_hist[2*i].Push(proximity[2*i]);
             proximity_hist[2*i+1].Push(proximity[2*i+1]);
@@ -815,14 +813,19 @@ void RobotAW::Recruitment()
             if(ambient_hist[2*i+1].Avg() > para.recruiting_ambient_offset2)
                 ambient_trigger |= 1<<(2*i+1);
             ambient_avg_threshold_hist.Push2(ambient_trigger);
-            if( ambient_avg_threshold_hist.Sum(2*i) > 3 && ambient_avg_threshold_hist.Sum(2*i+1)>3
+//temporary solution, as  left IR sensor on SideBoard of ActiveWheel Noname doesn't work
+#if 1
+            if( ambient_avg_threshold_hist.Sum(2*i+1)>3
+                    && proximity_hist[2*i+1].Avg()> para.recruiting_proximity_offset2)
+#else 
+                if( ambient_avg_threshold_hist.Sum(2*i) > 3 && ambient_avg_threshold_hist.Sum(2*i+1)>3
                     && proximity_hist[2*i].Avg() > para.recruiting_proximity_offset1 && proximity_hist[2*i+1].Avg()> para.recruiting_proximity_offset2)
-                //&& abs(ambient_hist[2*i].Avg() - ambient_hist[2*i+1].Avg()) < 250)          
+#endif
             {
                 recruitment_stage[i]=STAGE3;
-                msg_locked_expected |= 1<<i;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                RobotBase::SetIRRX(board_dev_num[i], false);
+                RobotBase::SetIRRX(board_dev_num[i], true);
+                //RobotBase::SetIRRX(board_dev_num[i], false);
                 printf("%d -- Recruitment: switch to Stage%d\n\n", timestamp, recruitment_stage[i]);
             }
         }
@@ -833,7 +836,7 @@ void RobotAW::Recruitment()
                 msg_locked_received &=~(1<<i);
                 docked[i] = it1->getSymbol(0).data;//true;
 
-                SendBranchTree(i, (*it1)); // was mytree
+                SendBranchTree(i, (*it1));
 
                 recruitment_stage[i]=STAGE4;
                 printf("%d -- Recruitment: switch to Stage%d\n\n", timestamp, recruitment_stage[i]);
@@ -853,13 +856,8 @@ void RobotAW::Recruitment()
             //recevied acks after sending sequence information?
             if(!MessageWaitingAck(i, IR_MSG_TYPE_ORGANISM_SEQ))
             {
-                //docked[i] = it1->getSymbol(0).data;//true;
                 recruitment_stage[i] = STAGE5;
                 docking_done[i] = false;
-
-                //SetRGBLED(i, RED, 0, 0, 0);
-                //SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                //RobotBase::SetIRRX(board_dev_num[i], false);
 
                 if(seed)
                     num_robots_inorganism++;
@@ -885,7 +883,7 @@ void RobotAW::Recruitment()
                 uint8_t data[5];
                 data[0] = it1->getSymbol(0).data;
                 memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                Robot::BroadcastIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5);
+                Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
             }
         }
 
@@ -898,7 +896,7 @@ void RobotAW::Recruitment()
     }
 
     //recruitment done?
-    if(mybranches.empty() &&!MessageWaitingAck(IR_MSG_TYPE_IP_ADDR_REQ))
+    if(mybranches.empty())
     {
         current_state = INORGANISM;
         last_state = RECRUITMENT;
@@ -906,17 +904,17 @@ void RobotAW::Recruitment()
         robot_in_range_replied = 0;
 
         printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-                (my_IP >> 24) & 0xFF,
-                (my_IP >> 16) & 0xFF,
+                my_IP & 0xFF,
                 (my_IP >> 8) & 0xFF,
-                my_IP & 0xFF);
+                (my_IP >> 16) & 0xFF,
+                (my_IP >> 24) & 0xFF);
         for(int i=0;i<NUM_DOCKS;i++)
         {
             printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-                    (neighbours_IP[i] >> 24) & 0xFF,
-                    (neighbours_IP[i] >> 16) & 0xFF,
+                    neighbours_IP[i] & 0xFF,
                     (neighbours_IP[i] >> 8) & 0xFF,
-                    neighbours_IP[i] & 0xFF);
+                    (neighbours_IP[i] >> 16) & 0xFF,
+                    (neighbours_IP[i] >> 24) & 0xFF);
             SetRGBLED(i, 0, 0, 0, 0);
         }
     }
@@ -1132,7 +1130,7 @@ void RobotAW::Raising()
 
     if(timestamp == 40)
     {
-        docked[0]=true;
+        //docked[0]=true;
         for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
     }
@@ -1245,7 +1243,7 @@ void RobotAW::Reshaping()
 		        printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
 			}
 		    // if there isn't a neighbour but there should be
-			else if( !docked[i] && branch_side == i )
+			else if( docked[i]==0 && branch_side == i )
 			{
 				// start recruiting
 		        SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
@@ -1366,6 +1364,8 @@ void RobotAW::Debugging()
     //rightspeed = 0;
     //sidespeed = 0;
     printf("Debuging %d:\n", para.debug.mode);
+    if(timestamp >40)
+        Log();
 
     switch (para.debug.mode)
     {
@@ -1380,7 +1380,7 @@ void RobotAW::Debugging()
         case 1: //simulating recruitment, stage 2
             if(timestamp ==40)
             {
-                SetIRLED(2, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
+                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
             }
             printf("%d %d %d %d\n",  proximity[4], proximity[5], ambient_calibrated[4]-ambient[4], ambient_calibrated[4]-ambient[5]);
             break;
@@ -1395,18 +1395,23 @@ void RobotAW::Debugging()
         case 3: //simulate recruitment, stage 1, guiding signals
             if(timestamp ==40)
             {
-                SetIRLED(2, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
+                SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
             }
             printf("%d %d %d %d\n", reflective[4]-reflective_calibrated[4], reflective[5] - reflective_calibrated[5], ambient_calibrated[4]-ambient[4], ambient_calibrated[4]-ambient[5]);
             break;
-        case 4: 
+        case 4:// recruiting stage 2 -> stage 3 detection
             if(timestamp ==40)
             {
+                for(int i=0;i<NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, IR_PULSE0|IR_PULSE1); //switch docking signals 2 on left and right leds
             }
             break;
-        case 5: 
+        case 5:// simulate locking stage, turn on RGB led to be bright 
             if(timestamp ==40)
             {
+                SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
+                SetIRLED(0, IRLEDOFF, LED0|LED2, 0);
+                RobotBase::SetIRRX(board_dev_num[0], false);
             }
             break;
         case 6: //testing request ip via ircomm
@@ -1501,17 +1506,19 @@ int RobotAW::in_locking_region(int x[4])
 }
 void RobotAW::Log()
 {
+    int id0=para.debug.para[7];
+    int id1=para.debug.para[8];
     if (logFile.is_open())
     {
         logFile << timestamp << "\t" << state_names[current_state] <<"\t";
-        logFile << reflective_hist[0].Avg()<<"\t";
-        logFile << reflective_hist[1].Avg()<<"\t";
-        logFile << beacon[0]<<"\t";
-        logFile << beacon[1]<<"\t";
-        logFile << ambient_hist[0].Avg()<<"\t";
-        logFile << ambient_hist[1].Avg()<<"\t";
-        logFile << proximity[0]<<"\t";
-        logFile << proximity[1]<<"\t";
+        logFile << reflective_hist[id0].Avg()<<"\t";
+        logFile << reflective_hist[id1].Avg()<<"\t";
+        logFile << beacon[id0]<<"\t";
+        logFile << beacon[id1]<<"\t";
+        logFile << ambient_hist[id0].Avg()<<"\t";
+        logFile << ambient_hist[id1].Avg()<<"\t";
+        logFile << proximity[id0]<<"\t";
+        logFile << proximity[id1]<<"\t";
         logFile << std::endl;
     }
 

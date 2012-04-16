@@ -68,9 +68,9 @@ class Robot
     void PropagateSingleIRMessage(uint8_t type, int channel, uint8_t *data = NULL, uint32_t size = 0 );
 
     //no specified reciever, ack is not required
-    void BroadcastIRMessage(int channel, uint8_t type);
-    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t data);
-    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size=1);
+    void BroadcastIRMessage(int channel, uint8_t type, bool ack_required = false);
+    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required = false);
+    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
 
     bool MessageWaitingAck(int channel, uint8_t type);
     bool MessageWaitingAck(uint8_t type);
