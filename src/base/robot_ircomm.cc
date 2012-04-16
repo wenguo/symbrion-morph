@@ -84,8 +84,8 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
     if(data[0] !=0 && (data[0] & 0xF) != ((docked[channel] >>4) & 0xF))
     {
-        printf("%d channel %d received message %s, expected receiver is %#x but I have %#x, skip it\n",
-                timestamp, channel, irmessage_names[data[1]], data[0]&0xF, (docked[channel]>>4) & 0xF);
+        printf("%d channel %d received message %s, expected receiver is %#x(%#x) but I have %#x(%#x), skip it\n",
+                timestamp, channel, irmessage_names[data[1]], data[0]&0xF, data[0], (docked[channel]>>4) & 0xF, docked[channel]);
         return;
     }
     //first byte indicates the msg type
@@ -460,20 +460,20 @@ void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int si
     pthread_mutex_unlock(&txqueue_mutex);
 }
 
-void Robot::BroadcastIRMessage(int channel, uint8_t type)
+void Robot::BroadcastIRMessage(int channel, uint8_t type, bool ack_required)
 {
-    BroadcastIRMessage(channel, type, NULL, 0);
+    BroadcastIRMessage(channel, type, NULL, 0, ack_required);
 }
 
-void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t data)
+void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required)
 {
     BroadcastIRMessage(channel, type, &data, 1);
 }
 
-void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size)
+void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
 {
     pthread_mutex_lock(&txqueue_mutex);
-    TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, 0, type, data, size, false));
+    TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, 0, type, data, size, ack_required));
     pthread_mutex_unlock(&txqueue_mutex);
 }
 

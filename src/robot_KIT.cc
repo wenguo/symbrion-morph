@@ -622,6 +622,8 @@ void RobotKIT::Alignment()
         sidespeed = 0; //overwrite sidespeed
     }
 
+    printf("%d %d %d\n",leftspeed, rightspeed, sidespeed);
+
     //lost signals
     //if(beacon_signals_detected==0)
     //beacon signals drop to certain threshold?
@@ -786,9 +788,9 @@ void RobotKIT::Locking()
                 // RobotBase::SetIRRX(board_dev_num[docking_side], false);
 
             }
-            Robot::SendIRMessage(docking_side, IR_MSG_TYPE_LOCKED, true);
+            Robot::BroadcastIRMessage(docking_side, IR_MSG_TYPE_LOCKED, true);
         }
-        else if(docked[docking_side]==true && !MessageWaitingAck(docking_side, IR_MSG_TYPE_LOCKED))
+        else if(docked[docking_side] && !MessageWaitingAck(docking_side, IR_MSG_TYPE_LOCKED))
         {
             msg_organism_seq_expected = true;
             msg_subog_seq_expected |= 1<<docking_side;
@@ -889,11 +891,11 @@ void RobotKIT::Recruitment()
             // printf("%d STAGE4\n", timestamp);
             if(docking_motors_status[i] == CLOSED && docked[i]==0)
             {
-                Robot::SendIRMessage(i, IR_MSG_TYPE_LOCKED, true);
                 unlocking_required[i] = true;
                 docked[i]= it1->getSymbol(0).data;
+                Robot::BroadcastIRMessage(i, IR_MSG_TYPE_LOCKED, true);
             }
-            else if(docked[i]!=0 && !docking_done[i])
+            else if(docked[i] && !docking_done[i])
             {
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_LOCKED))
                 {
@@ -940,7 +942,7 @@ void RobotKIT::Recruitment()
                 uint8_t data[5];
                 data[0] = it1->getSymbol(0).data;
                 memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                Robot::BroadcastIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5);
+                Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
             }
         }
 
@@ -952,7 +954,7 @@ void RobotKIT::Recruitment()
     }
 
     //recruitment done?
-    if(mybranches.empty() &&!MessageWaitingAck(IR_MSG_TYPE_IP_ADDR_REQ))
+    if(mybranches.empty())
     {
         current_state = INORGANISM;
         last_state = RECRUITMENT;
@@ -960,17 +962,17 @@ void RobotKIT::Recruitment()
         robot_in_range_replied = 0;
 
         printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-                (my_IP >> 24) & 0xFF,
-                (my_IP >> 16) & 0xFF,
+                my_IP & 0xFF,
                 (my_IP >> 8) & 0xFF,
-                my_IP & 0xFF);
+                (my_IP >> 16) & 0xFF,
+                (my_IP >> 24) & 0xFF);
         for(int i=0;i<NUM_DOCKS;i++)
         {
             printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-                    (neighbours_IP[i] >> 24) & 0xFF,
-                    (neighbours_IP[i] >> 16) & 0xFF,
+                    neighbours_IP[i] & 0xFF,
                     (neighbours_IP[i] >> 8) & 0xFF,
-                    neighbours_IP[i] & 0xFF);
+                    (neighbours_IP[i] >> 16) & 0xFF,
+                    (neighbours_IP[i] >> 24) & 0xFF);
             SetRGBLED(i, 0, 0, 0, 0);
         }
     }
@@ -1297,7 +1299,7 @@ void RobotKIT::Reshaping()
 		        printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
 			}
 		    // if there isn't a neighbour but there should be
-			else if( !docked[i] && branch_side == i )
+			else if( docked[i]==0 && branch_side == i )
 			{
 				// start recruiting
 		        SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
@@ -1427,7 +1429,7 @@ void RobotKIT::Debugging()
         case 0: //simulating recruitment, stage 2 
             if(timestamp ==40)
             {
-                SetIRLED(2, IRLEDPROXIMITY, LED0|LED2, 0);
+                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, 0);
             }
 
             printf("%d %d %d %d\n",  proximity[4], proximity[5], ambient_calibrated[4]-ambient[4], ambient_calibrated[4]-ambient[5]);
@@ -1444,7 +1446,7 @@ void RobotKIT::Debugging()
         case 2: // simulate recruitment, stage 1, guiding signals
             if(timestamp == 40)
             {
-                SetIRLED(2, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
+                SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
             }
             printf("%d %d %d %d\n", reflective[4]-reflective_calibrated[4], reflective[5] - reflective_calibrated[5], ambient_calibrated[4]-ambient[4], ambient_calibrated[4]-ambient[5]);
             break;
@@ -1456,7 +1458,43 @@ void RobotKIT::Debugging()
             }
             printf("%d\t%d\t%d\t%d\t%d\t%d\n", reflective[0]-reflective_calibrated[0], reflective[1] - reflective_calibrated[1], beacon[0], beacon[1], proximity[0], proximity[1]);
             break;
-        case 4: // measuring beacon signals
+        case 4:// simulate locking stage, turn on RGB led to be bright 
+            if(timestamp ==40)
+            {
+                SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
+                SetIRLED(0, IRLEDOFF, LED0|LED2, 0);
+                RobotBase::SetIRRX(board_dev_num[0], false);
+            }
+            break;
+        case 5:// recruiting stage 2 -> stage 3 detection
+            if(timestamp ==40)
+            {
+                for(int i=0;i<NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
+            }
+            break;
+        case 6: //testing request ip via ircomm
+            if(timestamp == 40)
+            {
+                for(int i=0;i<NUM_DOCKS;i++)
+                {
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                    RobotBase::SetIRRX(board_dev_num[i], false);
+                }
+                printf("my_IP %#x\n", my_IP);
+                OrganismSequence::Symbol sym;
+                sym.type1 = ROBOT_KIT;
+                sym.side1 = ::BACK;
+                sym.type2 = ROBOT_AW;
+                sym.side2 = ::FRONT;
+                uint8_t data[5];
+                data[0] = sym.data;
+                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                Robot::SendIRMessage(::BACK, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, true);
+            }
+
+            break;
+        case 7: // measuring beacon signals
             if(timestamp ==40)
             {
                 for(int i=0;i<NUM_IRS;i++)
@@ -1483,7 +1521,7 @@ void RobotKIT::Debugging()
                 SetRGBLED(1, 0, 0, 0, 0);
             break;
             break;
-        case 5: 
+        case 8: 
             printf("\n");
             if(timestamp ==40)
             {
@@ -1496,27 +1534,7 @@ void RobotKIT::Debugging()
             else
                 SetRGBLED(2, 0,0,0,0);
             break;
-        case 6: //testing request ip via ircomm
-            if(timestamp == 40)
-            {
-                for(int i=0;i<NUM_DOCKS;i++)
-                {
-                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    RobotBase::SetIRRX(board_dev_num[i], false);
-                }
-                printf("my_IP %#x\n", my_IP);
-                OrganismSequence::Symbol sym;
-                sym.type1 = ROBOT_KIT;
-                sym.side1 = ::BACK;
-                sym.type2 = ROBOT_AW;
-                sym.side2 = ::FRONT;
-                uint8_t data[5];
-                data[0] = sym.data;
-                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                Robot::SendIRMessage(::BACK, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, true);
-            }
 
-            break;
         case 9:
             if(timestamp > 40)
             {
@@ -1535,40 +1553,40 @@ void RobotKIT::Debugging()
                 SetDockingMotor(0, OPEN);
             }
             break;
-        // For testing self-repair - starting from MacroLocomotion
+            // For testing self-repair - starting from MacroLocomotion
         case 11:
-			if( timestamp < 40 )
-				return;
+            if( timestamp < 40 )
+                return;
 
-			if(timestamp == 40)
-			{
-				// Setup LEDs and receivers
-				for(int i=0;i<NUM_DOCKS;i++)
-				{
-					SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-					RobotBase::SetIRRX(board_dev_num[i], false);
-				}
+            if(timestamp == 40)
+            {
+                // Setup LEDs and receivers
+                for(int i=0;i<NUM_DOCKS;i++)
+                {
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                    RobotBase::SetIRRX(board_dev_num[i], false);
+                }
 
-				int num_neighbours = para.debug.para[2];
-				msg_subog_seq_expected = 0;
-			    msg_unlocked_expected = 0;
-				for( int i=0; i<num_neighbours; i++ )
-				{
-					uint8_t side = para.debug.para[3+(i*3)];
-					uint8_t n_type = para.debug.para[4+(i*3)];
-					uint8_t n_side = para.debug.para[5+(i*3)];
-					docked[side] = n_type | n_side << 2 | type << 4 | side << 6;
-					msg_subog_seq_expected |= 1 << side;
-				    msg_unlocked_expected |= 1 << side;
-				    printf("%d neighbour %c docked on side %c using side %c\n",timestamp,robottype_names[n_type],side_names[side],side_names[n_side]);
-				}
+                int num_neighbours = para.debug.para[2];
+                msg_subog_seq_expected = 0;
+                msg_unlocked_expected = 0;
+                for( int i=0; i<num_neighbours; i++ )
+                {
+                    uint8_t side = para.debug.para[3+(i*3)];
+                    uint8_t n_type = para.debug.para[4+(i*3)];
+                    uint8_t n_side = para.debug.para[5+(i*3)];
+                    docked[side] = n_type | n_side << 2 | type << 4 | side << 6;
+                    msg_subog_seq_expected |= 1 << side;
+                    msg_unlocked_expected |= 1 << side;
+                    printf("%d neighbour %c docked on side %c using side %c\n",timestamp,robottype_names[n_type],side_names[side],side_names[n_side]);
+                }
 
-				target = para.og_seq_list[0];
-				std::cout << timestamp << " Target Shape: " << target << std::endl;
+                target = para.og_seq_list[0];
+                std::cout << timestamp << " Target Shape: " << target << std::endl;
 
-				current_state = MACROLOCOMOTION;
-			}
-			break;
+                current_state = MACROLOCOMOTION;
+            }
+            break;
         default:
             break;
     }
@@ -1603,17 +1621,19 @@ int RobotKIT::in_locking_region(int x[4])
 
 void RobotKIT::Log()
 {
+    int id0=para.debug.para[7];
+    int id1=para.debug.para[8];
     if (logFile.is_open())
     {
-        //  logFile << timestamp << "\t" << state_names[current_state] <<"\t";
-        //  logFile << reflective_hist[0].Avg()<<"\t";
-        //  logFile << reflective_hist[1].Avg()<<"\t";
-        logFile << beacon[0]<<"\t";
-        logFile << beacon[1]<<"\t";
-        //  logFile << ambient_hist[0].Avg()<<"\t";
-        //  logFile << ambient_hist[1].Avg()<<"\t";
-        //  logFile << proximity[0]<<"\t";
-        //  logFile << proximity[1]<<"\t";
+        logFile << timestamp << "\t" << state_names[current_state] <<"\t";
+        logFile << reflective_hist[id0].Avg()<<"\t";
+        logFile << reflective_hist[id1].Avg()<<"\t";
+        logFile << beacon[id0]<<"\t";
+        logFile << beacon[id1]<<"\t";
+        logFile << ambient_hist[id0].Avg()<<"\t";
+        logFile << ambient_hist[id1].Avg()<<"\t";
+        logFile << proximity[id0]<<"\t";
+        logFile << proximity[id1]<<"\t";
         logFile << std::endl;
     }
 
