@@ -84,8 +84,8 @@ void RobotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t
 
 void RobotAW::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
 {
-    MoveWheelsFront(-leftspeed * direction, -sidespeed);
-    MoveWheelsRear(rightspeed * direction,sidespeed);
+    //MoveWheelsFront(-leftspeed * direction, -sidespeed);
+    //MoveWheelsRear(rightspeed * direction,sidespeed);
 }
 
 bool RobotAW::SetDockingMotor(int channel, int status)
@@ -194,9 +194,9 @@ void RobotAW::UpdateFailures()
 {
 	if( !module_failed )
 	{
-		if( current_state == MACROLOCOMOTION )
+		if( current_state == LOWERING )
 		{
-			if( para.debug.para[0] > 0 && macrolocomotion_count  > (unsigned) para.debug.para[0] )
+			if( para.debug.para[0] > 0 && lowering_count  > (unsigned) para.debug.para[0] )
 				module_failed = true;
 		}
 	}
@@ -1099,7 +1099,10 @@ void RobotAW::Lowering()
 	{
 		last_state = LOWERING;
 		seed = false;
-	}
+	
+                for(int i=0; i<NUM_DOCKS;i++ )
+                    msg_unlocked_expected |= 1<<i;
+        }
 
 	return; // for testing - do not allow to enter disassembly
 
@@ -1186,7 +1189,7 @@ void RobotAW::Raising()
 
     if(raising_count==2)
     {
-       SetHingeMotor(UP); 
+       //SetHingeMotor(UP); 
     }
 
     if(raising_count >=50)
@@ -1340,7 +1343,7 @@ void RobotAW::MacroLocomotion()
 		}
 	}
 
-    if( module_failed || (seed && macrolocomotion_count >=200))
+    if( module_failed || (seed && macrolocomotion_count >=300))
     {
     	// Stop moving
         leftspeed = 0;
@@ -1485,7 +1488,7 @@ void RobotAW::Debugging()
 				target = para.og_seq_list[0];
 				std::cout << timestamp << " Target Shape: " << target << std::endl;
 
-				current_state = MACROLOCOMOTION;
+				current_state = LOWERING;
 			}
         	break;
         default:

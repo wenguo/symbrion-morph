@@ -251,6 +251,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                     msg_subog_seq_received |= 1<<channel;
                     memcpy(subog_str,data+2,data[2]+1);
 
+                    printf("%d parent_side: %d type: %d channel: %d\n", timestamp, parent_side,type,channel);
                     // if module has not yet entered a repair state
                     if( parent_side >= SIDE_COUNT )
                     {
@@ -418,7 +419,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
         }
         else
         {
-            printf("%d: channel %d Send ack %s\n", channel, irmessage_names[data[1]]);
+            printf("%d: channel %d Send ack %s\n", timestamp, channel, irmessage_names[data[1]]);
             SendIRAckMessage(channel, data[1]);
         }
     }
