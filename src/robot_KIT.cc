@@ -795,7 +795,7 @@ void RobotKIT::Locking()
         else if(docked[docking_side] && !MessageWaitingAck(docking_side, IR_MSG_TYPE_LOCKED))
         {
             msg_organism_seq_expected = true;
-            msg_subog_seq_expected |= 1<<docking_side;
+            msg_subog_seq_expected |= 1<<(uint8_t)docking_side;
             current_state = INORGANISM;
             last_state = LOCKING;
 
@@ -1164,9 +1164,12 @@ void RobotKIT::Lowering()
 	lowering_count++;
 
 	if( StartRepair()  )
-	{
+        {
 		last_state = LOWERING;
 		seed = false;
+
+                for(int i=0; i<NUM_DOCKS;i++ )
+                    msg_unlocked_expected |= 1<<i;
 	}
 
 	return; // for testing - do not allow to enter disassembly
@@ -1403,7 +1406,7 @@ void RobotKIT::MacroLocomotion()
         }
     }
 
-    if( module_failed || (seed && macrolocomotion_count >= 100 ))
+    if( module_failed || (seed && macrolocomotion_count >= 300 ))
     {
     	// Stop moving
         leftspeed = 0;
@@ -1603,7 +1606,8 @@ void RobotKIT::Debugging()
                 target = para.og_seq_list[0];
                 std::cout << timestamp << " Target Shape: " << target << std::endl;
 
-                current_state = MACROLOCOMOTION;
+                //module_failed = true;
+                current_state = LOWERING;
             }
             break;
         default:
