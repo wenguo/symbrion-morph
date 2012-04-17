@@ -128,6 +128,7 @@ Robot::Robot()
     msg_guideme_received = 0;
     msg_organism_seq_received = false;
     msg_organism_seq_expected = false;
+    msg_ip_addr_received = 0;
 
     // for self-repair
     msg_failed_received = 0;
