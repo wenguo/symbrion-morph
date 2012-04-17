@@ -225,7 +225,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 while(it!=TXMsgQueue[channel].end())
                 {
                     IRMessage& msg = *it;
-                    if(msg.ack_required && msg.type == data[2])
+                    if(msg.ack_required && msg.type == data[2]
+                       && (msg.type != IR_MSG_TYPE_PROPAGATED ||
+                       msg.data[0] == data[3]))
                         it = TXMsgQueue[channel].erase(it);
                     else
                         ++it;
@@ -403,8 +405,16 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     //send acknowledgement
     if(ack_required)
     {
-        printf("Send ack %d %s\n", channel, irmessage_names[data[1]]);
-        SendIRAckMessage(channel, data[1]);
+        if(data[1]==IR_MSG_TYPE_PROPAGATED)
+        {
+            printf("Send ack %d %s (%s)\n", channel, irmessage_names[data[1]], irmessage_names[data[2]]);
+            SendIRAckMessage(channel, data[1], (uint8_t*)&data[2]);
+        }
+        else
+        {
+            printf("Send ack %d %s\n", channel, irmessage_names[data[1]]);
+            SendIRAckMessage(channel, data[1]);
+        }
     }
 
     //flash led briefly
@@ -453,6 +463,14 @@ void Robot::SendIRAckMessage(int channel, uint8_t type)
     SendIRMessage(channel, IR_MSG_TYPE_ACK, (const uint8_t*)&type, 1, false);
 }
 
+void Robot::SendIRAckMessage(int channel, uint8_t type, uint8_t *data, int size)
+{
+    uint8_t dst_data[size+1];
+    dst_data[0] = type;
+    memcpy(dst_data+1, data, size);
+    SendIRMessage(channel, IR_MSG_TYPE_ACK, data, size+1, false);
+}
+
 void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
 {
     pthread_mutex_lock(&txqueue_mutex);
@@ -467,7 +485,7 @@ void Robot::BroadcastIRMessage(int channel, uint8_t type, bool ack_required)
 
 void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required)
 {
-    BroadcastIRMessage(channel, type, &data, 1);
+    BroadcastIRMessage(channel, type, &data, 1, ack_required);
 }
 
 void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
