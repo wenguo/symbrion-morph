@@ -1203,7 +1203,7 @@ void RobotKIT::Raising()
     {
         raising_count++;
 
-        if(raising_count ==2)
+        if(raising_count ==20)
         {
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
