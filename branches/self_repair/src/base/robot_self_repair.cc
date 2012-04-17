@@ -82,7 +82,8 @@ bool Robot::StartRepair()
 		SetRGBLED(parent_side,RED,RED,RED,RED);
 
 		current_state = LEADREPAIR;
-                msg_unlocked_expected |= 1<<parent_side;
+		msg_unlocked_expected |= 1<<parent_side;
+
 		printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d\n",timestamp,subog_id);
 		ret = true;
 	}
