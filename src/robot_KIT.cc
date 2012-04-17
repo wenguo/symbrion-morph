@@ -795,7 +795,7 @@ void RobotKIT::Locking()
         else if(docked[docking_side] && !MessageWaitingAck(docking_side, IR_MSG_TYPE_LOCKED))
         {
             msg_organism_seq_expected = true;
-            msg_subog_seq_expected |= 1<<(uint8_t)docking_side;
+            msg_subog_seq_expected |= 1<<docking_side;
             current_state = INORGANISM;
             last_state = LOCKING;
 
@@ -1164,12 +1164,9 @@ void RobotKIT::Lowering()
 	lowering_count++;
 
 	if( StartRepair()  )
-        {
+	{
 		last_state = LOWERING;
 		seed = false;
-
-                for(int i=0; i<NUM_DOCKS;i++ )
-                    msg_unlocked_expected |= 1<<i;
 	}
 
 	return; // for testing - do not allow to enter disassembly

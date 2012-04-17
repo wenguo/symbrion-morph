@@ -194,9 +194,9 @@ void RobotAW::UpdateFailures()
 {
 	if( !module_failed )
 	{
-		if( current_state == LOWERING )
+		if( current_state == MACROLOCOMOTION )
 		{
-			if( para.debug.para[0] > 0 && lowering_count  > (unsigned) para.debug.para[0] )
+			if( para.debug.para[0] > 0 && macrolocomotion_count  > (unsigned) para.debug.para[0] )
 				module_failed = true;
 		}
 	}
@@ -1099,10 +1099,7 @@ void RobotAW::Lowering()
 	{
 		last_state = LOWERING;
 		seed = false;
-	
-                for(int i=0; i<NUM_DOCKS;i++ )
-                    msg_unlocked_expected |= 1<<i;
-        }
+	}
 
 	return; // for testing - do not allow to enter disassembly
 
