@@ -253,7 +253,8 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
                     printf("%d parent_side: %d type: %d channel: %d\n", timestamp, parent_side,type,channel);
                     // if module has not yet entered a repair state
-                    if( parent_side >= SIDE_COUNT )
+                    //if( parent_side >= SIDE_COUNT )
+                    if(  current_state != REPAIR || current_state != LEADREPAIR )
                     {
                         parent_side = channel;
                         subog_str[subog_str[0]] |= type<<4;     // 4:5
