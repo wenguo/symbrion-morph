@@ -1163,6 +1163,15 @@ void RobotKIT::Lowering()
 {
 	lowering_count++;
 
+	if( StartRepair()  )
+	{
+		last_state = LOWERING;
+		seed = false;
+	}
+
+	return; // for testing - do not allow to enter disassembly
+
+	//else if(seed && lowering_count >= 150)
 	if(seed && lowering_count >= 150)
 	{
 		PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
@@ -1363,13 +1372,7 @@ void RobotKIT::Reshaping()
 
 void RobotKIT::MacroLocomotion()
 {
-	if( StartRepair()  )
-	{
-		last_state = MACROLOCOMOTION;
-		// do housekeeping
-		seed = false;
-		return;
-	}
+
 
     leftspeed = 0;
     rightspeed = 0;
@@ -1400,10 +1403,7 @@ void RobotKIT::MacroLocomotion()
         }
     }
 
-    // For testing - return after flashing LEDs
-    return;
-
-    if( seed && macrolocomotion_count >= 100 )
+    if( module_failed || (seed && macrolocomotion_count >= 100 ))
     {
     	// Stop moving
         leftspeed = 0;
@@ -1416,6 +1416,7 @@ void RobotKIT::MacroLocomotion()
     	last_state = MACROLOCOMOTION;
     	current_state = LOWERING;
     	lowering_count = 0;
+    	seed = true;
     }
     else if( msg_lowering_received )
     {
@@ -1427,6 +1428,7 @@ void RobotKIT::MacroLocomotion()
     	last_state = MACROLOCOMOTION;
     	current_state = LOWERING;
     	lowering_count = 0;
+    	seed = false;
     }
 
 }

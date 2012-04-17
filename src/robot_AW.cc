@@ -1095,11 +1095,22 @@ void RobotAW::Lowering()
 {
 	lowering_count++;
 
+	if( StartRepair()  )
+	{
+		last_state = LOWERING;
+		seed = false;
+	}
+
+	return; // for testing - do not allow to enter disassembly
+
 	if( lowering_count <= 30 )
 	{
         if( lowering_count == 30 )
             SetHingeMotor(DOWN);
 	}
+
+	// StartRepair() will normally be placed here
+
 	else if(seed && lowering_count >= 150)
 	{
 		PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
@@ -1300,14 +1311,6 @@ void RobotAW::Reshaping()
 void RobotAW::MacroLocomotion()
 {
 
-	if( StartRepair()  )
-	{
-		last_state = MACROLOCOMOTION;
-		// do housekeeping
-		seed = false;
-		return;
-	}
-
 	leftspeed = 0;
 	rightspeed = 0;
 	//sidespeed = -20; // don't move
@@ -1337,10 +1340,7 @@ void RobotAW::MacroLocomotion()
 		}
 	}
 
-	// For testing - return after flashing LEDs
-	return;
-
-    if(seed && macrolocomotion_count >=100)
+    if( module_failed || (seed && macrolocomotion_count >=200))
     {
     	// Stop moving
         leftspeed = 0;
@@ -1353,6 +1353,7 @@ void RobotAW::MacroLocomotion()
     	last_state = MACROLOCOMOTION;
     	current_state = LOWERING;
     	lowering_count = 0;
+		seed = true;
     }
     else if( msg_lowering_received )
     {
@@ -1364,6 +1365,7 @@ void RobotAW::MacroLocomotion()
     	last_state = MACROLOCOMOTION;
     	current_state = LOWERING;
     	lowering_count = 0;
+    	seed = false;
     }
 }
 
