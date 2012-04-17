@@ -1013,10 +1013,14 @@ void RobotKIT::InOrganism()
             textcolor(BRIGHT, SCR_RED, SCR_BLACK);  
             printf("%d -- organism formed !!\n", timestamp);
             textcolor(RESET, SCR_WHITE, SCR_BLACK); 
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
 
             //prepare organism_formed_messages
             PropagateIRMessage(IR_MSG_TYPE_ORGANISM_FORMED);
 
+            macrolocomotion_count = 0;
+            raising_count = 0;
             current_state = RAISING;
             last_state = INORGANISM;
         }
@@ -1059,8 +1063,11 @@ void RobotKIT::InOrganism()
             textcolor(BRIGHT, SCR_RED, SCR_BLACK);  
             printf("%d -- organism formed !!\n", timestamp);
             textcolor(RESET, SCR_WHITE, SCR_BLACK); 
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
 
-            macrolocomotion_count=0;
+            macrolocomotion_count = 0;
+            raising_count = 0;
             current_state = RAISING;
             last_state = INORGANISM;
         }
@@ -1233,7 +1240,7 @@ void RobotKIT::Raising()
         }
     }
 
-    if(raising_count++ > 30 && MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
+    if(raising_count > 30 && !MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
     {
         current_state = MACROLOCOMOTION;
         last_state = RAISING;
