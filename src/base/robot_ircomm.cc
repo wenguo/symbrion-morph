@@ -400,7 +400,13 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     }
 
     if(valid_message)
-        printf("%d: channel %d recevied message %s %#x\n", timestamp, channel, irmessage_names[data[1]], data[2]);
+    {
+        printf("%d: channel %d recevied message %s", timestamp, channel, irmessage_names[data[1]]);
+        if(data[1]==IR_MSG_TYPE_ACK)
+            printf("(%s)\n", irmessage_names[data[2]]);
+        else
+            printf("\n");
+    }
 
     //send acknowledgement
     if(ack_required)
