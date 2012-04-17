@@ -819,7 +819,7 @@ void RobotKIT::Recruitment()
             {
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
-                printf("%d -- Recruitment: switch to Stage%d\n\n", timestamp, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             else
             {
@@ -843,7 +843,7 @@ void RobotKIT::Recruitment()
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 proximity_hist[2*i].Reset();
                 proximity_hist[2*i+1].Reset();
-                printf("%d -- Recruitment: switch to Stage%d\n\n", timestamp, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
         }
         else if(recruitment_stage[i]==STAGE2)
@@ -864,7 +864,7 @@ void RobotKIT::Recruitment()
                 recruitment_stage[i]=STAGE3;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
                 RobotBase::SetIRRX(board_dev_num[i], false);
-                printf("%d -- Recruitment: switch to Stage%d\n\n", timestamp, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
         }
         else if(recruitment_stage[i]==STAGE3)
@@ -875,7 +875,7 @@ void RobotKIT::Recruitment()
                 SetDockingMotor(i, CLOSE); //here it is safe to call clos motor repeately
 
                 recruitment_stage[i]=STAGE4;
-                printf("%d -- Recruitment: switch to Stage%d\n\n", timestamp, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             else if(msg_guideme_received & (1<<i))
             {
@@ -883,7 +883,7 @@ void RobotKIT::Recruitment()
                 proximity_hist[2*i+1].Reset();
                 recruitment_stage[i] = STAGE2;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
-                printf("%d -- Recruitment: switch back to Stage%d\n\n", timestamp, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
         }
         else if(recruitment_stage[i]==STAGE4)
@@ -919,6 +919,7 @@ void RobotKIT::Recruitment()
                     num_robots_inorganism++;
 
                     msg_ip_addr_expected |= 1<<i;
+                    printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
                 }
             }
         }
@@ -1190,7 +1191,7 @@ void RobotKIT::Raising()
     rightspeed = 0;
     sidespeed = 0;
 
-    //temp solution, hardcoded to force KIT4 as the coordinator
+    //temp solution, force KIT4 as the coordinator
     if(para.debug.para[9]==3)
     {
         raising_count++;

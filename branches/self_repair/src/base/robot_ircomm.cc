@@ -328,15 +328,15 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
             break;
         case IR_MSG_TYPE_PROPAGATED:
             {
-                //data[0] IR_MSG_TYPE_PROPAGATED
-                //data[1] Propagated message type
-                //data[2 - 5] timestamp
-                //data[6] data size
-                //data[7-x] data
-                if(docked[channel])
+                //data[1] IR_MSG_TYPE_PROPAGATED
+                //data[2] Propagated message type
+                //data[3 - 6] timestamp
+                //data[7] data size
+                //data[8-x] data
+               // if(docked[channel])
                 {
                     ack_required = true;
-                    uint32_t ts = data[3] | data[4] << 8 | data[5] << 16 | data[6] << 24;
+                    uint32_t ts = data[2] | data[3] << 8 | data[4] << 16 | data[5] << 24; //using 24bits for timestamp, 8bits for message type, so different message can be queued at the same time TODO: msg1, msg2, msg1 in queue with the same timestamp(real) will cause problems
                     //check if the same message received, using timestamp
                     if(ts != timestamp_propagated_msg_received)
                     {
@@ -402,7 +402,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     if(valid_message)
     {
         printf("%d: channel %d recevied message %s", timestamp, channel, irmessage_names[data[1]]);
-        if(data[1]==IR_MSG_TYPE_ACK)
+        if(data[1]==IR_MSG_TYPE_ACK || data[1]==IR_MSG_TYPE_PROPAGATED)
             printf("(%s)\n", irmessage_names[data[2]]);
         else
             printf("\n");
@@ -413,12 +413,12 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     {
         if(data[1]==IR_MSG_TYPE_PROPAGATED)
         {
-            printf("Send ack %d %s (%s)\n", channel, irmessage_names[data[1]], irmessage_names[data[2]]);
-            SendIRAckMessage(channel, data[1], (uint8_t*)&data[2]);
+            printf("%d: channel %d Send ack %s (%s)\n", timestamp, channel, irmessage_names[data[1]], irmessage_names[data[2]]);
+            SendIRAckMessage(channel, data[1], (uint8_t*)&(data[2]),1);
         }
         else
         {
-            printf("Send ack %d %s\n", channel, irmessage_names[data[1]]);
+            printf("%d: channel %d Send ack %s\n", channel, irmessage_names[data[1]]);
             SendIRAckMessage(channel, data[1]);
         }
     }
@@ -450,8 +450,11 @@ void Robot::SendIRMessage(const IRMessage& msg)
         SetRGBLED(msg.channel, GREEN, GREEN, 0, 0);
         RGBLED_flashing |=1<<msg.channel;
     }
-
-    printf("%d: %s send message %s via channel %d (%#x)\n",msg.timestamp, name, irmessage_names[msg.type],msg.channel, board_dev_num[msg.channel]);
+    
+    if(msg.type == IR_MSG_TYPE_PROPAGATED)
+        printf("%d: %s send message %s (%s) via channel %d (%#x)\n",msg.timestamp, name, irmessage_names[msg.type],irmessage_names[msg.data[0]],msg.channel, board_dev_num[msg.channel]);
+    else
+        printf("%d: %s send message %s via channel %d (%#x)\n",msg.timestamp, name, irmessage_names[msg.type],msg.channel, board_dev_num[msg.channel]);
 }
 
 void Robot::SendIRMessage(int channel, uint8_t type, bool ack_required)
@@ -474,7 +477,7 @@ void Robot::SendIRAckMessage(int channel, uint8_t type, uint8_t *data, int size)
     uint8_t dst_data[size+1];
     dst_data[0] = type;
     memcpy(dst_data+1, data, size);
-    SendIRMessage(channel, IR_MSG_TYPE_ACK, data, size+1, false);
+    SendIRMessage(channel, IR_MSG_TYPE_ACK, dst_data, size+1, false);
 }
 
 void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
@@ -508,10 +511,10 @@ void Robot::PropagateSingleIRMessage(uint8_t type, int channel, uint8_t *data, u
     {
         uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
         buf[0] = type;
-        buf[1] = timestamp;
-        buf[2] = timestamp;
-        buf[3] = timestamp;
-        buf[4] = timestamp;
+        buf[1] = timestamp & 0xFF;
+        buf[2] = (timestamp >>8) & 0xFF;
+        buf[3] = (timestamp >>16) & 0xFF;
+        buf[4] = (timestamp >>24) & 0xFF; //not used at moment
         int data_size = len;
         if(data_size > MAX_IR_MESSAGE_SIZE - 6 )
         {

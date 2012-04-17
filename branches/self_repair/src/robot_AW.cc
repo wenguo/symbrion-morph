@@ -770,7 +770,7 @@ void RobotAW::Recruitment()
             {
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
-                printf("%d -- Recruitment: switch to Stage%d\n\n", timestamp, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             else
             {
@@ -796,7 +796,7 @@ void RobotAW::Recruitment()
                 proximity_hist[2*i].Reset();
                 proximity_hist[2*i+1].Reset();
                 ambient_avg_threshold_hist.Reset();
-                printf("%d -- Recruitment: switch to Stage%d\n\n", timestamp, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
         }
         else if(recruitment_stage[i]==STAGE2)
@@ -826,7 +826,7 @@ void RobotAW::Recruitment()
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
                 RobotBase::SetIRRX(board_dev_num[i], true);
                 //RobotBase::SetIRRX(board_dev_num[i], false);
-                printf("%d -- Recruitment: switch to Stage%d\n\n", timestamp, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
         }
         else if(recruitment_stage[i]==STAGE3)
@@ -839,7 +839,7 @@ void RobotAW::Recruitment()
                 SendBranchTree(i, (*it1));
 
                 recruitment_stage[i]=STAGE4;
-                printf("%d -- Recruitment: switch to Stage%d\n\n", timestamp, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             else if(msg_guideme_received & (1<<i))
             {
@@ -848,7 +848,7 @@ void RobotAW::Recruitment()
                 ambient_avg_threshold_hist.Reset();
                 recruitment_stage[i] = STAGE2;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
-                printf("%d -- Recruitment: switch back to Stage%d\n\n", timestamp, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
         }
         else if(recruitment_stage[i]==STAGE4)
@@ -861,6 +861,8 @@ void RobotAW::Recruitment()
 
                 if(seed)
                     num_robots_inorganism++;
+                
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
              }
         }
         else if(recruitment_stage[i] == STAGE5)
