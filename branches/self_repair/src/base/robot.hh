@@ -64,6 +64,7 @@ class Robot
     void SendIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required = true);
     void SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = true);
     void SendIRAckMessage(int channel, uint8_t type);
+    void SendIRAckMessage(int channel, uint8_t type, uint8_t *data, int size=1);
     void PropagateIRMessage(uint8_t type, uint8_t *data = NULL, uint32_t size = 0, int excluded_channel = -1);
     void PropagateSingleIRMessage(uint8_t type, int channel, uint8_t *data = NULL, uint32_t size = 0 );
 
