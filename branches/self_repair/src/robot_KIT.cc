@@ -109,7 +109,8 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
             {
                 //change status to be opening
                 docking_motors_status[channel] = OPENING; //clear first
-//                OpenDocking(KaBot::Side(board_dev_num[channel]));
+                if(para.locking_motor_enabled[channel])
+                    OpenDocking(KaBot::Side(board_dev_num[channel]));
                 printf("open docking\n");
             }
             //or open -> close
@@ -117,7 +118,8 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
             {
                 //change status to be closing
                 docking_motors_status[channel] = CLOSING; //clear first
-//                CloseDocking(KaBot::Side(board_dev_num[channel]));
+                if(para.locking_motor_enabled[channel])
+                    CloseDocking(KaBot::Side(board_dev_num[channel]));
                 printf("close docking\n");
             }
             else

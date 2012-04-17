@@ -110,6 +110,11 @@ bool Robot::LoadParameters(const char * filename)
             para.locking_reflective_offset1 = optionfile->ReadInt(entity, "locking_reflective_offset1", 500);
             para.locking_reflective_offset2 = optionfile->ReadInt(entity, "locking_reflective_offset2", 500);
             para.locking_reflective_diff = optionfile->ReadInt(entity, "locking_reflective_diff", 650);
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "locking_motor_enabled" ) )
+            {
+                for(int i=0;i<4;i++)
+                    para.locking_motor_enabled[i] =  atoi(optionfile->GetPropertyValue(prop, i));
+            }
         }
         else if( strcmp( typestr, "MacroLocomotion" ) == 0 )
         {

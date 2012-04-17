@@ -49,6 +49,7 @@ Parameter::Parameter():
     memset(avoid_weightleft, 0, NUM_IRS);
     memset(avoid_weightright, 0, NUM_IRS);
     memset(avoid_weightside, 0, NUM_IRS);
+    memset(locking_motor_enabled, 0, NUM_DOCKS);
     memset(docking_turn_left_speed, 0, 3);
     memset(docking_turn_right_speed, 0, 3);
     memset(docking_forward_speed, 0, 3);

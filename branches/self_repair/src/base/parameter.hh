@@ -53,6 +53,7 @@ class Parameter
         int locking_reflective_offset1;
         int locking_reflective_offset2;
         int locking_reflective_diff;
+        bool locking_motor_enabled[NUM_DOCKS];
 
         int avoid_weightleft[NUM_IRS];
         int avoid_weightright[NUM_IRS];
