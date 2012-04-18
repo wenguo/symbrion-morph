@@ -276,7 +276,7 @@ void RobotAW::Seeding() //the same as in RobotKIT
     std::cout<<mytree<<std::endl;*/
     if(!para.og_seq_list.empty())
     {
-        mytree = para.og_seq_list[0];
+        mytree = target = para.og_seq_list[0];
         std::cout<<mytree<<std::endl;
     }
     else
