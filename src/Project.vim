@@ -64,6 +64,7 @@ badd +12 base/IRMessage.hh
 badd +4 base/IRMessage.cc
 badd +15 base/Makefile
 badd +5 base/robot_ircomm.cc
+badd +0 base/robot_self_repair.cc
 args \[BufExplorer]
 edit ./base/robot.cc
 set splitbelow splitright

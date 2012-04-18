@@ -76,6 +76,9 @@ class Robot
     bool MessageWaitingAck(int channel, uint8_t type);
     bool MessageWaitingAck(uint8_t type);
 
+    // reset variables required for self-assembly
+    void ResetAssembly();
+
     protected:    
     virtual void InitHardware()=0;
     virtual void UpdateSensors()=0;

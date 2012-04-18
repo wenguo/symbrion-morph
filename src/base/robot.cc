@@ -105,6 +105,7 @@ Robot::Robot()
     recover_count = 0;
     inorganism_count = 0;
     macrolocomotion_count = 0;
+    undocking_count = 0;
     raising_count = 0;
     lowering_count = 0;
 
@@ -165,6 +166,28 @@ Robot::Robot()
     IR_PULSE0 = 0x1;
     IR_PULSE1 = 0x2;
     IR_PULSE2 = 0x4;
+}
+
+// Reset variables used during assembly
+void Robot::ResetAssembly()
+{
+    powersource_found = false;
+    organism_found = false;
+    organism_formed = false;
+    msg_raising_received = 0;
+    msg_lowering_received = 0;
+    msg_score_received = 0;
+    msg_unlocked_received = 0;
+    num_robots_inorganism=1;
+    seed = false;
+
+    for(int i=0; i<SIDE_COUNT; i++)
+    {
+        recruitment_stage[i]=STAGE0;
+        recruitment_count[i] = 0;
+	recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
+    }
+
 }
 
 Robot::~Robot()
