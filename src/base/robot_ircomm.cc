@@ -82,7 +82,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     bool ack_required = false;
     bool valid_message = true;
 
-    if(data[0] !=0 && (data[0] & 0xF) != ((docked[channel] >>4) & 0xF))
+    if(data[0] !=0 && (data[0] & 0xF) != ((docked[channel] >>4) & 0xF) &&  (data[0] >> 4 & 0xF) != ((docked[channel]) & 0xF))
     {
         printf("%d channel %d received message %s, expected receiver is %#x(%#x) but I have %#x(%#x), skip it\n",
                 timestamp, channel, irmessage_names[data[1]], data[0]&0xF, data[0], (docked[channel]>>4) & 0xF, docked[channel]);
@@ -254,7 +254,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                     printf("%d parent_side: %d type: %d channel: %d\n", timestamp, parent_side,type,channel);
                     // if module has not yet entered a repair state
                     //if( parent_side >= SIDE_COUNT )
-                    if(  current_state != REPAIR || current_state != LEADREPAIR )
+                    if(  current_state != REPAIR && current_state != LEADREPAIR )
                     {
                         parent_side = channel;
                         subog_str[subog_str[0]] |= type<<4;     // 4:5
@@ -403,7 +403,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
     if(valid_message)
     {
-        printf("%d: channel %d recevied message %s", timestamp, channel, irmessage_names[data[1]]);
+        printf("%d: channel %d docked %#x recevied message %s", timestamp, channel, data[0], irmessage_names[data[1]]);
         if(data[1]==IR_MSG_TYPE_ACK || data[1]==IR_MSG_TYPE_PROPAGATED)
             printf("(%s)\n", irmessage_names[data[2]]);
         else
@@ -568,7 +568,7 @@ void Robot::SendFailureMsg( int channel )
 
     SendIRMessage(channel, IR_MSG_TYPE_FAILED, buf, 1, true);
 
-    printf("%d Sending failure message %d\n",timestamp,(int)buf[0]);
+    printf("%d Sending failure message %d %#x\n",timestamp,(int)buf[0],docked[channel]);
 }
 
 /*

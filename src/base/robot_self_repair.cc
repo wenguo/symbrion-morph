@@ -127,7 +127,8 @@ void Robot::LeadRepair()
 			{
                 if( msg_subog_seq_received & 1<<wait_side )
 				{
-					do // Find next neighbour (not including the failed module)
+					printf("%dparent_side: %d\n",timestamp,parent_side);
+                                        do // Find next neighbour (not including the failed module)
 					{
 						wait_side++;
 					}
