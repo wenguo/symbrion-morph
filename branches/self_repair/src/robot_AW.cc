@@ -84,8 +84,11 @@ void RobotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t
 
 void RobotAW::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
 {
-    //MoveWheelsFront(-leftspeed * direction, -sidespeed);
-    //MoveWheelsRear(rightspeed * direction,sidespeed);
+    if( para.debug.para[9] != 2 )
+    {
+        MoveWheelsFront(-leftspeed * direction, -sidespeed);
+        MoveWheelsRear(rightspeed * direction,sidespeed);
+    }
 }
 
 bool RobotAW::SetDockingMotor(int channel, int status)
@@ -1044,6 +1047,7 @@ void RobotAW::Disassembly()
         //only one  or less 
         if(num_docked ==0)
         {
+            undocking_count = 0;
             current_state = UNDOCKING;
             last_state = DISASSEMBLY;
         }
@@ -1065,7 +1069,6 @@ void RobotAW::Undocking()
             SetRGBLED(i, RED,RED,RED,RED);
     }
 
-    static int undocking_count=0;
     undocking_count++;
     if(undocking_count >= 120)
     {
@@ -1087,7 +1090,7 @@ void RobotAW::Undocking()
 
         last_state = UNDOCKING;
         current_state = FORAGING;
-
+        ResetAssembly(); // reset variables used during assembly
     }
 
 }
@@ -1100,7 +1103,8 @@ void RobotAW::Lowering()
 	{
 		last_state = LOWERING;
 		seed = false;
-	}
+	        ResetAssembly();
+        }
 
 	return; // for testing - do not allow to enter disassembly
 
@@ -1341,7 +1345,7 @@ void RobotAW::MacroLocomotion()
 		}
 	}
 
-    if( module_failed || (seed && macrolocomotion_count >=300))
+    if( module_failed ) //  || (seed && macrolocomotion_count >=300))
     {
     	// Stop moving
         leftspeed = 0;

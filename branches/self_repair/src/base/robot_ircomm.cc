@@ -82,7 +82,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     bool ack_required = false;
     bool valid_message = true;
 
-    if(data[0] !=0 && (data[0] & 0xF) != ((docked[channel] >>4) & 0xF) &&  (data[0] >> 4 & 0xF) != ((docked[channel]) & 0xF))
+    if(data[0] !=0 && ((data[0] & 0xF) != ((docked[channel] >>4) & 0xF) ||  (data[0] >> 4 & 0xF) != ((docked[channel]) & 0xF)))
     {
         printf("%d channel %d received message %s, expected receiver is %#x(%#x) but I have %#x(%#x), skip it\n",
                 timestamp, channel, irmessage_names[data[1]], data[0]&0xF, data[0], (docked[channel]>>4) & 0xF, docked[channel]);
@@ -173,6 +173,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
                         // for reshaping
                         parent_side = channel;
+                        msg_subog_seq_expected |= 1<<channel;
                     }
                 }
             }

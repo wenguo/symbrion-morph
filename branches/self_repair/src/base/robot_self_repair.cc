@@ -90,7 +90,10 @@ bool Robot::StartRepair()
 	else if( msg_subog_seq_received )
 	{
 		msg_subog_seq_received = 0;
+
+		wait_side = 0;
 		repair_stage = STAGE0;
+		best_score = 0;
 
 		// Find the first side at which another neighbour is docked (not parent)
 		while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
@@ -606,10 +609,12 @@ void Robot::Failed()
 
 		//only one  or less
 		if(num_docked ==0)
-		{
+		{       
+                        undocking_count = 0;
 			current_state = UNDOCKING;
 			last_state = FAILED;
-		}
+	                module_failed = false;
+                }
 	}
 	
 }

@@ -1112,6 +1112,7 @@ void RobotKIT::Disassembly()
         //only one  or less 
         if(num_docked ==0)
         {
+            undocking_count = 0;
             current_state = UNDOCKING;
             last_state = DISASSEMBLY;
         }
@@ -1135,7 +1136,6 @@ void RobotKIT::Undocking()
             SetRGBLED(i, RED,RED,RED,RED);
     }
 
-    static int undocking_count=0;
     undocking_count++;
 
     if(undocking_count >= 120)
@@ -1153,7 +1153,7 @@ void RobotKIT::Undocking()
 
         last_state = UNDOCKING;
         current_state = FORAGING;
-
+        ResetAssembly(); // reset variables used during assembly
     }
 
 
@@ -1165,10 +1165,11 @@ void RobotKIT::Lowering()
 	lowering_count++;
 
 	if( StartRepair()  )
-	{
+        {
 		last_state = LOWERING;
 		seed = false;
-	}
+	        ResetAssembly();
+        }
 
 	return; // for testing - do not allow to enter disassembly
 
@@ -1404,7 +1405,7 @@ void RobotKIT::MacroLocomotion()
         }
     }
 
-    if( module_failed || (seed && macrolocomotion_count >= 300 ))
+    if( module_failed ) //|| (seed && macrolocomotion_count >= 300 ))
     {
     	// Stop moving
         leftspeed = 0;
