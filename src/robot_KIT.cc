@@ -812,7 +812,7 @@ void RobotKIT::Recruitment()
     std::vector<OrganismSequence>::iterator it1 = mybranches.begin();
     while(it1 !=mybranches.end())
     {
-        int8_t i = it1->getSymbol(0).side1;
+        uint8_t i = it1->getSymbol(0).side1;
 
         bool erase_required = false;
         if(recruitment_stage[i]==STAGE0)
@@ -927,25 +927,26 @@ void RobotKIT::Recruitment()
         }
         else if(recruitment_stage[i] == STAGE5)
         {
+            //sending a ip_req first
+            if(timestamp % 10 == i)
+            {
+                //request IP addr
+                uint8_t data[5];
+                data[0] = it1->getSymbol(0).data; //TODO: remove this as it is already included when using SendIRMessage
+                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+            }
             //get new ip address?
-            if(msg_ip_addr_received & (1<<i))
+            else if(msg_ip_addr_received & (1<<i))
             {
                 //prepare the newrobot_joined messages
                 if(!seed)
                     PropagateIRMessage(IR_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
 
-                msg_ip_addr_received &= ~(1<<i);
+            //    msg_ip_addr_received &= ~(1<<i);
 
                 //remove branches since it has been sent to newly joined robot
                 erase_required = true;
-            }
-            else if(timestamp % 10 ==0)
-            {
-                //request IP addr
-                uint8_t data[5];
-                data[0] = it1->getSymbol(0).data;
-                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
             }
         }
 
