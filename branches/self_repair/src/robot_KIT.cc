@@ -1118,6 +1118,10 @@ void RobotKIT::Disassembly()
             undocking_count = 0;
             current_state = UNDOCKING;
             last_state = DISASSEMBLY;
+
+            // for demo only - turn on back proximity sensors
+        	SetIRLED(2, IRLEDPROXIMITY, LED0|LED2, 0);
+
         }
 
     }
@@ -1141,30 +1145,37 @@ void RobotKIT::Undocking()
 
     undocking_count++;
 
+    // move
     if(undocking_count >= 120)
     {
-        leftspeed = -30;
-        rightspeed = -30;
-        sidespeed = 0;
-    }
+    	// move back
+    	if( undocking_count < 130 )
+    	{
+    		leftspeed = -30;
+    		rightspeed = -30;
+    		sidespeed = 0;
+    	}
+    	// added for demo purposes only - rotate
+    	// TODO: add as configuration parameters
+    	else if( undocking_count < 400 && proximity[4] < 175 && proximity[5] < 175 )
+    	{
+    		leftspeed = 18;
+    		rightspeed = -35;
+    		sidespeed = 0;
+    	}
+		else
+		{
+			leftspeed = 0;
+			rightspeed = 0;
+			sidespeed = 0;
 
-    // for demo purposes
-    if( undocking_count >= 150 )
-    {
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 50;
-    }
+			for( int i=0;i<NUM_DOCKS; i++)
+				SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
 
-    if( undocking_count >= 250 ) // was 150
-    {
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
-
-        last_state = UNDOCKING;
-        current_state = FORAGING;
-        ResetAssembly(); // reset variables used during assembly
+			last_state = UNDOCKING;
+			current_state = FORAGING;
+			ResetAssembly(); // reset variables used during assembly
+		}
     }
 
 
