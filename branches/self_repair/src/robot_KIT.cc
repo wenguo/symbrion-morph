@@ -486,32 +486,31 @@ void RobotKIT::LocateBeacon()
 {
     direction = FORWARD;
 
+    printf("%d: %d %d (%#x)\n", timestamp, beacon[1], beacon[0], beacon_signals_detected);
+
     //TODO: any side docking?
-    if(beacon_signals_detected & 0x3)
+   // if(beacon_signals_detected & 0x3)
+   if(beacon[1]> 3 || beacon[0]>3)
     {
-        int temp = beacon[1]-beacon[0];
-        if(abs(temp) > 20)
+        if(beacon[0]>5 && beacon[1]>5)
+   // if(beacon_signals_detected & 0x3 ==0x3)
         {
             leftspeed = 0;
             rightspeed = 0;
-            sidespeed = 20 * sign(temp);
-        }
-        else if(abs(temp) > 10)
-        {
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = 15 * sign(temp);
-        }
-        else if(abs(temp) > 5 )
-        {
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = 10 * sign(temp);
+            sidespeed = 0;
+
+            //if((timestamp/5)%2 ==0)
+           //     sidespeed = 10;
+           // else
+            //    sidespeed = -20;
         }
         else
         {
-            leftspeed = 20;
-            rightspeed = 20;
+            printf("only one beacon detected, shift left and right a little bit\n");
+            int temp = beacon[1]-beacon[0];
+            leftspeed = 0;
+            rightspeed = 0;
+            sidespeed = 20 * sign(temp);
         }
     }
     else
@@ -520,7 +519,9 @@ void RobotKIT::LocateBeacon()
         leftspeed = 0;
         rightspeed = 0;
 
-        if((timestamp/5)%2 ==0)
+        printf("no beacon detected, shift left and right a little bit\n");
+
+        if((timestamp/10)%2 ==0)
             sidespeed = 20;
         else
             sidespeed = -20;
@@ -945,7 +946,7 @@ void RobotKIT::Recruitment()
                 if(!seed)
                     PropagateIRMessage(IR_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
 
-            //    msg_ip_addr_received &= ~(1<<i);
+                //    msg_ip_addr_received &= ~(1<<i);
 
                 //remove branches since it has been sent to newly joined robot
                 erase_required = true;
@@ -993,20 +994,20 @@ void RobotKIT::InOrganism()
 
     //for testing 
     /*
-    printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-            (my_IP >> 24) & 0xFF,
-            (my_IP >> 16) & 0xFF,
-            (my_IP >> 8) & 0xFF,
-            my_IP & 0xFF);
-    for(int i=0;i<NUM_DOCKS;i++)
-    {
-        printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-                (neighbours_IP[i] >> 24) & 0xFF,
-                (neighbours_IP[i] >> 16) & 0xFF,
-                (neighbours_IP[i] >> 8) & 0xFF,
-                neighbours_IP[i] & 0xFF);
-    }
-    */
+       printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
+       (my_IP >> 24) & 0xFF,
+       (my_IP >> 16) & 0xFF,
+       (my_IP >> 8) & 0xFF,
+       my_IP & 0xFF);
+       for(int i=0;i<NUM_DOCKS;i++)
+       {
+       printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
+       (neighbours_IP[i] >> 24) & 0xFF,
+       (neighbours_IP[i] >> 16) & 0xFF,
+       (neighbours_IP[i] >> 8) & 0xFF,
+       neighbours_IP[i] & 0xFF);
+       }
+       */
 
     //seed robot monitoring total number of robots in the organism
     if(seed)
@@ -1146,8 +1147,16 @@ void RobotKIT::Undocking()
         rightspeed = -30;
         sidespeed = 0;
     }
-    
+
+    // for demo purposes
     if( undocking_count >= 150 )
+    {
+        leftspeed = 0;
+        rightspeed = 0;
+        sidespeed = 50;
+    }
+
+    if( undocking_count >= 250 ) // was 150
     {
         leftspeed = 0;
         rightspeed = 0;
@@ -1164,46 +1173,46 @@ void RobotKIT::Undocking()
 
 void RobotKIT::Lowering()
 {
-	lowering_count++;
+    lowering_count++;
 
-	if( StartRepair()  )
+    if( StartRepair()  )
+    {
+        last_state = LOWERING;
+        seed = false;
+        ResetAssembly();
+    }
+
+    return; // for testing - do not allow to enter disassembly
+
+    //else if(seed && lowering_count >= 150)
+    if(seed && lowering_count >= 150)
+    {
+        PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
+
+        current_state = DISASSEMBLY;
+        last_state = LOWERING;
+
+        for(int i=0;i<NUM_DOCKS;i++)
         {
-		last_state = LOWERING;
-		seed = false;
-	        ResetAssembly();
+            SetRGBLED(i, 0, 0, 0, 0);
+            if(docked[i])
+                msg_unlocked_expected |=1<<i;
         }
+    }
+    else if(msg_disassembly_received)
+    {
+        current_state = DISASSEMBLY;
+        last_state = LOWERING;
 
-	return; // for testing - do not allow to enter disassembly
+        msg_disassembly_received = 0;
 
-	//else if(seed && lowering_count >= 150)
-	if(seed && lowering_count >= 150)
-	{
-		PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
-
-		current_state = DISASSEMBLY;
-		last_state = LOWERING;
-
-		for(int i=0;i<NUM_DOCKS;i++)
-		{
-			SetRGBLED(i, 0, 0, 0, 0);
-			if(docked[i])
-				msg_unlocked_expected |=1<<i;
-		}
-	}
-	else if(msg_disassembly_received)
-	{
-		current_state = DISASSEMBLY;
-		last_state = LOWERING;
-
-		msg_disassembly_received = 0;
-
-		for(int i=0;i<NUM_DOCKS;i++)
-		{
-			SetRGBLED(i, 0, 0, 0, 0);
-			if(docked[i])
-				msg_unlocked_expected |=1<<i;
-		}
-	}
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            SetRGBLED(i, 0, 0, 0, 0);
+            if(docked[i])
+                msg_unlocked_expected |=1<<i;
+        }
+    }
 
 }
 
@@ -1271,98 +1280,98 @@ void RobotKIT::Raising()
 void RobotKIT::Reshaping()
 {
 
-	// If this is the seed or branch received from other module
-	if( seed || msg_organism_seq_received )
-	{
-		// Prepare branch sequences
-		rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
-		if(ret.status >= RT_ERROR)
-		{
-			std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
-		}
+    // If this is the seed or branch received from other module
+    if( seed || msg_organism_seq_received )
+    {
+        // Prepare branch sequences
+        rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
+        if(ret.status >= RT_ERROR)
+        {
+            std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
+        }
 
-		// disable all LEDs
-	    for(int i=0;i<NUM_DOCKS;i++)
-	        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
+        // disable all LEDs
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
 
-		for(int i=0; i<SIDE_COUNT; i++)
-		{
-			recruitment_stage[i]=STAGE0;
-			recruitment_count[i] = 0;
-			recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
+        for(int i=0; i<SIDE_COUNT; i++)
+        {
+            recruitment_stage[i]=STAGE0;
+            recruitment_count[i] = 0;
+            recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
 
-			// unless this is the seed do not
-			// send messages to parent_side
-			if( !seed && i == parent_side )
-				continue;
+            // unless this is the seed do not
+            // send messages to parent_side
+            if( !seed && i == parent_side )
+                continue;
 
-			// check if branch needs to be sent
-			uint8_t branch_side = SIDE_COUNT;
+            // check if branch needs to be sent
+            uint8_t branch_side = SIDE_COUNT;
             OrganismSequence next_branch;
-			std::vector<OrganismSequence>::iterator it;
-			for(it = mybranches.begin() ; it != mybranches.end(); it++)
-			{
-				if( it->getSymbol(0).side1 == i )
-				{
-					branch_side = it->getSymbol(0).side1;
-					next_branch = (*it);
+            std::vector<OrganismSequence>::iterator it;
+            for(it = mybranches.begin() ; it != mybranches.end(); it++)
+            {
+                if( it->getSymbol(0).side1 == i )
+                {
+                    branch_side = it->getSymbol(0).side1;
+                    next_branch = (*it);
                     break;
-				}
-			}
+                }
+            }
 
-			// TODO: Check that neighbour is correct type and orientation!
+            // TODO: Check that neighbour is correct type and orientation!
 
-			// if there is a neighbour and there should be
-			if( docked[i] && branch_side == i )
-			{
-				// send branch
+            // if there is a neighbour and there should be
+            if( docked[i] && branch_side == i )
+            {
+                // send branch
                 SendBranchTree(i, next_branch);
                 recruitment_stage[i]=STAGE4;
                 docking_done[i] = true; 		// may not be necessary
                 printf("%d Sending branch to side %d\n",timestamp, i);
-			}
-			// if there is a neighbour but there shouldn't be
-			else if( docked[i] && branch_side == SIDE_COUNT )
-			{
-				// send disassembly
-		        PropagateSingleIRMessage(IR_MSG_TYPE_DISASSEMBLY,i);
-		        printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
-			}
-		    // if there isn't a neighbour but there should be
-			else if( docked[i]==0 && branch_side == i )
-			{
-				// start recruiting
-		        SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
-		        printf("%d Preparing to recruit upon side %d\n",timestamp,i);
-			}
+            }
+            // if there is a neighbour but there shouldn't be
+            else if( docked[i] && branch_side == SIDE_COUNT )
+            {
+                // send disassembly
+                PropagateSingleIRMessage(IR_MSG_TYPE_DISASSEMBLY,i);
+                printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
+            }
+            // if there isn't a neighbour but there should be
+            else if( docked[i]==0 && branch_side == i )
+            {
+                // start recruiting
+                SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
+                printf("%d Preparing to recruit upon side %d\n",timestamp,i);
+            }
 
-		}
+        }
 
-		// If there is no new tree - disassemble
-		if( seed && mytree.Size() <= 0 )
-		{
-			current_state = DISASSEMBLY;
-			printf("%d No new tree to assemble, entering disassembly\n",timestamp);
-		}
-		else
-		{
-			current_state = RECRUITMENT;
+        // If there is no new tree - disassemble
+        if( seed && mytree.Size() <= 0 )
+        {
+            current_state = DISASSEMBLY;
+            printf("%d No new tree to assemble, entering disassembly\n",timestamp);
+        }
+        else
+        {
+            current_state = RECRUITMENT;
 
-			// turn off LEDs
-			for(int i=0; i<NUM_DOCKS; i++)
-				SetRGBLED(i, 0, 0, 0, 0);
+            // turn off LEDs
+            for(int i=0; i<NUM_DOCKS; i++)
+                SetRGBLED(i, 0, 0, 0, 0);
 
-		}
+        }
 
-		last_state = RESHAPING;
+        last_state = RESHAPING;
 
-	}
-	else if( msg_disassembly_received )
-	{
-		current_state = DISASSEMBLY;
-		last_state = RESHAPING;
+    }
+    else if( msg_disassembly_received )
+    {
+        current_state = DISASSEMBLY;
+        last_state = RESHAPING;
 
-		msg_disassembly_received = 0;
+        msg_disassembly_received = 0;
 
         for(int i=0;i<NUM_DOCKS;i++)
         {
@@ -1370,7 +1379,7 @@ void RobotKIT::Reshaping()
             if( docked[i] )
                 msg_unlocked_expected |=1<<i;
         }
-	}
+    }
 
 }
 
@@ -1409,39 +1418,39 @@ void RobotKIT::MacroLocomotion()
 
     if( module_failed ) //|| (seed && macrolocomotion_count >= 300 ))
     {
-    	// Stop moving
+        // Stop moving
         leftspeed = 0;
         rightspeed = 0;
         sidespeed = 0;
 
         // Propagate lowering messages
-    	PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
 
-    	last_state = MACROLOCOMOTION;
-    	current_state = LOWERING;
-    	lowering_count = 0;
-    	seed = true;
+        last_state = MACROLOCOMOTION;
+        current_state = LOWERING;
+        lowering_count = 0;
+        seed = true;
     }
     else if( msg_lowering_received )
     {
-    	// Stop moving
+        // Stop moving
         leftspeed = 0;
         rightspeed = 0;
         sidespeed = 0;
 
-    	last_state = MACROLOCOMOTION;
-    	current_state = LOWERING;
-    	lowering_count = 0;
-    	seed = false;
+        last_state = MACROLOCOMOTION;
+        current_state = LOWERING;
+        lowering_count = 0;
+        seed = false;
     }
 
 }
 
 void RobotKIT::Debugging()
 {
-   // leftspeed = 0;
-   // rightspeed = 0;
-   // sidespeed = 0;
+    // leftspeed = 0;
+    // rightspeed = 0;
+    // sidespeed = 0;
 
     if(timestamp >40)
         Log();

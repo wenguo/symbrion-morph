@@ -30,7 +30,7 @@ Robot::Robot()
     repair_start = 0;
     repair_duration = 50;
     move_start = 0;
-    move_duration = 100;
+    move_duration = 50;
     broadcast_start = 0;
     broadcast_duration = 200;
     broadcast_period = 50;

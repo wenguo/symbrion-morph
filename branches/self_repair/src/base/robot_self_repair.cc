@@ -150,7 +150,7 @@ void Robot::LeadRepair()
 			wait_side = 0;
 			repair_stage = STAGE1;
 			msg_subog_seq_expected = 0;
-		    move_start = timestamp;
+		        move_start = 0;
 			printf("%d Shape determined, entering STAGE1\n",timestamp );
 		}
 	}
@@ -160,6 +160,9 @@ void Robot::LeadRepair()
 		// Move away
 		if( msg_unlocked_received )
 		{
+                        if( move_start == 0 )
+                            move_start = timestamp;
+
 			leftspeed = -30;
 			rightspeed = -30;
 
@@ -169,7 +172,7 @@ void Robot::LeadRepair()
 				sidespeed = -10;
 		}
 		// Flash LEDs whilst moving
-		if( timestamp < move_start+move_duration )
+		if(  move_start == 0 || timestamp < move_start+move_duration )
 		{
 			int index;
 			index = (timestamp / 2) % 4;
