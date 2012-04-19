@@ -502,21 +502,23 @@ void RobotKIT::LocateBeacon()
             rightspeed = 0;
             sidespeed = 15 * sign(temp);
         }
+        else if(abs(temp) > 5 )
+        {
+            leftspeed = 0;
+            rightspeed = 0;
+            sidespeed = 10 * sign(temp);
+        }
         else
         {
             leftspeed = 20;
             rightspeed = 20;
-
-            if((timestamp/5)%2 ==0)
-                sidespeed = 20;
-            else
-                sidespeed = -20;
         }
     }
     else
     {
-        leftspeed = 20;
-        rightspeed = 20;
+        //TODO: temp solution, stay there
+        leftspeed = 0;
+        rightspeed = 0;
 
         if((timestamp/5)%2 ==0)
             sidespeed = 20;
