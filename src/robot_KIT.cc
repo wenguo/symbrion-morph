@@ -337,7 +337,7 @@ void RobotKIT::Seeding()
     //std::cout<<*og<<std::endl;
     if(!para.og_seq_list.empty())
     {
-        mytree = para.og_seq_list[0];
+        mytree = target = para.og_seq_list[0];
         std::cout<<mytree<<std::endl;
     }
     else
@@ -844,6 +844,8 @@ void RobotKIT::Recruitment()
                         && ambient_hist[2*i+1].Avg()>para.recruiting_ambient_offset1
                         && reflective_hist[2*i].Avg()>20 && reflective_hist[2*i+1].Avg()>20))
             {
+                if(it1->getSymbol(0).type2 == ROBOT_KIT)
+                    msg_locked_expected |= 1<<i;
                 recruitment_stage[i]=STAGE2;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 proximity_hist[2*i].Reset();
@@ -879,6 +881,14 @@ void RobotKIT::Recruitment()
                 msg_lockme_received &=~(1<<i);
                 SetDockingMotor(i, CLOSE); //here it is safe to call clos motor repeately
 
+                recruitment_stage[i]=STAGE4;
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+            }
+            else if(msg_locked_received & (1<<i))
+            {
+                msg_locked_received &=~(1<<i);
+                msg_locked_expected &=~(1<<i);
+                docked[i]= it1->getSymbol(0).data;
                 recruitment_stage[i]=STAGE4;
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
@@ -1149,7 +1159,7 @@ void RobotKIT::Undocking()
     if(undocking_count >= 120)
     {
     	// move back
-    	if( undocking_count < 130 )
+    	if( undocking_count < 150 )
     	{
     		leftspeed = -30;
     		rightspeed = -30;
@@ -1157,10 +1167,10 @@ void RobotKIT::Undocking()
     	}
     	// added for demo purposes only - rotate
     	// TODO: add as configuration parameters
-    	else if( undocking_count < 400 && proximity[4] < 175 && proximity[5] < 175 )
+    	else if( undocking_count < 300 && proximity[4] < 175 && proximity[5] < 175 )
     	{
-    		leftspeed = 18;
-    		rightspeed = -35;
+    		leftspeed = para.debug.para[1];   // was 18
+    		rightspeed = para.debug.para[2]; // was -35
     		sidespeed = 0;
     	}
 		else

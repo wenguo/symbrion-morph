@@ -49,7 +49,7 @@ int main(int argc, char * argv[])
     if(argc == 2)
         sprintf(cf_path,"%s", argv[1]);
     else
-        sprintf(cf_path,"/flash/uwe");
+        sprintf(cf_path,"/flash/morph");
 
 
     if(robot_type == RobotBase::KABOT)

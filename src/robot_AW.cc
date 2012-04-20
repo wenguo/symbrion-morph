@@ -1493,6 +1493,16 @@ void RobotAW::Debugging()
 				current_state = LOWERING;
 			}
         	break;
+        case 12:
+                if(timestamp==40)
+                {
+                    for(int i=0;i<NUM_DOCKS;i++)
+                    {
+                        SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                        RobotBase::SetIRRX(board_dev_num[i], false);
+                    }
+                }
+                break;
         default:
             break;
     }

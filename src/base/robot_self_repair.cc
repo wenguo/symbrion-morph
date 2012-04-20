@@ -17,12 +17,18 @@ uint8_t Robot::calculateSubOrgScore( OrganismSequence &seq1, OrganismSequence &s
 	// get size of largest common sub-tree
 	uint8_t score = OrganismSequence::maxCommonTreeSize( seq1, seq2 );
 
+        std::cout << "score: " << score << std::endl;
+        std::cout << "seq1: " << seq1 << std::endl;
+        std::cout << "seq2: " << seq2 << std::endl;
+        std::cout << "seq1 size: " << seq1.Encoded_Seq().size() << std::endl;
+        std::cout << "seq2 size: " << seq2.Encoded_Seq().size() << std::endl;
+
 	// Add one if the root matches
 	if( seq1.Encoded_Seq().size() > 0 && seq2.Encoded_Seq().size() > 0 )
 	{
 		if( seq1.Encoded_Seq().front().type1 == seq2.Encoded_Seq().front().type1 )
 			score++;
-	}
+        }
 
 	return score;
 
