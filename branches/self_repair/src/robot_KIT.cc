@@ -490,7 +490,7 @@ void RobotKIT::LocateBeacon()
 
     //TODO: any side docking?
    // if(beacon_signals_detected & 0x3)
-   if(beacon[1]> 3 || beacon[0]>3)
+    if(beacon[1]> 3 || beacon[0]>3)
     {
         if(beacon[0]>5 && beacon[1]>5)
    // if(beacon_signals_detected & 0x3 ==0x3)
@@ -679,6 +679,9 @@ void RobotKIT::Recover()
         last_state = RECOVER;
     }
 }
+
+#define MOVE_LEFT 10
+#define MOVE_RIGHT 11
 void RobotKIT::Docking()
 {
     if(proximity[0] > 200 && proximity[1] > 200)
@@ -691,27 +694,70 @@ void RobotKIT::Docking()
 
     int temp_reflective = reflective_hist[1].Avg() - reflective_hist[0].Avg();
     int temp_proximity = proximity[1] - proximity[0];
-    static  int status = FORWARD;
+    static  int status = 0;
+    static int last_status=0;
 
-    if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0)
+    if(timestamp % 9 == 0 || timestamp %9 ==4)
+    //if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0)
     {
         status = CHECKING;
     }
-    else if(timestamp %DOCKING_CHECKING_INTERVAL == 1)
+    //else if(timestamp % (DOCKING_CHECKING_INTERVAL) == 1)
+    else if(timestamp % 9 == 2)
     {
-        status = CHECKING;//MOVE_FORWARD;
+        status = MOVE_FORWARD;
     }
-    else if(timestamp % DOCKING_CHECKING_INTERVAL == DOCKING_CHECKING_INTERVAL/2 + 1)
+    else if(timestamp % 9 == 6)
+    //else if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 1)
     {
-        printf("%d %d \n", temp_proximity, temp_reflective);
-        if(abs(temp_proximity)> 400 || abs(temp_reflective) > 1200)
-            status = MOVE_BACKWARD;
-        else if(temp_proximity > 200 || temp_reflective > 400)
-            status = TURN_LEFT;
-        else if(temp_proximity< -200 || temp_reflective < -300)
-            status = TURN_RIGHT;
-        else
-            status = MOVE_FORWARD;
+        if(assembly_info.type1 == ROBOT_AW)
+        {
+            if(abs(temp_proximity)> 400 || abs(temp_reflective) > 1200)
+                status = MOVE_BACKWARD;
+            else if(temp_proximity > 200 || temp_reflective > 400)
+                status = TURN_LEFT;
+            else if(temp_proximity< -200 || temp_reflective < -300)
+                status = TURN_RIGHT;
+            else
+                status = MOVE_FORWARD;
+        }
+        else if(assembly_info.type1 == ROBOT_KIT)
+        {
+            /*
+               if(temp_reflective > 150)
+               status = TURN_LEFT;
+               else if(temp_reflective < -150)
+               status = TURN_RIGHT;
+               else if(abs(temp_proximity) > 300)
+               status = MOVE_BACKWARD;
+               else
+               status = MOVE_FORWARD;
+               */
+            if(last_status == TURN_LEFT)
+            {
+                status = MOVE_RIGHT; //move right a little bit to compensate
+            }
+            else if(last_status == TURN_RIGHT)
+            {
+                status = MOVE_LEFT;
+            }
+            else
+            {
+                if(abs(temp_reflective) > 700 || (abs(temp_proximity)> 400 & std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 450 ))
+                    status = MOVE_BACKWARD;
+                //else if(temp_proximity > 220 || temp_reflective > 500)
+                else if(temp_reflective > 150)
+                    status = TURN_LEFT;
+                else if(temp_reflective < -150)
+                    status = TURN_RIGHT;
+                else
+                    status = MOVE_FORWARD;
+
+            }
+
+            last_status = status;
+
+        }
     }
 
     if(in_locking_region_hist.Sum() > 2) // 4 successful predition out of 8 
@@ -729,6 +775,9 @@ void RobotKIT::Docking()
         current_state = LOCKING;
         last_state = DOCKING;
     }
+    
+    printf("proximity: \t%d(%d) \treflective(%d): \t%d \tstatus: \t%d \n", temp_proximity, std::max(proximity[0], proximity[1]), temp_reflective, std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()), status);
+
 
     switch (status)
     {
@@ -751,6 +800,16 @@ void RobotKIT::Docking()
             leftspeed = para.docking_backward_speed[0];
             rightspeed = para.docking_backward_speed[1];
             sidespeed = para.docking_backward_speed[2];
+            break;
+        case MOVE_LEFT:
+            leftspeed = 0;
+            rightspeed = 0;
+            sidespeed = -12;
+            break;
+        case MOVE_RIGHT:
+            leftspeed = 0;
+            rightspeed = 0;
+            sidespeed = -16;
             break;
         case CHECKING:
             leftspeed = 0;
@@ -858,10 +917,18 @@ void RobotKIT::Recruitment()
             proximity_hist[2*i].Push(proximity[2*i]);
             proximity_hist[2*i+1].Push(proximity[2*i+1]);
 
+            printf("proximity %d ",2*i);
             proximity_hist[2*i].Print();
+            printf("proximity %d ",2*i+1);
+            proximity_hist[2*i+1].Print();
+            printf("ambient %d ",2*i);
             ambient_hist[2*i].Print();
+            printf("ambient %d ",2*i+1);
+            ambient_hist[2*i+1].Print();
             msg_guideme_received &= ~(1<<i);
             msg_lockme_expected |=1<<i;
+
+            Log();
 
             if(ambient_hist[2*i].Avg() > para.recruiting_ambient_offset2 
                     && ambient_hist[2*i+1].Avg() > para.recruiting_ambient_offset2 
@@ -1479,7 +1546,7 @@ void RobotKIT::Debugging()
 
     switch (para.debug.mode)
     {
-        case 0: //simulating recruitment, stage 2 
+        case 0: //simulating recruitment, stage 2, 64Hz helper signals
             if(timestamp ==40)
             {
                 SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, 0);
@@ -1496,7 +1563,7 @@ void RobotKIT::Debugging()
             }
             printf("%d\t%d\t%d\t%d\t%d\t%d\n",  proximity[0], proximity[1], beacon[0], beacon[1], reflective_hist[0].Avg(), reflective_hist[1].Avg());
             break;
-        case 2: // simulate recruitment, stage 1, guiding signals
+        case 2: // simulate recruitment, stage 1, 32Hz guiding signals
             if(timestamp == 40)
             {
                 SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
