@@ -73,7 +73,7 @@ enum fsm_state_t {
     LOCATEBEACON, 
     ALIGNMENT, 
     RECOVER, 
-    DOCKING, 
+    DOCKING, //11
     LOCKING, 
     DISASSEMBLY,
     UNDOCKING,

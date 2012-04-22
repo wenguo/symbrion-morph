@@ -422,42 +422,35 @@ void RobotAW::LocateBeacon()//same as RobotKIT
 {
     direction = FORWARD;
 
-    //TODO: any side docking?
-    if(beacon_signals_detected & 0x3)
+    //any beacon signals
+    if(beacon[1]> 3 || beacon[0]>3)
     {
-        int temp = beacon[1]-beacon[0];
-        if(abs(temp) > 20)
+        //too beacon signals 
+        if(beacon[0]>5 && beacon[1]>5)
         {
+            //stay there and wait to transfer to state Alignment
             leftspeed = 0;
             rightspeed = 0;
-            sidespeed = 20 * sign(temp);
-        }
-        else if(abs(temp) > 10)
-        {
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = 15 * sign(temp);
+            sidespeed = 0;
         }
         else
         {
-            leftspeed = 20;
-            rightspeed = 20;
-
-            if((timestamp/5)%2 ==0)
-                sidespeed = 20;
-            else
-                sidespeed = -20;
+            printf("only one beacon detected, shift left and right a little bit\n");
+            int temp = beacon[1]-beacon[0];
+            leftspeed = 0;
+            rightspeed = 0;
+            sidespeed = -15 * sign(temp);
         }
     }
     else
     {
-        leftspeed = 20;
-        rightspeed = 20;
+            leftspeed = 15;
+            rightspeed = 15;
 
-        if((timestamp/5)%2 ==0)
-            sidespeed = 20;
-        else
-            sidespeed = -20;
+            if((timestamp/10)%2 ==0)
+                sidespeed = 10;
+            else
+                sidespeed = -10;
 
     }
 
@@ -519,10 +512,10 @@ void RobotAW::Alignment()
     int temp = beacon[0]-beacon[1];
     int temp2 = (reflective_hist[0].Avg())-(reflective_hist[1].Avg());
 
-
     //not closed to object?
-    if(abs(temp2) < 100)
+    if(abs(temp2) < 50)
     {
+        /*
         //adjust if not aligned to docking beacon
         if(abs(temp) > 40)
         {
@@ -547,33 +540,60 @@ void RobotAW::Alignment()
             leftspeed = para.speed_forward;
             rightspeed = para.speed_forward;
             //in case too much friction introduced by side wheels
-            if((timestamp/2)%2==0)
-                sidespeed = 15;
-            else
-                sidespeed = -15;
+        }
+        */
+
+        if(abs(temp > 5))
+        {
+            leftspeed = 0;//para.speed_forward;
+            rightspeed = 0;//para.speed_foraward;
+            sidespeed = 30 * temp / std::max(beacon[0], beacon[1]);
+            if(abs(sidespeed)< 10)
+                sidespeed = 15 * sign(temp);
+        }
+        else
+        {
+            leftspeed = para.speed_forward;
+            rightspeed = para.speed_forward;
+            sidespeed = 0;
         }
     }
     else if(abs(temp2)<200)
     {
-        leftspeed = -14 * sign(temp2);
-        rightspeed = 14 * sign(temp2);
-        if((timestamp/2)%2==0)
+        if(beacon[0] < 30 & beacon[1] < 30)
+        {
+            leftspeed = 0;
+            rightspeed = 0;
+            sidespeed = 15 * sign(temp);
+        }
+        else
+        {
+            leftspeed = -14 * sign(temp2);
+            rightspeed = 14 * sign(temp2);
+            sidespeed=0;
+        }
+        /*if((timestamp/4)%2==0)
             sidespeed = 13;
         else
-            sidespeed = -13;
+            sidespeed = -13;*/
     }
     else
     {
         leftspeed = -19 * sign(temp2);
         rightspeed = 19 * sign(temp2);
+        sidespeed=0;
  
+        /*
         //in case too much friction introduced by side wheels
         if((timestamp/2)%2==0)
             sidespeed = 13;
         else
-            sidespeed = -13;
+            sidespeed = -13;*/
     }
 
+    printf("%d:\tbeacon: \t%d \t%d \t(%d)\n",timestamp, beacon[0], beacon[1], temp);
+    printf("%d: \treflect: \t%d \t%d \t(%d)\n", timestamp,reflective_hist[0].Avg(), reflective_hist[1].Avg(),temp2);
+    printf("%d: \tspeed: \t%d \t%d \t%d\n", timestamp,leftspeed, rightspeed, sidespeed);
 
     //lost signals
     //if(beacon_signals_detected==0)
@@ -647,7 +667,7 @@ void RobotAW::Docking()
 
     int temp_reflective = reflective_hist[1].Avg() - reflective_hist[0].Avg();
     int temp_proximity = proximity[1] - proximity[0];
-    static  int status = FORWARD;
+    static  int status = 0;
 
     if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0)
     {
@@ -655,20 +675,23 @@ void RobotAW::Docking()
     }
     else if(timestamp %DOCKING_CHECKING_INTERVAL == 1)
     {
-        status = MOVE_FORWARD;
+        status = CHECKING;//MOVE_FORWARD;
     }
     else if(timestamp % DOCKING_CHECKING_INTERVAL == DOCKING_CHECKING_INTERVAL/2 + 1)
     {
-        printf("%d %d \n", temp_proximity, temp_reflective);
-        if(abs(temp_proximity)> 400 || abs(temp_reflective) > 1000)
-            status = MOVE_BACKWARD;
-        else if(temp_proximity > 120 || temp_reflective > 500)
-            status = TURN_LEFT;
-        else if(temp_proximity< -120 || temp_reflective < -500)
-            status = TURN_RIGHT;
-        else
-            status = MOVE_FORWARD;
+
+            if(abs(temp_reflective) > 1000 || (abs(temp_proximity)> 650 & std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 600 ))
+                status = MOVE_BACKWARD;
+            //else if(temp_proximity > 220 || temp_reflective > 500)
+            else if(temp_reflective > 300)
+                status = TURN_LEFT;
+            else if(temp_reflective < -300)
+                status = TURN_RIGHT;
+            else
+                status = MOVE_FORWARD;
     }
+
+    printf("proximity: \t%d(%d) \treflective(%d): \t%d \tstatus: \t%d \n", temp_proximity, std::max(proximity[0], proximity[1]), temp_reflective, std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()), status);
 
     if(in_locking_region_hist.Sum() > 2) // 4 successful predition out of 8 
     {
@@ -725,6 +748,7 @@ void RobotAW::Docking()
         default:
             break;
     }
+    printf("speed: %d %d %d\n", leftspeed, rightspeed, sidespeed);
 }
 
 void RobotAW::Locking()
@@ -1393,7 +1417,7 @@ void RobotAW::Debugging()
             }
             printf("%d %d %d %d\n",  proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg());
             break;
-        case 1: //simulating recruitment, stage 2
+        case 1: //simulating recruitment, stage 2, 64Hz helper signals
             if(timestamp ==40)
             {
                 SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
@@ -1408,7 +1432,7 @@ void RobotAW::Debugging()
             }
             printf("%d %d %d %d\n", reflective[0]-reflective_calibrated[0], reflective[1] - reflective_calibrated[1], beacon[0], beacon[1]);
             break;
-        case 3: //simulate recruitment, stage 1, guiding signals
+        case 3: //simulate recruitment, stage 1, 32Hz guiding signals
             if(timestamp ==40)
             {
                 SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
