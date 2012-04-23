@@ -588,6 +588,8 @@ void RobotKIT::Alignment()
     rightspeed = para.speed_forward;
     sidespeed = 0;
 
+    static bool docking_region_detected = false;
+
     int temp = beacon[1]-beacon[0];
     int temp2 = (reflective_hist[1].Avg())-(reflective_hist[0].Avg());
 
@@ -627,36 +629,52 @@ void RobotKIT::Alignment()
         sidespeed = 0; //overwrite sidespeed
     }
 
-    printf("%d %d %d\n",leftspeed, rightspeed, sidespeed);
-
     //lost signals
     //if(beacon_signals_detected==0)
     //beacon signals drop to certain threshold?
-    if(beacon_signals_detected_hist.Sum(0) < 0 || beacon_signals_detected_hist.Sum(1) < 1)
+  /*  if(beacon_signals_detected_hist.Sum(0) < 0 || beacon_signals_detected_hist.Sum(1) < 1)
     {
         current_state = RECOVER;
         last_state = ALIGNMENT;
 
         return;
-    }
+    }*/
 
     //check if it is aligned well and also closed enough for docking
     int input[4] = {reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
     in_docking_region_hist.Push(in_docking_region(input));
-    if(in_docking_region_hist.Sum() >= 2) // at least 7 successful prediction out of 8  in docking region
+    if(in_docking_region_hist.Sum() >= 3) // at least 7 successful prediction out of 8  in docking region
     {
         in_docking_region_hist.Reset();
-
-        current_state = DOCKING;
-        last_state = ALIGNMENT;
-
-        docking_count = 0;
-
+        docking_region_detected = true;
         for(int i=0;i<NUM_IRS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
-        SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
-        return;
+        SetRGBLED(0, YELLOW, YELLOW, YELLOW, YELLOW);
+
     }
+
+    if(docking_region_detected)
+    {
+        leftspeed = 0;
+        rightspeed = 0;
+        sidespeed = 0;
+        if(robots_in_range_detected_hist.Sum(0) > 0 && robots_in_range_detected_hist.Sum(1) > 0) 
+        {
+            docking_region_detected =false;
+            in_docking_region_hist.Reset();
+            docking_count = 0;
+            docking_failed_reverse_count = 0;
+        
+            docking_trials++;
+
+            current_state = DOCKING;
+            last_state = ALIGNMENT;
+            
+            SetRGBLED(0, 0,0,0,0);
+        }
+    }
+
+
 }
 void RobotKIT::Recover()
 {
@@ -685,13 +703,19 @@ void RobotKIT::Recover()
 void RobotKIT::Docking()
 {
 
+    docking_count++;
+
     //no guiding signals (proximity) detected, go back to alignment
-    if(robots_in_range_detected_hist.Sum(0) < 10 && robots_in_range_detected_hist.Sum(1) < 10) //10 out of 16
+    //skip first few timesteps
+    robots_in_range_detected_hist.Print2();
+    printf("robots_in_range_detected %d(%d) %d(%d) -- %d %d\n", proximity[0], beacon[0], proximity[1],beacon[1],robots_in_range_detected_hist.Sum(0), robots_in_range_detected_hist.Sum(1));
+    if(docking_count > 30 && robots_in_range_detected_hist.Sum(0) < 10 && robots_in_range_detected_hist.Sum(1) < 10) //10 out of 16
     {
         docking_failed = true;
     }
     if(docking_failed)
     {
+        printf("docking failed: %d %d\n", docking_failed_reverse_count, para.docking_failed_reverse_time);
         if(docking_failed_reverse_count++ > para.docking_failed_reverse_time)
         {
             leftspeed = 0;
@@ -711,6 +735,7 @@ void RobotKIT::Docking()
                     last_state = DOCKING;
                     docking_failed_reverse_count = 0;
                     docking_failed = false;
+                    docking_count = 0;
                 }
             }
             else
@@ -726,17 +751,18 @@ void RobotKIT::Docking()
         else
         {
             leftspeed = para.docking_failed_reverse_speed[0];
-            rightspeed = para.docking_failed_reverse_speed[0];
-            sidespeed = para.docking_failed_reverse_speed[0];
+            rightspeed = para.docking_failed_reverse_speed[1];
+            sidespeed = para.docking_failed_reverse_speed[2];
         }
         return;
     }
 
+    /*
     if(proximity[0] > 200 && proximity[1] > 200)
         SetRGBLED(0,0,0,0,0);
     else if(proximity[0]<20 && proximity[1]< 20)
         SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
-
+*/
     int input[4]={proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg()};
     in_locking_region_hist.Push(in_locking_region(input));
 
@@ -864,12 +890,12 @@ void RobotKIT::Docking()
             rightspeed = 0;
             sidespeed = 0;
             //no beacon2 signals?
-            if(proximity[0] < 50 && proximity[1]<50)
-            {
+    //        if(proximity[0] < 50 && proximity[1]<50)
+    //        {
                 //          SetRGBLED(0, 0, 0, 0, 0);
-                Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
+      //          Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
                 //              SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
-            } 
+      //      } 
             break;
         default:
             break;
@@ -948,6 +974,7 @@ void RobotKIT::Recruitment()
         {
             if(msg_docking_signal_req_received & (1<<i))
             {
+                msg_docking_signal_req_received &= ~(1<<i);
                 SetIRLED(i, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
             }
             else if(msg_guideme_received & (1<<i) || ( (robot_in_range_detected & (0x3<<(2*i))) ==0
@@ -957,6 +984,7 @@ void RobotKIT::Recruitment()
             {
                 if(it1->getSymbol(0).type2 == ROBOT_KIT)
                     msg_locked_expected |= 1<<i;
+                msg_guideme_received &= ~(1<<i);
                 recruitment_stage[i]=STAGE2;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 proximity_hist[2*i].Reset();
@@ -969,7 +997,7 @@ void RobotKIT::Recruitment()
             proximity_hist[2*i].Push(proximity[2*i]);
             proximity_hist[2*i+1].Push(proximity[2*i+1]);
 
-            printf("proximity %d ",2*i);
+           /* printf("proximity %d ",2*i);
             proximity_hist[2*i].Print();
             printf("proximity %d ",2*i+1);
             proximity_hist[2*i+1].Print();
@@ -977,10 +1005,9 @@ void RobotKIT::Recruitment()
             ambient_hist[2*i].Print();
             printf("ambient %d ",2*i+1);
             ambient_hist[2*i+1].Print();
+            */
             msg_guideme_received &= ~(1<<i);
             msg_lockme_expected |=1<<i;
-
-            Log();
 
             if(ambient_hist[2*i].Avg() > para.recruiting_ambient_offset2 
                     && ambient_hist[2*i+1].Avg() > para.recruiting_ambient_offset2 
@@ -996,6 +1023,7 @@ void RobotKIT::Recruitment()
             //give up, back to stage 1
             if(guiding_signals_count[i]++ >= para.recruiting_guiding_signals_time)
             {
+                msg_docking_signal_req_received &=~(1<<i);
                 guiding_signals_count[i] = 0;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDOFF, 0, 0);
@@ -1022,8 +1050,18 @@ void RobotKIT::Recruitment()
                 recruitment_stage[i]=STAGE4;
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
+            else if(msg_docking_signal_req_received & 1<<i)
+            {
+                msg_docking_signal_req_received &=~(1<<i);
+                guiding_signals_count[i] = 0;
+                recruitment_stage[i]=STAGE1;
+                SetIRLED(i, IRLEDOFF, 0, 0);
+                RobotBase::SetIRRX(board_dev_num[i], true);
+                printf("%d -- Recruitment: channel %d  received docking signals req, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+            }
             else if(msg_guideme_received & (1<<i))
             {
+                msg_guideme_received &= ~(1<<i);
                 proximity_hist[2*i].Reset();
                 proximity_hist[2*i+1].Reset();
                 recruitment_stage[i] = STAGE2;

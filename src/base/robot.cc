@@ -103,6 +103,7 @@ Robot::Robot()
     waiting_count = DEFAULT_WAITING_COUNT;
     foraging_count = DEFAULT_FORAGING_COUNT;
     docking_count = 0;
+    docking_failed_reverse_count = 0;
     recover_count = 0;
     inorganism_count = 0;
     macrolocomotion_count = 0;
@@ -159,7 +160,7 @@ Robot::Robot()
     pthread_mutex_init(&mutex, NULL);
     pthread_mutex_init(&txqueue_mutex, NULL);
 
-    robots_in_range_detected_hist.Resize(16);
+    robots_in_range_detected_hist.Resize(15);
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;

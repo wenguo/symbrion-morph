@@ -76,6 +76,7 @@ bool Robot::LoadParameters(const char * filename)
             para.docking_beacon_diff = optionfile->ReadInt(entity, "docking_reflective_offset2", 20);
             para.docking_motor_opening_time = optionfile->ReadInt(entity, "docking_motor_opening_time", 30);
             para.docking_motor_closing_time = optionfile->ReadInt(entity, "docking_motor_closing_time", 40);
+            para.docking_trials = optionfile->ReadInt(entity, "docking_trials", 40);
             para.docking_failed_reverse_time = optionfile->ReadInt(entity, "docking_failed_reverse_time", 40);
             if( Morph::CProperty* prop = optionfile->GetProperty( entity, "turn_right_speed" ) )
             {
