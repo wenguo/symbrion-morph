@@ -93,6 +93,7 @@ Robot::Robot()
         neighbours_IP[i] = 0;
         new_id[i] = SIDE_COUNT;
         new_score[i] = 0;
+        guiding_signals_count[0]=0;
     }
 
 
@@ -127,6 +128,7 @@ Robot::Robot()
     msg_raising_received = 0;
     msg_lowering_received = 0;
     msg_guideme_received = 0;
+    msg_docking_signal_req_received = 0;
     msg_organism_seq_received = false;
     msg_organism_seq_expected = false;
     msg_ip_addr_received = 0;
@@ -138,6 +140,9 @@ Robot::Robot()
     msg_score_seq_received = 0;
     msg_score_seq_expected = 0;
     msg_score_received = 0;
+
+    docking_failed = false;
+    docking_trials=0;
 
     //clear just in case 
     mytree.Clear();

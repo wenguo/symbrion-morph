@@ -64,6 +64,7 @@ bool Robot::LoadParameters(const char * filename)
             para.recruiting_proximity_offset2 = optionfile->ReadInt(entity, "recruiting_proximity_offset2", 150);
             para.recruiting_reflective_offset1 = optionfile->ReadInt(entity, "recruiting_reflective_offset1", 20);
             para.recruiting_reflective_offset2 = optionfile->ReadInt(entity, "recruiting_reflective_offset2", 20);
+            para.recruiting_guiding_signals_time = optionfile->ReadInt(entity, "recruiting_guiding_signals_time", 200);
         }
         else if( strcmp( typestr, "Docking" ) == 0 )
         {
@@ -75,6 +76,7 @@ bool Robot::LoadParameters(const char * filename)
             para.docking_beacon_diff = optionfile->ReadInt(entity, "docking_reflective_offset2", 20);
             para.docking_motor_opening_time = optionfile->ReadInt(entity, "docking_motor_opening_time", 30);
             para.docking_motor_closing_time = optionfile->ReadInt(entity, "docking_motor_closing_time", 40);
+            para.docking_failed_reverse_time = optionfile->ReadInt(entity, "docking_failed_reverse_time", 40);
             if( Morph::CProperty* prop = optionfile->GetProperty( entity, "turn_right_speed" ) )
             {
                 para.docking_turn_right_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
@@ -99,6 +101,13 @@ bool Robot::LoadParameters(const char * filename)
                 para.docking_backward_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
                 para.docking_backward_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
             }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "failed_reverse_speed" ) )
+            {
+                para.docking_failed_reverse_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.docking_failed_reverse_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.docking_failed_reverse_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
+
 
         }
         else if( strcmp( typestr, "Locking" ) == 0 )

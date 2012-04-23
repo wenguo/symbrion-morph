@@ -235,6 +235,7 @@ class Robot
     //bits 4-5: neighbour's type
     //bits 6-7: neighbour's side
     bool docking_done[NUM_DOCKS];   
+    bool docking_failed;
     bool unlocking_required[NUM_DOCKS];
     uint8_t recruitment_stage[NUM_DOCKS];//using an array in case parallel docking is enabled
     uint32_t IRLED_status[NUM_DOCKS]; //each ir led (bits 0 and 1): 0 or 1-- off,
@@ -280,7 +281,11 @@ class Robot
     uint32_t seeding_count;
     uint32_t foraging_blind_count;
     uint32_t docking_motor_operating_count[NUM_DOCKS];
+    uint32_t docking_failed_reverse_count;
     uint32_t hinge_motor_operating_count;
+    uint32_t guiding_signals_count[NUM_DOCKS];
+
+    uint8_t docking_trials;
 
     uint8_t beacon_signals_detected;
     uint8_t expelling_signals_detected;
@@ -300,6 +305,7 @@ class Robot
     uint8_t msg_lockme_received;
     uint8_t msg_lockme_expected;
     uint8_t msg_guideme_received;
+    uint8_t msg_docking_signal_req_received;
     bool msg_organism_seq_received;
     bool msg_organism_seq_expected;
     // for self-repair
