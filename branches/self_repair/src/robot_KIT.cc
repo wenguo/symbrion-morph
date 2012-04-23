@@ -486,7 +486,6 @@ void RobotKIT::LocateBeacon()
 {
     direction = FORWARD;
 
-    printf("%d: %d %d (%#x)\n", timestamp, beacon[1], beacon[0], beacon_signals_detected);
 
     //TODO: any side docking?
    // if(beacon_signals_detected & 0x3)
@@ -649,15 +648,15 @@ void RobotKIT::Alignment()
         docking_region_detected = true;
         for(int i=0;i<NUM_IRS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
-        SetRGBLED(0, YELLOW, YELLOW, YELLOW, YELLOW);
+        SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
 
     }
 
     if(docking_region_detected)
     {
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+       // leftspeed = 0;
+       // rightspeed = 0;
+       // sidespeed = 0;
         if(robots_in_range_detected_hist.Sum(0) > 0 && robots_in_range_detected_hist.Sum(1) > 0) 
         {
             docking_region_detected =false;
@@ -707,8 +706,6 @@ void RobotKIT::Docking()
 
     //no guiding signals (proximity) detected, go back to alignment
     //skip first few timesteps
-    robots_in_range_detected_hist.Print2();
-    printf("robots_in_range_detected %d(%d) %d(%d) -- %d %d\n", proximity[0], beacon[0], proximity[1],beacon[1],robots_in_range_detected_hist.Sum(0), robots_in_range_detected_hist.Sum(1));
     if(docking_count > 30 && robots_in_range_detected_hist.Sum(0) < 10 && robots_in_range_detected_hist.Sum(1) < 10) //10 out of 16
     {
         docking_failed = true;
@@ -850,7 +847,6 @@ void RobotKIT::Docking()
         last_state = DOCKING;
     }
     
-    printf("proximity: \t%d(%d) \treflective(%d): \t%d \tstatus: \t%d \n", temp_proximity, std::max(proximity[0], proximity[1]), temp_reflective, std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()), status);
 
 
     switch (status)
@@ -997,15 +993,6 @@ void RobotKIT::Recruitment()
             proximity_hist[2*i].Push(proximity[2*i]);
             proximity_hist[2*i+1].Push(proximity[2*i+1]);
 
-           /* printf("proximity %d ",2*i);
-            proximity_hist[2*i].Print();
-            printf("proximity %d ",2*i+1);
-            proximity_hist[2*i+1].Print();
-            printf("ambient %d ",2*i);
-            ambient_hist[2*i].Print();
-            printf("ambient %d ",2*i+1);
-            ambient_hist[2*i+1].Print();
-            */
             msg_guideme_received &= ~(1<<i);
             msg_lockme_expected |=1<<i;
 
