@@ -113,6 +113,7 @@ enum irmsg_type_t {
     IR_MSG_TYPE_EXPELLING,        //no data 
     IR_MSG_TYPE_POWERSOURCE_FOUND,//no data
     IR_MSG_TYPE_GUIDEME, //no data
+    IR_MSG_TYPE_DOCKING_SIGNALS_REQ,
     IR_MSG_TYPE_OBJECTTYPE, 
 
     //broadcast, ack required

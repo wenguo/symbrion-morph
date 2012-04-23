@@ -28,13 +28,16 @@ class Parameter
         int docking_turn_right_speed[3];
         int docking_forward_speed[3];
         int docking_backward_speed[3];
+        int docking_failed_reverse_speed[3];
         int recruiting_ambient_offset1;
         int recruiting_ambient_offset2;
         int recruiting_proximity_offset1;
         int recruiting_proximity_offset2;
         int recruiting_reflective_offset1;
         int recruiting_reflective_offset2;
+        int recruiting_guiding_signals_time;
 
+        int docking_trials;
         int docking_reflective_offset1;
         int docking_reflective_offset2;
         int docking_reflective_diff;
@@ -43,6 +46,7 @@ class Parameter
         int docking_beacon_diff;
         int docking_motor_opening_time;
         int docking_motor_closing_time;
+        int docking_failed_reverse_time;
         int hinge_motor_lifting_time;
         int hinge_motor_lowing_time;
 

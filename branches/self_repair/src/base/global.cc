@@ -36,6 +36,7 @@ const char * irmessage_names[IR_MSG_TYPE_COUNT]={
     "Expelling",
     "Powersource_Found",
     "GuideMe",
+    "DockingSignal_REQ",
     "ObjectType",
     "Locked",
     "UnLocked",

@@ -684,6 +684,54 @@ void RobotKIT::Recover()
 #define MOVE_RIGHT 11
 void RobotKIT::Docking()
 {
+
+    //no guiding signals (proximity) detected, go back to alignment
+    if(robots_in_range_detected_hist.Sum(0) < 10 && robots_in_range_detected_hist.Sum(1) < 10) //10 out of 16
+    {
+        docking_failed = true;
+    }
+    if(docking_failed)
+    {
+        if(docking_failed_reverse_count++ > para.docking_failed_reverse_time)
+        {
+            leftspeed = 0;
+            rightspeed = 0;
+            sidespeed = 0;
+
+            if(docking_trials < para.docking_trials)
+            {
+
+                //Request beacon signals
+                if(timestamp % 5 ==0)
+                    Robot::BroadcastIRMessage(0, IR_MSG_TYPE_DOCKING_SIGNALS_REQ);
+
+                if(beacon_signals_detected_hist.Sum(0) > 5 && beacon_signals_detected_hist.Sum(1)>5)
+                {
+                    current_state = ALIGNMENT;
+                    last_state = DOCKING;
+                    docking_failed_reverse_count = 0;
+                    docking_failed = false;
+                }
+            }
+            else
+            {
+                //TODO: give up trying
+                //send message to info recruiting robot
+                printf("\n\n\nNot implemented yet\n\n\n");
+                last_state = DOCKING;
+                docking_failed_reverse_count = 0;
+                docking_failed = false;
+            }
+        }
+        else
+        {
+            leftspeed = para.docking_failed_reverse_speed[0];
+            rightspeed = para.docking_failed_reverse_speed[0];
+            sidespeed = para.docking_failed_reverse_speed[0];
+        }
+        return;
+    }
+
     if(proximity[0] > 200 && proximity[1] > 200)
         SetRGBLED(0,0,0,0,0);
     else if(proximity[0]<20 && proximity[1]< 20)
@@ -898,7 +946,11 @@ void RobotKIT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE1)
         {
-            if(msg_guideme_received & (1<<i) || ( (robot_in_range_detected & (0x3<<(2*i))) ==0
+            if(msg_docking_signal_req_received & (1<<i))
+            {
+                SetIRLED(i, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
+            }
+            else if(msg_guideme_received & (1<<i) || ( (robot_in_range_detected & (0x3<<(2*i))) ==0
                         && ambient_hist[2*i].Avg()> para.recruiting_ambient_offset1
                         && ambient_hist[2*i+1].Avg()>para.recruiting_ambient_offset1
                         && reflective_hist[2*i].Avg()>20 && reflective_hist[2*i+1].Avg()>20))
@@ -940,6 +992,17 @@ void RobotKIT::Recruitment()
                 RobotBase::SetIRRX(board_dev_num[i], false);
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
+
+            //give up, back to stage 1
+            if(guiding_signals_count[i]++ >= para.recruiting_guiding_signals_time)
+            {
+                guiding_signals_count[i] = 0;
+                recruitment_stage[i]=STAGE1;
+                SetIRLED(i, IRLEDOFF, 0, 0);
+                RobotBase::SetIRRX(board_dev_num[i], true);
+                printf("%d -- Recruitment: channel %d  waits too long, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+            }
+
         }
         else if(recruitment_stage[i]==STAGE3)
         {

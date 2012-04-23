@@ -113,6 +113,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
         case IR_MSG_TYPE_GUIDEME:
             msg_guideme_received |=1<<channel;
             break;
+        case IR_MSG_TYPE_DOCKING_SIGNALS_REQ:
+            msg_docking_signal_req_received |=1<<channel;
+            break;
         case IR_MSG_TYPE_POWERSOURCE_FOUND:
             break;
         case IR_MSG_TYPE_OBJECTTYPE: 

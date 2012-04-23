@@ -19,6 +19,8 @@ Parameter::Parameter():
     recruiting_proximity_offset2(500),
     recruiting_reflective_offset1(20),
     recruiting_reflective_offset2(20),
+    recruiting_guiding_signals_time(200),
+    docking_trials(255),
     docking_reflective_offset1(300),
     docking_reflective_offset2(300),
     docking_reflective_diff(150),
@@ -27,6 +29,7 @@ Parameter::Parameter():
     docking_beacon_diff(70),
     docking_motor_opening_time(30),
     docking_motor_closing_time(40),
+    docking_failed_reverse_time(10),
     hinge_motor_lifting_time(30),
     hinge_motor_lowing_time(40),
     locking_proximity_offset1(630),
@@ -54,6 +57,7 @@ Parameter::Parameter():
     memset(docking_turn_right_speed, 0, 3);
     memset(docking_forward_speed, 0, 3);
     memset(docking_backward_speed, 0, 3);
+    memset(docking_failed_reverse_speed, 0, 3);
     debug.mode = 0;
     memset(debug.para, 0, 10* sizeof(int));
 }
