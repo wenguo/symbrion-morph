@@ -580,7 +580,7 @@ void RobotAW::Alignment()
         docking_region_detected = true;
         for(int i=0;i<NUM_IRS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
-        SetRGBLED(0, YELLOW, YELLOW, YELLOW, YELLOW);
+        SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
     }
 
     if(docking_region_detected)
@@ -816,6 +816,7 @@ void RobotAW::Recruitment()
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;
+    static int stage2_count=0;
     std::vector<OrganismSequence>::iterator it1 = mybranches.begin();
     while(it1 !=mybranches.end())
     {
@@ -857,6 +858,7 @@ void RobotAW::Recruitment()
                 msg_locked_expected |= 1<<i;
                 msg_guideme_received &= ~(1<<i);
                 recruitment_stage[i]=STAGE2;
+                stage2_count=0;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 proximity_hist[2*i].Reset();
                 proximity_hist[2*i+1].Reset();
@@ -866,26 +868,34 @@ void RobotAW::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE2)
         {
-            printf("%d %d\n", ambient_calibrated[2*i]-ambient[2*i], ambient_calibrated[2*i+1]-ambient[2*i+1]);
+            stage2_count++;
+           // printf("%d %d\n", ambient_calibrated[2*i]-ambient[2*i], ambient_calibrated[2*i+1]-ambient[2*i+1]);
 
             proximity_hist[2*i].Push(proximity[2*i]);
             proximity_hist[2*i+1].Push(proximity[2*i+1]);
             msg_guideme_received &= ~(1<<i);
-
             uint8_t ambient_trigger = 0;
             if(ambient_hist[2*i].Avg() > para.recruiting_ambient_offset2)
                 ambient_trigger |= 1<<(2*i);
             if(ambient_hist[2*i+1].Avg() > para.recruiting_ambient_offset2)
                 ambient_trigger |= 1<<(2*i+1);
             ambient_avg_threshold_hist.Push2(ambient_trigger);
+            //ambient_avg_threshold_hist.Print2();;
+
+
 //temporary solution, as  left IR sensor on SideBoard of ActiveWheel Noname doesn't work
 #if 0
             if( ambient_avg_threshold_hist.Sum(2*i+1)>3
                     && proximity_hist[2*i+1].Avg()> para.recruiting_proximity_offset2)
 #else 
-                if( ambient_avg_threshold_hist.Sum(2*i) > 6 && ambient_avg_threshold_hist.Sum(2*i+1)>6
+                if(stage2_count > 20 && ambient_avg_threshold_hist.Sum(2*i) > 6 && ambient_avg_threshold_hist.Sum(2*i+1)>6
                     && proximity_hist[2*i].Avg() > para.recruiting_proximity_offset1 && proximity_hist[2*i+1].Avg()> para.recruiting_proximity_offset2)
 #endif
+                    /*
+  if(ambient_hist[2*i].Avg() > para.recruiting_ambient_offset2 
+                    && ambient_hist[2*i+1].Avg() > para.recruiting_ambient_offset2 
+                    && proximity_hist[2*i].Avg() > para.recruiting_proximity_offset1 
+                    && proximity_hist[2*i+1].Avg() > para.recruiting_proximity_offset2)*/
             {
                 recruitment_stage[i]=STAGE3;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
@@ -934,6 +944,7 @@ void RobotAW::Recruitment()
                 proximity_hist[2*i+1].Reset();
                 ambient_avg_threshold_hist.Reset();
                 recruitment_stage[i] = STAGE2;
+                stage2_count = 0;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 printf("%d -- Recruitment: channel %d  switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
