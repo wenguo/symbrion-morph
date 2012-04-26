@@ -509,7 +509,7 @@ void RobotKIT::LocateBeacon()
             int temp = beacon[1]-beacon[0];
             leftspeed = 0;
             rightspeed = 0;
-            sidespeed = 20 * sign(temp);
+            //sidespeed = 20 * sign(temp);
         }
     }
     else
@@ -520,10 +520,10 @@ void RobotKIT::LocateBeacon()
 
         printf("no beacon detected, shift left and right a little bit\n");
 
-        if((timestamp/10)%2 ==0)
-            sidespeed = 20;
-        else
-            sidespeed = -20;
+//        if((timestamp/10)%2 ==0)
+//            sidespeed = 20;
+//        else
+//            sidespeed = -20;
 
     }
 
@@ -654,10 +654,10 @@ void RobotKIT::Alignment()
 
     if(docking_region_detected)
     {
-       // leftspeed = 0;
-       // rightspeed = 0;
-       // sidespeed = 0;
-        if(robots_in_range_detected_hist.Sum(0) > 0 && robots_in_range_detected_hist.Sum(1) > 0) 
+        //leftspeed = 0;
+        //rightspeed = 0;
+        //sidespeed = 0;
+        if(robots_in_range_detected_hist.Sum(0) > 5 && robots_in_range_detected_hist.Sum(1) > 5)
         {
             docking_region_detected =false;
             in_docking_region_hist.Reset();
@@ -768,17 +768,20 @@ void RobotKIT::Docking()
     static  int status = 0;
     static int last_status=0;
 
-    if(timestamp % 9 == 0 || timestamp %9 ==4)
+    //if(timestamp % 9 == 0 || timestamp %9 == 4)
+    if(timestamp % 12 == 0 || timestamp %12 == 4)
     //if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0)
     {
         status = CHECKING;
     }
     //else if(timestamp % (DOCKING_CHECKING_INTERVAL) == 1)
-    else if(timestamp % 9 == 2)
+    else if(timestamp % 12 == 2)
+    //else if( timestamp % 9 == 2 )
     {
         status = MOVE_FORWARD;
     }
-    else if(timestamp % 9 == 6)
+    //else if( timestamp % 9 == 6 )
+    else if(timestamp % 12 == 10)
     //else if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 1)
     {
         if(assembly_info.type1 == ROBOT_AW)
@@ -843,6 +846,7 @@ void RobotKIT::Docking()
 
         //TODO depend which types of robot it docks to, it may be required to send lockme messages
 
+        status = CHECKING; // prevent robot from moving if in locking region
         current_state = LOCKING;
         last_state = DOCKING;
     }
@@ -1793,7 +1797,7 @@ void RobotKIT::Debugging()
                 std::cout << timestamp << " Target Shape: " << target << std::endl;
 
                 //module_failed = true;
-                current_state = LOWERING;
+                //current_state = LOWERING;
             }
             break;
         default:
@@ -1817,6 +1821,12 @@ int RobotKIT::in_docking_region(int x[4])
 
 int RobotKIT::in_locking_region(int x[4])
 {
+	std::cout   << " x[0] " << x[0]
+				<< " x[1] " << x[1]
+				<< " x[2] " << x[2]
+				<< " x[3] " << x[3] << std::endl;
+
+
     if( x[0] > para.locking_proximity_offset1 - para.locking_proximity_diff1 
             && x[0] < para.locking_proximity_offset1 + para.locking_proximity_diff1
             && x[1] > para.locking_proximity_offset2 - para.locking_proximity_diff2 
