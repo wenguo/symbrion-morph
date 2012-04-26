@@ -93,7 +93,7 @@ Robot::Robot()
         neighbours_IP[i] = 0;
         new_id[i] = SIDE_COUNT;
         new_score[i] = 0;
-        guiding_signals_count[0]=0;
+        guiding_signals_count[i]=0;
     }
 
 
@@ -191,7 +191,7 @@ void Robot::ResetAssembly()
     {
         recruitment_stage[i]=STAGE0;
         recruitment_count[i] = 0;
-	recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
+        recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
     }
 
 }
@@ -205,6 +205,7 @@ Robot::~Robot()
 
 bool Robot::Init(const char * optionfile)
 {
+
     if(!LoadParameters(optionfile))
     {
         return false;
@@ -212,6 +213,8 @@ bool Robot::Init(const char * optionfile)
 
     current_state = CALIBRATING;//fsm_state_t(para.init_state);
     last_state = CALIBRATING;//fsm_state_t(para.init_state);
+
+    //SPIVerbose = QUIET;
 
     InitLog();
 

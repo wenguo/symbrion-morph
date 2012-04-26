@@ -389,6 +389,8 @@ void RobotAW::Waiting()//same as RobotKIT
 }
 void RobotAW::Assembly()
 {
+
+
     if(assembly_count--<=0)
     {
         organism_found = false;
@@ -439,18 +441,18 @@ void RobotAW::LocateBeacon()//same as RobotKIT
             int temp = beacon[1]-beacon[0];
             leftspeed = 0;
             rightspeed = 0;
-            sidespeed = -15 * sign(temp);
+            //sidespeed = -15 * sign(temp);
         }
     }
     else
     {
-            leftspeed = 15;
-            rightspeed = 15;
+            //leftspeed = 15;
+            //rightspeed = 15;
 
-            if((timestamp/10)%2 ==0)
-                sidespeed = 10;
-            else
-                sidespeed = -10;
+//            if((timestamp/10)%2 ==0)
+//                sidespeed = 10;
+//            else
+//                sidespeed = -10;
 
     }
 
@@ -518,7 +520,7 @@ void RobotAW::Alignment()
     //not closed to object?
     if(abs(temp2) < 50)
     {
-        if(abs(temp > 5))
+        if(abs(temp > 10))
         {
             leftspeed = 0;//para.speed_forward;
             rightspeed = 0;//para.speed_foraward;
@@ -588,7 +590,7 @@ void RobotAW::Alignment()
         leftspeed = 0;
         rightspeed = 0;
         sidespeed = 0;
-        if(robots_in_range_detected_hist.Sum(0) > 0 && robots_in_range_detected_hist.Sum(1) > 0) 
+        if(robots_in_range_detected_hist.Sum(0) > 5 && robots_in_range_detected_hist.Sum(1) > 5)
         {
             docking_region_detected =false;
             in_docking_region_hist.Reset();
@@ -701,13 +703,14 @@ void RobotAW::Docking()
     int temp_proximity = proximity[1] - proximity[0];
     static  int status = 0;
 
+
     if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0)
     {
         status = CHECKING;
     }
-    else if(timestamp %DOCKING_CHECKING_INTERVAL == 1)
+    else if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 1)
     {
-        status = CHECKING;//MOVE_FORWARD;
+        status = MOVE_FORWARD;
     }
     else if(timestamp % DOCKING_CHECKING_INTERVAL == DOCKING_CHECKING_INTERVAL/2 + 1)
     {
