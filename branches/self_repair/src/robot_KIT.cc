@@ -646,7 +646,7 @@ void RobotKIT::Alignment()
     {
         in_docking_region_hist.Reset();
         docking_region_detected = true;
-        for(int i=0;i<NUM_IRS;i++)
+        for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
         SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
 
@@ -1037,6 +1037,7 @@ void RobotKIT::Recruitment()
             {
                 msg_locked_received &=~(1<<i);
                 msg_locked_expected &=~(1<<i);
+                msg_subog_seq_expected |= 1<<i;
                 docked[i]= it1->getSymbol(0).data;
                 recruitment_stage[i]=STAGE4;
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
@@ -1066,6 +1067,7 @@ void RobotKIT::Recruitment()
             if(docking_motors_status[i] == CLOSED && docked[i]==0)
             {
                 unlocking_required[i] = true;
+                msg_subog_seq_expected |= 1<<i;
                 docked[i]= it1->getSymbol(0).data;
                 Robot::BroadcastIRMessage(i, IR_MSG_TYPE_LOCKED, true);
             }
@@ -1083,6 +1085,7 @@ void RobotKIT::Recruitment()
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_ORGANISM_SEQ))
                 {
                     docked[i]= it1->getSymbol(0).data;
+                    msg_subog_seq_expected |= 1<<i;
                     recruitment_stage[i] = STAGE5;
                     docking_done[i] = false;
 
@@ -1650,8 +1653,11 @@ void RobotKIT::Debugging()
         case 1: // locking region threshold detection
             if(timestamp ==40)
             {
-                for(int i=0;i<NUM_IRS;i++)
+                for(int i=0;i<NUM_DOCKS;i++)
+                {
+                	SetRGBLED(i,0,0,0,0);
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                }
             }
             printf("%d\t%d\t%d\t%d\t%d\t%d\n",  proximity[0], proximity[1], beacon[0], beacon[1], reflective_hist[0].Avg(), reflective_hist[1].Avg());
             break;
@@ -1665,7 +1671,7 @@ void RobotKIT::Debugging()
         case 3: // docking region threshold detection
             if(timestamp ==40)
             {
-                for(int i=0;i<NUM_IRS;i++)
+                for(int i=0;i<NUM_DOCKS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
             }
             printf("%d\t%d\t%d\t%d\t%d\t%d\n", reflective[0]-reflective_calibrated[0], reflective[1] - reflective_calibrated[1], beacon[0], beacon[1], proximity[0], proximity[1]);
@@ -1815,17 +1821,12 @@ int RobotKIT::in_docking_region(int x[4])
             && x[3] < para.docking_beacon_offset2 
             && abs(x[2]-x[3]) < para.docking_beacon_diff )
         return 1;
-    else 
+    else
         return 0;
 }
 
 int RobotKIT::in_locking_region(int x[4])
 {
-	std::cout   << " x[0] " << x[0]
-				<< " x[1] " << x[1]
-				<< " x[2] " << x[2]
-				<< " x[3] " << x[3] << std::endl;
-
 
     if( x[0] > para.locking_proximity_offset1 - para.locking_proximity_diff1 
             && x[0] < para.locking_proximity_offset1 + para.locking_proximity_diff1

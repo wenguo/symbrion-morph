@@ -510,67 +510,93 @@ void RobotAW::LocateBeacon()//same as RobotKIT
     }
 }
 
+#define MOVE_LEFT 10
+#define MOVE_RIGHT 11
 void RobotAW::Alignment()
 {
     int temp = beacon[0]-beacon[1];
     int temp2 = (reflective_hist[0].Avg())-(reflective_hist[1].Avg());
 
     static bool docking_region_detected = false;
+    static int status = 0;
 
-    //not closed to object?
-    if(abs(temp2) < 50)
+
+    if( std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) < 20 )
     {
-        if(abs(temp > 10))
-        {
-            leftspeed = 0;//para.speed_forward;
-            rightspeed = 0;//para.speed_foraward;
-            sidespeed = 30 * temp / std::max(beacon[0], beacon[1]);
-            if(abs(sidespeed)< 10)
-                sidespeed = 15 * sign(temp);
-        }
-        else
-        {
-            leftspeed = para.speed_forward;
-            rightspeed = para.speed_forward;
-            sidespeed = 0;
-        }
-    }
-    else if(abs(temp2)<200)
-    {
-        if(beacon[0] < 30 & beacon[1] < 30)
-        {
+    	std::cout << " FAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
+    						 << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
+    	if(abs(temp > 5))
+    	{
             leftspeed = 0;
             rightspeed = 0;
             sidespeed = 15 * sign(temp);
-        }
+    	}
+    	else
+    	{
+            leftspeed = 30;
+            rightspeed = 30;
+            sidespeed = 0;
+    	}
+    }
+    else if( abs(temp2)<200 )
+    {
+    	if( beacon[0] < 30 && beacon[1] < 30 )
+    	{
+        	std::cout << " VERY NEAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
+        						       << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
+
+        	// pause every so often
+        	if( timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0 )
+        	{
+        		std::cout << "checking" << std::endl;
+        		leftspeed = 0;
+        		rightspeed = 0;
+        		sidespeed = 0;
+        	}
+        	else
+        	{
+				if( abs(temp) > 10 )
+				{
+	        		leftspeed = -15 * sign(temp);
+	        		rightspeed = 15 * sign(temp);
+	        		sidespeed = 0;
+				}
+				else
+				{
+					std::cout << "move forward" << std::endl;
+					leftspeed = 15;
+					rightspeed = 15;
+					sidespeed = 0;
+				}
+        	}
+
+    	}
         else
         {
-            leftspeed = -14 * sign(temp2);
-            rightspeed = 14 * sign(temp2);
-            sidespeed=0;
+        	std::cout << " NEAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
+        	    		        						       << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
+        	if( abs(temp) > 10 )
+        	{
+				leftspeed = 0;
+				rightspeed = 0;
+				sidespeed = 20 * sign(temp);
+        	}
+			else
+			{
+				std::cout << "move forward" << std::endl;
+				leftspeed = 20;
+				rightspeed = 20;
+				sidespeed = 0;
+			}
         }
-        /*if((timestamp/4)%2==0)
-            sidespeed = 13;
-        else
-            sidespeed = -13;*/
     }
     else
     {
-        leftspeed = -19 * sign(temp2);
-        rightspeed = 19 * sign(temp2);
-        sidespeed=0;
- 
-        /*
-        //in case too much friction introduced by side wheels
-        if((timestamp/2)%2==0)
-            sidespeed = 13;
-        else
-            sidespeed = -13;*/
+		std::cout << "move backward" << std::endl;
+		leftspeed = -30 + -15 * sign(temp2);
+		rightspeed = -30 + 15 * sign(temp2);
+		sidespeed = 15 * sign(temp2);
     }
-
-    printf("%d:\tbeacon: \t%d \t%d \t(%d)\n",timestamp, beacon[0], beacon[1], temp);
-    printf("%d: \treflect: \t%d \t%d \t(%d)\n", timestamp,reflective_hist[0].Avg(), reflective_hist[1].Avg(),temp2);
-    printf("%d: \tspeed: \t%d \t%d \t%d\n", timestamp,leftspeed, rightspeed, sidespeed);
 
     //check if it is aligned well and also closed enough for docking
     int input[4] = {reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
@@ -578,9 +604,11 @@ void RobotAW::Alignment()
 
     if(in_docking_region_hist.Sum() >= 3) // at least 7 successful prediction out of 8  in docking region
     {
+    	std::cout << timestamp << " in docking region " << std::endl;
+
         in_docking_region_hist.Reset();
         docking_region_detected = true;
-        for(int i=0;i<NUM_IRS;i++)
+        for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
         SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
     }
@@ -590,9 +618,9 @@ void RobotAW::Alignment()
         leftspeed = 0;
         rightspeed = 0;
         sidespeed = 0;
-        if(robots_in_range_detected_hist.Sum(0) > 5 && robots_in_range_detected_hist.Sum(1) > 5)
+        if(robots_in_range_detected_hist.Sum(0) > 3 && robots_in_range_detected_hist.Sum(1) > 3 )
         {
-            docking_region_detected =false;
+            docking_region_detected = false;
             in_docking_region_hist.Reset();
             docking_count = 0;
             docking_failed_reverse_count = 0;
@@ -602,7 +630,7 @@ void RobotAW::Alignment()
             current_state = DOCKING;
             last_state = ALIGNMENT;
             
-            SetRGBLED(0, 0,0,0,0);
+            SetRGBLED(0,0,0,0,0);
 
         }
     }
@@ -670,6 +698,9 @@ void RobotAW::Docking()
                     last_state = DOCKING;
                     docking_failed_reverse_count = 0;
                     docking_failed = false;
+                    leftspeed = 0;
+                    rightspeed = 0;
+                    sidespeed = 0;
                 }
             }
             else
@@ -704,35 +735,36 @@ void RobotAW::Docking()
     static  int status = 0;
 
 
-    if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0)
+    if(timestamp % (DOCKING_CHECKING_INTERVAL) == 0)
     {
         status = CHECKING;
     }
-    else if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 1)
+    else if(timestamp % (DOCKING_CHECKING_INTERVAL) == 2)
     {
-        status = MOVE_FORWARD;
+        status = CHECKING;//MOVE_FORWARD;
     }
-    else if(timestamp % DOCKING_CHECKING_INTERVAL == DOCKING_CHECKING_INTERVAL/2 + 1)
+    else if(timestamp % DOCKING_CHECKING_INTERVAL == 5 )
     {
-
-            if(abs(temp_reflective) > 1000 || (abs(temp_proximity)> 650 & std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 600 ))
+    		std::cout << "should I turn?" << std::endl;
+            if(abs(temp_reflective) > 1200 ) //|| abs(temp_proximity)> 450 ) // && std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 600 ))
                 status = MOVE_BACKWARD;
             //else if(temp_proximity > 220 || temp_reflective > 500)
-            else if(temp_reflective > 300)
+            else if(temp_reflective > 400) // was 300
                 status = TURN_LEFT;
-            else if(temp_reflective < -300)
+            else if(temp_reflective < -400) // was 300
                 status = TURN_RIGHT;
             else
                 status = MOVE_FORWARD;
     }
-
-    printf("proximity: \t%d(%d) \treflective(%d): \t%d \tstatus: \t%d \n", temp_proximity, std::max(proximity[0], proximity[1]), temp_reflective, std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()), status);
+    printf("%d proximity: %d %d \treflective: %d %d\n", timestamp, proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg() );
+    //printf("proximity: \t%d(%d) \treflective(%d): \t%d \tstatus: \t%d \n", temp_proximity, std::max(proximity[0], proximity[1]), temp_reflective, std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()), status);
 
     if(in_locking_region_hist.Sum() > 2) // 4 successful predition out of 8 
     {
         in_locking_region_hist.Reset();
         leftspeed = 0;
         rightspeed= 0;  
+        sidespeed = 0;
         SetRGBLED(assembly_info.side2, WHITE, WHITE, WHITE, WHITE);
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED2, 0);
         RobotBase::SetIRRX(board_dev_num[assembly_info.side2], false);
@@ -742,9 +774,15 @@ void RobotAW::Docking()
 
         //TODO depend which types of robot it docks to, it may be required to send lockme messages
 
+        status = CHECKING;
         current_state = LOCKING;
         last_state = DOCKING;
     }
+
+//    leftspeed = 0;
+//    rightspeed = 0;
+//    sidespeed = 0;
+//    return;
 
     switch (status)
     {
@@ -794,7 +832,6 @@ void RobotAW::Locking()
 
     int docking_side = assembly_info.side2;
 
-
     SetRGBLED(docking_side, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
 
     if(msg_locked_received & (1<<docking_side)) //replace 0 with the correct docking face numer, currently 0 (FRONT)
@@ -811,7 +848,12 @@ void RobotAW::Locking()
            // RobotBase::SetIRRX(board_dev_num[docking_side], false);
             SetRGBLED(docking_side, 0,0,0,0);
         }
-
+    }
+    // if no longer in the locking region
+    else if( in_locking_region_hist.Sum() == 0 )
+    {
+    	// return to alignment
+    	printf("%d no longer in locking region, return to alignment\n");
     }
 }
 void RobotAW::Recruitment()
@@ -924,6 +966,7 @@ void RobotAW::Recruitment()
             if(msg_locked_received & (1<<i))
             {
                 msg_locked_received &=~(1<<i);
+                msg_subog_seq_expected |= 1<<i;
                 docked[i] = it1->getSymbol(0).data;//true;
 
                 SendBranchTree(i, (*it1));
@@ -1201,8 +1244,8 @@ void RobotAW::Lowering()
 	{
 		last_state = LOWERING;
 		seed = false;
-	        ResetAssembly();
-        }
+	    ResetAssembly();
+	}
 
 	return; // for testing - do not allow to enter disassembly
 
@@ -1614,6 +1657,8 @@ int RobotAW::in_docking_region(int x[4])
             && abs(x[1]-x[0]) < para.docking_reflective_diff
             && x[2] < para.docking_beacon_offset1 
             && x[3] < para.docking_beacon_offset2 
+            && x[2] > 0
+            && x[3] > 0
             && abs(x[2]-x[3]) < para.docking_beacon_diff )
         return 1;
     else 
