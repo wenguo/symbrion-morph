@@ -70,10 +70,10 @@ bool Robot::LoadParameters(const char * filename)
         {
             para.docking_reflective_offset1 = optionfile->ReadInt(entity, "docking_reflective_offset1", 20);
             para.docking_reflective_offset2 = optionfile->ReadInt(entity, "docking_reflective_offset2", 20);
-            para.docking_reflective_diff = optionfile->ReadInt(entity, "docking_reflective_offset2", 20);
-            para.docking_beacon_offset1 = optionfile->ReadInt(entity, "docking_reflective_offset1", 20);
-            para.docking_beacon_offset2 = optionfile->ReadInt(entity, "docking_reflective_offset2", 20);
-            para.docking_beacon_diff = optionfile->ReadInt(entity, "docking_reflective_offset2", 20);
+            para.docking_reflective_diff = optionfile->ReadInt(entity, "docking_reflective_diff", 20);
+            para.docking_beacon_offset1 = optionfile->ReadInt(entity, "docking_beacon_offset1", 20);
+            para.docking_beacon_offset2 = optionfile->ReadInt(entity, "docking_beacon_offset2", 20);
+            para.docking_beacon_diff = optionfile->ReadInt(entity, "docking_beacon_diff", 20);
             para.docking_motor_opening_time = optionfile->ReadInt(entity, "docking_motor_opening_time", 30);
             para.docking_motor_closing_time = optionfile->ReadInt(entity, "docking_motor_closing_time", 40);
             para.docking_trials = optionfile->ReadInt(entity, "docking_trials", 40);
