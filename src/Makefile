@@ -21,9 +21,14 @@ EXE = morph
 CXXFLAGS =-O2 -Wall -Wno-reorder  -mcpu=bf561 
 CFLAGS = -O2 -Wall -Wno-reorder -mcpu=bf561 -std=gnu99 
 
-
 CXXFLAGS += $(patsubst %, -I%, $(IPATH))
 LDFLAGS = -L$(IROBOTPATH)/lib -L$(MORPHBASEPATH)/lib -lirobot -lpthread -lmorph_base
+
+ifeq ($(MULTI_CONTROLLER),true)
+CFLAGS += -DMULTI_CONTROLLER
+CXXFLAGS += -DMULTI_CONTROLLER
+LDFLAGS += -lrt
+endif
 
 TOBJECTS = $(SRC:%.cc=objects/%.o)
 OBJECTS = $(TOBJECTS:%.c=objects/%.o)

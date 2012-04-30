@@ -1321,7 +1321,7 @@ void RobotKIT::Undocking()
     if(undocking_count >= 120)
     {
     	// move back
-    	if( undocking_count < 150 )
+    	if( undocking_count < 150 && proximity[4] < 175 && proximity[5] < 175 )
     	{
     		leftspeed = -30;
     		rightspeed = -30;
@@ -1329,11 +1329,11 @@ void RobotKIT::Undocking()
     	}
     	// added for demo purposes only - rotate
     	// TODO: add as configuration parameters
-    	else if( undocking_count < 300 && proximity[4] < 175 && proximity[5] < 175 )
+    	else if( undocking_count < 400  )
     	{
-    		leftspeed = para.debug.para[1];   // was 18
-    		rightspeed = para.debug.para[2]; // was -35
-    		sidespeed = 0;
+    		leftspeed = 0;//para.debug.para[1];   // was 18
+    		rightspeed = 0;//para.debug.para[2]; // was -35
+    		sidespeed = -20;
     	}
 		else
 		{
