@@ -654,9 +654,6 @@ void RobotKIT::Alignment()
 
     if(docking_region_detected)
     {
-        //leftspeed = 0;
-        //rightspeed = 0;
-        //sidespeed = 0;
         if(robots_in_range_detected_hist.Sum(0) > 5 && robots_in_range_detected_hist.Sum(1) > 5)
         {
             docking_region_detected =false;
@@ -1327,8 +1324,6 @@ void RobotKIT::Undocking()
     		rightspeed = -30;
     		sidespeed = 0;
     	}
-    	// added for demo purposes only - rotate
-    	// TODO: add as configuration parameters
     	else if( undocking_count < 400  )
     	{
     		leftspeed = 0;//para.debug.para[1];   // was 18
@@ -1358,9 +1353,14 @@ void RobotKIT::Lowering()
 {
     lowering_count++;
 
-    if( StartRepair()  )
+	if( lowering_count <= 30 )
+	{
+
+	}
+	else if( StartRepair()  )
     {
         last_state = LOWERING;
+        lowering_count = 0;
         seed = false;
         ResetAssembly();
     }
@@ -1374,6 +1374,7 @@ void RobotKIT::Lowering()
 
         current_state = DISASSEMBLY;
         last_state = LOWERING;
+        lowering_count = 0;
 
         for(int i=0;i<NUM_DOCKS;i++)
         {
@@ -1386,6 +1387,7 @@ void RobotKIT::Lowering()
     {
         current_state = DISASSEMBLY;
         last_state = LOWERING;
+        lowering_count = 0;
 
         msg_disassembly_received = 0;
 

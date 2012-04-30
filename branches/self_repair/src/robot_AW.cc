@@ -17,6 +17,10 @@ RobotAW::RobotAW():Robot()
     robot_side_dev_num[ActiveWheel::LEFT] = ::BACK;
     robot_side_dev_num[ActiveWheel::FRONT] = ::LEFT;
 
+    hinge_start_pos = GetHingeAngle();
+    hinge_speed = 1;
+    printf("%d hinge starting angle: %f\n",timestamp,hinge_start_pos);
+
     LED0 = 0x1;
     LED1 = 0x4;
     LED2 = 0x2;
@@ -24,7 +28,6 @@ RobotAW::RobotAW():Robot()
     IR_PULSE1 = 0x2;
     IR_PULSE2 = 0x4;
     printf("Consctruction RobotAW\n");
-
 }
 
 RobotAW::~RobotAW()
@@ -548,14 +551,13 @@ void RobotAW::Alignment()
         	// pause every so often
         	if( timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0 )
         	{
-        		std::cout << "checking" << std::endl;
         		leftspeed = 0;
         		rightspeed = 0;
         		sidespeed = 0;
         	}
         	else
         	{
-        		// -5 to account for the asymmetry caused by he
+        		// -5 to account for the asymmetry caused by the
         		//  docking element casing at close ranges
 				if( abs(temp-5) > 5 )
 				{
@@ -565,7 +567,6 @@ void RobotAW::Alignment()
 				}
 				else
 				{
-					//std::cout << "move forward" << std::endl;
 					leftspeed = 15;
 					rightspeed = 15;
 					sidespeed = 0;
@@ -586,7 +587,6 @@ void RobotAW::Alignment()
         	}
 			else
 			{
-				//std::cout << "move forward" << std::endl;
 				leftspeed = 20;
 				rightspeed = 20;
 				sidespeed = 0;
@@ -595,7 +595,6 @@ void RobotAW::Alignment()
     }
     else
     {
-		//std::cout << "move backward" << std::endl;
 		leftspeed = -30 + -15 * sign(temp2);
 		rightspeed = -30 + 15 * sign(temp2);
 		sidespeed = 0;//15 * sign(temp2);
@@ -607,12 +606,11 @@ void RobotAW::Alignment()
 
     if(in_docking_region_hist.Sum() >= 3) // at least 7 successful prediction out of 8  in docking region
     {
-    	//std::cout << timestamp << " in docking region " << std::endl;
-
         in_docking_region_hist.Reset();
         docking_region_detected = true;
         for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+
         SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
     }
 
@@ -637,9 +635,6 @@ void RobotAW::Alignment()
 
         }
     }
-
-
-    //printf("Alignment %d %d %d\n", leftspeed, rightspeed, sidespeed);
 }
 void RobotAW::Recover()
 {
@@ -749,7 +744,6 @@ void RobotAW::Docking()
     }
     else if(timestamp % DOCKING_CHECKING_INTERVAL == 5 )
     {
-    		std::cout << "should I turn?" << std::endl;
             if(abs(temp_reflective) > 1200 ) //|| abs(temp_proximity)> 450 ) // && std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 600 ))
                 status = MOVE_BACKWARD;
             //else if(temp_proximity > 220 || temp_reflective > 500)
@@ -760,7 +754,7 @@ void RobotAW::Docking()
             else
                 status = MOVE_FORWARD;
     }
-    printf("%d proximity: %d %d \treflective: %d %d \tbeacon: %d %d\n ", timestamp, proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1] );
+    //printf("%d proximity: %d %d \treflective: %d %d \tbeacon: %d %d\n ", timestamp, proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1] );
     //printf("proximity: \t%d(%d) \treflective(%d): \t%d \tstatus: \t%d \n", temp_proximity, std::max(proximity[0], proximity[1]), temp_reflective, std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()), status);
 
     if(in_locking_region_hist.Sum() >= 2 ) // 4 successful predition out of 8
@@ -782,11 +776,6 @@ void RobotAW::Docking()
         current_state = LOCKING;
         last_state = DOCKING;
     }
-
-//    leftspeed = 0;
-//    rightspeed = 0;
-//    sidespeed = 0;
-//    return;
 
     switch (status)
     {
@@ -852,12 +841,6 @@ void RobotAW::Locking()
            // RobotBase::SetIRRX(board_dev_num[docking_side], false);
             SetRGBLED(docking_side, 0,0,0,0);
         }
-    }
-    // if no longer in the locking region
-    else if( in_locking_region_hist.Sum() == 0 )
-    {
-    	// return to alignment
-    	//printf("%d no longer in locking region, return to alignment\n");
     }
 }
 void RobotAW::Recruitment()
@@ -1244,29 +1227,31 @@ void RobotAW::Lowering()
 {
 	lowering_count++;
 
-	if( StartRepair()  )
+	if( lowering_count <= 30 )
+	{
+        if( lowering_count == 30 )
+        	MoveHingeToAngle(hinge_start_pos, hinge_speed );
+
+        //SetHingeMotor(DOWN);
+	}
+	else if( StartRepair()  )
 	{
 		last_state = LOWERING;
+		lowering_count = 0;
 		seed = false;
 	    ResetAssembly();
 	}
 
 	return; // for testing - do not allow to enter disassembly
 
-	if( lowering_count <= 30 )
-	{
-        if( lowering_count == 30 )
-            SetHingeMotor(DOWN);
-	}
-
-	// StartRepair() will normally be placed here
-
-	else if(seed && lowering_count >= 150)
+	//else if(seed && lowering_count >= 150)
+	if(seed && lowering_count >= 150)
 	{
 		PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
 
 		current_state = DISASSEMBLY;
 		last_state = LOWERING;
+		lowering_count = 0;
 
 		for(int i=0;i<NUM_DOCKS;i++)
 		{
@@ -1279,6 +1264,7 @@ void RobotAW::Lowering()
 	{
 		current_state = DISASSEMBLY;
 		last_state = LOWERING;
+		lowering_count = 0;
 
 		msg_disassembly_received = 0;
 
@@ -1336,6 +1322,7 @@ void RobotAW::Raising()
 
     if(raising_count==2)
     {
+       MoveHingeToAngle( hinge_start_pos+5, hinge_speed );
        //SetHingeMotor(UP); 
     }
 

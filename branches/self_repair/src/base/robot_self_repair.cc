@@ -166,8 +166,8 @@ void Robot::LeadRepair()
 		// Move away
 		if( msg_unlocked_received )
 		{
-                        if( move_start == 0 )
-                            move_start = timestamp;
+			if( move_start == 0 )
+				move_start = timestamp;
 
 			leftspeed = -30;
 			rightspeed = -30;
@@ -619,11 +619,11 @@ void Robot::Failed()
 		//only one  or less
 		if(num_docked ==0)
 		{       
-                        undocking_count = 0;
+            undocking_count = 0;
 			current_state = UNDOCKING;
 			last_state = FAILED;
-	                module_failed = false;
-                }
+	        module_failed = false;
+        }
 	}
 	
 }
