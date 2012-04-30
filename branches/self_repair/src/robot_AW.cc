@@ -518,32 +518,32 @@ void RobotAW::Alignment()
     int temp2 = (reflective_hist[0].Avg())-(reflective_hist[1].Avg());
 
     static bool docking_region_detected = false;
-    static int status = 0;
 
-
+    // Far away from recruiting robot
     if( std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) < 20 )
     {
-    	std::cout << " FAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
-    						 << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
-    	if(abs(temp > 5))
+    	//std::cout << " FAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1] << " temp: " << temp
+    	//					 << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
+    	if( abs(temp) > 5 )
     	{
             leftspeed = 0;
             rightspeed = 0;
-            sidespeed = 15 * sign(temp);
+            sidespeed = 20 * sign(temp);
     	}
     	else
     	{
-            leftspeed = 30;
-            rightspeed = 30;
+            leftspeed = 40;
+            rightspeed = 40;
             sidespeed = 0;
     	}
     }
-    else if( abs(temp2)<200 )
+    else if( abs(temp2) < 200 )
     {
+    	// Very close to the recruiting robot
     	if( beacon[0] < 30 && beacon[1] < 30 )
     	{
-        	std::cout << " VERY NEAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
-        						       << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
+        	//std::cout << " VERY NEAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
+        	//					       << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
 
         	// pause every so often
         	if( timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0 )
@@ -555,15 +555,17 @@ void RobotAW::Alignment()
         	}
         	else
         	{
-				if( abs(temp) > 10 )
+        		// -5 to account for the asymmetry caused by he
+        		//  docking element casing at close ranges
+				if( abs(temp-5) > 5 )
 				{
-	        		leftspeed = -15 * sign(temp);
-	        		rightspeed = 15 * sign(temp);
-	        		sidespeed = 0;
+					leftspeed = 0;
+					rightspeed = 0;
+					sidespeed = 15 * sign(temp-5);
 				}
 				else
 				{
-					std::cout << "move forward" << std::endl;
+					//std::cout << "move forward" << std::endl;
 					leftspeed = 15;
 					rightspeed = 15;
 					sidespeed = 0;
@@ -571,19 +573,20 @@ void RobotAW::Alignment()
         	}
 
     	}
+    	// Quite close to the recruiting robot
         else
         {
-        	std::cout << " NEAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
-        	    		        						       << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
-        	if( abs(temp) > 10 )
+        	//std::cout << " NEAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
+        	//    		        						       << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
+        	if( abs(temp2) > 20 )
         	{
-				leftspeed = 0;
-				rightspeed = 0;
-				sidespeed = 20 * sign(temp);
+        		leftspeed = -15 * sign(temp2);
+        		rightspeed = 15 * sign(temp2);
+        		sidespeed = 0;
         	}
 			else
 			{
-				std::cout << "move forward" << std::endl;
+				//std::cout << "move forward" << std::endl;
 				leftspeed = 20;
 				rightspeed = 20;
 				sidespeed = 0;
@@ -592,10 +595,10 @@ void RobotAW::Alignment()
     }
     else
     {
-		std::cout << "move backward" << std::endl;
+		//std::cout << "move backward" << std::endl;
 		leftspeed = -30 + -15 * sign(temp2);
 		rightspeed = -30 + 15 * sign(temp2);
-		sidespeed = 15 * sign(temp2);
+		sidespeed = 0;//15 * sign(temp2);
     }
 
     //check if it is aligned well and also closed enough for docking
@@ -604,7 +607,7 @@ void RobotAW::Alignment()
 
     if(in_docking_region_hist.Sum() >= 3) // at least 7 successful prediction out of 8  in docking region
     {
-    	std::cout << timestamp << " in docking region " << std::endl;
+    	//std::cout << timestamp << " in docking region " << std::endl;
 
         in_docking_region_hist.Reset();
         docking_region_detected = true;
@@ -618,7 +621,7 @@ void RobotAW::Alignment()
         leftspeed = 0;
         rightspeed = 0;
         sidespeed = 0;
-        if(robots_in_range_detected_hist.Sum(0) > 3 && robots_in_range_detected_hist.Sum(1) > 3 )
+        if(robots_in_range_detected_hist.Sum(0) > 5 && robots_in_range_detected_hist.Sum(1) > 5 )
         {
             docking_region_detected = false;
             in_docking_region_hist.Reset();
@@ -636,7 +639,7 @@ void RobotAW::Alignment()
     }
 
 
-    printf("Alignment %d %d %d\n", leftspeed, rightspeed, sidespeed);
+    //printf("Alignment %d %d %d\n", leftspeed, rightspeed, sidespeed);
 }
 void RobotAW::Recover()
 {
@@ -727,7 +730,7 @@ void RobotAW::Docking()
     //else if(proximity[0]<20 && proximity[1]< 20)
     //     SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
 
-    int input[4]={proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg()};
+    int input[6]={proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
     in_locking_region_hist.Push(in_locking_region(input));
 
     int temp_reflective = reflective_hist[1].Avg() - reflective_hist[0].Avg();
@@ -737,11 +740,12 @@ void RobotAW::Docking()
 
     if(timestamp % (DOCKING_CHECKING_INTERVAL) == 0)
     {
-        status = CHECKING;
+    	if( status != MOVE_FORWARD )
+    		status = CHECKING;
     }
     else if(timestamp % (DOCKING_CHECKING_INTERVAL) == 2)
     {
-        status = CHECKING;//MOVE_FORWARD;
+        status = CHECKING;
     }
     else if(timestamp % DOCKING_CHECKING_INTERVAL == 5 )
     {
@@ -749,17 +753,17 @@ void RobotAW::Docking()
             if(abs(temp_reflective) > 1200 ) //|| abs(temp_proximity)> 450 ) // && std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 600 ))
                 status = MOVE_BACKWARD;
             //else if(temp_proximity > 220 || temp_reflective > 500)
-            else if(temp_reflective > 400) // was 300
+            else if(std::max(proximity[0], proximity[1]) > 500 && temp_reflective > 500) // was 300
                 status = TURN_LEFT;
-            else if(temp_reflective < -400) // was 300
+            else if(std::max(proximity[0], proximity[1]) > 500 && temp_reflective < -500) // was 300
                 status = TURN_RIGHT;
             else
                 status = MOVE_FORWARD;
     }
-    printf("%d proximity: %d %d \treflective: %d %d\n", timestamp, proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg() );
+    printf("%d proximity: %d %d \treflective: %d %d \tbeacon: %d %d\n ", timestamp, proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1] );
     //printf("proximity: \t%d(%d) \treflective(%d): \t%d \tstatus: \t%d \n", temp_proximity, std::max(proximity[0], proximity[1]), temp_reflective, std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()), status);
 
-    if(in_locking_region_hist.Sum() > 2) // 4 successful predition out of 8 
+    if(in_locking_region_hist.Sum() >= 2 ) // 4 successful predition out of 8
     {
         in_locking_region_hist.Reset();
         leftspeed = 0;
@@ -853,7 +857,7 @@ void RobotAW::Locking()
     else if( in_locking_region_hist.Sum() == 0 )
     {
     	// return to alignment
-    	printf("%d no longer in locking region, return to alignment\n");
+    	//printf("%d no longer in locking region, return to alignment\n");
     }
 }
 void RobotAW::Recruitment()
@@ -1665,13 +1669,16 @@ int RobotAW::in_docking_region(int x[4])
         return 0;
 }
 
-int RobotAW::in_locking_region(int x[4])
+int RobotAW::in_locking_region(int x[6])
 {
-    if( x[0] > para.locking_proximity_offset1 
-            && x[1] > para.locking_proximity_offset2)
+    if(    x[0] > para.locking_proximity_offset1
+        && x[1] > para.locking_proximity_offset2
+        && x[4] > para.locking_beacon_offset1
+        && x[5] > para.locking_beacon_offset2 )
         return 1;
-    else 
+    else
         return 0;
+
 }
 void RobotAW::Log()
 {
