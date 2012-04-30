@@ -51,6 +51,10 @@ class RobotAW:public Robot, public ActiveWheel
         virtual void Debugging();
 
         virtual void Log();
+
+        float hinge_start_pos;
+        uint8_t hinge_speed;
+
     private:
         void Avoidance();
 
