@@ -610,14 +610,14 @@ void RobotKIT::Alignment()
         rightspeed = 0;
         sidespeed = 20 * sign(temp);
     }
-    if(temp2> 200)
+    if(temp2> 100)
     {
         //turn left
         leftspeed = 40;
         rightspeed = -20;
         sidespeed = 0; //overwrite sidespeed
     }
-    else if(temp2 > -200)
+    else if(temp2 > -100)
     {
         //do nothing
     }
@@ -785,7 +785,7 @@ void RobotKIT::Docking()
         {
             if(abs(temp_proximity)> 400 || abs(temp_reflective) > 1200)
                 status = MOVE_BACKWARD;
-            else if(temp_proximity > 200 || temp_reflective > 400)
+            else if(temp_proximity > 200 || temp_reflective > 300)
                 status = TURN_LEFT;
             else if(temp_proximity< -200 || temp_reflective < -300)
                 status = TURN_RIGHT;
@@ -1824,7 +1824,13 @@ int RobotKIT::in_docking_region(int x[4])
             && abs(x[2]-x[3]) < para.docking_beacon_diff )
         return 1;
     else
-        return 0;
+    {
+    	std::cout << " x[0]: " << x[0]
+    	          << " x[1]: " << x[1]
+    	          << " x[2]: " << x[2]
+    	          << " x[3]: " << x[3] << std::endl;
+    	return 0;
+    }
 }
 
 int RobotKIT::in_locking_region(int x[4])
@@ -1838,7 +1844,13 @@ int RobotKIT::in_locking_region(int x[4])
             && x[3] > para.locking_reflective_offset2)
         return 1;
     else 
+    {
+    	std::cout << "x[0]: " << x[0]
+    	          << "x[1]: " << x[1]
+    	          << "x[2]: " << x[2]
+    	          << "x[3]: " << x[3] << std::endl;
         return 0;
+    }
 }
 
 void RobotKIT::Log()

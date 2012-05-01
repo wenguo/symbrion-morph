@@ -21,7 +21,7 @@ class RobotAW:public Robot, public ActiveWheel
         virtual void Reset();
 
         virtual int in_docking_region(int x[4]);
-        virtual int in_locking_region(int x[6]);
+        virtual int in_locking_region(int x[4]);
 
         virtual void UpdateSensors();
         virtual void UpdateActuators();

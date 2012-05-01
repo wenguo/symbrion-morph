@@ -725,7 +725,7 @@ void RobotAW::Docking()
     //else if(proximity[0]<20 && proximity[1]< 20)
     //     SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
 
-    int input[6]={proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
+    int input[4]={proximity[0], proximity[1],beacon[0], beacon[1]}; // reflective_hist[0].Avg(), reflective_hist[1].Avg() };
     in_locking_region_hist.Push(in_locking_region(input));
 
     int temp_reflective = reflective_hist[1].Avg() - reflective_hist[0].Avg();
@@ -1656,12 +1656,12 @@ int RobotAW::in_docking_region(int x[4])
         return 0;
 }
 
-int RobotAW::in_locking_region(int x[6])
+int RobotAW::in_locking_region(int x[4])
 {
     if(    x[0] > para.locking_proximity_offset1
         && x[1] > para.locking_proximity_offset2
-        && x[4] > para.locking_beacon_offset1
-        && x[5] > para.locking_beacon_offset2 )
+        && x[2] > para.locking_beacon_offset1
+        && x[3] > para.locking_beacon_offset2 )
         return 1;
     else
         return 0;
