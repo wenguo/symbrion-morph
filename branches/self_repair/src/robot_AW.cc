@@ -882,7 +882,7 @@ void RobotAW::Recruitment()
                 msg_docking_signal_req_received &= ~(1<<i);
                 SetIRLED(i, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
             }
-            else if(msg_guideme_received & (1<<i) ||((robot_in_range_detected & (0x3<<(2*i))) ==0
+            else if((msg_guideme_received & (1<<i)) || ((robot_in_range_detected & (0x3<<(2*i))) ==0
                         && ambient_hist[2*i].Avg()> para.recruiting_ambient_offset1
                         && ambient_hist[2*i+1].Avg()>para.recruiting_ambient_offset1
                         && reflective_hist[2*i].Avg()>20 && reflective_hist[2*i+1].Avg()>20))
@@ -914,6 +914,8 @@ void RobotAW::Recruitment()
             ambient_avg_threshold_hist.Push2(ambient_trigger);
             //ambient_avg_threshold_hist.Print2();;
 
+            std::cout << ambient_hist[2*i].Avg() << " " << ambient_hist[2*i+1].Avg()
+            		  << " trig: " << ambient_trigger << std::endl;
 
 //temporary solution, as  left IR sensor on SideBoard of ActiveWheel Noname doesn't work
 #if 0
@@ -937,7 +939,7 @@ void RobotAW::Recruitment()
             }
 
             //give up, back to stage 1
-            if(msg_docking_signal_req_received & (1<<i) || guiding_signals_count[i]++ >= para.recruiting_guiding_signals_time)
+            if((msg_docking_signal_req_received & (1<<i)) || guiding_signals_count[i]++ >= para.recruiting_guiding_signals_time)
             {
                 msg_docking_signal_req_received &=~(1<<i);
                 guiding_signals_count[i] = 0;
