@@ -1324,7 +1324,7 @@ void RobotKIT::Undocking()
     		rightspeed = -30;
     		sidespeed = 0;
     	}
-    	else if( undocking_count < 400  )
+    	else if( undocking_count < 300  )
     	{
     		leftspeed = 0;//para.debug.para[1];   // was 18
     		rightspeed = 0;//para.debug.para[2]; // was -35
