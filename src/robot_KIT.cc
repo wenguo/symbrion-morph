@@ -488,20 +488,20 @@ void RobotKIT::LocateBeacon()
 
 
     //TODO: any side docking?
-   // if(beacon_signals_detected & 0x3)
+    // if(beacon_signals_detected & 0x3)
     if(beacon[1]> 3 || beacon[0]>3)
     {
         if(beacon[0]>5 && beacon[1]>5)
-   // if(beacon_signals_detected & 0x3 ==0x3)
+        // if(beacon_signals_detected & 0x3 ==0x3)
         {
             leftspeed = 0;
             rightspeed = 0;
             sidespeed = 0;
 
-            //if((timestamp/5)%2 ==0)
-           //     sidespeed = 10;
-           // else
-            //    sidespeed = -20;
+           //if((timestamp/5)%2 ==0)
+           //	sidespeed = 10;
+           //else
+           //	sidespeed = -20;
         }
         else
         {
@@ -509,6 +509,7 @@ void RobotKIT::LocateBeacon()
             int temp = beacon[1]-beacon[0];
             leftspeed = 0;
             rightspeed = 0;
+            sidespeed = 0;
             //sidespeed = 20 * sign(temp);
         }
     }
@@ -527,7 +528,7 @@ void RobotKIT::LocateBeacon()
 
     }
 
-    //      printf("beacon: (%d %d) -- speed: (%d %d %d)\n", beacon[1], beacon[0], leftspeed, rightspeed, sidespeed);
+    // printf("beacon: (%d %d) -- speed: (%d %d %d)\n", beacon[1], beacon[0], leftspeed, rightspeed, sidespeed);
     //switch on ir led at 64Hz so the recruitment robot can sensing it
     //and turn on its docking signals, the robot need to switch off ir 
     //led for a while to check if it receives docking signals
@@ -614,7 +615,7 @@ void RobotKIT::Alignment()
     {
         //turn left
         leftspeed = 40;
-        rightspeed = -20;
+        rightspeed = -15;
         sidespeed = 0; //overwrite sidespeed
     }
     else if(temp2 > -100)
@@ -623,7 +624,7 @@ void RobotKIT::Alignment()
     }
     else
     {
-        leftspeed = 20;
+        leftspeed = 15;
         rightspeed = -40;
         sidespeed = 0; //overwrite sidespeed
     }
@@ -1824,13 +1825,7 @@ int RobotKIT::in_docking_region(int x[4])
             && abs(x[2]-x[3]) < para.docking_beacon_diff )
         return 1;
     else
-    {
-    	std::cout << " x[0]: " << x[0]
-    	          << " x[1]: " << x[1]
-    	          << " x[2]: " << x[2]
-    	          << " x[3]: " << x[3] << std::endl;
     	return 0;
-    }
 }
 
 int RobotKIT::in_locking_region(int x[4])
@@ -1844,13 +1839,7 @@ int RobotKIT::in_locking_region(int x[4])
             && x[3] > para.locking_reflective_offset2)
         return 1;
     else 
-    {
-    	std::cout << "x[0]: " << x[0]
-    	          << "x[1]: " << x[1]
-    	          << "x[2]: " << x[2]
-    	          << "x[3]: " << x[3] << std::endl;
         return 0;
-    }
 }
 
 void RobotKIT::Log()
