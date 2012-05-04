@@ -17,10 +17,6 @@ RobotAW::RobotAW():Robot()
     robot_side_dev_num[ActiveWheel::LEFT] = ::BACK;
     robot_side_dev_num[ActiveWheel::FRONT] = ::LEFT;
 
-    hinge_start_pos = GetHingeAngle();
-    hinge_speed = 1;
-    printf("%d hinge starting angle: %f\n",timestamp,hinge_start_pos);
-
     LED0 = 0x1;
     LED1 = 0x4;
     LED2 = 0x2;
@@ -522,7 +518,7 @@ void RobotAW::Alignment()
 
     static bool docking_region_detected = false;
 
-    // Far away from recruiting robot
+    // Far away from recruiting robot - move sideways or forward
     if( std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) < 20 )
     {
     	//std::cout << " FAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1] << " temp: " << temp
@@ -542,7 +538,7 @@ void RobotAW::Alignment()
     }
     else if( abs(temp2) < 200 )
     {
-    	// Very close to the recruiting robot
+    	// Very close to the recruiting robot - move sideways or forward
     	if( beacon[0] < 30 && beacon[1] < 30 )
     	{
         	//std::cout << " VERY NEAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
@@ -574,7 +570,7 @@ void RobotAW::Alignment()
         	}
 
     	}
-    	// Quite close to the recruiting robot
+    	// Quite close to the recruiting robot - turn left or right
         else
         {
         	//std::cout << " NEAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
@@ -757,7 +753,7 @@ void RobotAW::Docking()
     //printf("%d proximity: %d %d \treflective: %d %d \tbeacon: %d %d\n ", timestamp, proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1] );
     //printf("proximity: \t%d(%d) \treflective(%d): \t%d \tstatus: \t%d \n", temp_proximity, std::max(proximity[0], proximity[1]), temp_reflective, std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()), status);
 
-    if(in_locking_region_hist.Sum() >= 2 ) // 4 successful predition out of 8
+    if(in_locking_region_hist.Sum() >= 3 ) // 4 successful predition out of 8
     {
         in_locking_region_hist.Reset();
         leftspeed = 0;
