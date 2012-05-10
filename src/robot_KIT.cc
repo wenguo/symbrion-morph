@@ -104,33 +104,33 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
 
     if(status != STOP)
     {
-            //closed -> open?
-            if(docking_motors_status[channel] == CLOSED  && status == OPEN)
-            {
-                //change status to be opening
-                docking_motors_status[channel] = OPENING; //clear first
-                if(para.locking_motor_enabled[channel])
-                    OpenDocking(KaBot::Side(board_dev_num[channel]));
-                printf("open docking\n");
-            }
-            //or open -> close
-            else if(docking_motors_status[channel]== OPENED &&  status == CLOSE )
-            {
-                //change status to be closing
-                docking_motors_status[channel] = CLOSING; //clear first
-                if(para.locking_motor_enabled[channel])
-                    CloseDocking(KaBot::Side(board_dev_num[channel]));
-                printf("close docking\n");
-            }
-            else
-                return false;
+        //closed -> open?
+        if(docking_motors_status[channel] == CLOSED  && status == OPEN)
+        {
+            //change status to be opening
+            docking_motors_status[channel] = OPENING; //clear first
+            if(para.locking_motor_enabled[channel])
+                OpenDocking(KaBot::Side(board_dev_num[channel]));
+            printf("open docking\n");
+        }
+        //or open -> close
+        else if(docking_motors_status[channel]== OPENED &&  status == CLOSE )
+        {
+            //change status to be closing
+            docking_motors_status[channel] = CLOSING; //clear first
+            if(para.locking_motor_enabled[channel])
+                CloseDocking(KaBot::Side(board_dev_num[channel]));
+            printf("close docking\n");
+        }
+        else
+            return false;
 
     }
     else
     {
         // opeing/open -->stop
         if(docking_motors_status[channel] == OPENED || 
-           docking_motors_status[channel] == OPENING )
+                docking_motors_status[channel] == OPENING )
         {
             docking_motors_status[channel]=OPENED;
         }
@@ -259,14 +259,14 @@ void RobotKIT::UpdateActuators()
 // for self-repair
 void RobotKIT::UpdateFailures()
 {
-	if( !module_failed )
-	{
-		if( current_state == MACROLOCOMOTION )
-		{
-			if( para.debug.para[0] > 0 && macrolocomotion_count > (unsigned) para.debug.para[0] )
-				module_failed = true;
-		}
-	}
+    if( !module_failed )
+    {
+        if( current_state == MACROLOCOMOTION )
+        {
+            if( para.debug.para[0] > 0 && macrolocomotion_count > (unsigned) para.debug.para[0] )
+                module_failed = true;
+        }
+    }
 }
 
 void RobotKIT::Avoidance()
@@ -304,27 +304,27 @@ void RobotKIT::Exploring()
 void RobotKIT::Resting()
 {
     /*
-    if(timestamp == 30)
+       if(timestamp == 30)
+       {
+       mytree.Clear();
+       if(og)
+       delete og;
+    //select predefined organism
+    og = new Organism;
+    RealDemoOrganism_KAK(og);
+    og->GraphToSequence(mytree);
+    std::cout<<*og<<std::endl;
+    std::cout<<mytree<<std::endl;
+    //prepare branches sequence
+    rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
+    if(ret.status >= RT_ERROR)
     {
-        mytree.Clear();
-        if(og)
-            delete og;
-        //select predefined organism
-        og = new Organism;
-        RealDemoOrganism_KAK(og);
-        og->GraphToSequence(mytree);
-        std::cout<<*og<<std::endl;
-        std::cout<<mytree<<std::endl;
-        //prepare branches sequence
-        rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
-        if(ret.status >= RT_ERROR)
-        {
-            std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
-        }
-
-        SendBranchTree(2, mytree);
+    std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
     }
-*/
+
+    SendBranchTree(2, mytree);
+    }
+    */
 
 }
 void RobotKIT::Seeding()
@@ -492,16 +492,16 @@ void RobotKIT::LocateBeacon()
     if(beacon[1]> 3 || beacon[0]>3)
     {
         if(beacon[0]>5 && beacon[1]>5)
-        // if(beacon_signals_detected & 0x3 ==0x3)
+            // if(beacon_signals_detected & 0x3 ==0x3)
         {
             leftspeed = 0;
             rightspeed = 0;
             sidespeed = 0;
 
-           //if((timestamp/5)%2 ==0)
-           //	sidespeed = 10;
-           //else
-           //	sidespeed = -20;
+            //if((timestamp/5)%2 ==0)
+            //	sidespeed = 10;
+            //else
+            //	sidespeed = -20;
         }
         else
         {
@@ -521,10 +521,10 @@ void RobotKIT::LocateBeacon()
 
         printf("no beacon detected, shift left and right a little bit\n");
 
-//        if((timestamp/10)%2 ==0)
-//            sidespeed = 20;
-//        else
-//            sidespeed = -20;
+        //        if((timestamp/10)%2 ==0)
+        //            sidespeed = 20;
+        //        else
+        //            sidespeed = -20;
 
     }
 
@@ -632,13 +632,13 @@ void RobotKIT::Alignment()
     //lost signals
     //if(beacon_signals_detected==0)
     //beacon signals drop to certain threshold?
-  /*  if(beacon_signals_detected_hist.Sum(0) < 0 || beacon_signals_detected_hist.Sum(1) < 1)
-    {
+    /*  if(beacon_signals_detected_hist.Sum(0) < 0 || beacon_signals_detected_hist.Sum(1) < 1)
+        {
         current_state = RECOVER;
         last_state = ALIGNMENT;
 
         return;
-    }*/
+        }*/
 
     //check if it is aligned well and also closed enough for docking
     int input[4] = {reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
@@ -655,18 +655,21 @@ void RobotKIT::Alignment()
 
     if(docking_region_detected)
     {
+        leftspeed = 0;
+        rightspeed = 0;
+        sidespeed = 0;
         if(robots_in_range_detected_hist.Sum(0) > 5 && robots_in_range_detected_hist.Sum(1) > 5)
         {
             docking_region_detected =false;
             in_docking_region_hist.Reset();
             docking_count = 0;
             docking_failed_reverse_count = 0;
-        
+
             docking_trials++;
 
             current_state = DOCKING;
             last_state = ALIGNMENT;
-            
+
             SetRGBLED(0, 0,0,0,0);
         }
     }
@@ -753,11 +756,11 @@ void RobotKIT::Docking()
     }
 
     /*
-    if(proximity[0] > 200 && proximity[1] > 200)
-        SetRGBLED(0,0,0,0,0);
-    else if(proximity[0]<20 && proximity[1]< 20)
-        SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
-*/
+       if(proximity[0] > 200 && proximity[1] > 200)
+       SetRGBLED(0,0,0,0,0);
+       else if(proximity[0]<20 && proximity[1]< 20)
+       SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
+       */
     int input[4]={proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg()};
     in_locking_region_hist.Push(in_locking_region(input));
 
@@ -768,19 +771,19 @@ void RobotKIT::Docking()
 
     //if(timestamp % 9 == 0 || timestamp %9 == 4)
     if(timestamp % 12 == 0 || timestamp %12 == 4)
-    //if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0)
+        //if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0)
     {
         status = CHECKING;
     }
     //else if(timestamp % (DOCKING_CHECKING_INTERVAL) == 1)
     else if(timestamp % 12 == 2)
-    //else if( timestamp % 9 == 2 )
+        //else if( timestamp % 9 == 2 )
     {
         status = MOVE_FORWARD;
     }
     //else if( timestamp % 9 == 6 )
     else if(timestamp % 12 == 10)
-    //else if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 1)
+        //else if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 1)
     {
         if(assembly_info.type1 == ROBOT_AW)
         {
@@ -848,7 +851,7 @@ void RobotKIT::Docking()
         current_state = LOCKING;
         last_state = DOCKING;
     }
-    
+
 
 
     switch (status)
@@ -888,12 +891,12 @@ void RobotKIT::Docking()
             rightspeed = 0;
             sidespeed = 0;
             //no beacon2 signals?
-    //        if(proximity[0] < 50 && proximity[1]<50)
-    //        {
-                //          SetRGBLED(0, 0, 0, 0, 0);
-      //          Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
-                //              SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
-      //      } 
+            //        if(proximity[0] < 50 && proximity[1]<50)
+            //        {
+            //          SetRGBLED(0, 0, 0, 0, 0);
+            //          Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
+            //              SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
+            //      } 
             break;
         default:
             break;
@@ -943,6 +946,7 @@ void RobotKIT::Recruitment()
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;
+    static int stage2_count=0;
     std::vector<OrganismSequence>::iterator it1 = mybranches.begin();
     while(it1 !=mybranches.end())
     {
@@ -983,6 +987,8 @@ void RobotKIT::Recruitment()
                 if(it1->getSymbol(0).type2 == ROBOT_KIT)
                     msg_locked_expected |= 1<<i;
                 msg_guideme_received &= ~(1<<i);
+                stage2_count=0;
+                ambient_avg_threshold_hist.Reset();
                 recruitment_stage[i]=STAGE2;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 proximity_hist[2*i].Reset();
@@ -992,25 +998,41 @@ void RobotKIT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE2)
         {
+            stage2_count++;
             proximity_hist[2*i].Push(proximity[2*i]);
             proximity_hist[2*i+1].Push(proximity[2*i+1]);
 
             msg_guideme_received &= ~(1<<i);
             msg_lockme_expected |=1<<i;
 
-            if(ambient_hist[2*i].Avg() > para.recruiting_ambient_offset2 
+            uint8_t ambient_trigger = 0;
+            if(ambient_hist[2*i].Avg() > para.recruiting_ambient_offset2)
+                ambient_trigger |= 1<<(2*i);
+            if(ambient_hist[2*i+1].Avg() > para.recruiting_ambient_offset2)
+                ambient_trigger |= 1<<(2*i+1);
+            ambient_avg_threshold_hist.Push2(ambient_trigger);
+
+
+#if 0
+            if(stage2_count > 20 && ambient_hist[2*i].Avg() > para.recruiting_ambient_offset2 
                     && ambient_hist[2*i+1].Avg() > para.recruiting_ambient_offset2 
                     && proximity_hist[2*i].Avg() > para.recruiting_proximity_offset1 
                     && proximity_hist[2*i+1].Avg() > para.recruiting_proximity_offset2)
-            {
-                recruitment_stage[i]=STAGE3;
-                SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                RobotBase::SetIRRX(board_dev_num[i], false);
-                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
-            }
+#else
+                if(stage2_count > 20 && ambient_avg_threshold_hist.Sum(2*i) > 6 
+                        && ambient_avg_threshold_hist.Sum(2*i+1)>6
+                        && proximity_hist[2*i].Avg() > para.recruiting_proximity_offset1
+                        && proximity_hist[2*i+1].Avg()> para.recruiting_proximity_offset2)
+#endif
+                {
+                    recruitment_stage[i]=STAGE3;
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                    RobotBase::SetIRRX(board_dev_num[i], false);
+                    printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+                }
 
             //give up, back to stage 1
-            if(guiding_signals_count[i]++ >= para.recruiting_guiding_signals_time)
+            if((msg_docking_signal_req_received & (1<<i)) || guiding_signals_count[i]++ >= para.recruiting_guiding_signals_time)
             {
                 msg_docking_signal_req_received &=~(1<<i);
                 guiding_signals_count[i] = 0;
@@ -1054,7 +1076,9 @@ void RobotKIT::Recruitment()
                 msg_guideme_received &= ~(1<<i);
                 proximity_hist[2*i].Reset();
                 proximity_hist[2*i+1].Reset();
+                ambient_avg_threshold_hist.Reset();
                 recruitment_stage[i] = STAGE2;
+                stage2_count = 0;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 printf("%d -- Recruitment: channel %d  switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
@@ -1163,21 +1187,19 @@ void RobotKIT::InOrganism()
     sidespeed = 0;
 
     //for testing 
-    /*
-       printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-       (my_IP >> 24) & 0xFF,
-       (my_IP >> 16) & 0xFF,
-       (my_IP >> 8) & 0xFF,
-       my_IP & 0xFF);
-       for(int i=0;i<NUM_DOCKS;i++)
-       {
-       printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-       (neighbours_IP[i] >> 24) & 0xFF,
-       (neighbours_IP[i] >> 16) & 0xFF,
-       (neighbours_IP[i] >> 8) & 0xFF,
-       neighbours_IP[i] & 0xFF);
-       }
-       */
+    printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
+            (my_IP >> 24) & 0xFF,
+            (my_IP >> 16) & 0xFF,
+            (my_IP >> 8) & 0xFF,
+            my_IP & 0xFF);
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+        printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
+                (neighbours_IP[i] >> 24) & 0xFF,
+                (neighbours_IP[i] >> 16) & 0xFF,
+                (neighbours_IP[i] >> 8) & 0xFF,
+                neighbours_IP[i] & 0xFF);
+    }
 
     //seed robot monitoring total number of robots in the organism
     if(seed)
@@ -1290,7 +1312,7 @@ void RobotKIT::Disassembly()
             last_state = DISASSEMBLY;
 
             // for demo only - turn on back proximity sensors
-        	SetIRLED(2, IRLEDPROXIMITY, LED0|LED2, 0);
+            SetIRLED(2, IRLEDPROXIMITY, LED0|LED2, 0);
 
         }
 
@@ -1318,32 +1340,32 @@ void RobotKIT::Undocking()
     // move
     if(undocking_count >= 120)
     {
-    	// move back
-    	if( undocking_count < 150 && proximity[4] < 175 && proximity[5] < 175 )
-    	{
-    		leftspeed = -30;
-    		rightspeed = -30;
-    		sidespeed = 0;
-    	}
-    	else if( undocking_count < 300  )
-    	{
-    		leftspeed = 0;//para.debug.para[1];   // was 18
-    		rightspeed = 0;//para.debug.para[2]; // was -35
-    		sidespeed = -20;
-    	}
-		else
-		{
-			leftspeed = 0;
-			rightspeed = 0;
-			sidespeed = 0;
+        // move back
+        if( undocking_count < 150 && proximity[4] < 175 && proximity[5] < 175 )
+        {
+            leftspeed = -30;
+            rightspeed = -30;
+            sidespeed = 0;
+        }
+        else if( undocking_count < 300  )
+        {
+            leftspeed = 0;//para.debug.para[1];   // was 18
+            rightspeed = 0;//para.debug.para[2]; // was -35
+            sidespeed = 20;
+        }
+        else
+        {
+            leftspeed = 0;
+            rightspeed = 0;
+            sidespeed = 0;
 
-			for( int i=0;i<NUM_DOCKS; i++)
-				SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
+            for( int i=0;i<NUM_DOCKS; i++)
+                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
 
-			last_state = UNDOCKING;
-			current_state = FORAGING;
-			ResetAssembly(); // reset variables used during assembly
-		}
+            last_state = UNDOCKING;
+            current_state = FORAGING;
+            ResetAssembly(); // reset variables used during assembly
+        }
     }
 
 
@@ -1354,11 +1376,11 @@ void RobotKIT::Lowering()
 {
     lowering_count++;
 
-	if( lowering_count <= 30 )
-	{
+    if( lowering_count <= 30 )
+    {
 
-	}
-	else if( StartRepair()  )
+    }
+    else if( StartRepair()  )
     {
         last_state = LOWERING;
         lowering_count = 0;
@@ -1658,7 +1680,7 @@ void RobotKIT::Debugging()
             {
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
-                	SetRGBLED(i,0,0,0,0);
+                    SetRGBLED(i,0,0,0,0);
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
                 }
             }
@@ -1825,7 +1847,7 @@ int RobotKIT::in_docking_region(int x[4])
             && abs(x[2]-x[3]) < para.docking_beacon_diff )
         return 1;
     else
-    	return 0;
+        return 0;
 }
 
 int RobotKIT::in_locking_region(int x[4])
