@@ -44,6 +44,7 @@ void RobotKIT::InitHardware()
     EnableMotors(true);
 
     IRComm::Initialize();
+    Ethernet::Initialize();
 }
 
 void RobotKIT::Reset()
@@ -1660,9 +1661,9 @@ void RobotKIT::Debugging()
     // rightspeed = 0;
     // sidespeed = 0;
 
-    if(timestamp >40)
-        Log();
     //printf("%d Debuging %d:\t", timestamp,para.debug.mode);
+    static int clock=0;
+    static bool log=false;
 
     switch (para.debug.mode)
     {
@@ -1830,6 +1831,110 @@ void RobotKIT::Debugging()
                 //module_failed = true;
                 //current_state = LOWERING;
             }
+            break;
+        case 13:
+            if(timestamp==40)
+            {
+            for(int i=0;i<NUM_DOCKS;i++)
+            {
+                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, isEthernetPortConnected(KaBot::Side(board_dev_num[i])) ? "true":"false",isSwitchActivated()?"true":"false" );
+            }
+            }
+#define NEIGHBOUR_IP "192.168.0.4"
+            if(timestamp % 10 ==0)
+            {
+                uint8_t data[10]={'h','e','l','l','o','-','K','I','T',0};
+                SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
+            }
+            while (HasEthMessage() > 0)
+            {
+                uint8_t rx[32];
+                auto_ptr<Message> m = ReceiveEthMessage();
+                memcpy(rx, m->GetData(), m->GetDataLength());
+                printf("%d -- received data: %s\n", timestamp, rx);
+            }
+            break;
+        case 14: //as docking robot for measureing
+            if(timestamp ==32)
+            {
+                OrganismSequence::Symbol sym;
+                sym.reBuild("KFAF");
+                docked[0]=sym.data;
+                //using reflective signals if not set
+                for(int i=0; i< NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0 | IR_PULSE1);
+
+                SetRGBLED(2, RED,RED,RED,RED);
+                //SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
+            }
+           
+            //send synchronisation signals, using ip_req
+            if(msg_ip_addr_received==0)
+            {
+                if(timestamp > 60 && timestamp % 20 ==5)
+                {
+                    uint8_t data[5];
+                    data[0] = docked[0]; //TODO: remove this as it is already included when using SendIRMessage
+                    memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                    Robot::SendIRMessage(0, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+                }
+            }
+            else
+                clock++;
+
+
+            if(clock == para.debug.para[5])
+            {
+                log = true;
+                leftspeed = -20;
+                rightspeed = -20;
+                sidespeed = 0;
+            }
+            else if(clock == para.debug.para[6])
+            {
+                log = false;
+                leftspeed = 0;
+                rightspeed = 0;
+                sidespeed = 0;
+            }
+
+            if(log)
+                Log();
+
+            break;
+
+        case 15: //as recruinting robot for measuring
+            if(timestamp ==32)
+            {
+                OrganismSequence::Symbol sym;
+                sym.reBuild("KBAF");
+                docked[2]=sym.data;
+                //using reflective signals if not set
+                for(int i=0; i< NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0 | IR_PULSE1);
+            }
+
+            //received IP_REQ as synchronisation signals
+            if(neighbours_IP[2] != 0)
+            {
+                clock++;
+            }
+
+            //start flashing ir led
+            if(clock == 2)
+            {
+                SetIRLED(2, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1);
+            }
+
+
+            if(clock == para.debug.para[5])
+                log = true;
+            else if(clock == para.debug.para[6])
+                log = false;
+
+            if(log)
+                Log();
+
             break;
         default:
             break;

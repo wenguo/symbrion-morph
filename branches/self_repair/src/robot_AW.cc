@@ -43,6 +43,7 @@ void RobotAW::InitHardware()
     //RobotBase::SetIRRX(board_dev_num[2], false);
 
     IRComm::Initialize();
+    Ethernet::Initialize();
 }
 
 void RobotAW::Reset()
@@ -1528,9 +1529,10 @@ void RobotAW::Debugging()
     //leftspeed = 0;
     //rightspeed = 0;
     //sidespeed = 0;
-    printf("Debuging %d:\n", para.debug.mode);
-    if(timestamp >40)
-        Log();
+  //  printf("Debuging %d:\n", para.debug.mode);
+            
+    static int clock=0;
+    static bool log = false;
 
     switch (para.debug.mode)
     {
@@ -1658,6 +1660,104 @@ void RobotAW::Debugging()
                 }
             }
             break;
+        case 13:
+            if(timestamp==40)
+            {
+            for(int i=0;i<NUM_DOCKS;i++)
+            {
+                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, isEthernetPortConnected(ActiveWheel::Side(board_dev_num[i])) ? "true":"false",isSwitchActivated()?"true":"false" );
+            }
+            }
+#define NEIGHBOUR_IP "192.168.0.7"
+            if(timestamp % 10 ==0)
+            {
+                uint8_t data[9]={'h','e','l','l','o','-','A','W',0};
+                SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
+            }
+            while (HasEthMessage() > 0)
+            {
+                uint8_t rx[32];
+                auto_ptr<Message> m = ReceiveEthMessage();
+                memcpy(rx, m->GetData(), m->GetDataLength());
+                printf("%d -- received data: %s\n", timestamp, rx);
+            }
+            break;
+        case 14: //as recruting robot for measuring
+            if(timestamp ==32)
+            {
+                OrganismSequence::Symbol sym;
+                sym.reBuild("AFKF");
+                docked[0]=sym.data;
+                //using reflective signals if not set
+                for(int i=0; i< NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0 | IR_PULSE1);
+            }
+
+            //received IP_REQ as synchronisation signals
+            if(neighbours_IP[0] != 0)
+            {
+                clock++;
+            }
+
+            //start flashing ir led
+            if(clock == 2)
+            {
+                //SetIRLED(0, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1);
+                SetIRLED(0, IRLEDPROXIMITY, LED0|LED2, 0);
+            }
+
+            if(clock == para.debug.para[5])
+                log = true;
+            else if(clock == para.debug.para[6])
+                log = false;
+
+            if(log)
+                Log();
+            break;
+        case 15: //as docking robot for measuring
+            if(timestamp ==32)
+            {
+                OrganismSequence::Symbol sym;
+                sym.reBuild("AFKB");
+                docked[0]=sym.data;
+                //using reflective signals if not set
+                for(int i=0; i< NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0 | IR_PULSE1);
+
+                SetRGBLED(2, RED,RED,RED,RED);
+            }
+           
+            //send synchronisation signals, using ip_req
+            if(msg_ip_addr_received==0)
+            {
+                if(timestamp % 20 ==5)
+                {
+                    uint8_t data[5];
+                    data[0] = docked[0]; //TODO: remove this as it is already included when using SendIRMessage
+                    memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                    Robot::SendIRMessage(0, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+                }
+            }
+            else
+                clock++;
+
+           if(clock == para.debug.para[5])
+            {
+                log = true;
+                leftspeed = -15;
+                rightspeed = -15;
+                sidespeed = 0;
+            }
+            else if(clock == para.debug.para[6])
+            {
+                log = false;
+                leftspeed = 0;
+                rightspeed = 0;
+                sidespeed = 0;
+            }
+            if(log)
+                Log();
+            break;
         default:
             break;
     }
@@ -1683,8 +1783,8 @@ int RobotAW::in_locking_region(int x[4])
 {
     if(    x[0] > para.locking_proximity_offset1
             && x[1] > para.locking_proximity_offset2)
-      //      && x[2] > para.locking_reflective_offset1 
-      //      && x[3] > para.locking_reflective_offset2)
+        //      && x[2] > para.locking_reflective_offset1 
+        //      && x[3] > para.locking_reflective_offset2)
         return 1;
     else
         return 0;
