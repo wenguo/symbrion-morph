@@ -1923,7 +1923,8 @@ void RobotKIT::Debugging()
             //start flashing ir led
             if(clock == 2)
             {
-                SetIRLED(2, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1);
+                //SetIRLED(2, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1);
+                SetIRLED(2, IRLEDPROXIMITY, LED0|LED2, 0);
             }
 
 
