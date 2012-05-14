@@ -1725,6 +1725,7 @@ void RobotAW::Debugging()
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0 | IR_PULSE1);
 
                 SetRGBLED(2, RED,RED,RED,RED);
+//                SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
             }
            
             //send synchronisation signals, using ip_req
