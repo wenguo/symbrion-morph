@@ -165,6 +165,19 @@ bool Robot::LoadParameters(const char * filename)
             para.ir_msg_ack_delay = optionfile->ReadInt(entity, "ir_msg_ack_delay", 10);
             if(para.init_state > STATE_COUNT || para.init_state <0)
                 para.init_state = 0;
+
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "reflective_calibrated" ) ) 
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.reflective_calibrated[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "ambient_calibrated" ) ) 
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.ambient_calibrated[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
+
+
         }
         else if( strcmp( typestr, "ShapeInfo" ) == 0 )
         {

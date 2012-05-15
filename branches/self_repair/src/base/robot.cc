@@ -211,8 +211,8 @@ bool Robot::Init(const char * optionfile)
         return false;
     }
 
-    current_state = CALIBRATING;//fsm_state_t(para.init_state);
-    last_state = CALIBRATING;//fsm_state_t(para.init_state);
+    current_state = fsm_state_t(para.init_state);
+    last_state = fsm_state_t(para.init_state);
 
     //SPIVerbose = QUIET;
 
@@ -240,6 +240,9 @@ bool Robot::Init(const char * optionfile)
         SetRGBLED(i, 0, 0, 0, 0);
         SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0|IR_PULSE1);
     }
+    
+    robots_in_range_detected_hist.Reset();
+    beacon_signals_detected_hist.Reset();
 
     return true;
 }
@@ -377,7 +380,7 @@ void Robot::Calibrating()
         temp2[i] += ambient[i];
     }
 
-    if (timestamp > 30)
+    if (timestamp == 100)
     {
         printf("Calibrating done (%d): ", count);
         for(int i=0;i<NUM_IRS;i++)
@@ -386,12 +389,39 @@ void Robot::Calibrating()
             ambient_calibrated[i]=temp2[i]/count;
             printf("%d\t", reflective_calibrated[i]);
         }
+
         printf("\n");
-        robots_in_range_detected_hist.Reset();
-        beacon_signals_detected_hist.Reset();
-        current_state = (fsm_state_t) para.init_state;
-        last_state = CALIBRATING;
+    //    current_state = (fsm_state_t) para.init_state;
+    //    last_state = CALIBRATING;
+
+        if(optionfile)
+        {
+
+            for( int entity = 1; entity < optionfile->GetEntityCount(); ++entity )
+            {
+                const char *typestr = (char*)optionfile->GetEntityType(entity);          
+                if( strcmp( typestr, "Global" ) == 0 )
+                {
+                    char default_str[64];
+                    for(int i=0;i<NUM_IRS;i++)
+                    {
+                        snprintf(default_str, sizeof(default_str), "%d", reflective_calibrated[i]);
+                        optionfile->WriteTupleString(entity, "reflective_calibrated", i, default_str);
+                        snprintf(default_str, sizeof(default_str), "%d", ambient_calibrated[i]);
+                        optionfile->WriteTupleString(entity, "ambient_calibrated", i, default_str);
+                    }
+                }
+            }
+        }
+
+        if(type == ROBOT_KIT)
+            optionfile->Save("/flash/morph/kit_option.cfg");
+        else if(type == ROBOT_AW)
+            optionfile->Save("/flash/morph/aw_option.cfg");
+
+
     }
+
 }
 
 

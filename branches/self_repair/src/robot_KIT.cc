@@ -45,6 +45,7 @@ void RobotKIT::InitHardware()
 
     IRComm::Initialize();
     Ethernet::Initialize();
+ //   Ethernet::disableSwitch();
 }
 
 void RobotKIT::Reset()
@@ -1936,6 +1937,35 @@ void RobotKIT::Debugging()
             if(log)
                 Log();
 
+            break;
+        case 16:
+            {
+                const char filename[56]="/flash/morph/kit_option.cfg";
+                if(optionfile->Load(filename)==-1)
+                {
+                    std::cout<<"can not find option.cfg, please check the path"<<std::endl;
+                    break;
+                }
+
+                for( int entity = 1; entity < optionfile->GetEntityCount(); ++entity )
+                {
+                    const char *typestr = (char*)optionfile->GetEntityType(entity);          
+                    if( strcmp( typestr, "Global" ) == 0 )
+                    {
+                        char default_str[64];
+                        for(int i=0;i<NUM_IRS;i++)
+                        {
+                            snprintf(default_str, sizeof(default_str), "%d", reflective_calibrated[i]);
+                            optionfile->WriteTupleString(entity, "reflective_calibrated", i, default_str);
+                            snprintf(default_str, sizeof(default_str), "%d", ambient_calibrated[i]);
+                            optionfile->WriteTupleString(entity, "ambient_calibrated", i, default_str);
+                        }
+                    }
+                }
+
+                optionfile->Save("/flash/morph/kit_option.cfg");
+                para.debug.mode = 99;
+            }
             break;
         default:
             break;

@@ -52,15 +52,17 @@ Parameter::Parameter():
     ir_msg_ack_delay(10),
     avoidance_threshold(10)
 {
-    memset(avoid_weightleft, 0, NUM_IRS);
-    memset(avoid_weightright, 0, NUM_IRS);
-    memset(avoid_weightside, 0, NUM_IRS);
-    memset(locking_motor_enabled, 0, NUM_DOCKS);
-    memset(docking_turn_left_speed, 0, 3);
-    memset(docking_turn_right_speed, 0, 3);
-    memset(docking_forward_speed, 0, 3);
-    memset(docking_backward_speed, 0, 3);
-    memset(docking_failed_reverse_speed, 0, 3);
+    memset(avoid_weightleft, 0, NUM_IRS * sizeof(int));
+    memset(avoid_weightright, 0, NUM_IRS * sizeof(int));
+    memset(avoid_weightside, 0, NUM_IRS * sizeof(int));
+    memset(reflective_calibrated, 0, NUM_IRS * sizeof(int));
+    memset(ambient_calibrated, 0, NUM_IRS * sizeof(int));
+    memset(locking_motor_enabled, 0, NUM_DOCKS * sizeof(bool));
+    memset(docking_turn_left_speed, 0, 3 * sizeof(int));
+    memset(docking_turn_right_speed, 0, 3 * sizeof(int));
+    memset(docking_forward_speed, 0, 3 * sizeof(int));
+    memset(docking_backward_speed, 0, 3 * sizeof(int));
+    memset(docking_failed_reverse_speed, 0, 3 * sizeof(int));
     debug.mode = 0;
     memset(debug.para, 0, 10* sizeof(int));
 }
