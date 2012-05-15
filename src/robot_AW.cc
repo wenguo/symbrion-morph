@@ -921,8 +921,8 @@ void RobotAW::Recruitment()
             ambient_avg_threshold_hist.Push2(ambient_trigger);
             //ambient_avg_threshold_hist.Print2();;
 
-            std::cout << ambient_hist[2*i].Avg() << " " << ambient_hist[2*i+1].Avg()
-                << " trig: " << ambient_trigger << std::endl;
+        //    std::cout << ambient_hist[2*i].Avg() << " " << ambient_hist[2*i+1].Avg()
+        //        << " trig: " << ambient_trigger << std::endl;
 
             //temporary solution, as  left IR sensor on SideBoard of ActiveWheel Noname doesn't work
 #if 0

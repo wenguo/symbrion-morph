@@ -78,6 +78,8 @@ class Parameter
 
         int32_t avoidance_threshold;
 
+        int ambient_calibrated[NUM_IRS];
+        int reflective_calibrated[NUM_IRS];
 
         std::vector<OrganismSequence> og_seq_list;
 
