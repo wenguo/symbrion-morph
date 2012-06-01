@@ -3,6 +3,31 @@
 = Docking experiments =
 
 *AWtoKIT docking
+
 <wiki:video url="http://www.youtube.com/watch?v=0xtwWi_U9sI"/>
 
-= Self-assembly of 4 robots =
+*KITtoAW docking
+
+<wiki:video url="http://www.youtube.com/watch?v=xfKjcxZKSzA"/>
+
+*KITtoKIT docking
+
+<wiki:video url="http://www.youtube.com/watch?v=2TkUmN79S_U"/>
+
+*Parallel docking
+
+<wiki:video url="http://www.youtube.com/watch?v=1aj9F266BBQ"/>
+
+= Self-assembly experiment =
+
+* 2 KIT + 1 AW, symbol sequence: KBKFKBAF0000
+
+<wiki:video url="http://www.youtube.com/watch?v=YztosmlZ7pw"/>
+
+* 2AW + 1KIT, symbol sequence: AFKFKBAF0000
+
+<wiki:video url="http://www.youtube.com/watch?v=kCmrwJvvGUc"/>
+
+* 2AW + 2KIT, symbol sequence: AFKF0000ABKFKBAF00000000
+
+<wiki:video url="http://www.youtube.com/watch?v=qvNSriORn-M"/>
