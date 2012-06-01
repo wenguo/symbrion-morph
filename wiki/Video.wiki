@@ -1,0 +1,8 @@
+#summary One-sentence summary of this page.
+
+= Docking experiments =
+
+*AWtoKIT docking
+<wiki:video url="http://www.youtube.com/watch?v=0xtwWi_U9sI"/>
+
+= Self-assembly of 4 robots =
