@@ -51,6 +51,7 @@ class Robot
     void PrintRGB();
     void PrintStatus();
     void PrintSubOGString( uint8_t* );
+    void LogState();
 
     uint32_t CheckIRLEDStatus(int channel, int led);
     void CheckDockingMotor();
@@ -208,9 +209,9 @@ class Robot
 
     //raw sensor data
     int32_t ambient[NUM_IRS];
-    int32_t ambient_calibrated[NUM_IRS];
+    //int32_t ambient_calibrated[NUM_IRS];
     int32_t reflective[NUM_IRS];   //proximity sensors, using 350us pulse
-    int32_t reflective_calibrated[NUM_IRS];
+    //int32_t reflective_calibrated[NUM_IRS];
     int32_t proximity[NUM_IRS];   //proximity sensors, using 64Hz signals
     int32_t beacon[NUM_IRS];
     rgb_t   color[NUM_DOCKS];
@@ -348,6 +349,7 @@ class Robot
     Morph::Worldfile * optionfile;
     Parameter para;
     std::ofstream logFile;
+    std::ofstream logstateFile;
 
 
     pthread_mutex_t mutex;
