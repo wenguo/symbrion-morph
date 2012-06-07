@@ -186,8 +186,8 @@ void RobotAW::UpdateSensors()
 
     for(int i=0;i<NUM_IRS;i++)
     {
-        reflective_hist[i].Push(reflective[i]-reflective_calibrated[i]);
-        ambient_hist[i].Push(ambient_calibrated[i] - ambient[i]);
+        reflective_hist[i].Push(reflective[i]-para.reflective_calibrated[i]);
+        ambient_hist[i].Push(para.ambient_calibrated[i] - ambient[i]);
     }
 
 }
@@ -908,7 +908,7 @@ void RobotAW::Recruitment()
         else if(recruitment_stage[i]==STAGE2)
         {
             stage2_count++;
-            // printf("%d %d\n", ambient_calibrated[2*i]-ambient[2*i], ambient_calibrated[2*i+1]-ambient[2*i+1]);
+            // printf("%d %d\n", para.ambient_calibrated[2*i]-ambient[2*i], para.ambient_calibrated[2*i+1]-ambient[2*i+1]);
 
             proximity_hist[2*i].Push(proximity[2*i]);
             proximity_hist[2*i+1].Push(proximity[2*i+1]);
@@ -1549,7 +1549,7 @@ void RobotAW::Debugging()
             {
                 SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
             }
-            printf("%d %d %d %d\n",  proximity[4], proximity[5], ambient_calibrated[4]-ambient[4], ambient_calibrated[4]-ambient[5]);
+            printf("%d %d %d %d\n",  proximity[4], proximity[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
             break;
         case 2://docking region threshold detection
             if(timestamp ==40)
@@ -1557,14 +1557,14 @@ void RobotAW::Debugging()
                 for(int i=0;i<NUM_IRS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
             }
-            printf("%d %d %d %d\n", reflective[0]-reflective_calibrated[0], reflective[1] - reflective_calibrated[1], beacon[0], beacon[1]);
+            printf("%d %d %d %d\n", reflective[0]-para.reflective_calibrated[0], reflective[1] - para.reflective_calibrated[1], beacon[0], beacon[1]);
             break;
         case 3: //simulate recruitment, stage 1, 32Hz guiding signals
             if(timestamp ==40)
             {
                 SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
             }
-            printf("%d %d %d %d\n", reflective[0]-reflective_calibrated[0], reflective[1] - reflective_calibrated[1], ambient_calibrated[0]-ambient[0], ambient_calibrated[1]-ambient[1]);
+            printf("%d %d %d %d\n", reflective[0]-para.reflective_calibrated[0], reflective[1] - para.reflective_calibrated[1], para.ambient_calibrated[0]-ambient[0], para.ambient_calibrated[1]-ambient[1]);
             break;
         case 4:// recruiting stage 2 -> stage 3 detection
             if(timestamp ==40)

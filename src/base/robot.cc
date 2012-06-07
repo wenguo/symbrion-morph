@@ -70,8 +70,8 @@ Robot::Robot()
     {
         reflective[i]=0;
         proximity[i]=0;
-        reflective_calibrated[i]=0;
-        ambient_calibrated[i]=4000;
+       // reflective_calibrated[i]=0;
+       // ambient_calibrated[i]=4000;
         // reflective_avg[i]=0;
         beacon[i]=0;
     }
@@ -262,6 +262,13 @@ bool Robot::InitLog()
         mkdir(oss.str().c_str(), 0777);
         oss << (char *)name <<"_"<< time_string<< ".log";
         logFile.open(oss.str().c_str());
+
+        std::ostringstream oss1;
+        oss1 << "./log/";
+        mkdir(oss.str().c_str(), 0777);
+        oss1 << (char *)name <<"_"<< time_string<< ".state";
+        logstateFile.open(oss1.str().c_str());
+ 
     }    
 
     return true;
@@ -314,10 +321,12 @@ void Robot::Update(const uint32_t& ts)
     behaviours[current_state](this);
 
     if(temp_state!=current_state)
+    {
         PrintStatus();
+    }
 
     PrintBeacon();
-    //PrintProximity();
+    PrintProximity();
     PrintReflective();
     PrintAmbient();
     //PrintStatus();
@@ -359,8 +368,9 @@ void Robot::Update(const uint32_t& ts)
 
     timestamp = ts;
 
-    //if(para.logtofile)
-    //    Log();
+   // if(para.logtofile)
+   //     Log();
+    LogState();
 
 }
 
@@ -385,9 +395,9 @@ void Robot::Calibrating()
         printf("Calibrating done (%d): ", count);
         for(int i=0;i<NUM_IRS;i++)
         {
-            reflective_calibrated[i]=temp1[i]/count;
-            ambient_calibrated[i]=temp2[i]/count;
-            printf("%d\t", reflective_calibrated[i]);
+            para.reflective_calibrated[i]=temp1[i]/count;
+            para.ambient_calibrated[i]=temp2[i]/count;
+            printf("%d\t", para.reflective_calibrated[i]);
         }
 
         printf("\n");
@@ -405,9 +415,9 @@ void Robot::Calibrating()
                     char default_str[64];
                     for(int i=0;i<NUM_IRS;i++)
                     {
-                        snprintf(default_str, sizeof(default_str), "%d", reflective_calibrated[i]);
+                        snprintf(default_str, sizeof(default_str), "%d", para.reflective_calibrated[i]);
                         optionfile->WriteTupleString(entity, "reflective_calibrated", i, default_str);
-                        snprintf(default_str, sizeof(default_str), "%d", ambient_calibrated[i]);
+                        snprintf(default_str, sizeof(default_str), "%d", para.ambient_calibrated[i]);
                         optionfile->WriteTupleString(entity, "ambient_calibrated", i, default_str);
                     }
                 }
@@ -643,6 +653,20 @@ void Robot::PrintStatus()
     std::cout << timestamp << ": " << name << " in state " << state_names[current_state]
         << " [" << state_names[last_state] << "] recover count: " << recover_count
         << " speed (" << leftspeed << " , " << rightspeed << " )"  << std::endl;
+}
+
+void Robot::LogState()
+{
+    if (logstateFile.is_open())
+    {
+        logstateFile << timestamp << "\t" << current_state << "\t"<< last_state<<"\t" ;
+        logstateFile <<"[";
+        logstateFile << (int)(recruitment_stage[0])<<"\t";
+        logstateFile << (int)(recruitment_stage[1])<<"\t";
+        logstateFile << (int)(recruitment_stage[2])<<"\t";
+        logstateFile << (int)(recruitment_stage[3])<<"]";
+        logstateFile <<std::endl;
+    }
 }
 
 void Robot::PrintSubOGString( uint8_t *seq)

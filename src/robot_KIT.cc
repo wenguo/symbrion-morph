@@ -246,8 +246,8 @@ void RobotKIT::UpdateSensors()
 
     for(int i=0;i<NUM_IRS;i++)
     {
-        reflective_hist[i].Push(reflective[i]-reflective_calibrated[i]);
-        ambient_hist[i].Push(ambient_calibrated[i] - ambient[i]);
+        reflective_hist[i].Push(reflective[i]-para.reflective_calibrated[i]);
+        ambient_hist[i].Push(para.ambient_calibrated[i] - ambient[i]);
     }
 }
 
@@ -512,7 +512,7 @@ void RobotKIT::LocateBeacon()
             leftspeed = 0;
             rightspeed = 0;
             sidespeed = 0;
-            //sidespeed = 20 * sign(temp);
+            sidespeed = 20 * sign(temp);
         }
     }
     else
@@ -1674,7 +1674,7 @@ void RobotKIT::Debugging()
                 SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, 0);
             }
 
-            printf("%d %d %d %d\n",  proximity[4], proximity[5], ambient_calibrated[4]-ambient[4], ambient_calibrated[4]-ambient[5]);
+            printf("%d %d %d %d\n",  proximity[4], proximity[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
 
             break;
         case 1: // locking region threshold detection
@@ -1693,7 +1693,7 @@ void RobotKIT::Debugging()
             {
                 SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
             }
-            printf("%d %d %d %d\n", reflective[4]-reflective_calibrated[4], reflective[5] - reflective_calibrated[5], ambient_calibrated[4]-ambient[4], ambient_calibrated[4]-ambient[5]);
+            printf("%d %d %d %d\n", reflective[4]-para.reflective_calibrated[4], reflective[5] - para.reflective_calibrated[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
             break;
         case 3: // docking region threshold detection
             if(timestamp ==40)
@@ -1701,7 +1701,7 @@ void RobotKIT::Debugging()
                 for(int i=0;i<NUM_DOCKS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
             }
-            printf("%d\t%d\t%d\t%d\t%d\t%d\n", reflective[0]-reflective_calibrated[0], reflective[1] - reflective_calibrated[1], beacon[0], beacon[1], proximity[0], proximity[1]);
+            printf("%d\t%d\t%d\t%d\t%d\t%d\n", reflective[0]-para.reflective_calibrated[0], reflective[1] - para.reflective_calibrated[1], beacon[0], beacon[1], proximity[0], proximity[1]);
             break;
         case 4:// simulate locking stage, turn on RGB led to be bright 
             if(timestamp ==40)
@@ -1755,7 +1755,7 @@ void RobotKIT::Debugging()
                 current_state = RESTING;
                 last_state = DEBUGGING;
             }
-            printf("%d\t%d\t%d\t%d\t%d\t%d\n", reflective[0]-reflective_calibrated[0], reflective[1] - reflective_calibrated[1], beacon[0], beacon[1], proximity[0], proximity[1]);
+            printf("%d\t%d\t%d\t%d\t%d\t%d\n", reflective[0]-para.reflective_calibrated[0], reflective[1] - para.reflective_calibrated[1], beacon[0], beacon[1], proximity[0], proximity[1]);
             if(beacon[0] > para.debug.para[0])
                 SetRGBLED(3, GREEN, GREEN,0,0);
             else
@@ -1955,9 +1955,9 @@ void RobotKIT::Debugging()
                         char default_str[64];
                         for(int i=0;i<NUM_IRS;i++)
                         {
-                            snprintf(default_str, sizeof(default_str), "%d", reflective_calibrated[i]);
+                            snprintf(default_str, sizeof(default_str), "%d", para.reflective_calibrated[i]);
                             optionfile->WriteTupleString(entity, "reflective_calibrated", i, default_str);
-                            snprintf(default_str, sizeof(default_str), "%d", ambient_calibrated[i]);
+                            snprintf(default_str, sizeof(default_str), "%d", para.ambient_calibrated[i]);
                             optionfile->WriteTupleString(entity, "ambient_calibrated", i, default_str);
                         }
                     }
