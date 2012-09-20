@@ -1,4 +1,4 @@
-SRC = robot_KIT.cc robot_AW.cc main.cc
+SRC = robot_KIT.cc robot_AW.cc robot_SCOUT.cc main.cc
 
 CC = bfin-linux-uclibc-gcc
 CXX = bfin-linux-uclibc-g++ 
