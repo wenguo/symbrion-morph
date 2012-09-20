@@ -1431,9 +1431,15 @@ void RobotKIT::Raising()
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;
+    static bool flag=false;
 
     //temp solution, force KIT4 as the coordinator
-    if(para.debug.para[9]==3)
+ //   if(para.debug.para[9]==3)
+
+    if((ambient_hist[2].Avg() > 1000 && ambient_hist[3].Avg() > 1000)
+     ||(ambient_hist[6].Avg() > 1000 && ambient_hist[7].Avg() > 1000))
+        flag = true;
+    if(flag)
     {
         raising_count++;
 
@@ -1665,38 +1671,40 @@ void RobotKIT::Debugging()
     //printf("%d Debuging %d:\t", timestamp,para.debug.mode);
     static int clock=0;
     static bool log=false;
+    Log();
 
     switch (para.debug.mode)
     {
         case 0: //simulating recruitment, stage 2, 64Hz helper signals
-            if(timestamp ==40)
+            if(timestamp ==2)
             {
-                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, 0);
+                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, IR_PULSE0|IR_PULSE1);
             }
 
             printf("%d %d %d %d\n",  proximity[4], proximity[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
 
             break;
         case 1: // locking region threshold detection
-            if(timestamp ==40)
+            if(timestamp ==2)
             {
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
                     SetRGBLED(i,0,0,0,0);
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);//IR_PULSE0|IR_PULSE1);
                 }
             }
             printf("%d\t%d\t%d\t%d\t%d\t%d\n",  proximity[0], proximity[1], beacon[0], beacon[1], reflective_hist[0].Avg(), reflective_hist[1].Avg());
             break;
         case 2: // simulate recruitment, stage 1, 32Hz guiding signals
-            if(timestamp == 40)
+            if(timestamp == 2)
             {
+              //  SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, 0);
                 SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
             }
             printf("%d %d %d %d\n", reflective[4]-para.reflective_calibrated[4], reflective[5] - para.reflective_calibrated[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
             break;
         case 3: // docking region threshold detection
-            if(timestamp ==40)
+            if(timestamp ==2)
             {
                 for(int i=0;i<NUM_DOCKS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
@@ -1704,7 +1712,7 @@ void RobotKIT::Debugging()
             printf("%d\t%d\t%d\t%d\t%d\t%d\n", reflective[0]-para.reflective_calibrated[0], reflective[1] - para.reflective_calibrated[1], beacon[0], beacon[1], proximity[0], proximity[1]);
             break;
         case 4:// simulate locking stage, turn on RGB led to be bright 
-            if(timestamp ==40)
+            if(timestamp ==2)
             {
                 SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
                 SetIRLED(0, IRLEDOFF, LED0|LED2, 0);
@@ -1966,6 +1974,12 @@ void RobotKIT::Debugging()
                 optionfile->Save("/flash/morph/kit_option.cfg");
                 para.debug.mode = 99;
             }
+            break;
+        case 17:
+            if(timestamp % 2 ==0)
+                SetRGBLED(para.debug.para[9], RED, RED, 0,0);
+            else
+                SetRGBLED(para.debug.para[9], 0, 0, 0,0);
             break;
         default:
             break;
