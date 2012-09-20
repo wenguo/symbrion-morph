@@ -84,15 +84,15 @@ void RobotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t
 
 void RobotAW::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
 {
-    if( current_state == MACROLOCOMOTION || para.debug.para[9] != 2 )
+//    if( current_state == MACROLOCOMOTION || para.debug.para[9] != 2 )
     {
         MoveWheelsFront(-leftspeed * direction, -sidespeed);
         MoveWheelsRear(rightspeed * direction,sidespeed);
     }
-    else
+//    else
     {
-        MoveWheelsFront(0,0);
-        MoveWheelsRear(0,0);
+//        MoveWheelsFront(0,0);
+//        MoveWheelsRear(0,0);
     }
 
 }
@@ -196,7 +196,7 @@ void RobotAW::UpdateActuators()
 {
     CheckHingeMotor();
     SetSpeed(leftspeed, rightspeed,sidespeed); 
-//printf("speed: %d %d %d\n", leftspeed, rightspeed, sidespeed);
+printf("speed: %d %d %d\n", leftspeed, rightspeed, sidespeed);
 }
 
 // for self-repair
@@ -1292,12 +1292,13 @@ void RobotAW::Raising()
     rightspeed = 0;
     sidespeed = 0;
 
+    /*
     if(timestamp == 40)
     {
         //docked[0]=true;
         for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-    }
+    }*/
 
     if(msg_raising_received)
     {
@@ -1533,26 +1534,27 @@ void RobotAW::Debugging()
             
     static int clock=0;
     static bool log = false;
+    Log();
 
     switch (para.debug.mode)
     {
         case 0: //locking region threshold detection ?
-            if(timestamp ==40)
+            if(timestamp ==2)
             {
                 for(int i=0;i<NUM_IRS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);//IR_PULSE0|IR_PULSE1);
             }
             printf("%d %d %d %d\n",  proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg());
             break;
         case 1: //simulating recruitment, stage 2, 64Hz helper signals
-            if(timestamp ==40)
+            if(timestamp ==2)
             {
-                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
+                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, IR_PULSE0|IR_PULSE1); //switch docking signals 2 on left and right leds
             }
             printf("%d %d %d %d\n",  proximity[4], proximity[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
             break;
         case 2://docking region threshold detection
-            if(timestamp ==40)
+            if(timestamp ==2)
             {
                 for(int i=0;i<NUM_IRS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
@@ -1560,21 +1562,21 @@ void RobotAW::Debugging()
             printf("%d %d %d %d\n", reflective[0]-para.reflective_calibrated[0], reflective[1] - para.reflective_calibrated[1], beacon[0], beacon[1]);
             break;
         case 3: //simulate recruitment, stage 1, 32Hz guiding signals
-            if(timestamp ==40)
+            if(timestamp ==2)
             {
                 SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
             }
             printf("%d %d %d %d\n", reflective[0]-para.reflective_calibrated[0], reflective[1] - para.reflective_calibrated[1], para.ambient_calibrated[0]-ambient[0], para.ambient_calibrated[1]-ambient[1]);
             break;
         case 4:// recruiting stage 2 -> stage 3 detection
-            if(timestamp ==40)
+            if(timestamp ==2)
             {
                 for(int i=0;i<NUM_DOCKS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED2, IR_PULSE0|IR_PULSE1); //switch docking signals 2 on left and right leds
             }
             break;
         case 5:// simulate locking stage, turn on RGB led to be bright 
-            if(timestamp ==40)
+            if(timestamp ==2)
             {
                 SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
                 SetIRLED(0, IRLEDOFF, LED0|LED2, 0);

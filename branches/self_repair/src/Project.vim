@@ -19,6 +19,8 @@ set fileencodings=ucs-bom,utf-8,default,latin1
 set guifont=Monaco\ 12
 set helplang=en
 set history=50
+set iminsert=0
+set imsearch=0
 set nomodeline
 set mouse=a
 set printoptions=paper:a4
@@ -32,41 +34,42 @@ set window=45
 let s:so_save = &so | let s:siso_save = &siso | set so=0 siso=0
 let v:this_session=expand("<sfile>:p")
 silent only
+cd ~/workspace/symbrion-morph/branches/self_repair/src
 if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
   let s:wipebuf = bufnr('%')
 endif
 set shortmess=aoO
-badd +0 ./base/og/organism.cc
-badd +0 ./base/og/organism_sequence.cc
-badd +0 ./base/og/organism.hh
-badd +0 ./base/og/organism_sample.cc
-badd +0 ./base/og/organism_sample.hh
+badd +1 ./base/og/organism.cc
+badd +1 ./base/og/organism_sequence.cc
+badd +1 ./base/og/organism.hh
+badd +1 ./base/og/organism_sample.cc
+badd +1 ./base/og/organism_sample.hh
 badd +237 ./base/robot.hh
-badd +0 ./base/utils/support.cc
-badd +0 ./base/utils/worldfile.cc
-badd +0 ./base/utils/worldfile.hh
-badd +0 ./base/utils/support.hh
-badd +0 ./base/utils/hist.cc
-badd +0 ./base/utils/hist.hh
-badd +27 ./base/robot.cc
-badd +0 ./base/parameter.cc
-badd +0 ./base/parameter.hh
+badd +1 ./base/utils/support.cc
+badd +1 ./base/utils/worldfile.cc
+badd +1 ./base/utils/worldfile.hh
+badd +1 ./base/utils/support.hh
+badd +1 ./base/utils/hist.cc
+badd +1 ./base/utils/hist.hh
+badd +122 ./base/robot.cc
+badd +1 ./base/parameter.cc
+badd +1 ./base/parameter.hh
 badd +82 ./base/global.hh
-badd +0 ./base/global.cc
+badd +1 ./base/global.cc
 badd +45 ./base/robot_debug.cc
-badd +0 ./base/robot_option.cc
+badd +1 ./base/robot_option.cc
 badd +22 ./robot_KIT.hh
 badd +23 ./robot_AW.hh
-badd +0 ./main.cc
+badd +1 ./main.cc
 badd +250 ./robot_KIT.cc
 badd +227 ./robot_AW.cc
 badd +12 base/IRMessage.hh
 badd +4 base/IRMessage.cc
 badd +15 base/Makefile
 badd +5 base/robot_ircomm.cc
-badd +0 base/robot_self_repair.cc
+badd +1 base/robot_self_repair.cc
 args \[BufExplorer]
-edit ./base/robot.cc
+edit ./robot_KIT.cc
 set splitbelow splitright
 set nosplitbelow
 set nosplitright
@@ -175,11 +178,11 @@ setlocal nowinfixwidth
 setlocal wrap
 setlocal wrapmargin=0
 silent! normal! zE
-let s:l = 122 - ((15 * winheight(0) + 22) / 45)
+let s:l = 250 - ((22 * winheight(0) + 22) / 45)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-122
+250
 normal! 0
 tabnext 1
 if exists('s:wipebuf')
