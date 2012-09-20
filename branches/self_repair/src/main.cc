@@ -1,5 +1,6 @@
 #include "robot_KIT.hh"
 #include "robot_AW.hh"
+#include "robot_SCOUT.hh"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,6 +62,11 @@ int main(int argc, char * argv[])
     {
         robot = new RobotAW;
         sprintf(cf_name,"%s/aw_option.cfg", cf_path);
+    }
+    else if(robot_type == RobotBase::SCOUTBOT)
+    {
+        robot = new RobotSCOUT;
+        sprintf(cf_name,"%s/scout_option.cfg", cf_path);
     }
     else
     {
