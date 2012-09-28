@@ -1,7 +1,7 @@
 #include "robot_SCOUT.hh"
 #include "og/organism_sample.hh"
 
-RobotSCOUT::RobotSCOUT():Robot(),KaBot()
+RobotSCOUT::RobotSCOUT():Robot(),ScoutBot()
 {
     if(name)
         free(name);
@@ -86,16 +86,7 @@ void RobotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint
 
 void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
 {
-    if(fabs(sidespeed) > 10)
-    {
-        MoveScrewFront(para.speed_sideward * sidespeed);
-        MoveScrewRear(para.speed_sideward* sidespeed);
-    }
-    else
-    {
-        MoveScrewFront(leftspeed * direction);
-        MoveScrewRear(-rightspeed * direction);
-    }
+    Move(leftspeed, rightspeed);
 }
 
 
@@ -112,7 +103,7 @@ bool RobotSCOUT::SetDockingMotor(int channel, int status)
             //change status to be opening
             docking_motors_status[channel] = OPENING; //clear first
             if(para.locking_motor_enabled[channel])
-                OpenDocking(KaBot::Side(board_dev_num[channel]));
+                OpenDocking(ScoutBot::Side(board_dev_num[channel]));
             printf("open docking\n");
         }
         //or open -> close
@@ -121,7 +112,7 @@ bool RobotSCOUT::SetDockingMotor(int channel, int status)
             //change status to be closing
             docking_motors_status[channel] = CLOSING; //clear first
             if(para.locking_motor_enabled[channel])
-                CloseDocking(KaBot::Side(board_dev_num[channel]));
+                CloseDocking(ScoutBot::Side(board_dev_num[channel]));
             printf("close docking\n");
         }
         else
@@ -144,7 +135,7 @@ bool RobotSCOUT::SetDockingMotor(int channel, int status)
     }
 
     //TODO: checking this
-    //MoveDocking(KaBot::Side(board_dev_num[channel]), status);
+    //MoveDocking(ScoutBot::Side(board_dev_num[channel]), status);
     SetRGBLED(1, GREEN, GREEN, RED, RED);
     printf("\n------ moving docking motor ----\n");
     return true;
@@ -204,10 +195,10 @@ void RobotSCOUT::UpdateSensors()
     //5 -- rear right
     //6 -- right rear
     //7 -- right front
-    IRValues ret_A = GetIRValues(KaBot::FRONT);
-    IRValues ret_B = GetIRValues(KaBot::LEFT);
-    IRValues ret_C = GetIRValues(KaBot::REAR);
-    IRValues ret_D = GetIRValues(KaBot::RIGHT);
+    IRValues ret_A = GetIRValues(ScoutBot::FRONT);
+    IRValues ret_B = GetIRValues(ScoutBot::LEFT);
+    IRValues ret_C = GetIRValues(ScoutBot::REAR);
+    IRValues ret_D = GetIRValues(ScoutBot::RIGHT);
     ambient[1] = ret_A.sensor[0].ambient;
     ambient[0] = ret_A.sensor[1].ambient;
     reflective[1] = ret_A.sensor[0].reflective;
@@ -242,7 +233,7 @@ void RobotSCOUT::UpdateSensors()
     beacon[6] = ret_D.sensor[1].docking;
 
     //for(int i=0;i<NUM_DOCKS;i++)
-    //    color[i] = GetRGB(KaBot::Side(i));
+    //    color[i] = GetRGB(ScoutBot::Side(i));
 
     for(int i=0;i<NUM_IRS;i++)
     {
@@ -820,7 +811,7 @@ void RobotSCOUT::Docking()
             }
             else
             {
-                if(abs(temp_reflective) > 700 || (abs(temp_proximity)> 400 & std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 450 ))
+                if(abs(temp_reflective) > 700 || (abs(temp_proximity)> 400 && std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 450 ))
                     status = MOVE_BACKWARD;
                 //else if(temp_proximity > 220 || temp_reflective > 500)
                 else if(temp_reflective > 150)
@@ -1780,7 +1771,7 @@ void RobotSCOUT::Debugging()
             {
             }
 
-            if(isEthernetPortConnected(KaBot::FRONT))
+            if(isEthernetPortConnected(ScoutBot::FRONT))
             {
                 SetRGBLED(2, RED, RED,RED,RED);
             }
@@ -1841,12 +1832,12 @@ void RobotSCOUT::Debugging()
                 //current_state = LOWERING;
             }
             break;
-        case 13:
+        case 13: //testing ethernet
             if(timestamp==40)
             {
             for(int i=0;i<NUM_DOCKS;i++)
             {
-                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, isEthernetPortConnected(KaBot::Side(board_dev_num[i])) ? "true":"false",isSwitchActivated()?"true":"false" );
+                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])) ? "true":"false",isSwitchActivated()?"true":"false" );
             }
             }
 #define NEIGHBOUR_IP "192.168.0.4"
@@ -1946,9 +1937,9 @@ void RobotSCOUT::Debugging()
                 Log();
 
             break;
-        case 16:
+        case 16://auto calibrate and write values to configuration files
             {
-                const char filename[56]="/flash/morph/kit_option.cfg";
+                const char filename[56]="/flash/morph/scout_option.cfg";
                 if(optionfile->Load(filename)==-1)
                 {
                     std::cout<<"can not find option.cfg, please check the path"<<std::endl;
@@ -1971,16 +1962,35 @@ void RobotSCOUT::Debugging()
                     }
                 }
 
-                optionfile->Save("/flash/morph/kit_option.cfg");
+                optionfile->Save("/flash/morph/scout_option.cfg");
                 para.debug.mode = 99;
             }
             break;
-        case 17:
+        case 17://tesing flash leds
             if(timestamp % 2 ==0)
                 SetRGBLED(para.debug.para[9], RED, RED, 0,0);
             else
                 SetRGBLED(para.debug.para[9], 0, 0, 0,0);
             break;
+        case 18://print out sensor data
+            if(timestamp ==2)
+            {
+                for(int i=0;i<SIDE_COUNT;i++)
+                  SetIRLED(i, IRLEDOFF, LED0|LED2, IR_PULSE0|IR_PULSE1);
+            }
+            break;
+        case 19://print out sensor data
+            if(timestamp ==2)
+            {
+                for(int i=0;i<SIDE_COUNT;i++)
+                  SetIRLED(i, IRLEDPROXIMITY, LED1, IR_PULSE0|IR_PULSE1);
+            }
+            break;
+        case 20://testing motors
+            if(timestamp == 2)
+            {
+                Move(para.debug.para[4], para.debug.para[5]);
+            }
         default:
             break;
     }
