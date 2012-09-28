@@ -34,7 +34,6 @@ set window=45
 let s:so_save = &so | let s:siso_save = &siso | set so=0 siso=0
 let v:this_session=expand("<sfile>:p")
 silent only
-cd ~/workspace/symbrion-morph/branches/self_repair/src
 if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
   let s:wipebuf = bufnr('%')
 endif
@@ -57,19 +56,21 @@ badd +1 ./base/parameter.hh
 badd +82 ./base/global.hh
 badd +1 ./base/global.cc
 badd +45 ./base/robot_debug.cc
-badd +1 ./base/robot_option.cc
+badd +40 ./base/robot_option.cc
 badd +22 ./robot_KIT.hh
 badd +23 ./robot_AW.hh
 badd +1 ./main.cc
-badd +250 ./robot_KIT.cc
+badd +9 ./robot_KIT.cc
 badd +227 ./robot_AW.cc
 badd +12 base/IRMessage.hh
 badd +4 base/IRMessage.cc
 badd +15 base/Makefile
 badd +5 base/robot_ircomm.cc
 badd +1 base/robot_self_repair.cc
+badd +1 robot_SCOUT.hh
+badd +1 robot_SCOUT.cc
 args \[BufExplorer]
-edit ./robot_KIT.cc
+edit robot_SCOUT.cc
 set splitbelow splitright
 set nosplitbelow
 set nosplitright
@@ -178,11 +179,11 @@ setlocal nowinfixwidth
 setlocal wrap
 setlocal wrapmargin=0
 silent! normal! zE
-let s:l = 250 - ((22 * winheight(0) + 22) / 45)
+let s:l = 1 - ((0 * winheight(0) + 23) / 46)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-250
+1
 normal! 0
 tabnext 1
 if exists('s:wipebuf')
