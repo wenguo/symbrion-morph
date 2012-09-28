@@ -5,7 +5,7 @@
 #include <IRobot.h>
 #include <comm/IRComm.h>
 
-class RobotSCOUT:public Robot, public KaBot
+class RobotSCOUT:public Robot, public ScoutBot
 {
     public:
         RobotSCOUT();

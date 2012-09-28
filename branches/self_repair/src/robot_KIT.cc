@@ -820,7 +820,7 @@ void RobotKIT::Docking()
             }
             else
             {
-                if(abs(temp_reflective) > 700 || (abs(temp_proximity)> 400 & std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 450 ))
+                if(abs(temp_reflective) > 700 || (abs(temp_proximity)> 400 && std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 450 ))
                     status = MOVE_BACKWARD;
                 //else if(temp_proximity > 220 || temp_reflective > 500)
                 else if(temp_reflective > 150)
