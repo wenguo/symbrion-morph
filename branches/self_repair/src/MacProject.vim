@@ -74,7 +74,9 @@ badd +1 ./robot_AW.cc
 badd +1 ./robot_AW.hh
 badd +1 ./robot_KIT.cc
 badd +1 ./robot_KIT.hh
-badd +313 base/robot_self_repair.cc
+badd +1 ./robot_SCOUT.hh
+badd +1 ./robot_SCOUT.cc
+badd +313 ./base/robot_self_repair.cc
 args \[BufExplorer]
 set splitbelow splitright
 set nosplitbelow
