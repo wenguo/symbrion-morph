@@ -3,6 +3,9 @@
 
 RobotSCOUT::RobotSCOUT():Robot(),ScoutBot()
 {
+
+    SPIVerbose = QUIET;
+
     if(name)
         free(name);
     name = strdup("RobotSCOUT");
@@ -79,14 +82,14 @@ void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t puls
 void RobotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br)
 {
     int board = board_dev_num[channel];
-    RobotBase::SetLED(board, tl, tr, bl, br);
+    RobotBase::SetLED(board, tr, bl, br, tl);
     RGBLED_status[channel] = tl|tr|bl|br;
 
 }
 
 void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
 {
-    Move(leftspeed, rightspeed);
+    Move(leftspeed, -rightspeed);
 }
 
 
@@ -199,38 +202,38 @@ void RobotSCOUT::UpdateSensors()
     IRValues ret_B = GetIRValues(ScoutBot::LEFT);
     IRValues ret_C = GetIRValues(ScoutBot::REAR);
     IRValues ret_D = GetIRValues(ScoutBot::RIGHT);
-    ambient[1] = ret_A.sensor[0].ambient;
-    ambient[0] = ret_A.sensor[1].ambient;
-    reflective[1] = ret_A.sensor[0].reflective;
-    reflective[0] = ret_A.sensor[1].reflective;
-    proximity[1] = ret_A.sensor[0].proximity;
-    proximity[0] = ret_A.sensor[1].proximity;
-    beacon[1] = ret_A.sensor[0].docking;
-    beacon[0] = ret_A.sensor[1].docking;
-    ambient[3] = ret_B.sensor[0].ambient;
-    ambient[2] = ret_B.sensor[1].ambient;
-    reflective[3] = ret_B.sensor[0].reflective;
-    reflective[2] = ret_B.sensor[1].reflective;
-    proximity[3] = ret_B.sensor[0].proximity;
-    proximity[2] = ret_B.sensor[1].proximity;
-    beacon[3] = ret_B.sensor[0].docking;
-    beacon[2] = ret_B.sensor[1].docking;
-    ambient[5] = ret_C.sensor[0].ambient;
-    ambient[4] = ret_C.sensor[1].ambient;
-    reflective[5] = ret_C.sensor[0].reflective;
-    reflective[4] = ret_C.sensor[1].reflective;
-    proximity[5] = ret_C.sensor[0].proximity;
-    proximity[4] = ret_C.sensor[1].proximity;
-    beacon[5] = ret_C.sensor[0].docking;
-    beacon[4] = ret_C.sensor[1].docking;
-    ambient[7] = ret_D.sensor[0].ambient;
-    ambient[6] = ret_D.sensor[1].ambient;
-    reflective[7] = ret_D.sensor[0].reflective;
-    reflective[6] = ret_D.sensor[1].reflective;
-    proximity[7] = ret_D.sensor[0].proximity;
-    proximity[6] = ret_D.sensor[1].proximity;
-    beacon[7] = ret_D.sensor[0].docking;
-    beacon[6] = ret_D.sensor[1].docking;
+    ambient[0] = ret_A.sensor[0].ambient;
+    ambient[1] = ret_A.sensor[1].ambient;
+    reflective[0] = ret_A.sensor[0].reflective;
+    reflective[1] = ret_A.sensor[1].reflective;
+    proximity[0] = ret_A.sensor[0].proximity;
+    proximity[1] = ret_A.sensor[1].proximity;
+    beacon[0] = ret_A.sensor[0].docking;
+    beacon[1] = ret_A.sensor[1].docking;
+    ambient[2] = ret_B.sensor[0].ambient;
+    ambient[3] = ret_B.sensor[1].ambient;
+    reflective[2] = ret_B.sensor[0].reflective;
+    reflective[3] = ret_B.sensor[1].reflective;
+    proximity[2] = ret_B.sensor[0].proximity;
+    proximity[3] = ret_B.sensor[1].proximity;
+    beacon[2] = ret_B.sensor[0].docking;
+    beacon[3] = ret_B.sensor[1].docking;
+    ambient[4] = ret_C.sensor[0].ambient;
+    ambient[5] = ret_C.sensor[1].ambient;
+    reflective[4] = ret_C.sensor[0].reflective;
+    reflective[5] = ret_C.sensor[1].reflective;
+    proximity[4] = ret_C.sensor[0].proximity;
+    proximity[5] = ret_C.sensor[1].proximity;
+    beacon[4] = ret_C.sensor[0].docking;
+    beacon[5] = ret_C.sensor[1].docking;
+    ambient[6] = ret_D.sensor[0].ambient;
+    ambient[7] = ret_D.sensor[1].ambient;
+    reflective[6] = ret_D.sensor[0].reflective;
+    reflective[7] = ret_D.sensor[1].reflective;
+    proximity[6] = ret_D.sensor[0].proximity;
+    proximity[7] = ret_D.sensor[1].proximity;
+    beacon[6] = ret_D.sensor[0].docking;
+    beacon[7] = ret_D.sensor[1].docking;
 
     //for(int i=0;i<NUM_DOCKS;i++)
     //    color[i] = GetRGB(ScoutBot::Side(i));
@@ -1718,14 +1721,20 @@ void RobotSCOUT::Debugging()
             }
             break;
         case 6: //testing request ip via ircomm
-            if(timestamp == 40)
+            if(timestamp == 4)
             {
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
                     RobotBase::SetIRRX(board_dev_num[i], false);
                 }
-                printf("my_IP %#x\n", my_IP);
+        
+                printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
+                my_IP & 0xFF,
+                (my_IP >> 8) & 0xFF,
+                (my_IP >> 16) & 0xFF,
+                (my_IP >> 24) & 0xFF);
+
                 OrganismSequence::Symbol sym;
                 sym.type1 = ROBOT_KIT;
                 sym.side1 = ::BACK;
@@ -1734,7 +1743,7 @@ void RobotSCOUT::Debugging()
                 uint8_t data[5];
                 data[0] = sym.data;
                 memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                Robot::SendIRMessage(::BACK, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, true);
+                Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, true);
             }
 
             break;
@@ -1858,7 +1867,7 @@ void RobotSCOUT::Debugging()
             if(timestamp ==32)
             {
                 OrganismSequence::Symbol sym;
-                sym.reBuild("KFAF");
+                sym.reBuild("SFSF");
                 docked[0]=sym.data;
                 //using reflective signals if not set
                 for(int i=0; i< NUM_DOCKS;i++)
@@ -1903,7 +1912,7 @@ void RobotSCOUT::Debugging()
 
             break;
 
-        case 15: //as recruinting robot for measuring
+        case 15: //as recruiting robot for measuring
             if(timestamp ==32)
             {
                 OrganismSequence::Symbol sym;
@@ -1976,21 +1985,29 @@ void RobotSCOUT::Debugging()
             if(timestamp ==2)
             {
                 for(int i=0;i<SIDE_COUNT;i++)
-                  SetIRLED(i, IRLEDOFF, LED0|LED2, IR_PULSE0|IR_PULSE1);
+                  SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
             }
             break;
         case 19://print out sensor data
             if(timestamp ==2)
             {
-                for(int i=0;i<SIDE_COUNT;i++)
-                  SetIRLED(i, IRLEDPROXIMITY, LED1, IR_PULSE0|IR_PULSE1);
+                //for(int i=0;i<SIDE_COUNT;i++)
+                  SetIRLED(para.debug.para[3], IRLEDPROXIMITY, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
             }
             break;
         case 20://testing motors
-            if(timestamp == 2)
-            {
-                Move(para.debug.para[4], para.debug.para[5]);
+            if(timestamp  == 2)
+            { 
+                leftspeed = para.debug.para[4];
+                rightspeed = para.debug.para[5];
+                printf("Move motors at speed (%d %d)\n", para.debug.para[4], para.debug.para[5]);
             }
+            break;
+        case 21://test RGB
+            if(timestamp==2)
+                SetRGBLED(para.debug.para[4], para.debug.para[0] * BLUE, para.debug.para[1]*BLUE, para.debug.para[2]*BLUE, para.debug.para[3]*BLUE);
+            break;
+
         default:
             break;
     }
