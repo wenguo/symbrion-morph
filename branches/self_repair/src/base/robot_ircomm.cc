@@ -82,12 +82,14 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     bool ack_required = false;
     bool valid_message = true;
 
+    //if received message has a specified receiver, but it doesn't match with mine, skip it
     if(data[0] !=0 && ((data[0] & 0xF) != ((docked[channel] >>4) & 0xF) ||  (data[0] >> 4 & 0xF) != ((docked[channel]) & 0xF)))
     {
         printf("%d channel %d received message %s, expected receiver is %#x(%#x) but I have %#x(%#x), skip it\n",
                 timestamp, channel, irmessage_names[data[1]], data[0]&0xF, data[0], (docked[channel]>>4) & 0xF, docked[channel]);
         return;
     }
+
     //first byte indicates the msg type
     switch(data[1])
     {
@@ -120,7 +122,8 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
             break;
         case IR_MSG_TYPE_OBJECTTYPE: 
             break;
-            //broadcast, ack required
+
+        //broadcast, ack required
         case IR_MSG_TYPE_LOCKED:
             if(msg_locked_expected & 1<<channel)
             {
@@ -443,7 +446,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 void Robot::SendIRMessage(const IRMessage& msg)
 {
     uint8_t buf[MAX_IR_MESSAGE_SIZE];
-    buf[0]=msg.data_len + 3;          //has to set the length explicityly for IR comm
+    buf[0]=msg.data_len + 3;          //has to set the length explicityly for IR comm, this will be ignored by receiver's MSP level code
     buf[1]=msg.receiver;
     buf[2]=msg.type;
     for(int i=0;i<msg.data_len;i++)
@@ -461,6 +464,17 @@ void Robot::SendIRMessage(const IRMessage& msg)
         printf("%d: %s send message %s (%s) via channel %d (%#x)\n",msg.timestamp, name, irmessage_names[msg.type],irmessage_names[msg.data[0]],msg.channel, board_dev_num[msg.channel]);
     else
         printf("%d: %s send message %s via channel %d (%#x)\n",msg.timestamp, name, irmessage_names[msg.type],msg.channel, board_dev_num[msg.channel]);
+}
+
+void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
+{
+    //all messages are pushed into a queue waiting to be processed by TxThread
+    //This function should be called only when robots are docked, so docked[channel]!=0 TODO: check this
+    //docked[channel] stores the encoded sequence information such as "KFSF", 'KF' is my type and my docking side
+    //'SF' is the connected robot's type and side
+    pthread_mutex_lock(&txqueue_mutex);
+    TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, docked[channel], type, data, size, ack_required));
+    pthread_mutex_unlock(&txqueue_mutex);
 }
 
 void Robot::SendIRMessage(int channel, uint8_t type, bool ack_required)
@@ -486,13 +500,6 @@ void Robot::SendIRAckMessage(int channel, uint8_t type, uint8_t *data, int size)
     SendIRMessage(channel, IR_MSG_TYPE_ACK, dst_data, size+1, false);
 }
 
-void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
-{
-    pthread_mutex_lock(&txqueue_mutex);
-    TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, docked[channel], type, data, size, ack_required));
-    pthread_mutex_unlock(&txqueue_mutex);
-}
-
 void Robot::BroadcastIRMessage(int channel, uint8_t type, bool ack_required)
 {
     BroadcastIRMessage(channel, type, NULL, 0, ack_required);
@@ -505,6 +512,7 @@ void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, bo
 
 void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
 {
+    //push broadcast message into a queue, the receiver is set to 0 to be distinguished from SendIRMessages
     pthread_mutex_lock(&txqueue_mutex);
     TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, 0, type, data, size, ack_required));
     pthread_mutex_unlock(&txqueue_mutex);

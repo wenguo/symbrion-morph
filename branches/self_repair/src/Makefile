@@ -55,5 +55,5 @@ objects/%.o: %.c
 clean:
 	rm -f bin/$(EXE) objects/*.o objects/*.lst
 	@mkdir -p objects bin
-	rmdir objects bin
+	rm -rf objects bin
 
