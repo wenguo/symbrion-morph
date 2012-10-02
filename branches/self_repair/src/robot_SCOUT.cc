@@ -599,10 +599,9 @@ void RobotSCOUT::Alignment()
         leftspeed += (beacon[i] * para.aligning_weightleft[i]) >>2;
         rightspeed += (beacon[i] * para.aligning_weightright[i]) >>2;
     }
+
+    //TODO sometimes not in good position, need to reverse and try again
     
-    printf("speed: %d %d\n", leftspeed, rightspeed);
-//    leftspeed=0;
- //   rightspeed =0;
 
       //lost signals
     //if(beacon_signals_detected==0)
@@ -617,7 +616,7 @@ void RobotSCOUT::Alignment()
 
     //check if it is aligned well and also closed enough for docking
     //this is done by checking if ehternet port is connected
-    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[0]))) 
+    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[::FRONT]))) 
     {
         docking_region_detected = true;
         for(int i=0;i<NUM_DOCKS;i++)

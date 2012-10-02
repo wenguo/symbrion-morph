@@ -30,9 +30,9 @@ void * Robot::IRCommTxThread(void * para)
         for(int i=0;i<NUM_DOCKS;i++)
         {
             pthread_mutex_lock(&robot->ir_txqueue_mutex);
-            if(robot->TXMsgQueue[i].size()>0)
+            if(robot->IR_TXMsgQueue[i].size()>0)
             {
-                IRMessage &msg = robot->TXMsgQueue[i].front();
+                IRMessage &msg = robot->IR_TXMsgQueue[i].front();
 
                 if(!msg.ack_required)
                 {
@@ -40,7 +40,7 @@ void * Robot::IRCommTxThread(void * para)
                     if(msg.type != IR_MSG_TYPE_ACK || robot->timestamp - msg.timestamp > robot->para.ir_msg_ack_delay)
                     {
                         robot->SendIRMessage(msg);
-                        robot->TXMsgQueue[i].erase(robot->TXMsgQueue[i].begin());
+                        robot->IR_TXMsgQueue[i].erase(robot->IR_TXMsgQueue[i].begin());
                     }
                 }
                 else if(msg.repeated < robot->para.ir_msg_repeated_num)
@@ -56,7 +56,7 @@ void * Robot::IRCommTxThread(void * para)
                 {
                     printf("%d: Message %s has been repeated %d times, but no Ack received, remove it now!\n", robot->timestamp,
                             irmessage_names[msg.type], msg.repeated);
-                    robot->TXMsgQueue[i].erase(robot->TXMsgQueue[i].begin());
+                    robot->IR_TXMsgQueue[i].erase(robot->IR_TXMsgQueue[i].begin());
                 }
             }
             pthread_mutex_unlock(&robot->ir_txqueue_mutex);
@@ -228,14 +228,14 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
             break;
         case IR_MSG_TYPE_ACK:
             {
-                std::vector<IRMessage>::iterator it=TXMsgQueue[channel].begin();
-                while(it!=TXMsgQueue[channel].end())
+                std::vector<IRMessage>::iterator it=IR_TXMsgQueue[channel].begin();
+                while(it!=IR_TXMsgQueue[channel].end())
                 {
                     IRMessage& msg = *it;
                     if(msg.ack_required && msg.type == data[2]
                        && (msg.type != IR_MSG_TYPE_PROPAGATED ||
                        msg.data[0] == data[3]))
-                        it = TXMsgQueue[channel].erase(it);
+                        it = IR_TXMsgQueue[channel].erase(it);
                     else
                         ++it;
                 }
@@ -473,7 +473,7 @@ void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int si
     //docked[channel] stores the encoded sequence information such as "KFSF", 'KF' is my type and my docking side
     //'SF' is the connected robot's type and side
     pthread_mutex_lock(&ir_txqueue_mutex);
-    TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, docked[channel], type, data, size, ack_required));
+    IR_TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, docked[channel], type, data, size, ack_required));
     pthread_mutex_unlock(&ir_txqueue_mutex);
 }
 
@@ -514,7 +514,7 @@ void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, i
 {
     //push broadcast message into a queue, the receiver is set to 0 to be distinguished from SendIRMessages
     pthread_mutex_lock(&ir_txqueue_mutex);
-    TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, 0, type, data, size, ack_required));
+    IR_TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, 0, type, data, size, ack_required));
     pthread_mutex_unlock(&ir_txqueue_mutex);
 }
 
@@ -730,8 +730,8 @@ void Robot::SendBranchTree(int channel, const OrganismSequence& seq)
 
 bool Robot::MessageWaitingAck(int channel, uint8_t type)
 {
-    std::vector<IRMessage>::iterator it = TXMsgQueue[channel].begin();
-    while(it!=TXMsgQueue[channel].end())
+    std::vector<IRMessage>::iterator it = IR_TXMsgQueue[channel].begin();
+    while(it!=IR_TXMsgQueue[channel].end())
     {
         if((*it).type == type)
             return true;
