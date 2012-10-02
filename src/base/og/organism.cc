@@ -12,7 +12,7 @@
 #include "organism.hh"
 
 int OrganismNode::id_index = 0;
-char side_names[SIDE_COUNT]= {'F','R','B','L'};
+char side_names[SIDE_COUNT]= {'F','L','B','R'};
 char robottype_names[ROBOTTYPE_COUNT] = {'0','K','S','A'};
 
 double OrganismNode::Geom::geom_size[ROBOTTYPE_COUNT][3] = {

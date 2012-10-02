@@ -20,7 +20,7 @@
 #endif
 
 enum robot_type {ROBOT_NONE = 0x0, ROBOT_KIT = 0x1, ROBOT_SCOUT = 0x2, ROBOT_AW = 0x3, ROBOTTYPE_COUNT};
-enum robot_side {FRONT=0x0, RIGHT, BACK, LEFT, SIDE_COUNT};
+enum robot_side {FRONT=0x0, LEFT, BACK, RIGHT, SIDE_COUNT};
 extern char robottype_names[ROBOTTYPE_COUNT];
 extern char side_names[SIDE_COUNT];
 

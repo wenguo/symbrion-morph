@@ -603,27 +603,10 @@ void RobotSCOUT::Alignment()
         leftspeed += (beacon[i] * aligning_weight_lefttrack[i]) >>2;
         rightspeed += (beacon[i] * aligning_weight_righttrack[i]) >>2;
     }
-    printf("beacon: %d\t%d\t speed: %d %d\n", beacon[0], beacon[1], leftspeed, rightspeed);
+    //printf("beacon: %d\t%d\t speed: %d %d\n", beacon[0], beacon[1], leftspeed, rightspeed);
 
 
-    /*
-    int temp = beacon[1]-beacon[0];
-    int temp2 = (reflective_hist[1].Avg())-(reflective_hist[0].Avg());
-
-    int base = std::max(beacon[0], beacon[1]) + 1;
-
-    if(abs(temp) > 20)
-    {
-        leftspeed = 0;
-        rightspeed = 0;
-    }
-    else if(abs(temp) > 10)
-    {
-        leftspeed = 0;
-        rightspeed = 0;
-    }
-*/
-    //lost signals
+      //lost signals
     //if(beacon_signals_detected==0)
     //beacon signals drop to certain threshold?
     /*  if(beacon_signals_detected_hist.Sum(0) < 0 || beacon_signals_detected_hist.Sum(1) < 1)
@@ -637,7 +620,8 @@ void RobotSCOUT::Alignment()
     //check if it is aligned well and also closed enough for docking
     int input[4] = {reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
     in_docking_region_hist.Push(in_docking_region(input));
-    if(in_docking_region_hist.Sum() >= 3) // at least 7 successful prediction out of 8  in docking region
+    if(in_docking_region_hist.Sum() >= 3 || isEthernetPortConnected(ScoutBot::Side(board_dev_num[0]))) // at least 7 successful prediction out of 8  in docking region
+        //or ehternet port is connected
     {
         in_docking_region_hist.Reset();
         docking_region_detected = true;
@@ -835,7 +819,7 @@ void RobotSCOUT::Docking()
         }
     }
 
-    if(in_locking_region_hist.Sum() > 2) // 4 successful predition out of 8 
+    if(in_locking_region_hist.Sum() > 2 || isEthernetPortConnected(ScoutBot::Side(board_dev_num[0]))) // 4 successful predition out of 8 
     {
         in_locking_region_hist.Reset();
         leftspeed = 0;
@@ -859,37 +843,30 @@ void RobotSCOUT::Docking()
         case TURN_RIGHT:
             leftspeed = para.docking_turn_right_speed[0];
             rightspeed = para.docking_turn_right_speed[1];
-            sidespeed = para.docking_turn_right_speed[2];
             break;
         case TURN_LEFT:
             leftspeed = para.docking_turn_left_speed[0];
             rightspeed = para.docking_turn_left_speed[1];
-            sidespeed = para.docking_turn_left_speed[2];
             break;
         case MOVE_FORWARD:
             leftspeed = para.docking_forward_speed[0];
             rightspeed = para.docking_forward_speed[1];
-            sidespeed = para.docking_forward_speed[2];
             break;
         case MOVE_BACKWARD:
             leftspeed = para.docking_backward_speed[0];
             rightspeed = para.docking_backward_speed[1];
-            sidespeed = para.docking_backward_speed[2];
             break;
         case MOVE_LEFT:
             leftspeed = 0;
             rightspeed = 0;
-            sidespeed = -12;
             break;
         case MOVE_RIGHT:
             leftspeed = 0;
             rightspeed = 0;
-            sidespeed = -16;
             break;
         case CHECKING:
             leftspeed = 0;
             rightspeed = 0;
-            sidespeed = 0;
             //no beacon2 signals?
             //        if(proximity[0] < 50 && proximity[1]<50)
             //        {
@@ -955,6 +932,10 @@ void RobotSCOUT::Recruitment()
         bool erase_required = false;
         if(recruitment_stage[i]==STAGE0)
         {
+            printf("%d: ",i);
+            for(int j=0;j<NUM_IRS;j++)
+                printf("%d\t", robots_in_range_detected_hist.Sum(j));
+            printf("\n");
             if(robots_in_range_detected_hist.Sum(2*i) > 14 || robots_in_range_detected_hist.Sum(2*i+1) >14)
             {
                 recruitment_stage[i]=STAGE1;

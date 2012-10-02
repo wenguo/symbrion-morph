@@ -525,7 +525,7 @@ const OrganismSequence& Robot::GetOgSequence()
 
 bool Robot::isNeighboured(Robot * r)
 {
-    for (int i = RIGHT; i <= LEFT; i++)
+    for (int i = 0; i <NUM_DOCKS ; i++)
     {
         if(neighbours[i] && neighbours[i] == r)
             return true;
