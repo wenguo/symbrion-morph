@@ -218,14 +218,14 @@ void RobotSCOUT::UpdateSensors()
     proximity[1] = ret_A.sensor[1].proximity;
     beacon[0] = ret_A.sensor[0].docking;
     beacon[1] = ret_A.sensor[1].docking;
-    ambient[2] = ret_B.sensor[0].ambient;
-    ambient[3] = ret_B.sensor[1].ambient;
-    reflective[2] = ret_B.sensor[0].reflective;
-    reflective[3] = ret_B.sensor[1].reflective;
-    proximity[2] = ret_B.sensor[0].proximity;
-    proximity[3] = ret_B.sensor[1].proximity;
-    beacon[2] = ret_B.sensor[0].docking;
-    beacon[3] = ret_B.sensor[1].docking;
+    ambient[3] = ret_B.sensor[0].ambient;
+    ambient[2] = ret_B.sensor[1].ambient;
+    reflective[3] = ret_B.sensor[0].reflective;
+    reflective[2] = ret_B.sensor[1].reflective;
+    proximity[3] = ret_B.sensor[0].proximity;
+    proximity[2] = ret_B.sensor[1].proximity;
+    beacon[3] = ret_B.sensor[0].docking;
+    beacon[2] = ret_B.sensor[1].docking;
     ambient[4] = ret_C.sensor[0].ambient;
     ambient[5] = ret_C.sensor[1].ambient;
     reflective[4] = ret_C.sensor[0].reflective;
@@ -594,17 +594,15 @@ void RobotSCOUT::Alignment()
 
     static bool docking_region_detected = false;
 
-    const int aligning_weight_lefttrack[8]={-1, 1, 0, 0, 0, 0, 0, 0};
-    const int aligning_weight_righttrack[8]={1, -1, 0, 0, 0, 0, 0, 0};
-
-
     for(int i=0;i<NUM_IRS;i++)
     {
-        leftspeed += (beacon[i] * aligning_weight_lefttrack[i]) >>2;
-        rightspeed += (beacon[i] * aligning_weight_righttrack[i]) >>2;
+        leftspeed += (beacon[i] * para.aligning_weightleft[i]) >>2;
+        rightspeed += (beacon[i] * para.aligning_weightright[i]) >>2;
     }
-    //printf("beacon: %d\t%d\t speed: %d %d\n", beacon[0], beacon[1], leftspeed, rightspeed);
-
+    
+    printf("speed: %d %d\n", leftspeed, rightspeed);
+//    leftspeed=0;
+ //   rightspeed =0;
 
       //lost signals
     //if(beacon_signals_detected==0)
@@ -618,17 +616,13 @@ void RobotSCOUT::Alignment()
         }*/
 
     //check if it is aligned well and also closed enough for docking
-    int input[4] = {reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
-    in_docking_region_hist.Push(in_docking_region(input));
-    if(in_docking_region_hist.Sum() >= 3 || isEthernetPortConnected(ScoutBot::Side(board_dev_num[0]))) // at least 7 successful prediction out of 8  in docking region
-        //or ehternet port is connected
+    //this is done by checking if ehternet port is connected
+    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[0]))) 
     {
-        in_docking_region_hist.Reset();
         docking_region_detected = true;
         for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
         SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
-
     }
 
     if(docking_region_detected)
@@ -663,10 +657,6 @@ void RobotSCOUT::Recover()
     SetRGBLED(1, RED, RED, RED, RED);
     SetRGBLED(3, RED, RED, RED, RED);
 
-    //  if(reflective_hist[1].Avg() > AVOIDANCE_THRESHOLD || reflective_hist[0].Avg()>AVOIDANCE_THRESHOLD)
-    //      direction = BACKWARD;
-    //  else if(reflective_hist[4].Avg() > AVOIDANCE_THRESHOLD || reflective_hist[5].Avg()>AVOIDANCE_THRESHOLD)
-    //      direction = FORWARD;
     leftspeed = -30;
     rightspeed = -30;
 
@@ -734,94 +724,13 @@ void RobotSCOUT::Docking()
         {
             leftspeed = para.docking_failed_reverse_speed[0];
             rightspeed = para.docking_failed_reverse_speed[1];
-            sidespeed = para.docking_failed_reverse_speed[2];
         }
         return;
     }
 
-    /*
-       if(proximity[0] > 200 && proximity[1] > 200)
-       SetRGBLED(0,0,0,0,0);
-       else if(proximity[0]<20 && proximity[1]< 20)
-       SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
-       */
-    int input[4]={proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg()};
-    in_locking_region_hist.Push(in_locking_region(input));
 
-    int temp_reflective = reflective_hist[1].Avg() - reflective_hist[0].Avg();
-    int temp_proximity = proximity[1] - proximity[0];
-    static  int status = 0;
-    static int last_status=0;
-
-    //if(timestamp % 9 == 0 || timestamp %9 == 4)
-    if(timestamp % 12 == 0 || timestamp %12 == 4)
-        //if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0)
+    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[0]))) // 4 successful predition out of 8 
     {
-        status = CHECKING;
-    }
-    //else if(timestamp % (DOCKING_CHECKING_INTERVAL) == 1)
-    else if(timestamp % 12 == 2)
-        //else if( timestamp % 9 == 2 )
-    {
-        status = MOVE_FORWARD;
-    }
-    //else if( timestamp % 9 == 6 )
-    else if(timestamp % 12 == 10)
-        //else if(timestamp % (DOCKING_CHECKING_INTERVAL/2) == 1)
-    {
-        if(assembly_info.type1 == ROBOT_AW)
-        {
-            if(abs(temp_proximity)> 400 || abs(temp_reflective) > 1200)
-                status = MOVE_BACKWARD;
-            else if(temp_proximity > 200 || temp_reflective > 300)
-                status = TURN_LEFT;
-            else if(temp_proximity< -200 || temp_reflective < -300)
-                status = TURN_RIGHT;
-            else
-                status = MOVE_FORWARD;
-        }
-        else if(assembly_info.type1 == ROBOT_KIT)
-        {
-            /*
-               if(temp_reflective > 150)
-               status = TURN_LEFT;
-               else if(temp_reflective < -150)
-               status = TURN_RIGHT;
-               else if(abs(temp_proximity) > 300)
-               status = MOVE_BACKWARD;
-               else
-               status = MOVE_FORWARD;
-               */
-            if(last_status == TURN_LEFT)
-            {
-                status = MOVE_RIGHT; //move right a little bit to compensate
-            }
-            else if(last_status == TURN_RIGHT)
-            {
-                status = MOVE_LEFT;
-            }
-            else
-            {
-                if(abs(temp_reflective) > 700 || (abs(temp_proximity)> 400 && std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 450 ))
-                    status = MOVE_BACKWARD;
-                //else if(temp_proximity > 220 || temp_reflective > 500)
-                else if(temp_reflective > 150)
-                    status = TURN_LEFT;
-                else if(temp_reflective < -150)
-                    status = TURN_RIGHT;
-                else
-                    status = MOVE_FORWARD;
-
-            }
-
-            last_status = status;
-
-        }
-    }
-
-    if(in_locking_region_hist.Sum() > 2 || isEthernetPortConnected(ScoutBot::Side(board_dev_num[0]))) // 4 successful predition out of 8 
-    {
-        in_locking_region_hist.Reset();
         leftspeed = 0;
         rightspeed= 0;  
         SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
@@ -829,55 +738,10 @@ void RobotSCOUT::Docking()
         RobotBase::SetIRRX(board_dev_num[0], false);
         SetDockingMotor(0, CLOSE);
 
-        //TODO depend which types of robot it docks to, it may be required to send lockme messages
-
-        status = CHECKING; // prevent robot from moving if in locking region
         current_state = LOCKING;
         last_state = DOCKING;
     }
 
-
-
-    switch (status)
-    {
-        case TURN_RIGHT:
-            leftspeed = para.docking_turn_right_speed[0];
-            rightspeed = para.docking_turn_right_speed[1];
-            break;
-        case TURN_LEFT:
-            leftspeed = para.docking_turn_left_speed[0];
-            rightspeed = para.docking_turn_left_speed[1];
-            break;
-        case MOVE_FORWARD:
-            leftspeed = para.docking_forward_speed[0];
-            rightspeed = para.docking_forward_speed[1];
-            break;
-        case MOVE_BACKWARD:
-            leftspeed = para.docking_backward_speed[0];
-            rightspeed = para.docking_backward_speed[1];
-            break;
-        case MOVE_LEFT:
-            leftspeed = 0;
-            rightspeed = 0;
-            break;
-        case MOVE_RIGHT:
-            leftspeed = 0;
-            rightspeed = 0;
-            break;
-        case CHECKING:
-            leftspeed = 0;
-            rightspeed = 0;
-            //no beacon2 signals?
-            //        if(proximity[0] < 50 && proximity[1]<50)
-            //        {
-            //          SetRGBLED(0, 0, 0, 0, 0);
-            //          Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
-            //              SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
-            //      } 
-            break;
-        default:
-            break;
-    }
 }
 
 void RobotSCOUT::Locking()
@@ -887,7 +751,6 @@ void RobotSCOUT::Locking()
     sidespeed = 0;
 
     int docking_side = assembly_info.side2;
-
 
     SetRGBLED(docking_side, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
 
@@ -912,7 +775,6 @@ void RobotSCOUT::Locking()
             msg_subog_seq_expected |= 1<<docking_side;
             current_state = INORGANISM;
             last_state = LOCKING;
-
         }
     }
 
@@ -932,10 +794,6 @@ void RobotSCOUT::Recruitment()
         bool erase_required = false;
         if(recruitment_stage[i]==STAGE0)
         {
-            printf("%d: ",i);
-            for(int j=0;j<NUM_IRS;j++)
-                printf("%d\t", robots_in_range_detected_hist.Sum(j));
-            printf("\n");
             if(robots_in_range_detected_hist.Sum(2*i) > 14 || robots_in_range_detected_hist.Sum(2*i+1) >14)
             {
                 recruitment_stage[i]=STAGE1;
@@ -968,17 +826,12 @@ void RobotSCOUT::Recruitment()
                 stage2_count=0;
                 recruitment_stage[i]=STAGE2;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
-                ambient_avg_threshold_hist.Reset();
-                proximity_hist[2*i].Reset();
-                proximity_hist[2*i+1].Reset();
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
         }
         else if(recruitment_stage[i]==STAGE2)
         {
             stage2_count++;
-            proximity_hist[2*i].Push(proximity[2*i]);
-            proximity_hist[2*i+1].Push(proximity[2*i+1]);
 
             msg_guideme_received &= ~(1<<i);
             msg_lockme_expected |=1<<i;
@@ -1034,9 +887,6 @@ void RobotSCOUT::Recruitment()
             else if(msg_guideme_received & (1<<i))
             {
                 msg_guideme_received &= ~(1<<i);
-                proximity_hist[2*i].Reset();
-                proximity_hist[2*i+1].Reset();
-                ambient_avg_threshold_hist.Reset();
                 recruitment_stage[i] = STAGE2;
                 stage2_count = 0;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
@@ -1045,7 +895,6 @@ void RobotSCOUT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE4)
         {
-            // printf("%d STAGE4\n", timestamp);
             if(docking_motors_status[i] == CLOSED && docked[i]==0)
             {
                 unlocking_required[i] = true;

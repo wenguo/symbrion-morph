@@ -56,6 +56,20 @@ bool Robot::LoadParameters(const char * filename)
             }
 
         }
+        else if( strcmp( typestr, "Alignment" ) == 0 )
+        {
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "weight_left" ) ) 
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.aligning_weightleft[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
+
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "weight_right" ) )
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.aligning_weightright[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }        
+        }
         else if( strcmp( typestr, "Recruitment" ) == 0 )
         {
             para.recruiting_ambient_offset1 = optionfile->ReadInt(entity, "recruiting_ambient_offset1", 500);

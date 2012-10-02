@@ -66,6 +66,9 @@ class Parameter
         int avoid_weightright[NUM_IRS];
         int avoid_weightside[NUM_IRS];
 
+        int aligning_weightleft[NUM_IRS];
+        int aligning_weightright[NUM_IRS];
+        
         bool print_proximity;
         bool print_beacon;
         bool print_reflective;
