@@ -147,6 +147,20 @@ enum irmsg_type_t {
     IR_MSG_TYPE_COUNT
 };
 
+enum ethmsg_type_t{
+    ETH_MSG_TYPE_UNKNOWN,
+    
+    ETH_MSG_TYPE_PROPAGATED,
+    ETH_MSG_TYPE_DISASSEMBLY,
+    ETH_MSG_TYPE_NEWROBOT_JOINED,
+    ETH_MSG_TYPE_ORGANISM_FORMED,
+    ETH_MSG_TYPE_RAISING,
+    ETH_MSG_TYPE_LOWERING,
+    ETH_MSG_TYPE_RESHAPING,
+    
+    ETH_MSG_TYPE_COUNT
+};
+
 enum docking_motor_status_t{
     OPENED = 0x0,
     OPENING = 0x1,

@@ -57,8 +57,8 @@ class Robot
     void CheckDockingMotor();
     void CheckHingeMotor();
     
-    void CheckEthCommunication();
-    void EthSendMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
+    void SendEthMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
+    void PropagateEthMessage(uint8_t type, uint8_t *data = NULL, uint32_t size = 0, Ethernet::IP = 0);
 
     //send to specified receiver (defined in docked[i]), ack may be required
     void SendIRMessage(int channel, uint8_t type, bool ack_required = true);
@@ -176,17 +176,18 @@ class Robot
     static void LeadRepair(Robot * robot){robot->LeadRepair();}
     static void Repair(Robot * robot){robot->Repair();}
 
+    void RegisterBehaviour(robot_callback_t fnp, fsm_state_t state);
+    robot_callback_t behaviours[STATE_COUNT];
 
     static void *IRCommTxThread(void* robot);
     static void *IRCommRxThread(void* robot);
     static void *EthCommTxThread(void* robot);
     static void *EthCommRxThread(void* robot);
-    void RegisterBehaviour(robot_callback_t fnp, fsm_state_t state);
-    robot_callback_t behaviours[STATE_COUNT];
 
     void SendIRMessage(const IRMessage& msg);
+    void SendEthMessage(const EthMessage& msg);
     void ProcessIRMessage(std::auto_ptr<Message>);
-    static void *ProcessEthMessage();
+    void ProcessEthMessage(std::auto_ptr<Message>);
 
     protected:
 
@@ -325,7 +326,9 @@ class Robot
 
     //all ir message in a queue
     typedef std::vector<IRMessage> IRMessageQueue;
-    IRMessageQueue TXMsgQueue[NUM_DOCKS];
+    typedef std::vector<EthMessage> EthMessageQueue;
+    IRMessageQueue IR_TXMsgQueue[NUM_DOCKS];
+    EthMessageQueue Eth_TXMsgQueue[NUM_DOCKS];
 
     unsigned char newrobot_attached; //indicating new robot joined the organism, used to propagate the message to the whole organism
     bool assembly_info_checked;
@@ -366,8 +369,8 @@ class Robot
     uint8_t board_dev_num[SIDE_COUNT]; //store the right spi device number for robot_side
     uint8_t robot_side_dev_num[SIDE_COUNT]; //store the corresponding robot_side of spi device
 
-    uint32_t my_IP;
-    uint32_t neighbours_IP[SIDE_COUNT];
+    Ethernet::IP my_IP;
+    Ethernet::IP neighbours_IP[SIDE_COUNT];
     
 
     uint8_t LED0;
