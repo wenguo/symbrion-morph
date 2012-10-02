@@ -179,6 +179,8 @@ class Robot
 
     static void *IRCommTxThread(void* robot);
     static void *IRCommRxThread(void* robot);
+    static void *EthCommTxThread(void* robot);
+    static void *EthCommRxThread(void* robot);
     void RegisterBehaviour(robot_callback_t fnp, fsm_state_t state);
     robot_callback_t behaviours[STATE_COUNT];
 
@@ -352,10 +354,14 @@ class Robot
     std::ofstream logstateFile;
 
 
-    pthread_mutex_t mutex;
-    pthread_mutex_t txqueue_mutex;
+    pthread_mutex_t ir_rx_mutex;
+    pthread_mutex_t ir_txqueue_mutex;
+    pthread_mutex_t eth_rx_mutex;
+    pthread_mutex_t eth_txqueue_mutex;
     pthread_t ircomm_rx_thread;
     pthread_t ircomm_tx_thread;
+    pthread_t ethcomm_rx_thread;
+    pthread_t ethcomm_tx_thread;
 
     uint8_t board_dev_num[SIDE_COUNT]; //store the right spi device number for robot_side
     uint8_t robot_side_dev_num[SIDE_COUNT]; //store the corresponding robot_side of spi device

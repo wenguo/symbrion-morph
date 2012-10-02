@@ -8,12 +8,12 @@ void * Robot::IRCommRxThread(void * para)
     Robot * robot = (Robot*) para;
     while(1)
     {
-        pthread_mutex_lock(&robot->mutex);
+        pthread_mutex_lock(&robot->ir_rx_mutex);
         while(IRComm::HasMessage())
         {
             robot->ProcessIRMessage(IRComm::ReadMessage());
         }
-        pthread_mutex_unlock(&robot->mutex);
+        pthread_mutex_unlock(&robot->ir_rx_mutex);
 
         usleep(20000);
     }
@@ -29,7 +29,7 @@ void * Robot::IRCommTxThread(void * para)
     {
         for(int i=0;i<NUM_DOCKS;i++)
         {
-            pthread_mutex_lock(&robot->txqueue_mutex);
+            pthread_mutex_lock(&robot->ir_txqueue_mutex);
             if(robot->TXMsgQueue[i].size()>0)
             {
                 IRMessage &msg = robot->TXMsgQueue[i].front();
@@ -59,7 +59,7 @@ void * Robot::IRCommTxThread(void * para)
                     robot->TXMsgQueue[i].erase(robot->TXMsgQueue[i].begin());
                 }
             }
-            pthread_mutex_unlock(&robot->txqueue_mutex);
+            pthread_mutex_unlock(&robot->ir_txqueue_mutex);
 
         }
         usleep(20000);
@@ -472,9 +472,9 @@ void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int si
     //This function should be called only when robots are docked, so docked[channel]!=0 TODO: check this
     //docked[channel] stores the encoded sequence information such as "KFSF", 'KF' is my type and my docking side
     //'SF' is the connected robot's type and side
-    pthread_mutex_lock(&txqueue_mutex);
+    pthread_mutex_lock(&ir_txqueue_mutex);
     TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, docked[channel], type, data, size, ack_required));
-    pthread_mutex_unlock(&txqueue_mutex);
+    pthread_mutex_unlock(&ir_txqueue_mutex);
 }
 
 void Robot::SendIRMessage(int channel, uint8_t type, bool ack_required)
@@ -513,9 +513,9 @@ void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, bo
 void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
 {
     //push broadcast message into a queue, the receiver is set to 0 to be distinguished from SendIRMessages
-    pthread_mutex_lock(&txqueue_mutex);
+    pthread_mutex_lock(&ir_txqueue_mutex);
     TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, 0, type, data, size, ack_required));
-    pthread_mutex_unlock(&txqueue_mutex);
+    pthread_mutex_unlock(&ir_txqueue_mutex);
 }
 
 // Propagates IR message on single channel
