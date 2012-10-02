@@ -157,8 +157,10 @@ Robot::Robot()
     best_id = SIDE_COUNT;
     own_score = 0;
 
-    pthread_mutex_init(&mutex, NULL);
-    pthread_mutex_init(&txqueue_mutex, NULL);
+    pthread_mutex_init(&ir_rx_mutex, NULL);
+    pthread_mutex_init(&ir_txqueue_mutex, NULL);
+    pthread_mutex_init(&eth_rx_mutex, NULL);
+    pthread_mutex_init(&eth_txqueue_mutex, NULL);
 
     robots_in_range_detected_hist.Resize(15);
     leftspeed = 0;
@@ -428,6 +430,8 @@ void Robot::Calibrating()
             optionfile->Save("/flash/morph/kit_option.cfg");
         else if(type == ROBOT_AW)
             optionfile->Save("/flash/morph/aw_option.cfg");
+        else if(type == ROBOT_SCOUT)
+            optionfile->Save("/flash/morph/scout_option.cfg");
 
 
     }

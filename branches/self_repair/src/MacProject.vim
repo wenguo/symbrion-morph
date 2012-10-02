@@ -62,6 +62,7 @@ badd +1 ./base/robot.cc
 badd +1 ./base/robot.hh
 badd +1 ./base/robot_debug.cc
 badd +1 ./base/robot_ircomm.cc
+badd +1 ./base/robot_ethcomm.cc
 badd +1 ./base/robot_option.cc
 badd +1 ./base/utils/hist.cc
 badd +1 ./base/utils/hist.hh
