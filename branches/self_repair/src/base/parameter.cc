@@ -55,6 +55,8 @@ Parameter::Parameter():
     memset(avoid_weightleft, 0, NUM_IRS * sizeof(int));
     memset(avoid_weightright, 0, NUM_IRS * sizeof(int));
     memset(avoid_weightside, 0, NUM_IRS * sizeof(int));
+    memset(aligning_weightleft, 0, NUM_IRS * sizeof(int));
+    memset(aligning_weightright, 0, NUM_IRS * sizeof(int));
     memset(reflective_calibrated, 0, NUM_IRS * sizeof(int));
     memset(ambient_calibrated, 0, NUM_IRS * sizeof(int));
     memset(locking_motor_enabled, 0, NUM_DOCKS * sizeof(bool));
