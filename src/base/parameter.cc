@@ -42,6 +42,7 @@ Parameter::Parameter():
     locking_beacon_offset1(100),
     locking_beacon_offset2(100),
     locking_beacon_diff(100),
+    aligning_reverse_count(50),
     print_proximity(false),
     print_beacon(false),
     print_reflective(false),
@@ -67,6 +68,9 @@ Parameter::Parameter():
     memset(docking_forward_speed, 0, 3 * sizeof(int));
     memset(docking_backward_speed, 0, 3 * sizeof(int));
     memset(docking_failed_reverse_speed, 0, 3 * sizeof(int));
+    memset(aligning_forward_speed, 0, 3 * sizeof(int));
+    memset(aligning_reverse_speed, 0, 3 * sizeof(int));
+    memset(locatebeacon_forward_speed, 0, 3 * sizeof(int));
     debug.mode = 0;
     memset(debug.para, 0, 10* sizeof(int));
 }

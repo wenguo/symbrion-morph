@@ -24,6 +24,9 @@ class Parameter
         int init_state;
         int speed_forward;
         int speed_sideward;
+        int locatebeacon_forward_speed[3];
+        int aligning_forward_speed[3];
+        int aligning_reverse_speed[3];
         int docking_turn_left_speed[3];
         int docking_turn_right_speed[3];
         int docking_forward_speed[3];
@@ -71,6 +74,8 @@ class Parameter
 
         int aligning_weightleft[NUM_IRS];
         int aligning_weightright[NUM_IRS];
+
+        uint32_t aligning_reverse_count;
         
         bool print_proximity;
         bool print_beacon;

@@ -512,8 +512,8 @@ void RobotSCOUT::LocateBeacon()
     }
     else
     {
-        leftspeed = para.speed_forward;
-        rightspeed = para.speed_forward;
+        leftspeed = para.locatebeacon_forward_speed[0];
+        rightspeed = para.locatebeacon_forward_speed[1];
 
         for(int i=0;i<NUM_IRS;i++)
         {
@@ -525,7 +525,7 @@ void RobotSCOUT::LocateBeacon()
 
 
      
-    printf("beacon: (%d %d) -- speed: (%d %d %d)\n", beacon[1], beacon[0], leftspeed, rightspeed, sidespeed);
+   // printf("beacon: (%d %d) -- speed: (%d %d %d)\n", beacon[1], beacon[0], leftspeed, rightspeed, sidespeed);
     //switch on ir led at 64Hz so the recruitment robot can sensing it
     //and turn on its docking signals, the robot need to switch off ir 
     //led for a while to check if it receives docking signals
@@ -564,12 +564,12 @@ void RobotSCOUT::LocateBeacon()
                         for(int i=0; i< NUM_DOCKS;i++)
                             SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0 | IR_PULSE1);
 
-                    }
-                    else
+                    } 
+                    else if( beacon_trigger_count <1)
                     {
                         //then swith on all ir led at 64Hz frequency
-              //          for(int i=0;i<NUM_DOCKS;i++)
-              //              SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                        for(int i=0;i<NUM_DOCKS;i++)
+                            SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
                     }
                 }
                 break;
@@ -603,12 +603,15 @@ void RobotSCOUT::Alignment()
     {
         leftspeed = 0;
         rightspeed = 0;
+        current_state = RECOVER;
+        last_state = ALIGNMENT;
+        recover_count = para.aligning_reverse_count;
         printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]);
     }
     else if (in_docking_region_hist.Sum()>=3)
     {
-        leftspeed = para.speed_forward;
-        rightspeed = para.speed_forward;
+        leftspeed = para.aligning_forward_speed[0];
+        rightspeed = para.aligning_forward_speed[1];
         printf("forward\n");
     }
     else
@@ -662,19 +665,44 @@ void RobotSCOUT::Alignment()
 }
 void RobotSCOUT::Recover()
 {
-    SetRGBLED(1, RED, RED, RED, RED);
-    SetRGBLED(3, RED, RED, RED, RED);
+    recover_count--;
 
-    leftspeed = -30;
-    rightspeed = -30;
-
-    if(beacon_signals_detected & 0x3)
+    if(timestamp % 4 ==0)
     {
-        SetRGBLED(1, 0,0,0,0);
-        SetRGBLED(3, 0,0,0,0);
-        direction = FORWARD;
-        current_state = ALIGNMENT;
-        last_state = RECOVER;
+        SetRGBLED(1, RED, RED, RED, RED);
+        SetRGBLED(2, RED, RED, RED, RED);
+        SetRGBLED(3, RED, RED, RED, RED);
+    }
+    else
+    {
+        SetRGBLED(1, 0, 0, 0, 0);
+        SetRGBLED(2, 0, 0, 0, 0);
+        SetRGBLED(3, 0, 0, 0, 0);
+    }
+
+    //TODO:back and turn left/right according to reflective value;
+    leftspeed = 0;
+    rightspeed = 0;
+
+    if(last_state == ALIGNMENT)
+    {
+        leftspeed = para.aligning_reverse_speed[0];
+        rightspeed = para.aligning_reverse_speed[1];
+        
+        const int weight_left[2] = {-3,3};
+        const int weight_right[2] = {3, -3};
+        for(int i=0;i<2;i++)
+        {
+            leftspeed += reflective_hist[i].Avg() * weight_left[i]>>8;
+            rightspeed += reflective_hist[i].Avg() * weight_right[i]>>8;
+        }
+        if(recover_count ==0)
+        {
+            SetRGBLED(1, 0, 0, 0, 0);
+            SetRGBLED(3, 0, 0, 0, 0);
+            current_state = ALIGNMENT;
+            last_state = RECOVER;
+        }
     }
 }
 
