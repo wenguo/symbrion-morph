@@ -69,6 +69,14 @@ bool Robot::LoadParameters(const char * filename)
                 for(int i=0;i<NUM_IRS;i++)
                     para.locatebeacon_weightright[i] = atoi(optionfile->GetPropertyValue(prop, i));
             }        
+
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "forward_speed" ) )
+            {
+                para.locatebeacon_forward_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.locatebeacon_forward_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.locatebeacon_forward_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
+
         }
 
         else if( strcmp( typestr, "Alignment" ) == 0 )
@@ -84,6 +92,21 @@ bool Robot::LoadParameters(const char * filename)
                 for(int i=0;i<NUM_IRS;i++)
                     para.aligning_weightright[i] = atoi(optionfile->GetPropertyValue(prop, i));
             }        
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "forward_speed" ) )
+            {
+                para.aligning_forward_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.aligning_forward_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.aligning_forward_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "reverse_speed" ) )
+            {
+                para.aligning_reverse_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.aligning_reverse_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.aligning_reverse_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
+
+            para.aligning_reverse_count = optionfile->ReadInt(entity, "reverse_count", 50);
+
         }
         else if( strcmp( typestr, "Recruitment" ) == 0 )
         {
