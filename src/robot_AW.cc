@@ -1674,7 +1674,7 @@ void RobotAW::Debugging()
             if(timestamp % 10 ==0)
             {
                 uint8_t data[9]={'h','e','l','l','o','-','A','W',0};
-                SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
+                RobotBase::SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
             }
             while (HasEthMessage() > 0)
             {

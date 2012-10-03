@@ -488,51 +488,44 @@ void RobotSCOUT::LocateEnergy()
 
 void RobotSCOUT::LocateBeacon()
 {
-    direction = FORWARD;
 
+    static bool aligning_region_detected = false;
+    const int locatebeacon_weightleft[8]={-1, 1, 2, 4, 0, 0, -4, -2};
+    const int locatebeacon_weightright[8]={1, -1, -2, -4, 0, 0, 4, 2};
 
-    //TODO: any side docking?
-    // if(beacon_signals_detected & 0x3)
-    if(beacon[1]> 3 || beacon[0]>3)
+    //check if received docking signals
+    int beacon_trigger_count=0;
+    if(beacon_signals_detected_hist.Sum(0) >= 5)
+        beacon_trigger_count++;
+    if(beacon_signals_detected_hist.Sum(1) >= 5)
+        beacon_trigger_count++;
+    if(beacon_signals_detected_hist.Sum(2) >= 5)
+        beacon_trigger_count++;
+    if(beacon_signals_detected_hist.Sum(7) >= 5)
+        beacon_trigger_count++;
+
+    //no signals, move randomly 
+    if(beacon_trigger_count<1)
     {
-        if(beacon[0]>5 && beacon[1]>5)
-            // if(beacon_signals_detected & 0x3 ==0x3)
-        {
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = 0;
-
-            //if((timestamp/5)%2 ==0)
-            //	sidespeed = 10;
-            //else
-            //	sidespeed = -20;
-        }
-        else
-        {
-            printf("only one beacon detected, shift left and right a little bit\n");
-            int temp = beacon[1]-beacon[0];
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = 0;
-            sidespeed = 20 * sign(temp);
-        }
+        //leftspeed = 50;
+        //rightspeed = -50;
     }
     else
     {
-        //TODO: temp solution, stay there
-        leftspeed = 0;
-        rightspeed = 0;
+        leftspeed = para.speed_forward;
+        rightspeed = para.speed_forward;
 
-        printf("no beacon detected, shift left and right a little bit\n");
-
-        //        if((timestamp/10)%2 ==0)
-        //            sidespeed = 20;
-        //        else
-        //            sidespeed = -20;
+        for(int i=0;i<NUM_IRS;i++)
+        {
+            leftspeed += (beacon[i] * para.locatebeacon_weightleft[i]) >>1;
+            rightspeed += (beacon[i] * para.locatebeacon_weightright[i]) >>1;
+        }
 
     }
 
-    // printf("beacon: (%d %d) -- speed: (%d %d %d)\n", beacon[1], beacon[0], leftspeed, rightspeed, sidespeed);
+
+     
+    printf("beacon: (%d %d) -- speed: (%d %d %d)\n", beacon[1], beacon[0], leftspeed, rightspeed, sidespeed);
     //switch on ir led at 64Hz so the recruitment robot can sensing it
     //and turn on its docking signals, the robot need to switch off ir 
     //led for a while to check if it receives docking signals
@@ -542,10 +535,6 @@ void RobotSCOUT::LocateBeacon()
         flag++;
         switch (flag % 6)
         {
-            case 0:
-            case 1:
-            case 2:
-                break;
             case 3:
             case 4:
                 {
@@ -557,10 +546,16 @@ void RobotSCOUT::LocateBeacon()
                     }
                 }
                 break;
+            case 0:
+            case 1:
+            case 2:
             case 5:
                 {
-                    //check if received docking signals
-                    if(beacon_signals_detected_hist.Sum(0) >= 5 && beacon_signals_detected_hist.Sum(1) >= 5)  //TODO:only FRONT side at the moment, should changes according to message received
+                    if(beacon[0] >= 30 && beacon[1] >= 30)  
+                        aligning_region_detected= true;
+
+
+                    if(aligning_region_detected )
                     {
                         current_state = ALIGNMENT;
                         last_state = LOCATEBEACON;
@@ -569,13 +564,12 @@ void RobotSCOUT::LocateBeacon()
                         for(int i=0; i< NUM_DOCKS;i++)
                             SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0 | IR_PULSE1);
 
-                        return;
                     }
                     else
                     {
                         //then swith on all ir led at 64Hz frequency
-                        for(int i=0;i<NUM_DOCKS;i++)
-                            SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+              //          for(int i=0;i<NUM_DOCKS;i++)
+              //              SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
                     }
                 }
                 break;
@@ -583,6 +577,7 @@ void RobotSCOUT::LocateBeacon()
                 break;
         }
     }
+
 
 }
 
@@ -594,31 +589,45 @@ void RobotSCOUT::Alignment()
 
     static bool docking_region_detected = false;
 
-    for(int i=0;i<NUM_IRS;i++)
+
+  
+    //TODO sometimes not in good position, need to reverse and try again
+    // define the bad case
+    // case 1: difference between two front reflective_calibrated reading is significant 
+    // case 2: some reflective_calibrated readings but two beacon readings are diff
+    int reflective_diff = abs(reflective_hist[0].Avg() - reflective_hist[1].Avg());
+    int reflective_max = std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg());
+    int input[4] = {reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
+    in_docking_region_hist.Push(in_docking_region(input));
+    if(reflective_diff > 1000 && reflective_diff > reflective_max * 0.7)
     {
-        leftspeed += (beacon[i] * para.aligning_weightleft[i]) >>2;
-        rightspeed += (beacon[i] * para.aligning_weightright[i]) >>2;
+        leftspeed = 0;
+        rightspeed = 0;
+        printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]);
+    }
+    else if (in_docking_region_hist.Sum()>=3)
+    {
+        leftspeed = para.speed_forward;
+        rightspeed = para.speed_forward;
+        printf("forward\n");
+    }
+    else
+    {
+        for(int i=0;i<NUM_IRS;i++)
+        {
+            leftspeed += (beacon[i] * para.aligning_weightleft[i]) >>2;
+            rightspeed += (beacon[i] * para.aligning_weightright[i]) >>2;
+        }
     }
 
-    //TODO sometimes not in good position, need to reverse and try again
-    
 
-      //lost signals
-    //if(beacon_signals_detected==0)
-    //beacon signals drop to certain threshold?
-    /*  if(beacon_signals_detected_hist.Sum(0) < 0 || beacon_signals_detected_hist.Sum(1) < 1)
-        {
-        current_state = RECOVER;
-        last_state = ALIGNMENT;
-
-        return;
-        }*/
 
     //check if it is aligned well and also closed enough for docking
     //this is done by checking if ehternet port is connected
     if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[::FRONT]))) 
     {
         docking_region_detected = true;
+        in_docking_region_hist.Reset();
         for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
         SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
@@ -700,7 +709,16 @@ void RobotSCOUT::Docking()
                 if(timestamp % 5 ==0)
                     Robot::BroadcastIRMessage(0, IR_MSG_TYPE_DOCKING_SIGNALS_REQ);
 
-                if(beacon_signals_detected_hist.Sum(0) > 5 && beacon_signals_detected_hist.Sum(1)>5)
+                int beacon_trigger_count=0;
+                if(beacon_signals_detected_hist.Sum(0) >= 5)
+                    beacon_trigger_count++;
+                if(beacon_signals_detected_hist.Sum(1) >= 5)
+                    beacon_trigger_count++;
+                if(beacon_signals_detected_hist.Sum(2) >= 5)
+                    beacon_trigger_count++;
+                if(beacon_signals_detected_hist.Sum(7) >= 5)
+                    beacon_trigger_count++;
+                if(beacon_trigger_count >=2 )
                 {
                     current_state = ALIGNMENT;
                     last_state = DOCKING;
@@ -1679,7 +1697,7 @@ void RobotSCOUT::Debugging()
             if(timestamp % 10 ==0)
             {
                 uint8_t data[10]={'h','e','l','l','o','-','K','I','T',0};
-                SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
+                RobotBase::SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
             }
             while (HasEthMessage() > 0)
             {
@@ -1842,11 +1860,7 @@ void RobotSCOUT::Debugging()
 int RobotSCOUT::in_docking_region(int x[4])
 {
     if(   x[0] > para.docking_reflective_offset1 
-            && x[1] > para.docking_reflective_offset2 
-            && abs(x[1]-x[0]) < para.docking_reflective_diff
-            && x[2] < para.docking_beacon_offset1 
-            && x[3] < para.docking_beacon_offset2 
-            && abs(x[2]-x[3]) < para.docking_beacon_diff )
+            && x[1] > para.docking_reflective_offset2) 
         return 1;
     else
         return 0;
