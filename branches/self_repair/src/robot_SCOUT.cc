@@ -277,14 +277,12 @@ void RobotSCOUT::Avoidance()
 {
     leftspeed = 40;
     rightspeed = 40;
-    sidespeed = 0;
 
 
     for(int i=0;i<NUM_IRS;i++)
     {
-        //   leftspeed +=(direction * avoid_weightleft[i] * (reflective_avg[i]))>>3;
-        //   rightspeed += (direction * avoid_weightleft[i] * (reflective_avg[i]))>>3;
-        sidespeed += (para.avoid_weightside[i] * (reflective_hist[i].Avg()))>>3;
+           leftspeed +=(para.avoid_weightleft[i] * (reflective_hist[i]).Avg())>>3;
+           rightspeed += (para.avoid_weightleft[i] * (reflective_hist[i]).Avg())>>3;
     }
 
     if(reflective_hist[1].Avg() > para.avoidance_threshold || reflective_hist[0].Avg()>para.avoidance_threshold)
@@ -495,13 +493,13 @@ void RobotSCOUT::LocateBeacon()
 
     //check if received docking signals
     int beacon_trigger_count=0;
-    if(beacon_signals_detected_hist.Sum(0) >= 5)
+    if(beacon_signals_detected_hist.Sum(0) >= 3)
         beacon_trigger_count++;
-    if(beacon_signals_detected_hist.Sum(1) >= 5)
+    if(beacon_signals_detected_hist.Sum(1) >= 3)
         beacon_trigger_count++;
-    if(beacon_signals_detected_hist.Sum(2) >= 5)
+    if(beacon_signals_detected_hist.Sum(2) >= 3)
         beacon_trigger_count++;
-    if(beacon_signals_detected_hist.Sum(7) >= 5)
+    if(beacon_signals_detected_hist.Sum(7) >= 3)
         beacon_trigger_count++;
 
     //no signals, move randomly 
@@ -551,7 +549,7 @@ void RobotSCOUT::LocateBeacon()
             case 2:
             case 5:
                 {
-                    if(beacon[0] >= 30 && beacon[1] >= 30)  
+                    if(beacon_trigger_count>1 & beacon[0] >= 30 && beacon[1] >= 30)  
                         aligning_region_detected= true;
 
 
@@ -581,6 +579,7 @@ void RobotSCOUT::LocateBeacon()
 
 }
 
+//TODO: cleanup the code
 void RobotSCOUT::Alignment()
 {
     leftspeed = para.speed_forward;
@@ -588,42 +587,8 @@ void RobotSCOUT::Alignment()
     sidespeed = 0;
 
     static bool docking_region_detected = false;
-
-
-  
-    //TODO sometimes not in good position, need to reverse and try again
-    // define the bad case
-    // case 1: difference between two front reflective_calibrated reading is significant 
-    // case 2: some reflective_calibrated readings but two beacon readings are diff
-    int reflective_diff = abs(reflective_hist[0].Avg() - reflective_hist[1].Avg());
-    int reflective_max = std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg());
-    int input[4] = {reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
-    in_docking_region_hist.Push(in_docking_region(input));
-    if(reflective_diff > 1000 && reflective_diff > reflective_max * 0.7)
-    {
-        leftspeed = 0;
-        rightspeed = 0;
-        current_state = RECOVER;
-        last_state = ALIGNMENT;
-        recover_count = para.aligning_reverse_count;
-        printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]);
-    }
-    else if (in_docking_region_hist.Sum()>=3)
-    {
-        leftspeed = para.aligning_forward_speed[0];
-        rightspeed = para.aligning_forward_speed[1];
-        printf("forward\n");
-    }
-    else
-    {
-        for(int i=0;i<NUM_IRS;i++)
-        {
-            leftspeed += (beacon[i] * para.aligning_weightleft[i]) >>2;
-            rightspeed += (beacon[i] * para.aligning_weightright[i]) >>2;
-        }
-    }
-
-
+    static bool blocked = false;
+    static int alignment_count=0;
 
     //check if it is aligned well and also closed enough for docking
     //this is done by checking if ehternet port is connected
@@ -642,6 +607,7 @@ void RobotSCOUT::Alignment()
         rightspeed = 0;
         sidespeed = 0;
 
+
         if(timestamp % 5==0)
             Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
 
@@ -652,6 +618,9 @@ void RobotSCOUT::Alignment()
             docking_count = 0;
             docking_failed_reverse_count = 0;
 
+            blocked = false;
+            alignment_count=0;
+
             docking_trials++;
 
             current_state = DOCKING;
@@ -660,6 +629,53 @@ void RobotSCOUT::Alignment()
             SetRGBLED(0, 0,0,0,0);
         }
     }
+    else
+    {
+        //TODO sometimes not in good position, need to reverse and try again
+        // define the bad case
+        // case 1: difference between two front reflective_calibrated reading is significant 
+        // case 2: some reflective_calibrated readings but two beacon readings are diff
+        int reflective_diff = abs(reflective_hist[0].Avg() - reflective_hist[1].Avg());
+        int reflective_max = std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg());
+        int input[4] = {reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
+        in_docking_region_hist.Push(in_docking_region(input));
+
+        if(reflective_hist[0].Avg() > 1000 & reflective_hist[1].Avg() > 1000)
+            alignment_count++;
+        //3 second is allowed until fully docked, otherwise, treated as blocked.
+        if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||alignment_count > 30)
+            blocked = true;
+
+        if(blocked)
+        {
+            blocked = false;
+            alignment_count=0;
+            leftspeed = 0;
+            rightspeed = 0;
+            current_state = RECOVER;
+            last_state = ALIGNMENT;
+            recover_count = para.aligning_reverse_count;
+            printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]);
+        }
+        else if (in_docking_region_hist.Sum()>=3)
+        {
+            leftspeed = para.aligning_forward_speed[0];
+            rightspeed = para.aligning_forward_speed[1];
+            printf("forward\n");
+        }
+        else
+        {
+            for(int i=0;i<NUM_IRS;i++)
+            {
+                leftspeed += (beacon[i] * para.aligning_weightleft[i]) >>2;
+                rightspeed += (beacon[i] * para.aligning_weightright[i]) >>2;
+            }
+        }
+
+
+    }
+
+   
 
 
 }
@@ -680,28 +696,33 @@ void RobotSCOUT::Recover()
         SetRGBLED(3, 0, 0, 0, 0);
     }
 
-    //TODO:back and turn left/right according to reflective value;
     leftspeed = 0;
     rightspeed = 0;
 
     if(last_state == ALIGNMENT)
     {
-        leftspeed = para.aligning_reverse_speed[0];
-        rightspeed = para.aligning_reverse_speed[1];
-        
-        const int weight_left[2] = {-3,3};
-        const int weight_right[2] = {3, -3};
-        for(int i=0;i<2;i++)
+        //turn left/right according to reflective value;
+        //robot will stop there for 1 seconds
+        if(recover_count >=10)
         {
-            leftspeed += reflective_hist[i].Avg() * weight_left[i]>>8;
-            rightspeed += reflective_hist[i].Avg() * weight_right[i]>>8;
+            leftspeed = para.aligning_reverse_speed[0];
+            rightspeed = para.aligning_reverse_speed[1];
+
+            const int weight_left[2] = {-3,3};
+            const int weight_right[2] = {3, -3};
+            for(int i=0;i<2;i++)
+            {
+                leftspeed += reflective_hist[i].Avg() * weight_left[i]>>8;
+                rightspeed += reflective_hist[i].Avg() * weight_right[i]>>8;
+            }
         }
-        if(recover_count ==0)
+        else if(recover_count ==0)
         {
             SetRGBLED(1, 0, 0, 0, 0);
             SetRGBLED(3, 0, 0, 0, 0);
             current_state = ALIGNMENT;
             last_state = RECOVER;
+                
         }
     }
 }
@@ -881,7 +902,7 @@ void RobotSCOUT::Recruitment()
             msg_guideme_received &= ~(1<<i);
             msg_lockme_expected |=1<<i;
 
-            if(stage2_count > 20 && (msg_lockme_received & (1<<i)) || (msg_locked_received &(1<<i)))
+            if(stage2_count > 20 && (msg_lockme_received & (1<<i) || msg_locked_received &(1<<i)))
             {
                 recruitment_stage[i]=STAGE3;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
