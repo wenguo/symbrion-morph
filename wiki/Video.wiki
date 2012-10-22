@@ -1,6 +1,9 @@
 #Videos of SYMBRION robots self-assembly experiments
 
 = Docking experiments =
+ * Scout-Scout docking
+
+<wiki:video url="http://www.youtube.com/watch?v=p_H7Hd0SDpc"/>
 
   * AWtoKIT docking
 
@@ -19,6 +22,10 @@
 <wiki:video url="http://www.youtube.com/watch?v=1aj9F266BBQ"/>
 
 = Self-assembly experiment =
+
+  * 3 Scout, symbol sequence: SFSF0000SRSF0000
+
+<wiki:video url="http://www.youtube.com/watch?v=6jW6A4DWWWA"/>
 
   * 2 KIT + 1 AW, symbol sequence: KBKFKBAF0000
 
