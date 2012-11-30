@@ -1,0 +1,66 @@
+Index: IRobot.cpp
+===================================================================
+--- IRobot.cpp	(revision 4757)
++++ IRobot.cpp	(working copy)
+@@ -237,7 +237,7 @@
+     Memmo::Put(boardNum, DATA_ID, idstring, 40);
+     //struct timeval time;
+     //gettimeofday(&time, NULL);
+-    for (int i = 0; i < 200; i++)
++    for (int i = 0; i < 1000; i++)
+     {
+         if (i % 25 == 0)
+             RobotBase::SendCommand(boardNum, CMD_IDENTIFY);
+Index: Makefile
+===================================================================
+--- Makefile	(revision 4757)
++++ Makefile	(working copy)
+@@ -28,8 +28,8 @@
+ # Default flags
+ # Anne: please, consider using -pedantic, because it is often not normal C, e.g. using b00000000 is a C extension
+ # and does not work with my compiler
+-CXXFLAGS = -O2 -g -Wall
+-CFLAGS = -O2 -g -Wall -std=gnu99
++CXXFLAGS = -O2 -Wall
++CFLAGS = -O2 -Wall -std=gnu99
+ 
+ # Define cross-compile target
+ TARGET=bfin-linux-uclibc-
+@@ -61,7 +61,7 @@
+ 	CFLAGS += -mcpu=bf561 
+ endif
+ 
+-COMPILE_LIB_AS=static
++COMPILE_LIB_AS=shared
+ 
+ ifeq ($(COMPILE_LIB_AS),shared)
+ LIB=libirobot.so
+@@ -80,9 +80,9 @@
+ IPATH = .
+ 
+ CXXFLAGS += $(patsubst %, -I%, $(IPATH))
+-LDFLAGS= -L./lib -lpthread -lirobot
++LDFLAGS= -L./lib -lpthread
+ ifeq ($(COMPILE_LIB_AS),shared)
+-LDFLAGS+=-shared
++LDFLAGS =-shared -Wl -lpthread
+ endif
+ 
+ ifeq ($(MULTI_CONTROLLER),true)
+@@ -123,14 +123,14 @@
+ lib/$(LIB): $(OBJECTS)
+ ifeq ($(COMPILE_LIB_AS),shared)
+ #	$(GCC) rcu $@ $^
+-	$(CXX) $(LDFLAGS) $^
++	$(CXX) -o $@ $^ $(LDFLAGS)
+ else
+ 	$(AR) rcu $@ $^
+ endif
+ 	$(OBJDUMP) -hS $@ > objects/$(LIB).lst
+ 
+ bin/$(TESTAPP): $(APPOBJECTS)
+-	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
++	$(CXX) $(CXXFLAGS) $^ -o $@ -L./lib -lirobot 
+ 	$(OBJDUMP) -hS $@ > objects/$(TESTAPP).lst
+ 	$(SIZE) -B $@
+ 
