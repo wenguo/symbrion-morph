@@ -12,12 +12,13 @@
 # Optionally include local.mk, for example set PATH+=:/opt/uClinux/bfin-linux-uclibc/bin/
 # in case you installed the blackfin toolchain via apt-get install blackfin-toolchain-linux-uclibc
 -include local.mk
+-include /etc/robot/overwrite.mk
 
 SRC = SPIStreamMaster.cpp SPIStream.cpp SPIController.cpp Ethernet.cpp IRComm.cpp Microphone.cpp
 SRC += bytequeue.c gpio.cpp lolmsg.c Memmo.cpp IRobot.cpp streamcoder.c RobotRNG.cpp
 
 ifeq ($(MULTI_CONTROLLER),true)
-SRC += ActionSelection.cpp ConfigFile.cpp Controllers.cpp OperatingConditions.cpp
+SRC += ActionSelection.cpp StateEstimate.cpp StateMessage.cpp
 endif
 
 APPSRC = TestMain.cpp
@@ -60,8 +61,14 @@ ifneq ($(CC),gcc)
 	CFLAGS += -mcpu=bf561 
 endif
 
-LIB = libirobot.a
-shared_LIB= libirobot.so
+COMPILE_LIB_AS=shared
+
+ifeq ($(COMPILE_LIB_AS),shared)
+LIB=libirobot.so
+else
+LIB=libirobot.a
+endif
+
 TESTAPP = robotest
 
 VPATH = .
@@ -73,15 +80,21 @@ endif
 IPATH = .
 
 CXXFLAGS += $(patsubst %, -I%, $(IPATH))
-LDFLAGS = -L./lib -lpthread -lirobot
-LDFLAGS_$(shared_LIB) = -shared -Wl -L./lib
+LDFLAGS= -L./lib -lpthread
+ifeq ($(COMPILE_LIB_AS),shared)
+LDFLAGS =-shared -Wl -lpthread
+endif
+
+ifeq ($(MULTI_CONTROLLER),true)
+LDFLAGS += -lrt
+endif
 
 TOBJECTS = $(SRC:%.cpp=objects/%.o)
 OBJECTS = $(TOBJECTS:%.c=objects/%.o)
 
 APPOBJECTS = $(APPSRC:%.cpp=objects/%.o)
 
-all: objects lib bin include lib/$(LIB) lib/$(shared_LIB) includes bin/$(TESTAPP) strip
+all: objects lib bin include lib/$(LIB) includes bin/$(TESTAPP) strip
 
 objects:
 	mkdir objects
@@ -93,30 +106,31 @@ include:
 	mkdir include
 	mkdir include/comm
 ifeq ($(MULTI_CONTROLLER),true)
-	mkdir include/action
+	mkdir -p include/action
 endif
 
 bin:
 	mkdir bin
 
 includes: include
-	cp  $(wildcard *.h) ./include
-	cp  $(wildcard comm/*.h) ./include/comm
+	cp -u $(wildcard *.h) ./include
+	cp -u $(wildcard comm/*.h) ./include/comm
 ifeq ($(MULTI_CONTROLLER),true)
+	mkdir -p include/action
 	cp -u $(wildcard action/*.h) ./include/action
 endif
 
 lib/$(LIB): $(OBJECTS)
+ifeq ($(COMPILE_LIB_AS),shared)
+#	$(GCC) rcu $@ $^
+	$(CXX) -o $@ $^ $(LDFLAGS)
+else
 	$(AR) rcu $@ $^
+endif
 	$(OBJDUMP) -hS $@ > objects/$(LIB).lst
 
-lib/$(shared_LIB): $(OBJECTS)
-	$(CXX) -o $@ $^ $(LDFLAGS_$(shared_LIB))
-	$(OBJDUMP) -hS $@ > objects/$(shared_LIB).lst
-
-
 bin/$(TESTAPP): $(APPOBJECTS)
-	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ -L./lib -lirobot 
 	$(OBJDUMP) -hS $@ > objects/$(TESTAPP).lst
 	$(SIZE) -B $@
 
@@ -139,7 +153,6 @@ endif
 install: lib/$(LIB) includes clean_install
 	cp -R include/* $(ROOTPATH)/include/
 	cp lib/$(LIB) $(ROOTPATH)/lib/
-	cp lib/$(shared_LIB) $(ROOTPATH)/lib/
 
 # Apologies in advance! I do not want to have "rm -rf" things in my script (rm -f is fine).
 # Suppose you move your Makefile somewhere else and it accidently runs the clean target...
@@ -150,7 +163,7 @@ clean:
 ifeq ($(MULTI_CONTROLLER),true)
 	rm -f include/action/*.h
 endif	
-	rm -f lib/$(LIB) lib/$(shared_LIB) bin/$(TESTAPP) objects/*.o objects/*.lst include/*.h include/comm/*.h
+	rm -f lib/$(LIB) bin/$(TESTAPP) objects/*.o objects/*.lst include/*.h include/comm/*.h 
 	@mkdir -p objects include include/comm lib bin
 ifeq ($(MULTI_CONTROLLER),true)
 	@mkdir -p include/action
