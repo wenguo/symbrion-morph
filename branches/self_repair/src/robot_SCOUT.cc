@@ -97,7 +97,7 @@ void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
         rightspeed = 100;
     else if(rightspeed < -100)
         rightspeed = -100;
-    Move(leftspeed, -rightspeed);
+    Move(leftspeed, rightspeed);
 }
 
 
@@ -1888,7 +1888,7 @@ void RobotSCOUT::Debugging()
             }
             break;
         case 20://testing motors
-            if(timestamp  == 2)
+           // if(timestamp  == 2)
             { 
                 leftspeed = para.debug.para[4];
                 rightspeed = para.debug.para[5];
