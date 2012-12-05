@@ -107,6 +107,20 @@ std::ostream& operator<<(std::ostream& os, const Parameter& para)
         os << para.avoid_weightside[i]<<" ";
     }
     os <<"]\n";
+    os  << "ambient_calibrated: [";
+    for(int i=0;i<NUM_IRS;i++)
+    {
+        os << para.ambient_calibrated[i]<<" ";
+    }
+    os <<"]\n";
+    os  << "reflective_calibrated: [";
+    for(int i=0;i<NUM_IRS;i++)
+    {
+        os << para.reflective_calibrated[i]<<" ";
+    }
+    os <<"]\n";
+
+
 
 
 
