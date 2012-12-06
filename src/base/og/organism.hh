@@ -20,7 +20,7 @@
 #endif
 
 enum robot_type {ROBOT_NONE = 0x0, ROBOT_KIT = 0x1, ROBOT_SCOUT = 0x2, ROBOT_AW = 0x3, ROBOTTYPE_COUNT};
-enum robot_side {FRONT=0x0, RIGHT, BACK, LEFT, SIDE_COUNT};
+enum robot_side {FRONT=0x0, LEFT, BACK, RIGHT, SIDE_COUNT};
 extern char robottype_names[ROBOTTYPE_COUNT];
 extern char side_names[SIDE_COUNT];
 
@@ -88,10 +88,10 @@ class OrganismSequence
                 {
                     uint8_t data;
                     struct{
-                        uint8_t type1:2; //bits: 0 - 1
-                        uint8_t side1:2; //bits: 2 - 3
-                        uint8_t type2:2; //bits: 4 - 5
-                        uint8_t side2:2; //bits: 6 - 7
+                        uint8_t type1:2; //bits: 0 - 1 parent_type
+                        uint8_t side1:2; //bits: 2 - 3 parent_side
+                        uint8_t type2:2; //bits: 4 - 5 child_type
+                        uint8_t side2:2; //bits: 6 - 7 child_side
                     };
                 };
             private:
@@ -141,6 +141,7 @@ class OrganismSequence
         static rt_status checkNodeConnection(const OrganismSequence& og_seq, const unsigned int& edge_pos, const bool& parentNode);
         static bool SingleNodeSequence(const OrganismSequence& og_seq);
 
+		static uint8_t maxCommonTreeSize( OrganismSequence& seq1, OrganismSequence& seq2 );
 
         static rt_status changeNodeType(OrganismSequence&, const robot_type&, const unsigned int& edge_pos, const bool&);
         static rt_status addNode(OrganismSequence&, const unsigned int& edge_pos, const bool& parentNode, const robot_type& type, const robot_side& parentSide, const robot_side& childSide);
@@ -148,10 +149,11 @@ class OrganismSequence
         static rt_status removeSequence(OrganismSequence&, const unsigned int& edge_pos, const bool&);
 
         // for self-repair
-        void nextSeed();
+        static OrganismSequence getNextSeedSeq(OrganismSequence&);
 
         rt_status Scan(std::vector<Element>&, std::vector<unsigned int>&) const;
         rt_status getBranch(OrganismSequence&, const robot_side&);
+        rt_status getBranch(OrganismSequence&, const robot_side&, bool );
         const Symbol getSymbol(const unsigned int& pos) const;
         inline unsigned int Size() const {return encoded_seq.size();}
         const unsigned int Edges() const;

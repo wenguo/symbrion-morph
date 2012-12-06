@@ -44,19 +44,17 @@ class RobotAW:public Robot, public ActiveWheel
         virtual void Disassembly();
         virtual void Undocking();
         virtual void Recruitment();
-        virtual void Transforming();
+        virtual void Raising();
+        virtual void Lowering();
         virtual void Reshaping();
         virtual void MacroLocomotion();
         virtual void Debugging();
 
-        // for self-repair
-        virtual void Failed();
-        virtual void Support();
-        virtual void LeadRepair();
-        virtual void Repair();
-        virtual void BroadcastScore();
-
         virtual void Log();
+
+        float hinge_start_pos;
+        uint8_t hinge_speed;
+
     private:
         void Avoidance();
 

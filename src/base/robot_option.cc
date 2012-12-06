@@ -56,6 +56,58 @@ bool Robot::LoadParameters(const char * filename)
             }
 
         }
+        else if( strcmp( typestr, "LocateBeacon" ) == 0 )
+        {
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "weight_left" ) ) 
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.locatebeacon_weightleft[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
+
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "weight_right" ) )
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.locatebeacon_weightright[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }        
+
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "forward_speed" ) )
+            {
+                para.locatebeacon_forward_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.locatebeacon_forward_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.locatebeacon_forward_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
+
+        }
+
+        else if( strcmp( typestr, "Alignment" ) == 0 )
+        {
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "weight_left" ) ) 
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.aligning_weightleft[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
+
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "weight_right" ) )
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.aligning_weightright[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }        
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "forward_speed" ) )
+            {
+                para.aligning_forward_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.aligning_forward_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.aligning_forward_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "reverse_speed" ) )
+            {
+                para.aligning_reverse_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.aligning_reverse_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.aligning_reverse_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
+
+            para.aligning_reverse_count = optionfile->ReadInt(entity, "reverse_count", 50);
+
+        }
         else if( strcmp( typestr, "Recruitment" ) == 0 )
         {
             para.recruiting_ambient_offset1 = optionfile->ReadInt(entity, "recruiting_ambient_offset1", 500);
@@ -64,17 +116,20 @@ bool Robot::LoadParameters(const char * filename)
             para.recruiting_proximity_offset2 = optionfile->ReadInt(entity, "recruiting_proximity_offset2", 150);
             para.recruiting_reflective_offset1 = optionfile->ReadInt(entity, "recruiting_reflective_offset1", 20);
             para.recruiting_reflective_offset2 = optionfile->ReadInt(entity, "recruiting_reflective_offset2", 20);
+            para.recruiting_guiding_signals_time = optionfile->ReadInt(entity, "recruiting_guiding_signals_time", 200);
         }
         else if( strcmp( typestr, "Docking" ) == 0 )
         {
             para.docking_reflective_offset1 = optionfile->ReadInt(entity, "docking_reflective_offset1", 20);
             para.docking_reflective_offset2 = optionfile->ReadInt(entity, "docking_reflective_offset2", 20);
-            para.docking_reflective_diff = optionfile->ReadInt(entity, "docking_reflective_offset2", 20);
-            para.docking_beacon_offset1 = optionfile->ReadInt(entity, "docking_reflective_offset1", 20);
-            para.docking_beacon_offset2 = optionfile->ReadInt(entity, "docking_reflective_offset2", 20);
-            para.docking_beacon_diff = optionfile->ReadInt(entity, "docking_reflective_offset2", 20);
+            para.docking_reflective_diff = optionfile->ReadInt(entity, "docking_reflective_diff", 20);
+            para.docking_beacon_offset1 = optionfile->ReadInt(entity, "docking_beacon_offset1", 20);
+            para.docking_beacon_offset2 = optionfile->ReadInt(entity, "docking_beacon_offset2", 20);
+            para.docking_beacon_diff = optionfile->ReadInt(entity, "docking_beacon_diff", 20);
             para.docking_motor_opening_time = optionfile->ReadInt(entity, "docking_motor_opening_time", 30);
             para.docking_motor_closing_time = optionfile->ReadInt(entity, "docking_motor_closing_time", 40);
+            para.docking_trials = optionfile->ReadInt(entity, "docking_trials", 40);
+            para.docking_failed_reverse_time = optionfile->ReadInt(entity, "docking_failed_reverse_time", 40);
             if( Morph::CProperty* prop = optionfile->GetProperty( entity, "turn_right_speed" ) )
             {
                 para.docking_turn_right_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
@@ -99,6 +154,13 @@ bool Robot::LoadParameters(const char * filename)
                 para.docking_backward_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
                 para.docking_backward_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
             }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "failed_reverse_speed" ) )
+            {
+                para.docking_failed_reverse_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.docking_failed_reverse_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.docking_failed_reverse_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
+
 
         }
         else if( strcmp( typestr, "Locking" ) == 0 )
@@ -110,6 +172,14 @@ bool Robot::LoadParameters(const char * filename)
             para.locking_reflective_offset1 = optionfile->ReadInt(entity, "locking_reflective_offset1", 500);
             para.locking_reflective_offset2 = optionfile->ReadInt(entity, "locking_reflective_offset2", 500);
             para.locking_reflective_diff = optionfile->ReadInt(entity, "locking_reflective_diff", 650);
+            para.locking_beacon_offset1 = optionfile->ReadInt(entity, "locking_beacon_offset1", 100);
+            para.locking_beacon_offset2 = optionfile->ReadInt(entity, "locking_beacon_offset2", 100);
+            para.locking_beacon_diff = optionfile->ReadInt(entity, "locking_beacon_diff", 50);
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "locking_motor_enabled" ) )
+            {
+                for(int i=0;i<4;i++)
+                    para.locking_motor_enabled[i] =  atoi(optionfile->GetPropertyValue(prop, i));
+            }
         }
         else if( strcmp( typestr, "MacroLocomotion" ) == 0 )
         {
@@ -147,6 +217,19 @@ bool Robot::LoadParameters(const char * filename)
             para.ir_msg_ack_delay = optionfile->ReadInt(entity, "ir_msg_ack_delay", 10);
             if(para.init_state > STATE_COUNT || para.init_state <0)
                 para.init_state = 0;
+
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "reflective_calibrated" ) ) 
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.reflective_calibrated[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "ambient_calibrated" ) ) 
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.ambient_calibrated[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
+
+
         }
         else if( strcmp( typestr, "ShapeInfo" ) == 0 )
         {

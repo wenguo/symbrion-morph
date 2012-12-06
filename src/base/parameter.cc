@@ -19,6 +19,8 @@ Parameter::Parameter():
     recruiting_proximity_offset2(500),
     recruiting_reflective_offset1(20),
     recruiting_reflective_offset2(20),
+    recruiting_guiding_signals_time(200),
+    docking_trials(255),
     docking_reflective_offset1(300),
     docking_reflective_offset2(300),
     docking_reflective_diff(150),
@@ -27,6 +29,7 @@ Parameter::Parameter():
     docking_beacon_diff(70),
     docking_motor_opening_time(30),
     docking_motor_closing_time(40),
+    docking_failed_reverse_time(10),
     hinge_motor_lifting_time(30),
     hinge_motor_lowing_time(40),
     locking_proximity_offset1(630),
@@ -36,6 +39,10 @@ Parameter::Parameter():
     locking_reflective_offset1(250),
     locking_reflective_offset2(250),
     locking_reflective_diff(150),
+    locking_beacon_offset1(100),
+    locking_beacon_offset2(100),
+    locking_beacon_diff(100),
+    aligning_reverse_count(50),
     print_proximity(false),
     print_beacon(false),
     print_reflective(false),
@@ -46,13 +53,24 @@ Parameter::Parameter():
     ir_msg_ack_delay(10),
     avoidance_threshold(10)
 {
-    memset(avoid_weightleft, 0, NUM_IRS);
-    memset(avoid_weightright, 0, NUM_IRS);
-    memset(avoid_weightside, 0, NUM_IRS);
-    memset(docking_turn_left_speed, 0, 3);
-    memset(docking_turn_right_speed, 0, 3);
-    memset(docking_forward_speed, 0, 3);
-    memset(docking_backward_speed, 0, 3);
+    memset(avoid_weightleft, 0, NUM_IRS * sizeof(int));
+    memset(avoid_weightright, 0, NUM_IRS * sizeof(int));
+    memset(avoid_weightside, 0, NUM_IRS * sizeof(int));
+    memset(locatebeacon_weightleft, 0, NUM_IRS * sizeof(int));
+    memset(locatebeacon_weightright, 0, NUM_IRS * sizeof(int));
+    memset(aligning_weightleft, 0, NUM_IRS * sizeof(int));
+    memset(aligning_weightright, 0, NUM_IRS * sizeof(int));
+    memset(reflective_calibrated, 0, NUM_IRS * sizeof(int));
+    memset(ambient_calibrated, 0, NUM_IRS * sizeof(int));
+    memset(locking_motor_enabled, 0, NUM_DOCKS * sizeof(bool));
+    memset(docking_turn_left_speed, 0, 3 * sizeof(int));
+    memset(docking_turn_right_speed, 0, 3 * sizeof(int));
+    memset(docking_forward_speed, 0, 3 * sizeof(int));
+    memset(docking_backward_speed, 0, 3 * sizeof(int));
+    memset(docking_failed_reverse_speed, 0, 3 * sizeof(int));
+    memset(aligning_forward_speed, 0, 3 * sizeof(int));
+    memset(aligning_reverse_speed, 0, 3 * sizeof(int));
+    memset(locatebeacon_forward_speed, 0, 3 * sizeof(int));
     debug.mode = 0;
     memset(debug.para, 0, 10* sizeof(int));
 }
@@ -89,6 +107,20 @@ std::ostream& operator<<(std::ostream& os, const Parameter& para)
         os << para.avoid_weightside[i]<<" ";
     }
     os <<"]\n";
+    os  << "ambient_calibrated: [";
+    for(int i=0;i<NUM_IRS;i++)
+    {
+        os << para.ambient_calibrated[i]<<" ";
+    }
+    os <<"]\n";
+    os  << "reflective_calibrated: [";
+    for(int i=0;i<NUM_IRS;i++)
+    {
+        os << para.reflective_calibrated[i]<<" ";
+    }
+    os <<"]\n";
+
+
 
 
 

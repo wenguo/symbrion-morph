@@ -16,7 +16,7 @@
 
 #define INORGANISM_WAIT_COUNT 200 //one minutues delay after organism formed, then disassembly
 
-#define BEACON_SIGNAL_DETECTED_THRESHOLD 5
+#define BEACON_SIGNAL_DETECTED_THRESHOLD 3
 #define PROXIMITY_SIGNAL_DETECTED_THRESHOLD 10
 #define BUMPED_THRESHOLD 100
 #define DOCKING_CHECKING_INTERVAL 8
@@ -73,13 +73,14 @@ enum fsm_state_t {
     LOCATEBEACON, 
     ALIGNMENT, 
     RECOVER, 
-    DOCKING, 
+    DOCKING, //11
     LOCKING, 
     DISASSEMBLY,
     UNDOCKING,
     INORGANISM,  // 15
     RECRUITMENT, 
-    TRANSFORMING,
+    RAISING,
+    LOWERING,
     RESHAPING,
     MACROLOCOMOTION,
     FAILED,
@@ -87,7 +88,7 @@ enum fsm_state_t {
     LEADREPAIR,
     REPAIR,
     BROADCASTSCORE,
-    DEBUGGING, 
+    DEBUGGING, //26
     STATE_COUNT
 };
 enum robot_mode_t {
@@ -112,6 +113,7 @@ enum irmsg_type_t {
     IR_MSG_TYPE_EXPELLING,        //no data 
     IR_MSG_TYPE_POWERSOURCE_FOUND,//no data
     IR_MSG_TYPE_GUIDEME, //no data
+    IR_MSG_TYPE_DOCKING_SIGNALS_REQ,
     IR_MSG_TYPE_OBJECTTYPE, 
 
     //broadcast, ack required
@@ -124,20 +126,39 @@ enum irmsg_type_t {
     IR_MSG_TYPE_ASSEMBLY_INFO,
     IR_MSG_TYPE_ASSEMBLY_INFO_REQ,
 
+    IR_MSG_TYPE_IP_ADDR,
+    IR_MSG_TYPE_IP_ADDR_REQ,
+
     IR_MSG_TYPE_PROPAGATED,
     IR_MSG_TYPE_DISASSEMBLY,
     IR_MSG_TYPE_NEWROBOT_JOINED,
     IR_MSG_TYPE_ORGANISM_FORMED,
-    IR_MSG_TYPE_TRANSFORMING,
+    IR_MSG_TYPE_RAISING,
+    IR_MSG_TYPE_LOWERING,
     IR_MSG_TYPE_RESHAPING,
 
     // for self-repair
     IR_MSG_TYPE_FAILED,
     IR_MSG_TYPE_SUB_OG_STRING,
     IR_MSG_TYPE_SCORE_STRING,
+    IR_MSG_TYPE_SCORE,
 
     IR_MSG_TYPE_ACK,              //followed by acknowledged message type
     IR_MSG_TYPE_COUNT
+};
+
+enum ethmsg_type_t{
+    ETH_MSG_TYPE_UNKNOWN,
+    
+    ETH_MSG_TYPE_PROPAGATED,
+    ETH_MSG_TYPE_DISASSEMBLY,
+    ETH_MSG_TYPE_NEWROBOT_JOINED,
+    ETH_MSG_TYPE_ORGANISM_FORMED,
+    ETH_MSG_TYPE_RAISING,
+    ETH_MSG_TYPE_LOWERING,
+    ETH_MSG_TYPE_RESHAPING,
+    
+    ETH_MSG_TYPE_COUNT
 };
 
 enum docking_motor_status_t{
