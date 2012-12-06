@@ -43,38 +43,41 @@ set termencoding=utf-8
 let s:so_save = &so | let s:siso_save = &siso | set so=0 siso=0
 let v:this_session=expand("<sfile>:p")
 silent only
-cd /Volumes/Projects/symbrion-morph/src
 if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
   let s:wipebuf = bufnr('%')
 endif
 set shortmess=aoO
 badd +1 ./base/IRMessage.cc
-badd +0 ./base/IRMessage.hh
-badd +0 ./base/global.cc
-badd +0 ./base/global.hh
-badd +0 ./base/og/organism.cc
-badd +0 ./base/og/organism.hh
-badd +0 ./base/og/organism_sample.cc
-badd +0 ./base/og/organism_sample.hh
-badd +0 ./base/og/organism_sequence.cc
-badd +0 ./base/parameter.cc
-badd +0 ./base/parameter.hh
-badd +0 ./base/robot.cc
-badd +0 ./base/robot.hh
-badd +0 ./base/robot_debug.cc
-badd +0 ./base/robot_ircomm.cc
-badd +0 ./base/robot_option.cc
-badd +0 ./base/utils/hist.cc
-badd +0 ./base/utils/hist.hh
-badd +0 ./base/utils/support.cc
-badd +0 ./base/utils/support.hh
-badd +0 ./base/utils/worldfile.cc
-badd +0 ./base/utils/worldfile.hh
-badd +0 ./main.cc
-badd +0 ./robot_AW.cc
-badd +0 ./robot_AW.hh
-badd +0 ./robot_KIT.cc
-badd +0 ./robot_KIT.hh
+badd +1 ./base/IRMessage.hh
+badd +1 ./base/global.cc
+badd +1 ./base/global.hh
+badd +1 ./base/og/organism.cc
+badd +1 ./base/og/organism.hh
+badd +1 ./base/og/organism_sample.cc
+badd +1 ./base/og/organism_sample.hh
+badd +1 ./base/og/organism_sequence.cc
+badd +1 ./base/parameter.cc
+badd +1 ./base/parameter.hh
+badd +1 ./base/robot.cc
+badd +1 ./base/robot.hh
+badd +1 ./base/robot_debug.cc
+badd +1 ./base/robot_ircomm.cc
+badd +1 ./base/robot_ethcomm.cc
+badd +1 ./base/robot_option.cc
+badd +1 ./base/utils/hist.cc
+badd +1 ./base/utils/hist.hh
+badd +1 ./base/utils/support.cc
+badd +1 ./base/utils/support.hh
+badd +1 ./base/utils/worldfile.cc
+badd +1 ./base/utils/worldfile.hh
+badd +1 ./main.cc
+badd +1 ./robot_AW.cc
+badd +1 ./robot_AW.hh
+badd +1 ./robot_KIT.cc
+badd +1 ./robot_KIT.hh
+badd +1 ./robot_SCOUT.hh
+badd +1 ./robot_SCOUT.cc
+badd +313 ./base/robot_self_repair.cc
 args \[BufExplorer]
 set splitbelow splitright
 set nosplitbelow

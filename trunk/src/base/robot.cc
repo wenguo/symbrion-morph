@@ -27,8 +27,13 @@ Robot::Robot()
     wait_side = FRONT;
     parent_side = SIDE_COUNT;
     repair_stage = STAGE0;
-    repair_start=0;
-    repair_delay=30;
+    repair_start = 0;
+    repair_duration = 50;
+    move_start = 0;
+    move_duration = 50;
+    broadcast_start = 0;
+    broadcast_duration = 200;
+    broadcast_period = 50;
 
     hinge_motor_status = LOWED;
     RGBLED_flashing = 0;
@@ -50,7 +55,8 @@ Robot::Robot()
     RegisterBehaviour(&Robot::Disassembly, DISASSEMBLY);
     RegisterBehaviour(&Robot::Undocking, UNDOCKING);
     RegisterBehaviour(&Robot::Recruitment, RECRUITMENT);
-    RegisterBehaviour(&Robot::Transforming, TRANSFORMING);
+    RegisterBehaviour(&Robot::Raising, RAISING);
+    RegisterBehaviour(&Robot::Lowering, LOWERING);
     RegisterBehaviour(&Robot::Reshaping, RESHAPING);
     RegisterBehaviour(&Robot::MacroLocomotion, MACROLOCOMOTION);
     RegisterBehaviour(&Robot::Debugging, DEBUGGING);
@@ -59,18 +65,13 @@ Robot::Robot()
     RegisterBehaviour(&Robot::Support, SUPPORT);
     RegisterBehaviour(&Robot::LeadRepair, LEADREPAIR);
     RegisterBehaviour(&Robot::Repair, REPAIR);
-    RegisterBehaviour(&Robot::BroadcastScore, BROADCASTSCORE);
-
-
-
-
 
     for (int i = 0; i < NUM_IRS; i++)
     {
         reflective[i]=0;
         proximity[i]=0;
-        reflective_calibrated[i]=0;
-        ambient_calibrated[i]=4000;
+       // reflective_calibrated[i]=0;
+       // ambient_calibrated[i]=4000;
         // reflective_avg[i]=0;
         beacon[i]=0;
     }
@@ -78,7 +79,7 @@ Robot::Robot()
     for (int i = 0; i < NUM_DOCKS; i++)
     {
         comm_status[i] = 0;
-        docked[i] = false;
+        docked[i] = 0;
         docking_done[i] = false;
         unlocking_required[i] = false;
         recruitment_signal_interval_count[i]=0;//DEFAULT_RECRUITMENT_COUNT;
@@ -89,6 +90,10 @@ Robot::Robot()
         recruitment_stage[i] = STAGE0;
         docking_motor_operating_count[i]=0;
         docking_motors_status[i] = OPENED;
+        neighbours_IP[i] = 0;
+        new_id[i] = SIDE_COUNT;
+        new_score[i] = 0;
+        guiding_signals_count[i]=0;
     }
 
 
@@ -98,10 +103,13 @@ Robot::Robot()
     waiting_count = DEFAULT_WAITING_COUNT;
     foraging_count = DEFAULT_FORAGING_COUNT;
     docking_count = 0;
+    docking_failed_reverse_count = 0;
     recover_count = 0;
     inorganism_count = 0;
     macrolocomotion_count = 0;
-    transforming_count = 0;
+    undocking_count = 0;
+    raising_count = 0;
+    lowering_count = 0;
 
     beacon_signals_detected=0;
     robot_in_range_replied=0;
@@ -118,10 +126,13 @@ Robot::Robot()
     msg_lockme_expected = 0;
     msg_disassembly_received = 0;
     msg_reshaping_received=0;
-    msg_transforming_received = 0;
+    msg_raising_received = 0;
+    msg_lowering_received = 0;
     msg_guideme_received = 0;
+    msg_docking_signal_req_received = 0;
     msg_organism_seq_received = false;
     msg_organism_seq_expected = false;
+    msg_ip_addr_received = 0;
 
     // for self-repair
     msg_failed_received = 0;
@@ -129,6 +140,10 @@ Robot::Robot()
     msg_subog_seq_expected = 0;
     msg_score_seq_received = 0;
     msg_score_seq_expected = 0;
+    msg_score_received = 0;
+
+    docking_failed = false;
+    docking_trials=0;
 
     //clear just in case 
     mytree.Clear();
@@ -138,11 +153,16 @@ Robot::Robot()
     // for self-repair
     subog_id = SIDE_COUNT;
     subog_str[0] = 0;
+    best_score = 0;
+    best_id = SIDE_COUNT;
+    own_score = 0;
 
-    pthread_mutex_init(&mutex, NULL);
-    pthread_mutex_init(&txqueue_mutex, NULL);
+    pthread_mutex_init(&ir_rx_mutex, NULL);
+    pthread_mutex_init(&ir_txqueue_mutex, NULL);
+    pthread_mutex_init(&eth_rx_mutex, NULL);
+    pthread_mutex_init(&eth_txqueue_mutex, NULL);
 
-    robots_in_range_detected_hist.Resize(16);
+    robots_in_range_detected_hist.Resize(15);
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;
@@ -156,6 +176,28 @@ Robot::Robot()
     IR_PULSE2 = 0x4;
 }
 
+// Reset variables used during assembly
+void Robot::ResetAssembly()
+{
+    powersource_found = false;
+    organism_found = false;
+    organism_formed = false;
+    msg_raising_received = 0;
+    msg_lowering_received = 0;
+    msg_score_received = 0;
+    msg_unlocked_received = 0;
+    num_robots_inorganism=1;
+    seed = false;
+
+    for(int i=0; i<SIDE_COUNT; i++)
+    {
+        recruitment_stage[i]=STAGE0;
+        recruitment_count[i] = 0;
+        recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
+    }
+
+}
+
 Robot::~Robot()
 {
     printf("Desctruction Robot\n");
@@ -165,17 +207,22 @@ Robot::~Robot()
 
 bool Robot::Init(const char * optionfile)
 {
+
     if(!LoadParameters(optionfile))
     {
         return false;
     }
 
-    current_state = CALIBRATING;//fsm_state_t(para.init_state);
-    last_state = CALIBRATING;//fsm_state_t(para.init_state);
+    current_state = fsm_state_t(para.init_state);
+    last_state = fsm_state_t(para.init_state);
+
+    SPIVerbose = QUIET;
 
     InitLog();
 
     InitHardware();
+
+    my_IP = Ethernet::GetLocalIP();
 
     pthread_attr_t attributes;
     pthread_attr_init(&attributes);
@@ -195,6 +242,9 @@ bool Robot::Init(const char * optionfile)
         SetRGBLED(i, 0, 0, 0, 0);
         SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0|IR_PULSE1);
     }
+    
+    robots_in_range_detected_hist.Reset();
+    beacon_signals_detected_hist.Reset();
 
     return true;
 }
@@ -214,6 +264,13 @@ bool Robot::InitLog()
         mkdir(oss.str().c_str(), 0777);
         oss << (char *)name <<"_"<< time_string<< ".log";
         logFile.open(oss.str().c_str());
+
+        std::ostringstream oss1;
+        oss1 << "./log/";
+        mkdir(oss.str().c_str(), 0777);
+        oss1 << (char *)name <<"_"<< time_string<< ".state";
+        logstateFile.open(oss1.str().c_str());
+ 
     }    
 
     return true;
@@ -266,10 +323,12 @@ void Robot::Update(const uint32_t& ts)
     behaviours[current_state](this);
 
     if(temp_state!=current_state)
+    {
         PrintStatus();
+    }
 
     PrintBeacon();
-    //PrintProximity();
+    PrintProximity();
     PrintReflective();
     PrintAmbient();
     //PrintStatus();
@@ -311,8 +370,9 @@ void Robot::Update(const uint32_t& ts)
 
     timestamp = ts;
 
-    //if(para.logtofile)
-    //    Log();
+   // if(para.logtofile)
+   //     Log();
+    LogState();
 
 }
 
@@ -332,21 +392,50 @@ void Robot::Calibrating()
         temp2[i] += ambient[i];
     }
 
-    if (timestamp > 30)
+    if (timestamp == 100)
     {
         printf("Calibrating done (%d): ", count);
         for(int i=0;i<NUM_IRS;i++)
         {
-            reflective_calibrated[i]=temp1[i]/count;
-            ambient_calibrated[i]=temp2[i]/count;
-            printf("%d\t", reflective_calibrated[i]);
+            para.reflective_calibrated[i]=temp1[i]/count;
+            para.ambient_calibrated[i]=temp2[i]/count;
+            printf("%d\t", para.reflective_calibrated[i]);
         }
+
         printf("\n");
-        robots_in_range_detected_hist.Reset();
-        beacon_signals_detected_hist.Reset();
-        current_state = (fsm_state_t) para.init_state;
-        last_state = CALIBRATING;
+    //    current_state = (fsm_state_t) para.init_state;
+    //    last_state = CALIBRATING;
+
+        if(optionfile)
+        {
+
+            for( int entity = 1; entity < optionfile->GetEntityCount(); ++entity )
+            {
+                const char *typestr = (char*)optionfile->GetEntityType(entity);          
+                if( strcmp( typestr, "Global" ) == 0 )
+                {
+                    char default_str[64];
+                    for(int i=0;i<NUM_IRS;i++)
+                    {
+                        snprintf(default_str, sizeof(default_str), "%d", para.reflective_calibrated[i]);
+                        optionfile->WriteTupleString(entity, "reflective_calibrated", i, default_str);
+                        snprintf(default_str, sizeof(default_str), "%d", para.ambient_calibrated[i]);
+                        optionfile->WriteTupleString(entity, "ambient_calibrated", i, default_str);
+                    }
+                }
+            }
+        }
+
+        if(type == ROBOT_KIT)
+            optionfile->Save("/flash/morph/kit_option.cfg");
+        else if(type == ROBOT_AW)
+            optionfile->Save("/flash/morph/aw_option.cfg");
+        else if(type == ROBOT_SCOUT)
+            optionfile->Save("/flash/morph/scout_option.cfg");
+
+
     }
+
 }
 
 
@@ -436,7 +525,7 @@ const OrganismSequence& Robot::GetOgSequence()
 
 bool Robot::isNeighboured(Robot * r)
 {
-    for (int i = RIGHT; i <= LEFT; i++)
+    for (int i = 0; i <NUM_DOCKS ; i++)
     {
         if(neighbours[i] && neighbours[i] == r)
             return true;
@@ -444,6 +533,7 @@ bool Robot::isNeighboured(Robot * r)
 
     return false;
 }
+
 
 
 /*
@@ -567,6 +657,20 @@ void Robot::PrintStatus()
     std::cout << timestamp << ": " << name << " in state " << state_names[current_state]
         << " [" << state_names[last_state] << "] recover count: " << recover_count
         << " speed (" << leftspeed << " , " << rightspeed << " )"  << std::endl;
+}
+
+void Robot::LogState()
+{
+    if (logstateFile.is_open())
+    {
+        logstateFile << timestamp << "\t" << current_state << "\t"<< last_state<<"\t" ;
+        logstateFile <<"[";
+        logstateFile << (int)(recruitment_stage[0])<<"\t";
+        logstateFile << (int)(recruitment_stage[1])<<"\t";
+        logstateFile << (int)(recruitment_stage[2])<<"\t";
+        logstateFile << (int)(recruitment_stage[3])<<"]";
+        logstateFile <<std::endl;
+    }
 }
 
 void Robot::PrintSubOGString( uint8_t *seq)

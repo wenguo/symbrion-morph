@@ -2,11 +2,12 @@
 #include <string.h>
 #include <stdio.h>
 
-IRMessage::IRMessage(uint8_t ch, uint32_t ts, uint8_t t, const uint8_t * d, uint16_t len, bool ack)
+IRMessage::IRMessage(uint8_t ch, uint32_t ts, uint8_t r, uint8_t t, const uint8_t * d, uint16_t len, bool ack)
 {
     channel = ch;
     repeated = 0;
     timestamp = ts;
+    receiver = r;
     type = t;
     ack_required = ack;
     data_len = len;

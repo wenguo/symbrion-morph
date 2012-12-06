@@ -1,5 +1,6 @@
 #include "robot_KIT.hh"
 #include "robot_AW.hh"
+#include "robot_SCOUT.hh"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,28 +41,41 @@ int main(int argc, char * argv[])
         return -1;
     }
 
-    RobotBase::RobotType robot_type = RobotBase::Initialize();
+    RobotBase::RobotType robot_type = RobotBase::Initialize("morph");
 
     //create robot object
     Robot * robot;
+    char cf_path[64];
+    char cf_name[128];
+    if(argc == 2)
+        sprintf(cf_path,"%s", argv[1]);
+    else
+        sprintf(cf_path,"/flash/morph");
+
 
     if(robot_type == RobotBase::KABOT)
     {
         robot = new RobotKIT;
-        if(!robot->Init("/flash/uwe/kit_option.cfg"))
-            return -1;
+        sprintf(cf_name,"%s/kit_option.cfg", cf_path);
     }
     else if(robot_type == RobotBase::ACTIVEWHEEL)
     {
         robot = new RobotAW;
-        if(!robot->Init("/flash/uwe/aw_option.cfg"))
-            return -1;
+        sprintf(cf_name,"%s/aw_option.cfg", cf_path);
+    }
+    else if(robot_type == RobotBase::SCOUTBOT)
+    {
+        robot = new RobotSCOUT;
+        sprintf(cf_name,"%s/scout_option.cfg", cf_path);
     }
     else
     {
         printf("unknow robot type, quit\n");
         return -1;
     }
+    
+    if(!robot->Init(cf_name))
+        return -1;
 
 
     //set timer to be every 100 ms

@@ -24,17 +24,23 @@ class Parameter
         int init_state;
         int speed_forward;
         int speed_sideward;
+        int locatebeacon_forward_speed[3];
+        int aligning_forward_speed[3];
+        int aligning_reverse_speed[3];
         int docking_turn_left_speed[3];
         int docking_turn_right_speed[3];
         int docking_forward_speed[3];
         int docking_backward_speed[3];
+        int docking_failed_reverse_speed[3];
         int recruiting_ambient_offset1;
         int recruiting_ambient_offset2;
         int recruiting_proximity_offset1;
         int recruiting_proximity_offset2;
         int recruiting_reflective_offset1;
         int recruiting_reflective_offset2;
+        int recruiting_guiding_signals_time;
 
+        int docking_trials;
         int docking_reflective_offset1;
         int docking_reflective_offset2;
         int docking_reflective_diff;
@@ -43,6 +49,7 @@ class Parameter
         int docking_beacon_diff;
         int docking_motor_opening_time;
         int docking_motor_closing_time;
+        int docking_failed_reverse_time;
         int hinge_motor_lifting_time;
         int hinge_motor_lowing_time;
 
@@ -53,11 +60,23 @@ class Parameter
         int locking_reflective_offset1;
         int locking_reflective_offset2;
         int locking_reflective_diff;
+        int locking_beacon_offset1;
+        int locking_beacon_offset2;
+        int locking_beacon_diff;
+        bool locking_motor_enabled[NUM_DOCKS];
 
         int avoid_weightleft[NUM_IRS];
         int avoid_weightright[NUM_IRS];
         int avoid_weightside[NUM_IRS];
 
+        int locatebeacon_weightleft[NUM_IRS];
+        int locatebeacon_weightright[NUM_IRS];
+
+        int aligning_weightleft[NUM_IRS];
+        int aligning_weightright[NUM_IRS];
+
+        uint32_t aligning_reverse_count;
+        
         bool print_proximity;
         bool print_beacon;
         bool print_reflective;
@@ -70,6 +89,8 @@ class Parameter
 
         int32_t avoidance_threshold;
 
+        int ambient_calibrated[NUM_IRS];
+        int reflective_calibrated[NUM_IRS];
 
         std::vector<OrganismSequence> og_seq_list;
 

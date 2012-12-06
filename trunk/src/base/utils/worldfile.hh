@@ -279,7 +279,7 @@ namespace Morph {
 	 bool PropertyExists( int section, const char* token );
 
 	 // Set the value of an property.
-  private: void SetPropertyValue( CProperty* property, int index, const char *value);
+  public: void SetPropertyValue( CProperty* property, int index, const char *value);
 
 	 // Get the value of an property.
   public: const char *GetPropertyValue( CProperty* property, int index);
