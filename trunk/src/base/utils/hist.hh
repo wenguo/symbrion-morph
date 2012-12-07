@@ -15,7 +15,7 @@ class Hist
 
         void Push(int32_t value);
         //used for robot_in_range_detected
-        void Push2(int32_t value);
+        void Push2(uint8_t value);
 
         inline int32_t Avg() {return sum / size;}
 

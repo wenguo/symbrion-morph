@@ -243,8 +243,14 @@ void RobotSCOUT::UpdateSensors()
     beacon[6] = ret_D.sensor[0].docking;
     beacon[7] = ret_D.sensor[1].docking;
 
-    //for(int i=0;i<NUM_DOCKS;i++)
+    uint8_t ethernet_status=0;
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
     //    color[i] = GetRGB(ScoutBot::Side(i));
+        if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])))
+            ethernet_status |= 1<<i;
+    }
+    ethernet_status_hist.Push2(ethernet_status);
 
     for(int i=0;i<NUM_IRS;i++)
     {
@@ -613,7 +619,7 @@ void RobotSCOUT::Alignment()
 
     //check if it is aligned well and also closed enough for docking
     //this is done by checking if ehternet port is connected
-    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[assembly_info.side2]))) 
+    if(ethernet_status_hist.Sum(assembly_info.side2) > 2) 
     {
         docking_region_detected = true;
         in_docking_region_hist.Reset();
@@ -753,7 +759,7 @@ void RobotSCOUT::Docking()
 
     docking_count++;
 
-    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[assembly_info.side2]))) 
+    if(ethernet_status_hist.Sum(assembly_info.side2) > 8) 
     {
         leftspeed = 0;
         rightspeed= 0;  
@@ -764,6 +770,19 @@ void RobotSCOUT::Docking()
 
         current_state = LOCKING;
         last_state = DOCKING;
+    }
+    else
+    {
+        if(assembly_info.side2 == ::FRONT)
+        {
+            leftspeed = para.docking_forward_speed[0];
+            rightspeed= para.docking_forward_speed[1];  
+        }
+        else
+        {
+            leftspeed = -para.docking_forward_speed[0];
+            rightspeed= -para.docking_forward_speed[1];  
+        }
     }
 
 }

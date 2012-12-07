@@ -229,6 +229,7 @@ class Robot
     Hist beacon_signals_detected_hist;
     Hist ambient_avg_threshold_hist;
     Hist proximity_hist[NUM_IRS];
+    Hist ethernet_status_hist;
 
     //status
     uint8_t bumped;

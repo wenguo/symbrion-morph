@@ -164,6 +164,8 @@ Robot::Robot()
     pthread_mutex_init(&eth_txqueue_mutex, NULL);
 
     robots_in_range_detected_hist.Resize(15);
+    ethernet_status_hist.Resize(15);
+
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;
@@ -213,6 +215,7 @@ void Robot::ResetAssembly()
     aligning_region_detected = false;
     blocking_count = 0;
 
+    ethernet_status_hist.Reset();
 }
 
 Robot::~Robot()
