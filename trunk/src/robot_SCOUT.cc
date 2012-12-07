@@ -497,9 +497,6 @@ void RobotSCOUT::LocateEnergy()
 
 void RobotSCOUT::LocateBeacon()
 {
-
-    static bool aligning_region_detected = false;
-
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
 
@@ -611,10 +608,6 @@ void RobotSCOUT::Alignment()
     leftspeed = para.aligning_forward_speed[0];
     rightspeed = para.aligning_forward_speed[1];
 
-    static bool docking_region_detected = false;
-    static bool blocked = false;
-    static int alignment_count=0;
-    
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
 
@@ -645,8 +638,8 @@ void RobotSCOUT::Alignment()
             docking_count = 0;
             docking_failed_reverse_count = 0;
 
-            blocked = false;
-            alignment_count=0;
+            docking_blocked = false;
+            blocking_count=0;
 
             docking_trials++;
 
@@ -668,16 +661,16 @@ void RobotSCOUT::Alignment()
         in_docking_region_hist.Push(in_docking_region(input));
 
         if(reflective_hist[id0].Avg() > 1000 && reflective_hist[id1].Avg() > 1000)
-            alignment_count++;
+            blocking_count++;
 
         //3 second is allowed until fully docked, otherwise, treated as blocked.
-        if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||alignment_count > 30)
-            blocked = true;
+        if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
+            docking_blocked = true;
 
-        if(blocked)
+        if(docking_blocked)
         {
-            blocked = false;
-            alignment_count=0;
+            docking_blocked = false;
+            blocking_count=0;
             leftspeed = 0;
             rightspeed = 0;
             current_state = RECOVER;
