@@ -1,5 +1,6 @@
 #include "IRobot.h"
 #include "comm/IRComm.h"
+#include "hist.hh"
 #include <pthread.h>
 #include <signal.h>
 #include <cstdio>
@@ -41,7 +42,7 @@ void interrupt_signal_handler(int signal) {
 int main(int argc, char** args) {
 	pthread_mutex_init(&stdin_read,NULL);
 
-	RobotBase::RobotType robot_type = RobotBase::Initialize();
+	RobotBase::RobotType robot_type = RobotBase::Initialize("test");
 
 	IRComm::Initialize();
 	
@@ -66,12 +67,19 @@ int main(int argc, char** args) {
 	}
 
        RobotBase::Instance()->SetIRLED(SPI_D, 0x7);
+
+       Hist test_hist;
+       test_hist.Resize(105);
+       int i=0;
 	
 	// Main loop
 	while (true) {
 		// <Your code>
 		// To 
                 char str[10];
+                
+                test_hist.Push2(0xAE);
+                test_hist.Print2();
                
 
                 static int count=0;
@@ -110,7 +118,7 @@ int main(int argc, char** args) {
 		// Sensor data are sent every 20ms by the MSP.
 		// Moreover, because of the motor regulation motor speed should
 		// not be updated too often.
-		usleep(200000);
+		usleep(300000);
 	}
 	
 	return 0;

@@ -1,5 +1,5 @@
 
-SRC = main.cpp
+SRC = main.cc hist.cc
 
 # Change this to your path to the irobot directory
 IROBOTPATH = ../irobot
@@ -18,11 +18,15 @@ STRIP = bfin-linux-uclibc-strip
 
 IPATH = .
 IPATH += $(IROBOTPATH)/include
+IPATH += ../src/base/utils
+
+VPATH = .
+VPATH += ../src/base/utils
 
 CXXFLAGS += $(patsubst %, -I%, $(IPATH))
 LDFLAGS = -L$(IROBOTPATH)/lib -lpthread -lirobot
 
-TOBJECTS = $(SRC:%.cpp=objects/%.o)
+TOBJECTS = $(SRC:%.cc=objects/%.o)
 OBJECTS = $(TOBJECTS:%.c=objects/%.o)
 
 all: objects bin bin/$(EXE) strip
@@ -36,7 +40,7 @@ bin:
 bin/$(EXE): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
-objects/%.o: %.cpp
+objects/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 	
 objects/%.o: %.c
