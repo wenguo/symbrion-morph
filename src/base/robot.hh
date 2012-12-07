@@ -240,6 +240,9 @@ class Robot
     //bits 6-7: neighbour's side
     bool docking_done[NUM_DOCKS];   
     bool docking_failed;
+    bool docking_blocked;
+    bool docking_region_detected;
+    bool aligning_region_detected;
     bool unlocking_required[NUM_DOCKS];
     uint8_t recruitment_stage[NUM_DOCKS];//using an array in case parallel docking is enabled
     uint32_t IRLED_status[NUM_DOCKS]; //each ir led (bits 0 and 1): 0 or 1-- off,
@@ -288,6 +291,7 @@ class Robot
     uint32_t docking_failed_reverse_count;
     uint32_t hinge_motor_operating_count;
     uint32_t guiding_signals_count[NUM_DOCKS];
+    uint32_t blocking_count;
 
     uint8_t docking_trials;
 

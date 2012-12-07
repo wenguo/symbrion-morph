@@ -144,6 +144,7 @@ Robot::Robot()
 
     docking_failed = false;
     docking_trials=0;
+    docking_blocked = false;
 
     //clear just in case 
     mytree.Clear();
@@ -170,6 +171,11 @@ Robot::Robot()
 
     docking_approaching_sensor_id[0] = 0; 
     docking_approaching_sensor_id[1] = 1; 
+
+    docking_blocked = false;
+    docking_region_detected = false;
+    aligning_region_detected = false;
+    blocking_count = 0;
 
     LED0 = 0x1;
     LED1 = 0x2;
@@ -201,6 +207,11 @@ void Robot::ResetAssembly()
 
     docking_approaching_sensor_id[0] = 0; 
     docking_approaching_sensor_id[1] = 1; 
+
+    docking_blocked = false;
+    docking_region_detected = false;
+    aligning_region_detected = false;
+    blocking_count = 0;
 
 }
 
