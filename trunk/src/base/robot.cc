@@ -168,6 +168,9 @@ Robot::Robot()
     sidespeed = 0;
     direction = FORWARD;
 
+    docking_approaching_sensor_id[0] = 0; 
+    docking_approaching_sensor_id[1] = 1; 
+
     LED0 = 0x1;
     LED1 = 0x2;
     LED2 = 0x4;
@@ -195,6 +198,9 @@ void Robot::ResetAssembly()
         recruitment_count[i] = 0;
         recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
     }
+
+    docking_approaching_sensor_id[0] = 0; 
+    docking_approaching_sensor_id[1] = 1; 
 
 }
 

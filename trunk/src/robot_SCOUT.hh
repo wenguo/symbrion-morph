@@ -53,5 +53,6 @@ class RobotSCOUT:public Robot, public ScoutBot
         virtual void Log();
     private:
         void Avoidance();
+
 };
 #endif

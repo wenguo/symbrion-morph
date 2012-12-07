@@ -206,10 +206,10 @@ void RobotSCOUT::UpdateSensors()
     //5 -- rear right
     //6 -- right rear
     //7 -- right front
-    IRValues ret_A = GetIRValues(ScoutBot::FRONT);
-    IRValues ret_B = GetIRValues(ScoutBot::LEFT);
+    IRValues ret_A;// = GetIRValues(ScoutBot::FRONT);
+    IRValues ret_B;// = GetIRValues(ScoutBot::LEFT);
     IRValues ret_C = GetIRValues(ScoutBot::REAR);
-    IRValues ret_D = GetIRValues(ScoutBot::RIGHT);
+    IRValues ret_D;// = GetIRValues(ScoutBot::RIGHT);
     ambient[0] = ret_A.sensor[0].ambient;
     ambient[1] = ret_A.sensor[1].ambient;
     reflective[0] = ret_A.sensor[0].reflective;
@@ -464,6 +464,17 @@ void RobotSCOUT::Assembly()
     {
         current_state = LOCATEBEACON;
         last_state = FORAGING;
+
+        if(assembly_info.side2 == FRONT)
+        {
+            docking_approaching_sensor_id[0] = 0;
+            docking_approaching_sensor_id[1] = 1;
+        }
+        else
+        {
+            docking_approaching_sensor_id[0] = 4;
+            docking_approaching_sensor_id[1] = 5;
+        }
     }
     else
         Avoidance();
@@ -488,19 +499,33 @@ void RobotSCOUT::LocateBeacon()
 {
 
     static bool aligning_region_detected = false;
-    const int locatebeacon_weightleft[8]={-1, 1, 2, 4, 0, 0, -4, -2};
-    const int locatebeacon_weightright[8]={1, -1, -2, -4, 0, 0, 4, 2};
+    int id0 = docking_approaching_sensor_id[0];
+    int id1 = docking_approaching_sensor_id[1];
 
     //check if received docking signals
     int beacon_trigger_count=0;
-    if(beacon_signals_detected_hist.Sum(0) >= 3)
-        beacon_trigger_count++;
-    if(beacon_signals_detected_hist.Sum(1) >= 3)
-        beacon_trigger_count++;
-    if(beacon_signals_detected_hist.Sum(2) >= 3)
-        beacon_trigger_count++;
-    if(beacon_signals_detected_hist.Sum(7) >= 3)
-        beacon_trigger_count++;
+    if(assembly_info.side2 == FRONT)
+    {
+        if(beacon_signals_detected_hist.Sum(0) >= 3)
+            beacon_trigger_count++;
+        if(beacon_signals_detected_hist.Sum(1) >= 3)
+            beacon_trigger_count++;
+        if(beacon_signals_detected_hist.Sum(2) >= 3)
+            beacon_trigger_count++;
+        if(beacon_signals_detected_hist.Sum(7) >= 3)
+            beacon_trigger_count++;
+    }
+    else
+    {
+        if(beacon_signals_detected_hist.Sum(3) >= 3)
+            beacon_trigger_count++;
+        if(beacon_signals_detected_hist.Sum(4) >= 3)
+            beacon_trigger_count++;
+        if(beacon_signals_detected_hist.Sum(5) >= 3)
+            beacon_trigger_count++;
+        if(beacon_signals_detected_hist.Sum(6) >= 3)
+            beacon_trigger_count++;
+    }
 
     //no signals, move randomly 
     if(beacon_trigger_count<1)
@@ -523,7 +548,7 @@ void RobotSCOUT::LocateBeacon()
 
 
      
-   // printf("beacon: (%d %d) -- speed: (%d %d %d)\n", beacon[1], beacon[0], leftspeed, rightspeed, sidespeed);
+    printf("beacon: (%d %d) -- speed: (%d %d %d %d)\n", beacon[id0], beacon[id1], leftspeed, rightspeed, para.locatebeacon_forward_speed[0], para.locatebeacon_forward_speed[1]);
     //switch on ir led at 64Hz so the recruitment robot can sensing it
     //and turn on its docking signals, the robot need to switch off ir 
     //led for a while to check if it receives docking signals
@@ -549,7 +574,7 @@ void RobotSCOUT::LocateBeacon()
             case 2:
             case 5:
                 {
-                    if(beacon_trigger_count>1 & beacon[0] >= 30 && beacon[1] >= 30)  
+                    if(beacon_trigger_count>1 & beacon[id0] >= 30 && beacon[id1] >= 30)  
                         aligning_region_detected= true;
 
 
@@ -582,24 +607,28 @@ void RobotSCOUT::LocateBeacon()
 //TODO: cleanup the code
 void RobotSCOUT::Alignment()
 {
-    leftspeed = para.speed_forward;
-    rightspeed = para.speed_forward;
+    leftspeed = para.aligning_forward_speed[0];
+    rightspeed = para.aligning_forward_speed[1];
     sidespeed = 0;
 
     static bool docking_region_detected = false;
     static bool blocked = false;
     static int alignment_count=0;
+    
+    int id0 = docking_approaching_sensor_id[0];
+    int id1 = docking_approaching_sensor_id[1];
 
     //check if it is aligned well and also closed enough for docking
     //this is done by checking if ehternet port is connected
-    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[::FRONT]))) 
+    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[assembly_info.side2]))) 
     {
         docking_region_detected = true;
         in_docking_region_hist.Reset();
         for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
-        SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
+        SetRGBLED(assembly_info.side2, WHITE,WHITE,WHITE,WHITE);
     }
+
 
     if(docking_region_detected)
     {
@@ -611,7 +640,7 @@ void RobotSCOUT::Alignment()
         if(timestamp % 5==0)
             Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
 
-        if(robots_in_range_detected_hist.Sum(0) > 5 && robots_in_range_detected_hist.Sum(1) > 5)
+        if(robots_in_range_detected_hist.Sum(id0) > 5 && robots_in_range_detected_hist.Sum(id1) > 5)
         {
             docking_region_detected =false;
             in_docking_region_hist.Reset();
@@ -626,7 +655,7 @@ void RobotSCOUT::Alignment()
             current_state = DOCKING;
             last_state = ALIGNMENT;
 
-            SetRGBLED(0, 0,0,0,0);
+            SetRGBLED(assembly_info.side2, 0,0,0,0);
         }
     }
     else
@@ -635,12 +664,12 @@ void RobotSCOUT::Alignment()
         // define the bad case
         // case 1: difference between two front reflective_calibrated reading is significant 
         // case 2: some reflective_calibrated readings but two beacon readings are diff
-        int reflective_diff = abs(reflective_hist[0].Avg() - reflective_hist[1].Avg());
-        int reflective_max = std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg());
-        int input[4] = {reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
+        int reflective_diff = abs(reflective_hist[id0].Avg() - reflective_hist[id1].Avg());
+        int reflective_max = std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+        int input[4] = {reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]};
         in_docking_region_hist.Push(in_docking_region(input));
 
-        if(reflective_hist[0].Avg() > 1000 & reflective_hist[1].Avg() > 1000)
+        if(reflective_hist[id0].Avg() > 1000 & reflective_hist[id1].Avg() > 1000)
             alignment_count++;
         //3 second is allowed until fully docked, otherwise, treated as blocked.
         if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||alignment_count > 30)
@@ -655,7 +684,7 @@ void RobotSCOUT::Alignment()
             current_state = RECOVER;
             last_state = ALIGNMENT;
             recover_count = para.aligning_reverse_count;
-            printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]);
+            printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
         }
         else if (in_docking_region_hist.Sum()>=3)
         {
@@ -732,11 +761,14 @@ void RobotSCOUT::Recover()
 void RobotSCOUT::Docking()
 {
 
+    int id0 = docking_approaching_sensor_id[0];
+    int id1 = docking_approaching_sensor_id[1];
+
     docking_count++;
 
     //no guiding signals (proximity) detected, go back to alignment
     //skip first few timesteps
-    if(docking_count > 30 && robots_in_range_detected_hist.Sum(0) < 10 && robots_in_range_detected_hist.Sum(1) < 10) //10 out of 16
+    if(docking_count > 30 && robots_in_range_detected_hist.Sum(id0) < 10 && robots_in_range_detected_hist.Sum(id1) < 10) //10 out of 16
     {
         docking_failed = true;
     }
@@ -756,9 +788,11 @@ void RobotSCOUT::Docking()
 
                 //Request beacon signals
                 if(timestamp % 5 ==0)
-                    Robot::BroadcastIRMessage(0, IR_MSG_TYPE_DOCKING_SIGNALS_REQ);
+                    Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ);
 
                 int beacon_trigger_count=0;
+                if(assembly_info.side2 == ::FRONT)
+                {
                 if(beacon_signals_detected_hist.Sum(0) >= 5)
                     beacon_trigger_count++;
                 if(beacon_signals_detected_hist.Sum(1) >= 5)
@@ -767,6 +801,20 @@ void RobotSCOUT::Docking()
                     beacon_trigger_count++;
                 if(beacon_signals_detected_hist.Sum(7) >= 5)
                     beacon_trigger_count++;
+                }
+                else
+                {
+                    if(beacon_signals_detected_hist.Sum(3) >= 5)
+                        beacon_trigger_count++;
+                    if(beacon_signals_detected_hist.Sum(4) >= 5)
+                        beacon_trigger_count++;
+                    if(beacon_signals_detected_hist.Sum(5) >= 5)
+                        beacon_trigger_count++;
+                    if(beacon_signals_detected_hist.Sum(6) >= 5)
+                        beacon_trigger_count++;
+
+                }
+
                 if(beacon_trigger_count >=2 )
                 {
                     current_state = ALIGNMENT;
@@ -795,14 +843,14 @@ void RobotSCOUT::Docking()
     }
 
 
-    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[0]))) // 4 successful predition out of 8 
+    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[assembly_info.side2]))) // 4 successful predition out of 8 
     {
         leftspeed = 0;
         rightspeed= 0;  
-        SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
-        SetIRLED(0, IRLEDOFF, LED0|LED2, 0);
-        RobotBase::SetIRRX(board_dev_num[0], false);
-        SetDockingMotor(0, CLOSE);
+        SetRGBLED(assembly_info.side2, WHITE, WHITE, WHITE, WHITE);
+        SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED2, 0);
+        RobotBase::SetIRRX(board_dev_num[assembly_info.side2], false);
+        SetDockingMotor(assembly_info.side2, CLOSE);
 
         current_state = LOCKING;
         last_state = DOCKING;
@@ -1838,61 +1886,43 @@ void RobotSCOUT::Debugging()
                 Log();
 
             break;
-        case 16://auto calibrate and write values to configuration files
+        case 16://Test IRComm as sender
+            if(timestamp ==2)
             {
-                const char filename[56]="/flash/morph/scout_option.cfg";
-                if(optionfile->Load(filename)==-1)
-                {
-                    std::cout<<"can not find option.cfg, please check the path"<<std::endl;
-                    break;
-                }
-
-                for( int entity = 1; entity < optionfile->GetEntityCount(); ++entity )
-                {
-                    const char *typestr = (char*)optionfile->GetEntityType(entity);          
-                    if( strcmp( typestr, "Global" ) == 0 )
-                    {
-                        char default_str[64];
-                        for(int i=0;i<NUM_IRS;i++)
-                        {
-                            snprintf(default_str, sizeof(default_str), "%d", para.reflective_calibrated[i]);
-                            optionfile->WriteTupleString(entity, "reflective_calibrated", i, default_str);
-                            snprintf(default_str, sizeof(default_str), "%d", para.ambient_calibrated[i]);
-                            optionfile->WriteTupleString(entity, "ambient_calibrated", i, default_str);
-                        }
-                    }
-                }
-
-                optionfile->Save("/flash/morph/scout_option.cfg");
-                para.debug.mode = 99;
+                SetIRLED(para.debug.para[0], IRLEDOFF, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
+                SetRGBLED(para.debug.para[0], 0,0,0,0);
+            }
+            if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == 0)
+            {
+                OrganismSequence::Symbol sym(0);
+                sym.reBuild("SFSB");
+                Robot::BroadcastIRMessage(para.debug.para[0], IR_MSG_TYPE_RECRUITING, sym.data);
             }
             break;
-        case 17://tesing flash leds
-            if(timestamp % 2 ==0)
-                SetRGBLED(para.debug.para[9], RED, RED, 0,0);
-            else
-                SetRGBLED(para.debug.para[9], 0, 0, 0,0);
+        case 17://Test IRComm as listener
+            if(timestamp ==2)
+                RobotBase::SetIRRX(board_dev_num[para.debug.para[0]], para.debug.para[1]);
             break;
         case 18://print out sensor data
             if(timestamp ==2)
             {
                 for(int i=0;i<SIDE_COUNT;i++)
-                  SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
             }
             break;
         case 19://print out sensor data
             if(timestamp ==2)
             {
                 for(int i=0;i<SIDE_COUNT;i++)
-                  SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                    SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
             }
             break;
         case 20://testing motors
-           // if(timestamp  == 2)
+            // if(timestamp  == 2)
             { 
                 leftspeed = para.debug.para[4];
                 rightspeed = para.debug.para[5];
-                printf("Move motors at speed (%d %d)\n", para.debug.para[4], para.debug.para[5]);
+                //  printf("Move motors at speed (%d %d)\n", para.debug.para[4], para.debug.para[5]);
             }
             break;
         case 21://test RGB

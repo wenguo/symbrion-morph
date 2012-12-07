@@ -351,6 +351,8 @@ class Robot
     bool seed;
     Robot * neighbours[NUM_DOCKS];
 
+    uint8_t docking_approaching_sensor_id[2]; //store the id of ir sensors on the approaching side
+
     Morph::Worldfile * optionfile;
     Parameter para;
     std::ofstream logFile;
