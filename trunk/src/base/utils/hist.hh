@@ -19,9 +19,9 @@ class Hist
 
         inline int32_t Avg() {return sum / size;}
 
-        inline int32_t Avg(int i){return (sum2>>(4*i) & 0xF)/size;}
+        inline int32_t Avg(int i){return (sum2>>(8*i) & 0xFF)/size;}
 
-        inline int64_t Sum(int i){return sum2>>(4*i) & 0xF;     }
+        inline int64_t Sum(int i){return sum2>>(8*i) & 0xFF;     }
 
         inline int64_t Sum(){return sum;}
 
