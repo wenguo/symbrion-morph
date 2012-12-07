@@ -465,7 +465,7 @@ void RobotSCOUT::Assembly()
         current_state = LOCATEBEACON;
         last_state = FORAGING;
 
-        if(assembly_info.side2 == FRONT)
+        if(assembly_info.side2 == ::FRONT)
         {
             docking_approaching_sensor_id[0] = 0;
             docking_approaching_sensor_id[1] = 1;
@@ -499,12 +499,13 @@ void RobotSCOUT::LocateBeacon()
 {
 
     static bool aligning_region_detected = false;
+
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
 
     //check if received docking signals
     int beacon_trigger_count=0;
-    if(assembly_info.side2 == FRONT)
+    if(assembly_info.side2 == ::FRONT)
     {
         if(beacon_signals_detected_hist.Sum(0) >= 3)
             beacon_trigger_count++;
@@ -574,7 +575,7 @@ void RobotSCOUT::LocateBeacon()
             case 2:
             case 5:
                 {
-                    if(beacon_trigger_count>1 & beacon[id0] >= 30 && beacon[id1] >= 30)  
+                    if(beacon_trigger_count>1 && beacon[id0] >= 30 && beacon[id1] >= 30)  
                         aligning_region_detected= true;
 
 
@@ -609,7 +610,6 @@ void RobotSCOUT::Alignment()
 {
     leftspeed = para.aligning_forward_speed[0];
     rightspeed = para.aligning_forward_speed[1];
-    sidespeed = 0;
 
     static bool docking_region_detected = false;
     static bool blocked = false;
@@ -634,8 +634,6 @@ void RobotSCOUT::Alignment()
     {
         leftspeed = 0;
         rightspeed = 0;
-        sidespeed = 0;
-
 
         if(timestamp % 5==0)
             Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
@@ -669,8 +667,9 @@ void RobotSCOUT::Alignment()
         int input[4] = {reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]};
         in_docking_region_hist.Push(in_docking_region(input));
 
-        if(reflective_hist[id0].Avg() > 1000 & reflective_hist[id1].Avg() > 1000)
+        if(reflective_hist[id0].Avg() > 1000 && reflective_hist[id1].Avg() > 1000)
             alignment_count++;
+
         //3 second is allowed until fully docked, otherwise, treated as blocked.
         if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||alignment_count > 30)
             blocked = true;
@@ -701,17 +700,14 @@ void RobotSCOUT::Alignment()
             }
         }
 
-
     }
-
-   
-
 
 }
 void RobotSCOUT::Recover()
 {
     recover_count--;
 
+    //flasing RGB LEDs
     if(timestamp % 4 ==0)
     {
         SetRGBLED(1, RED, RED, RED, RED);
@@ -739,7 +735,7 @@ void RobotSCOUT::Recover()
 
             const int weight_left[2] = {-3,3};
             const int weight_right[2] = {3, -3};
-            for(int i=0;i<2;i++)
+            for(int i=0;i<0;i++)
             {
                 leftspeed += reflective_hist[i].Avg() * weight_left[i]>>8;
                 rightspeed += reflective_hist[i].Avg() * weight_right[i]>>8;
@@ -756,8 +752,6 @@ void RobotSCOUT::Recover()
     }
 }
 
-#define MOVE_LEFT 10
-#define MOVE_RIGHT 11
 void RobotSCOUT::Docking()
 {
 
@@ -766,84 +760,7 @@ void RobotSCOUT::Docking()
 
     docking_count++;
 
-    //no guiding signals (proximity) detected, go back to alignment
-    //skip first few timesteps
-    if(docking_count > 30 && robots_in_range_detected_hist.Sum(id0) < 10 && robots_in_range_detected_hist.Sum(id1) < 10) //10 out of 16
-    {
-        docking_failed = true;
-    }
-
-    //docking failed, reverse and try again
-    if(docking_failed)
-    {
-        printf("docking failed: %d %d\n", docking_failed_reverse_count, para.docking_failed_reverse_time);
-        if(docking_failed_reverse_count++ > para.docking_failed_reverse_time)
-        {
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = 0;
-
-            if(docking_trials < para.docking_trials)
-            {
-
-                //Request beacon signals
-                if(timestamp % 5 ==0)
-                    Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ);
-
-                int beacon_trigger_count=0;
-                if(assembly_info.side2 == ::FRONT)
-                {
-                if(beacon_signals_detected_hist.Sum(0) >= 5)
-                    beacon_trigger_count++;
-                if(beacon_signals_detected_hist.Sum(1) >= 5)
-                    beacon_trigger_count++;
-                if(beacon_signals_detected_hist.Sum(2) >= 5)
-                    beacon_trigger_count++;
-                if(beacon_signals_detected_hist.Sum(7) >= 5)
-                    beacon_trigger_count++;
-                }
-                else
-                {
-                    if(beacon_signals_detected_hist.Sum(3) >= 5)
-                        beacon_trigger_count++;
-                    if(beacon_signals_detected_hist.Sum(4) >= 5)
-                        beacon_trigger_count++;
-                    if(beacon_signals_detected_hist.Sum(5) >= 5)
-                        beacon_trigger_count++;
-                    if(beacon_signals_detected_hist.Sum(6) >= 5)
-                        beacon_trigger_count++;
-
-                }
-
-                if(beacon_trigger_count >=2 )
-                {
-                    current_state = ALIGNMENT;
-                    last_state = DOCKING;
-                    docking_failed_reverse_count = 0;
-                    docking_failed = false;
-                    docking_count = 0;
-                }
-            }
-            else
-            {
-                //TODO: give up trying
-                //send message to info recruiting robot
-                printf("\n\n\nNot implemented yet\n\n\n");
-                last_state = DOCKING;
-                docking_failed_reverse_count = 0;
-                docking_failed = false;
-            }
-        }
-        else
-        {
-            leftspeed = para.docking_failed_reverse_speed[0];
-            rightspeed = para.docking_failed_reverse_speed[1];
-        }
-        return;
-    }
-
-
-    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[assembly_info.side2]))) // 4 successful predition out of 8 
+    if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[assembly_info.side2]))) 
     {
         leftspeed = 0;
         rightspeed= 0;  
