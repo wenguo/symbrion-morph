@@ -1,7 +1,7 @@
 #include "robot_SCOUT.hh"
 #include "og/organism_sample.hh"
 
-RobotSCOUT::RobotSCOUT():Robot(),ScoutBot()
+RobotSCOUT::RobotSCOUT(ScoutBot * robot):Robot()
 {
 
     SPIVerbose = QUIET;
@@ -10,6 +10,8 @@ RobotSCOUT::RobotSCOUT():Robot(),ScoutBot()
         free(name);
     name = strdup("RobotSCOUT");
     type = ROBOT_SCOUT;
+
+    irobot = robot;
 
     //point to right SPI device number
     board_dev_num[::FRONT] = ScoutBot::FRONT;
@@ -41,10 +43,10 @@ void RobotSCOUT::InitHardware()
 {
     for(int i=0;i<NUM_DOCKS;i++)
     {
-        SetPrintEnabled(i, false); 
+        irobot->SetPrintEnabled(i, false); 
     }
 
-    EnableMotors(true);
+    irobot->EnableMotors(true);
 
     IRComm::Initialize();
     Ethernet::Initialize();
@@ -59,9 +61,9 @@ void RobotSCOUT::Reset()
 void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
 {
     int board = board_dev_num[channel];
-    RobotBase::SetIRLED(board, led);
-    RobotBase::SetIRPulse(board, pulse_led);
-    RobotBase::SetIRMode(board, mode);
+    irobot->SetIRLED(ScoutBot::Side(board), led);
+    irobot->SetIRPulse(ScoutBot::Side(board), pulse_led);
+    irobot->SetIRMode(ScoutBot::Side(board), mode);
 
     uint8_t status = (uint8_t)mode | 0x4;
     for(int i=0;i<3;i++)
@@ -82,7 +84,7 @@ void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t puls
 void RobotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br)
 {
     int board = board_dev_num[channel];
-    RobotBase::SetLED(board, tr, bl, br, tl);
+    irobot->SetLED(ScoutBot::Side(board), tr, bl, br, tl);
     RGBLED_status[channel] = tl|tr|bl|br;
 
 }
@@ -97,7 +99,7 @@ void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
         rightspeed = 100;
     else if(rightspeed < -100)
         rightspeed = -100;
-    Move(leftspeed, rightspeed);
+    irobot->Move(leftspeed, rightspeed);
 }
 
 
@@ -114,7 +116,7 @@ bool RobotSCOUT::SetDockingMotor(int channel, int status)
             //change status to be opening
             docking_motors_status[channel] = OPENING; //clear first
             if(para.locking_motor_enabled[channel])
-                OpenDocking(ScoutBot::Side(board_dev_num[channel]));
+                irobot->OpenDocking(ScoutBot::Side(board_dev_num[channel]));
             printf("open docking\n");
         }
         //or open -> close
@@ -123,7 +125,7 @@ bool RobotSCOUT::SetDockingMotor(int channel, int status)
             //change status to be closing
             docking_motors_status[channel] = CLOSING; //clear first
             if(para.locking_motor_enabled[channel])
-                CloseDocking(ScoutBot::Side(board_dev_num[channel]));
+                irobot->CloseDocking(ScoutBot::Side(board_dev_num[channel]));
             printf("close docking\n");
         }
         else
@@ -206,10 +208,10 @@ void RobotSCOUT::UpdateSensors()
     //5 -- rear right
     //6 -- right rear
     //7 -- right front
-    IRValues ret_A;// = GetIRValues(ScoutBot::FRONT);
-    IRValues ret_B;// = GetIRValues(ScoutBot::LEFT);
-    IRValues ret_C = GetIRValues(ScoutBot::REAR);
-    IRValues ret_D;// = GetIRValues(ScoutBot::RIGHT);
+    IRValues ret_A;// = irobot->GetIRValues(ScoutBot::FRONT);
+    IRValues ret_B;// = irobot->GetIRValues(ScoutBot::LEFT);
+    IRValues ret_C = irobot->GetIRValues(ScoutBot::REAR);
+    IRValues ret_D;// = irobot->GetIRValues(ScoutBot::RIGHT);
     ambient[0] = ret_A.sensor[0].ambient;
     ambient[1] = ret_A.sensor[1].ambient;
     reflective[0] = ret_A.sensor[0].reflective;
@@ -247,7 +249,7 @@ void RobotSCOUT::UpdateSensors()
     for(int i=0;i<NUM_DOCKS;i++)
     {
     //    color[i] = GetRGB(ScoutBot::Side(i));
-        if(isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])))
+        if(irobot->isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])))
             ethernet_status |= 1<<i;
     }
     ethernet_status_hist.Push2(ethernet_status);
@@ -754,8 +756,8 @@ void RobotSCOUT::Recover()
 void RobotSCOUT::Docking()
 {
 
-    int id0 = docking_approaching_sensor_id[0];
-    int id1 = docking_approaching_sensor_id[1];
+    //int id0 = docking_approaching_sensor_id[0];
+    //int id1 = docking_approaching_sensor_id[1];
 
     docking_count++;
 
@@ -765,7 +767,7 @@ void RobotSCOUT::Docking()
         rightspeed= 0;  
         SetRGBLED(assembly_info.side2, WHITE, WHITE, WHITE, WHITE);
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED2, 0);
-        RobotBase::SetIRRX(board_dev_num[assembly_info.side2], false);
+        irobot->SetIRRX(ScoutBot::Side(board_dev_num[assembly_info.side2]), false);
         SetDockingMotor(assembly_info.side2, CLOSE);
 
         current_state = LOCKING;
@@ -883,18 +885,18 @@ void RobotSCOUT::Recruitment()
             {
                 recruitment_stage[i]=STAGE3;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                RobotBase::SetIRRX(board_dev_num[i], false);
+                irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), false);
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
 
             //give up, back to stage 1
-            if((msg_docking_signal_req_received & (1<<i)) || guiding_signals_count[i]++ >= para.recruiting_guiding_signals_time)
+            if((msg_docking_signal_req_received & (1<<i)) || guiding_signals_count[i]++ >= (uint32_t)para.recruiting_guiding_signals_time)
             {
                 msg_docking_signal_req_received &=~(1<<i);
                 guiding_signals_count[i] = 0;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDOFF, 0, 0);
-                RobotBase::SetIRRX(board_dev_num[i], true);
+                irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), true);
                 printf("%d -- Recruitment: channel %d  waits too long, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
 
@@ -924,7 +926,7 @@ void RobotSCOUT::Recruitment()
                 guiding_signals_count[i] = 0;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDOFF, 0, 0);
-                RobotBase::SetIRRX(board_dev_num[i], true);
+                irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), true);
                 printf("%d -- Recruitment: channel %d  received docking signals req, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             else if(msg_guideme_received & (1<<i))
@@ -1579,7 +1581,7 @@ void RobotSCOUT::Debugging()
             {
                 SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
                 SetIRLED(0, IRLEDOFF, LED0|LED2, 0);
-                RobotBase::SetIRRX(board_dev_num[0], false);
+                irobot->SetIRRX(ScoutBot::Side(board_dev_num[0]), false);
             }
             break;
         case 5:// recruiting stage 2 -> stage 3 detection
@@ -1595,7 +1597,7 @@ void RobotSCOUT::Debugging()
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    RobotBase::SetIRRX(board_dev_num[i], false);
+                    irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), false);
                 }
         
                 printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
@@ -1626,7 +1628,7 @@ void RobotSCOUT::Debugging()
                 rightspeed = para.debug.para[4];
                 printf("set speed %d %d\n", leftspeed, rightspeed);
             }
-            else if(timestamp == para.debug.para[2])
+            else if(timestamp == (uint32_t)para.debug.para[2])
             {
                 leftspeed = 0;
                 rightspeed = 0;
@@ -1650,7 +1652,7 @@ void RobotSCOUT::Debugging()
             {
             }
 
-            if(isEthernetPortConnected(ScoutBot::FRONT))
+            if(irobot->isEthernetPortConnected(ScoutBot::FRONT))
             {
                 SetRGBLED(2, RED, RED,RED,RED);
             }
@@ -1665,12 +1667,12 @@ void RobotSCOUT::Debugging()
             }
             break;
         case 10:
-            if(timestamp ==para.debug.para[8])
+            if(timestamp == (uint32_t)para.debug.para[8])
             {
                 printf("lock motor\n");
                 SetDockingMotor(0, CLOSE);
             }
-            else if(timestamp == para.debug.para[9])
+            else if(timestamp == (uint32_t)para.debug.para[9])
             {
                 printf("unlock motor\n");
                 SetDockingMotor(0, OPEN);
@@ -1687,7 +1689,7 @@ void RobotSCOUT::Debugging()
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    RobotBase::SetIRRX(board_dev_num[i], false);
+                    irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), false);
                 }
 
                 int num_neighbours = para.debug.para[2];
@@ -1716,19 +1718,19 @@ void RobotSCOUT::Debugging()
             {
             for(int i=0;i<NUM_DOCKS;i++)
             {
-                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])) ? "true":"false",isSwitchActivated()?"true":"false" );
+                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, irobot->isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])) ? "true":"false",irobot->isSwitchActivated()?"true":"false" );
             }
             }
 #define NEIGHBOUR_IP "192.168.0.4"
             if(timestamp % 10 ==0)
             {
                 uint8_t data[10]={'h','e','l','l','o','-','K','I','T',0};
-                RobotBase::SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
+                irobot->SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
             }
-            while (HasEthMessage() > 0)
+            while (irobot->HasEthMessage() > 0)
             {
                 uint8_t rx[32];
-                auto_ptr<Message> m = ReceiveEthMessage();
+                auto_ptr<Message> m = irobot->ReceiveEthMessage();
                 memcpy(rx, m->GetData(), m->GetDataLength());
                 printf("%d -- received data: %s\n", timestamp, rx);
             }
@@ -1830,7 +1832,7 @@ void RobotSCOUT::Debugging()
             break;
         case 17://Test IRComm as listener
             if(timestamp ==2)
-                RobotBase::SetIRRX(board_dev_num[para.debug.para[0]], para.debug.para[1]);
+                irobot->SetIRRX(ScoutBot::Side(board_dev_num[para.debug.para[0]]), para.debug.para[1]);
             break;
         case 18://print out sensor data
             if(timestamp ==2)

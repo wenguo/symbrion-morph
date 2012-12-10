@@ -5,10 +5,10 @@
 #include <IRobot.h>
 #include <comm/IRComm.h>
 
-class RobotKIT:public Robot, public KaBot
+class RobotKIT:public Robot
 {
     public:
-        RobotKIT();
+        RobotKIT(KaBot * r);
         virtual ~RobotKIT();
 
     protected:
@@ -53,5 +53,6 @@ class RobotKIT:public Robot, public KaBot
         virtual void Log();
     private:
         void Avoidance();
+        KaBot * irobot;
 };
 #endif

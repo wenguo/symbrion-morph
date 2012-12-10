@@ -1,12 +1,14 @@
 #include "robot_KIT.hh"
 #include "og/organism_sample.hh"
 
-RobotKIT::RobotKIT():Robot(),KaBot()
+RobotKIT::RobotKIT(KaBot * robot):Robot()
 {
     if(name)
         free(name);
     name = strdup("RobotKIT");
     type = ROBOT_KIT;
+
+    irobot = robot;
 
     //point to right SPI device number
     board_dev_num[::FRONT] = KaBot::FRONT;
@@ -38,10 +40,10 @@ void RobotKIT::InitHardware()
 {
     for(int i=0;i<NUM_DOCKS;i++)
     {
-        SetPrintEnabled(i, false); 
+        irobot->SetPrintEnabled(i, false); 
     }
 
-    EnableMotors(true);
+    irobot->EnableMotors(true);
 
     IRComm::Initialize();
     Ethernet::Initialize();
@@ -50,15 +52,15 @@ void RobotKIT::InitHardware()
 
 void RobotKIT::Reset()
 {
-    RobotBase::MSPReset();
+    irobot->MSPReset();
 }
 
 void RobotKIT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
 {
-    int board = board_dev_num[channel];
-    RobotBase::SetIRLED(board, led);
-    RobotBase::SetIRPulse(board, pulse_led);
-    RobotBase::SetIRMode(board, mode);
+    KaBot::Side board = (KaBot::Side)board_dev_num[channel];
+    irobot->SetIRLED(board, led);
+    irobot->SetIRPulse(board, pulse_led);
+    irobot->SetIRMode(board, mode);
 
     uint8_t status = (uint8_t)mode | 0x4;
     for(int i=0;i<3;i++)
@@ -79,7 +81,7 @@ void RobotKIT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_
 void RobotKIT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br)
 {
     int board = board_dev_num[channel];
-    RobotBase::SetLED(board, tl, tr, bl, br);
+    irobot->SetLED(KaBot::Side(board), tl, tr, bl, br);
     RGBLED_status[channel] = tl|tr|bl|br;
 
 }
@@ -88,13 +90,13 @@ void RobotKIT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
 {
     if(fabs(sidespeed) > 10)
     {
-        MoveScrewFront(para.speed_sideward * sidespeed);
-        MoveScrewRear(para.speed_sideward* sidespeed);
+        irobot->MoveScrewFront(para.speed_sideward * sidespeed);
+        irobot->MoveScrewRear(para.speed_sideward* sidespeed);
     }
     else
     {
-        MoveScrewFront(leftspeed * direction);
-        MoveScrewRear(-rightspeed * direction);
+        irobot->MoveScrewFront(leftspeed * direction);
+        irobot->MoveScrewRear(-rightspeed * direction);
     }
 }
 
@@ -112,7 +114,7 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
             //change status to be opening
             docking_motors_status[channel] = OPENING; //clear first
             if(para.locking_motor_enabled[channel])
-                OpenDocking(KaBot::Side(board_dev_num[channel]));
+                irobot->OpenDocking(KaBot::Side(board_dev_num[channel]));
             printf("open docking\n");
         }
         //or open -> close
@@ -121,7 +123,7 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
             //change status to be closing
             docking_motors_status[channel] = CLOSING; //clear first
             if(para.locking_motor_enabled[channel])
-                CloseDocking(KaBot::Side(board_dev_num[channel]));
+                irobot->CloseDocking(KaBot::Side(board_dev_num[channel]));
             printf("close docking\n");
         }
         else
@@ -204,10 +206,10 @@ void RobotKIT::UpdateSensors()
     //5 -- rear right
     //6 -- right rear
     //7 -- right front
-    IRValues ret_A = GetIRValues(KaBot::FRONT);
-    IRValues ret_B = GetIRValues(KaBot::LEFT);
-    IRValues ret_C = GetIRValues(KaBot::REAR);
-    IRValues ret_D = GetIRValues(KaBot::RIGHT);
+    IRValues ret_A = irobot->GetIRValues(KaBot::FRONT);
+    IRValues ret_B = irobot->GetIRValues(KaBot::LEFT);
+    IRValues ret_C = irobot->GetIRValues(KaBot::REAR);
+    IRValues ret_D = irobot->GetIRValues(KaBot::RIGHT);
     ambient[1] = ret_A.sensor[0].ambient;
     ambient[0] = ret_A.sensor[1].ambient;
     reflective[1] = ret_A.sensor[0].reflective;
@@ -844,7 +846,7 @@ void RobotKIT::Docking()
         rightspeed= 0;  
         SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
         SetIRLED(0, IRLEDOFF, LED0|LED2, 0);
-        RobotBase::SetIRRX(board_dev_num[0], false);
+        irobot->SetIRRX(KaBot::Side(board_dev_num[0]), false);
         SetDockingMotor(0, CLOSE);
 
         //TODO depend which types of robot it docks to, it may be required to send lockme messages
@@ -926,7 +928,7 @@ void RobotKIT::Locking()
             //for(int i=0;i<NUM_DOCKS;i++)
             {
                 // SetIRLED(docking_side, IRLEDOFF, LED0|LED2, 0);
-                // RobotBase::SetIRRX(board_dev_num[docking_side], false);
+                // irobot->SetIRRX(board_dev_num[docking_side], false);
 
             }
             Robot::BroadcastIRMessage(docking_side, IR_MSG_TYPE_LOCKED, true);
@@ -1029,7 +1031,7 @@ void RobotKIT::Recruitment()
                 {
                     recruitment_stage[i]=STAGE3;
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    RobotBase::SetIRRX(board_dev_num[i], false);
+                    irobot->SetIRRX(KaBot::Side(board_dev_num[i]), false);
                     printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
                 }
 
@@ -1040,7 +1042,7 @@ void RobotKIT::Recruitment()
                 guiding_signals_count[i] = 0;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDOFF, 0, 0);
-                RobotBase::SetIRRX(board_dev_num[i], true);
+                irobot->SetIRRX(KaBot::Side(board_dev_num[i]), true);
                 printf("%d -- Recruitment: channel %d  waits too long, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
 
@@ -1070,7 +1072,7 @@ void RobotKIT::Recruitment()
                 guiding_signals_count[i] = 0;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDOFF, 0, 0);
-                RobotBase::SetIRRX(board_dev_num[i], true);
+                irobot->SetIRRX(KaBot::Side(board_dev_num[i]), true);
                 printf("%d -- Recruitment: channel %d  received docking signals req, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             else if(msg_guideme_received & (1<<i))
@@ -1115,7 +1117,7 @@ void RobotKIT::Recruitment()
 
                     //SetRGBLED(i, RED, 0, 0, 0);
                     //SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    //RobotBase::SetIRRX(board_dev_num[i], false);
+                    //irobot->SetIRRX(board_dev_num[i], false);
 
                     num_robots_inorganism++;
 
@@ -1716,7 +1718,7 @@ void RobotKIT::Debugging()
             {
                 SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
                 SetIRLED(0, IRLEDOFF, LED0|LED2, 0);
-                RobotBase::SetIRRX(board_dev_num[0], false);
+                irobot->SetIRRX(KaBot::Side(board_dev_num[0]), false);
             }
             break;
         case 5:// recruiting stage 2 -> stage 3 detection
@@ -1732,7 +1734,7 @@ void RobotKIT::Debugging()
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    RobotBase::SetIRRX(board_dev_num[i], false);
+                    irobot->SetIRRX(KaBot::Side(board_dev_num[i]), false);
                 }
                 printf("my_IP %#x\n", my_IP);
                 OrganismSequence::Symbol sym;
@@ -1780,7 +1782,7 @@ void RobotKIT::Debugging()
             {
             }
 
-            if(isEthernetPortConnected(KaBot::FRONT))
+            if(irobot->isEthernetPortConnected(KaBot::FRONT))
             {
                 SetRGBLED(2, RED, RED,RED,RED);
             }
@@ -1817,7 +1819,7 @@ void RobotKIT::Debugging()
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    RobotBase::SetIRRX(board_dev_num[i], false);
+                    irobot->SetIRRX(KaBot::Side(board_dev_num[i]), false);
                 }
 
                 int num_neighbours = para.debug.para[2];
@@ -1846,19 +1848,19 @@ void RobotKIT::Debugging()
             {
             for(int i=0;i<NUM_DOCKS;i++)
             {
-                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, isEthernetPortConnected(KaBot::Side(board_dev_num[i])) ? "true":"false",isSwitchActivated()?"true":"false" );
+                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, irobot->isEthernetPortConnected(KaBot::Side(board_dev_num[i])) ? "true":"false",irobot->isSwitchActivated()?"true":"false" );
             }
             }
 #define NEIGHBOUR_IP "192.168.0.4"
             if(timestamp % 10 ==0)
             {
                 uint8_t data[10]={'h','e','l','l','o','-','K','I','T',0};
-                RobotBase::SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
+                irobot->SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
             }
-            while (HasEthMessage() > 0)
+            while (irobot->HasEthMessage() > 0)
             {
                 uint8_t rx[32];
-                auto_ptr<Message> m = ReceiveEthMessage();
+                auto_ptr<Message> m = irobot->ReceiveEthMessage();
                 memcpy(rx, m->GetData(), m->GetDataLength());
                 printf("%d -- received data: %s\n", timestamp, rx);
             }
