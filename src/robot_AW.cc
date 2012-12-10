@@ -22,9 +22,6 @@ RobotAW::RobotAW(ActiveWheel *robot):Robot()
     LED0 = 0x1;
     LED1 = 0x4;
     LED2 = 0x2;
-    IR_PULSE0 = 0x1;
-    IR_PULSE1 = 0x2;
-    IR_PULSE2 = 0x4;
     printf("Consctruction RobotAW\n");
 }
 
@@ -44,8 +41,6 @@ void RobotAW::InitHardware()
     irobot->EnableMotors(true);
     //RobotBase::SetIRRX(board_dev_num[2], false);
 
-    IRComm::Initialize();
-    Ethernet::Initialize();
 }
 
 void RobotAW::Reset()
@@ -58,7 +53,7 @@ void RobotAW::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_l
     int board = board_dev_num[channel];
     // RobotBase::SetIRLED(board, mode, led, pulse_led);
     irobot->SetIRLED(ActiveWheel::Side(board), led);
-    irobot->SetIRPulse(ActiveWheel::Side(board), pulse_led);
+    irobot->SetIRPulse(ActiveWheel::Side(board), pulse_led |IRPULSE2|IRPULSE3|IRPULSE4|IRPULSE5);
     irobot->SetIRMode(ActiveWheel::Side(board), mode);
 
     uint8_t status = (uint8_t)mode | 0x4;
@@ -84,12 +79,12 @@ void RobotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t
     RGBLED_status[channel] = tl|tr|bl|br;
 }
 
-void RobotAW::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
+void RobotAW::SetSpeed(int8_t frontleft, int8_t frontright, int8_t rear)
 {
 //    if( current_state == MACROLOCOMOTION || para.debug.para[9] != 2 )
     {
-        irobot->MoveWheelsFront(-leftspeed * direction, -sidespeed);
-        irobot->MoveWheelsRear(rightspeed * direction,sidespeed);
+        irobot->MoveWheelsFront(-frontright, frontleft);
+        irobot->MoveWheelsRear(rear,0);
     }
 //    else
     {
@@ -157,14 +152,14 @@ void RobotAW::UpdateSensors()
     proximity[1] = ret_A.sensor[1].proximity;
     beacon[0] = ret_A.sensor[0].docking;
     beacon[1] = ret_A.sensor[1].docking;
-    ambient[3] = ret_B.sensor[0].ambient;
     ambient[2] = ret_B.sensor[0].ambient;
-    reflective[3] = ret_B.sensor[0].reflective;
+    ambient[3] = ret_B.sensor[1].ambient;
     reflective[2] = ret_B.sensor[0].reflective;
-    proximity[3] = ret_B.sensor[0].proximity;
+    reflective[3] = ret_B.sensor[1].reflective;
     proximity[2] = ret_B.sensor[0].proximity;
-    beacon[3] = ret_B.sensor[0].docking;
+    proximity[3] = ret_B.sensor[1].proximity;
     beacon[2] = ret_B.sensor[0].docking;
+    beacon[3] = ret_B.sensor[1].docking;
     ambient[4] = ret_C.sensor[0].ambient;
     ambient[5] = ret_C.sensor[1].ambient;
     reflective[4] = ret_C.sensor[0].reflective;
@@ -173,14 +168,55 @@ void RobotAW::UpdateSensors()
     proximity[5] = ret_C.sensor[1].proximity;
     beacon[4] = ret_C.sensor[0].docking;
     beacon[5] = ret_C.sensor[1].docking;
-    ambient[7] = ret_D.sensor[0].ambient;
     ambient[6] = ret_D.sensor[0].ambient;
-    reflective[7] = ret_D.sensor[0].reflective;
+    ambient[7] = ret_D.sensor[1].ambient;
     reflective[6] = ret_D.sensor[0].reflective;
-    proximity[7] = ret_D.sensor[0].proximity;
+    reflective[7] = ret_D.sensor[1].reflective;
     proximity[6] = ret_D.sensor[0].proximity;
-    beacon[7] = ret_D.sensor[0].docking;
+    proximity[7] = ret_D.sensor[1].proximity;
     beacon[6] = ret_D.sensor[0].docking;
+    beacon[7] = ret_D.sensor[1].docking;
+
+    aux_ambient[0] = ret_B.sensor[3].ambient;
+    aux_ambient[1] = ret_B.sensor[2].ambient;
+    aux_ambient[2] = ret_B.sensor[4].ambient;
+    aux_ambient[3] = ret_B.sensor[5].ambient;
+    aux_reflective[0] = ret_B.sensor[3].reflective;
+    aux_reflective[1] = ret_B.sensor[2].reflective;
+    aux_reflective[2] = ret_B.sensor[4].reflective;
+    aux_reflective[3] = ret_B.sensor[5].reflective;
+    aux_proximity[0] = ret_B.sensor[3].proximity;
+    aux_proximity[1] = ret_B.sensor[2].proximity;
+    aux_proximity[2] = ret_B.sensor[4].proximity;
+    aux_proximity[3] = ret_B.sensor[5].proximity;
+    aux_beacon[0] = ret_B.sensor[3].docking;
+    aux_beacon[1] = ret_B.sensor[2].docking;
+    aux_beacon[2] = ret_B.sensor[4].docking;
+    aux_beacon[3] = ret_B.sensor[5].docking;
+    aux_ambient[4] = ret_D.sensor[3].ambient;
+    aux_ambient[5] = ret_D.sensor[2].ambient;
+    aux_ambient[6] = ret_D.sensor[4].ambient;
+    aux_ambient[7] = ret_D.sensor[5].ambient;
+    aux_reflective[4] = ret_D.sensor[3].reflective;
+    aux_reflective[5] = ret_D.sensor[2].reflective;
+    aux_reflective[6] = ret_D.sensor[4].reflective;
+    aux_reflective[7] = ret_D.sensor[5].reflective;
+    aux_proximity[4] = ret_D.sensor[3].proximity;
+    aux_proximity[5] = ret_D.sensor[2].proximity;
+    aux_proximity[6] = ret_D.sensor[4].proximity;
+    aux_proximity[7] = ret_D.sensor[5].proximity;
+    aux_beacon[4] = ret_D.sensor[3].docking;
+    aux_beacon[5] = ret_D.sensor[2].docking;
+    aux_beacon[6] = ret_D.sensor[4].docking;
+    aux_beacon[7] = ret_D.sensor[5].docking;
+
+    printf("aux_reflective:");
+    for(int i=0;i<8;i++)
+    {
+        printf("%d\t", aux_reflective[i]);
+    }
+    printf("\n");
+
 
 
     //    for(int i=0;i<NUM_DOCKS;i++)
@@ -197,8 +233,7 @@ void RobotAW::UpdateSensors()
 void RobotAW::UpdateActuators()
 {
     CheckHingeMotor();
-    SetSpeed(leftspeed, rightspeed,sidespeed); 
-printf("speed: %d %d %d\n", leftspeed, rightspeed, sidespeed);
+    SetSpeed(speed[WHEEL_FRONT_LEFT], speed[WHEEL_FRONT_RIGHT], speed[WHEEL_REAR]); 
 }
 
 // for self-repair
@@ -216,9 +251,9 @@ void RobotAW::UpdateFailures()
 
 void RobotAW::Avoidance()
 {
-    leftspeed = 40;
-    rightspeed = 40;
-    sidespeed = 0;
+    speed[WHEEL_FRONT_LEFT] = 40;
+    speed[WHEEL_FRONT_RIGHT] = 40;
+    speed[WHEEL_REAR] = 0;
 
 
     for(int i=0;i<NUM_IRS;i++)
@@ -241,9 +276,9 @@ void RobotAW::Avoidance()
     else if(reflective_hist[4].Avg() > para.avoidance_threshold || reflective_hist[5].Avg()>para.avoidance_threshold)
         direction = FORWARD;
 
-    sidespeed = 0;
-    leftspeed = 0;
-    rightspeed = 0;
+    speed[WHEEL_FRONT_LEFT] = 0;
+    speed[WHEEL_FRONT_RIGHT] = 0;
+    speed[WHEEL_REAR] = 0;
 
 }
 
@@ -326,7 +361,7 @@ void RobotAW::Seeding() //the same as in RobotKIT
         //check the first symbol that indicates the parent and child side of the connection
         uint8_t branch_side = it->getSymbol(0).side1;
         //enalbe docking signals
-        SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
+        SetIRLED(branch_side, IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1);
         std::cout<<name<<" branch "<<*it<<std::endl;
     }
 }
@@ -347,9 +382,9 @@ void RobotAW::Foraging() //the same as RobotKIT
         current_state = WAITING;
         last_state = FORAGING;
 
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+        speed[WHEEL_FRONT_LEFT] = 0;
+        speed[WHEEL_FRONT_RIGHT] = 0;
+        speed[WHEEL_REAR] = 0;
     }
     else
     {
@@ -364,9 +399,9 @@ void RobotAW::Foraging() //the same as RobotKIT
 }
 void RobotAW::Waiting()//same as RobotKIT
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[WHEEL_FRONT_LEFT] = 0;
+    speed[WHEEL_FRONT_RIGHT] = 0;
+    speed[WHEEL_REAR] = 0;
 
     msg_unlockme_received = 0;
     msg_locked_received = 0;
@@ -382,7 +417,7 @@ void RobotAW::Waiting()//same as RobotKIT
 
         //switch on proximity ir leds and ir pulsing
         for(uint8_t i=0; i< NUM_DOCKS; i++)
-            SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0|IR_PULSE1);
+            SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1);
 
         current_state = FORAGING;
         last_state = WAITING;
@@ -390,7 +425,7 @@ void RobotAW::Waiting()//same as RobotKIT
     else if(organism_found)
     {
         for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
 
         current_state = ASSEMBLY;
         last_state = WAITING;
@@ -418,9 +453,9 @@ void RobotAW::Assembly()
 }
 void RobotAW::LocateEnergy()//same as RobotKIT
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[WHEEL_FRONT_LEFT] = 0;
+    speed[WHEEL_FRONT_RIGHT] = 0;
+    speed[WHEEL_REAR] = 0;
 
     if(1)
     {
@@ -440,17 +475,18 @@ void RobotAW::LocateBeacon()//same as RobotKIT
         if(beacon[0]>5 && beacon[1]>5)
         {
             //stay there and wait to transfer to state Alignment
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = 0;
+            speed[WHEEL_FRONT_LEFT] = 0;
+            speed[WHEEL_FRONT_RIGHT] = 0;
+            speed[WHEEL_REAR] = 0;
         }
         else
         {
             printf("only one beacon detected, shift left and right a little bit\n");
             int temp = beacon[1]-beacon[0];
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = -15 * sign(temp);
+
+            speed[WHEEL_FRONT_LEFT] = 0;
+            speed[WHEEL_FRONT_RIGHT] = 0;
+            speed[WHEEL_REAR] = 0;
         }
     }
     else
@@ -485,7 +521,7 @@ void RobotAW::LocateBeacon()//same as RobotKIT
                     //switch off all ir led, 
                     for(int i=0;i<NUM_DOCKS;i++)
                     {
-                        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
                         SetRGBLED(i, 0,0,0,0);
                     }
                 }
@@ -501,7 +537,7 @@ void RobotAW::LocateBeacon()//same as RobotKIT
 
                         //using reflective signals if not set
                         for(int i=0; i< NUM_DOCKS;i++)
-                            SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0 | IR_PULSE1);
+                            SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1);
 
                         return;
                     }
@@ -509,7 +545,7 @@ void RobotAW::LocateBeacon()//same as RobotKIT
                     {
                         //then swith on all ir led at 64Hz frequency
                         for(int i=0;i<NUM_DOCKS;i++)
-                            SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                            SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
                     }
                 }
                 break;
@@ -615,7 +651,7 @@ void RobotAW::Alignment()
         in_docking_region_hist.Reset();
         docking_region_detected = true;
         for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
 
         SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
     }
@@ -870,13 +906,13 @@ void RobotAW::Recruitment()
             if(robots_in_range_detected_hist.Sum(2*i) > 14 || robots_in_range_detected_hist.Sum(2*i+1) >14)
             {
                 recruitment_stage[i]=STAGE1;
-                SetIRLED(i, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             else
             {
                 //or send recruitment message
-                SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
                 SetRGBLED(i, 0,0,0,0);
                 if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == i)
                 {
@@ -889,7 +925,7 @@ void RobotAW::Recruitment()
             if(msg_docking_signal_req_received & (1<<i))
             {
                 msg_docking_signal_req_received &= ~(1<<i);
-                SetIRLED(i, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
             }
             else if((msg_guideme_received & (1<<i)) || ((robot_in_range_detected & (0x3<<(2*i))) ==0
                         && ambient_hist[2*i].Avg()> para.recruiting_ambient_offset1
@@ -1417,7 +1453,7 @@ void RobotAW::Reshaping()
             else if( docked[i]==0 && branch_side == i )
             {
                 // start recruiting
-                SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
+                SetIRLED(branch_side, IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1);
                 printf("%d Preparing to recruit upon side %d\n",timestamp,i);
             }
 
@@ -1544,14 +1580,14 @@ void RobotAW::Debugging()
             if(timestamp ==2)
             {
                 for(int i=0;i<NUM_IRS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);//IR_PULSE0|IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);//IRPULSE0|IRPULSE1);
             }
             printf("%d %d %d %d\n",  proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg());
             break;
         case 1: //simulating recruitment, stage 2, 64Hz helper signals
             if(timestamp ==2)
             {
-                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, IR_PULSE0|IR_PULSE1); //switch docking signals 2 on left and right leds
+                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, IRPULSE0|IRPULSE1); //switch docking signals 2 on left and right leds
             }
             printf("%d %d %d %d\n",  proximity[4], proximity[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
             break;
@@ -1559,14 +1595,14 @@ void RobotAW::Debugging()
             if(timestamp ==2)
             {
                 for(int i=0;i<NUM_IRS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
             }
             printf("%d %d %d %d\n", reflective[0]-para.reflective_calibrated[0], reflective[1] - para.reflective_calibrated[1], beacon[0], beacon[1]);
             break;
         case 3: //simulate recruitment, stage 1, 32Hz guiding signals
             if(timestamp ==2)
             {
-                SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
+                SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1);
             }
             printf("%d %d %d %d\n", reflective[0]-para.reflective_calibrated[0], reflective[1] - para.reflective_calibrated[1], para.ambient_calibrated[0]-ambient[0], para.ambient_calibrated[1]-ambient[1]);
             break;
@@ -1574,7 +1610,7 @@ void RobotAW::Debugging()
             if(timestamp ==2)
             {
                 for(int i=0;i<NUM_DOCKS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED2, IR_PULSE0|IR_PULSE1); //switch docking signals 2 on left and right leds
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, IRPULSE0|IRPULSE1); //switch docking signals 2 on left and right leds
             }
             break;
         case 5:// simulate locking stage, turn on RGB led to be bright 
@@ -1694,7 +1730,7 @@ void RobotAW::Debugging()
                 docked[0]=sym.data;
                 //using reflective signals if not set
                 for(int i=0; i< NUM_DOCKS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0 | IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0 | IRPULSE1);
             }
 
             //received IP_REQ as synchronisation signals
@@ -1706,7 +1742,7 @@ void RobotAW::Debugging()
             //start flashing ir led
             if(clock == 2)
             {
-                //SetIRLED(0, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1);
+                //SetIRLED(0, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1);
                 SetIRLED(0, IRLEDPROXIMITY, LED0|LED2, 0);
             }
 
@@ -1726,7 +1762,7 @@ void RobotAW::Debugging()
                 docked[0]=sym.data;
                 //using reflective signals if not set
                 for(int i=0; i< NUM_DOCKS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0 | IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0 | IRPULSE1);
 
                 SetRGBLED(2, RED,RED,RED,RED);
 //                SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
@@ -1762,6 +1798,50 @@ void RobotAW::Debugging()
             }
             if(log)
                 Log();
+            break;
+        case 16://Test IRComm as sender
+            if(timestamp ==2)
+            {
+                SetIRLED(para.debug.para[0], IRLEDOFF, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
+                SetRGBLED(para.debug.para[0], 0,0,0,0);
+            }
+            if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == 0)
+            {
+                OrganismSequence::Symbol sym(0);
+                sym.reBuild("AFSF");
+                Robot::BroadcastIRMessage(para.debug.para[0], IR_MSG_TYPE_RECRUITING, sym.data);
+            }
+            break;
+        case 17://Test IRComm as listener
+            if(timestamp ==2)
+                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[para.debug.para[0]]), para.debug.para[1]);
+            break;
+        case 18://print out sensor data
+            if(timestamp ==2)
+            {
+                for(int i=0;i<SIDE_COUNT;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+            }
+            break;
+        case 19://print out sensor data
+            if(timestamp ==2)
+            {
+                for(int i=0;i<SIDE_COUNT;i++)
+                    SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+            }
+            break;
+        case 20://testing motors
+            // if(timestamp  == 2)
+            { 
+                speed[WHEEL_FRONT_LEFT] = para.debug.para[3];
+                speed[WHEEL_FRONT_RIGHT] = para.debug.para[4];
+                speed[WHEEL_REAR] = para.debug.para[5];
+                printf("Move motors at speed (%d %d %d)\n", para.debug.para[3], para.debug.para[4], para.debug.para[5]);
+            }
+            break;
+        case 21://test RGB
+            if(timestamp==2)
+                SetRGBLED(para.debug.para[4], para.debug.para[0] * BLUE, para.debug.para[1]*BLUE, para.debug.para[2]*BLUE, para.debug.para[3]*BLUE);
             break;
         default:
             break;

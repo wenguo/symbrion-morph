@@ -27,9 +27,6 @@ RobotSCOUT::RobotSCOUT(ScoutBot * robot):Robot()
     LED0 = 0x1;
     LED1 = 0x2;
     LED2 = 0x4;
-    IR_PULSE0 = 0x1;
-    IR_PULSE1 = 0x2;
-    IR_PULSE2 = 0x4;
 
     printf("Consctruction RobotSCOUT\n");
 }
@@ -48,8 +45,6 @@ void RobotSCOUT::InitHardware()
 
     irobot->EnableMotors(true);
 
-    IRComm::Initialize();
-    Ethernet::Initialize();
  //   Ethernet::disableSwitch();
 }
 
@@ -62,7 +57,7 @@ void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t puls
 {
     int board = board_dev_num[channel];
     irobot->SetIRLED(ScoutBot::Side(board), led);
-    irobot->SetIRPulse(ScoutBot::Side(board), pulse_led);
+    irobot->SetIRPulse(ScoutBot::Side(board), pulse_led|IRPULSE2);
     irobot->SetIRMode(ScoutBot::Side(board), mode);
 
     uint8_t status = (uint8_t)mode | 0x4;
@@ -385,7 +380,7 @@ void RobotSCOUT::Seeding()
         //check the first symbol that indicates the parent and child side of the connection
         uint8_t branch_side = it->getSymbol(0).side1;
         //enalbe docking signals
-        SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1); 
+        SetIRLED(branch_side, IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1); 
         std::cout<<name<<" branch "<<*it<<std::endl;
     }
 }
@@ -443,7 +438,7 @@ void RobotSCOUT::Waiting()
 
         //switch on proximity ir leds and ir pulsing
         for(uint8_t i=0; i< NUM_DOCKS; i++)
-            SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0|IR_PULSE1);
+            SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1);
 
         current_state = FORAGING;
         last_state = WAITING;
@@ -451,7 +446,7 @@ void RobotSCOUT::Waiting()
     else if(organism_found)
     {
         for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
 
         current_state = ASSEMBLY;
         last_state = WAITING;
@@ -570,7 +565,7 @@ void RobotSCOUT::LocateBeacon()
                     //switch off all ir led, 
                     for(int i=0;i<NUM_DOCKS;i++)
                     {
-                        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
                         SetRGBLED(i, 0,0,0,0);
                     }
                 }
@@ -591,14 +586,14 @@ void RobotSCOUT::LocateBeacon()
 
                         //using reflective signals if not set
                         for(int i=0; i< NUM_DOCKS;i++)
-                            SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0 | IR_PULSE1);
+                            SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1);
 
                     } 
                     else if( beacon_trigger_count <1)
                     {
                         //then swith on all ir led at 64Hz frequency
                         for(int i=0;i<NUM_DOCKS;i++)
-                            SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                            SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
                     }
                 }
                 break;
@@ -626,7 +621,7 @@ void RobotSCOUT::Alignment()
         docking_region_detected = true;
         in_docking_region_hist.Reset();
         for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
         SetRGBLED(assembly_info.side2, WHITE,WHITE,WHITE,WHITE);
     }
 
@@ -842,13 +837,13 @@ void RobotSCOUT::Recruitment()
             if(robots_in_range_detected_hist.Sum(2*i) > 14 || robots_in_range_detected_hist.Sum(2*i+1) >14)
             {
                 recruitment_stage[i]=STAGE1;
-                SetIRLED(i, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             else
             {
                 //or send recruitment message
-                SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
                 SetRGBLED(i, 0,0,0,0);
                 if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == i)
                 {
@@ -861,7 +856,7 @@ void RobotSCOUT::Recruitment()
             if(msg_docking_signal_req_received & (1<<i))
             {
                 msg_docking_signal_req_received &= ~(1<<i);
-                SetIRLED(i, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
             }
             else if(msg_guideme_received & (1<<i))
             {
@@ -1424,7 +1419,7 @@ void RobotSCOUT::Reshaping()
             else if( docked[i]==0 && branch_side == i )
             {
                 // start recruiting
-                SetIRLED(branch_side, IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
+                SetIRLED(branch_side, IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1);
                 printf("%d Preparing to recruit upon side %d\n",timestamp,i);
             }
 
@@ -1543,7 +1538,7 @@ void RobotSCOUT::Debugging()
         case 0: //simulating recruitment, stage 2, 64Hz helper signals
             if(timestamp ==2)
             {
-                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, IR_PULSE0|IR_PULSE1);
+                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, IRPULSE0|IRPULSE1);
             }
 
             printf("%d %d %d %d\n",  proximity[4], proximity[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
@@ -1555,7 +1550,7 @@ void RobotSCOUT::Debugging()
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
                     SetRGBLED(i,0,0,0,0);
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);//IR_PULSE0|IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);//IRPULSE0|IRPULSE1);
                 }
             }
             printf("%d\t%d\t%d\t%d\t%d\t%d\n",  proximity[0], proximity[1], beacon[0], beacon[1], reflective_hist[0].Avg(), reflective_hist[1].Avg());
@@ -1564,7 +1559,7 @@ void RobotSCOUT::Debugging()
             if(timestamp == 2)
             {
               //  SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, 0);
-                SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IR_PULSE0|IR_PULSE1);
+                SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1);
             }
             printf("%d %d %d %d\n", reflective[4]-para.reflective_calibrated[4], reflective[5] - para.reflective_calibrated[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
             break;
@@ -1572,7 +1567,7 @@ void RobotSCOUT::Debugging()
             if(timestamp ==2)
             {
                 for(int i=0;i<NUM_DOCKS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
             }
             printf("%d\t%d\t%d\t%d\t%d\t%d\n", reflective[0]-para.reflective_calibrated[0], reflective[1] - para.reflective_calibrated[1], beacon[0], beacon[1], proximity[0], proximity[1]);
             break;
@@ -1623,7 +1618,7 @@ void RobotSCOUT::Debugging()
             if(timestamp ==40)
             {
                 for(int i=0;i<NUM_IRS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
                 leftspeed = para.debug.para[3];
                 rightspeed = para.debug.para[4];
                 printf("set speed %d %d\n", leftspeed, rightspeed);
@@ -1743,7 +1738,7 @@ void RobotSCOUT::Debugging()
                 docked[0]=sym.data;
                 //using reflective signals if not set
                 for(int i=0; i< NUM_DOCKS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0 | IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0 | IRPULSE1);
 
                 SetRGBLED(2, RED,RED,RED,RED);
                 //SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
@@ -1791,7 +1786,7 @@ void RobotSCOUT::Debugging()
                 docked[2]=sym.data;
                 //using reflective signals if not set
                 for(int i=0; i< NUM_DOCKS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0 | IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0 | IRPULSE1);
             }
 
             //received IP_REQ as synchronisation signals
@@ -1803,7 +1798,7 @@ void RobotSCOUT::Debugging()
             //start flashing ir led
             if(clock == 2)
             {
-                //SetIRLED(2, IRLEDDOCKING, LED1, IR_PULSE0 | IR_PULSE1);
+                //SetIRLED(2, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1);
                 SetIRLED(2, IRLEDPROXIMITY, LED0|LED2, 0);
             }
 
@@ -1820,7 +1815,7 @@ void RobotSCOUT::Debugging()
         case 16://Test IRComm as sender
             if(timestamp ==2)
             {
-                SetIRLED(para.debug.para[0], IRLEDOFF, LED1, IR_PULSE0 | IR_PULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(para.debug.para[0], IRLEDOFF, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
                 SetRGBLED(para.debug.para[0], 0,0,0,0);
             }
             if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == 0)
@@ -1838,14 +1833,14 @@ void RobotSCOUT::Debugging()
             if(timestamp ==2)
             {
                 for(int i=0;i<SIDE_COUNT;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
             }
             break;
         case 19://print out sensor data
             if(timestamp ==2)
             {
                 for(int i=0;i<SIDE_COUNT;i++)
-                    SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IR_PULSE0|IR_PULSE1);
+                    SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
             }
             break;
         case 20://testing motors
