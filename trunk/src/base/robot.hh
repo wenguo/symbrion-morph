@@ -338,9 +338,6 @@ class Robot
     unsigned char newrobot_attached; //indicating new robot joined the organism, used to propagate the message to the whole organism
     bool assembly_info_checked;
 
-    int32_t leftspeed;
-    int32_t rightspeed;
-    int32_t sidespeed;
     int32_t direction;
     int8_t speed[3];
 

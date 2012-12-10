@@ -84,7 +84,7 @@ void RobotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint
 
 }
 
-void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
+void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t speed3)
 {
     if(leftspeed > 100)
         leftspeed = 100;
@@ -260,7 +260,7 @@ void RobotSCOUT::UpdateActuators()
 {
     CheckDockingMotor();
     CheckHingeMotor();
-    SetSpeed(leftspeed, rightspeed,sidespeed); 
+    SetSpeed(speed[0], speed[1],speed[2]); 
 }
 
 // for self-repair
@@ -278,14 +278,14 @@ void RobotSCOUT::UpdateFailures()
 
 void RobotSCOUT::Avoidance()
 {
-    leftspeed = 40;
-    rightspeed = 40;
+    speed[0] = 40;
+    speed[1] = 40;
 
 
     for(int i=0;i<NUM_IRS;i++)
     {
-           leftspeed +=(para.avoid_weightleft[i] * (reflective_hist[i]).Avg())>>3;
-           rightspeed += (para.avoid_weightleft[i] * (reflective_hist[i]).Avg())>>3;
+           speed[0] +=(para.avoid_weightleft[i] * (reflective_hist[i]).Avg())>>3;
+           speed[1] += (para.avoid_weightleft[i] * (reflective_hist[i]).Avg())>>3;
     }
 
     if(reflective_hist[1].Avg() > para.avoidance_threshold || reflective_hist[0].Avg()>para.avoidance_threshold)
@@ -293,9 +293,9 @@ void RobotSCOUT::Avoidance()
     else if(reflective_hist[4].Avg() > para.avoidance_threshold || reflective_hist[5].Avg()>para.avoidance_threshold)
         direction = FORWARD;
 
-    sidespeed = 0;
-    leftspeed = 0;
-    rightspeed = 0;
+    speed[2] = 0;
+    speed[0] = 0;
+    speed[1] = 0;
 
 
 }
@@ -401,9 +401,9 @@ void RobotSCOUT::Foraging()
         current_state = WAITING;
         last_state = FORAGING;
 
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
     }
     else
     {
@@ -420,9 +420,9 @@ void RobotSCOUT::Foraging()
 }
 void RobotSCOUT::Waiting()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     msg_unlockme_received = 0;
     msg_locked_received = 0;
@@ -485,9 +485,9 @@ void RobotSCOUT::Assembly()
 
 void RobotSCOUT::LocateEnergy()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     if(1)
     {
@@ -531,25 +531,25 @@ void RobotSCOUT::LocateBeacon()
     //no signals, move randomly 
     if(beacon_trigger_count<1)
     {
-        //leftspeed = 50;
-        //rightspeed = -50;
+        //speed[0] = 50;
+        //speed[1] = -50;
     }
     else
     {
-        leftspeed = para.locatebeacon_forward_speed[0];
-        rightspeed = para.locatebeacon_forward_speed[1];
+        speed[0] = para.locatebeacon_forward_speed[0];
+        speed[1] = para.locatebeacon_forward_speed[1];
 
         for(int i=0;i<NUM_IRS;i++)
         {
-            leftspeed += (beacon[i] * para.locatebeacon_weightleft[i]) >>1;
-            rightspeed += (beacon[i] * para.locatebeacon_weightright[i]) >>1;
+            speed[0] += (beacon[i] * para.locatebeacon_weightleft[i]) >>1;
+            speed[1] += (beacon[i] * para.locatebeacon_weightright[i]) >>1;
         }
 
     }
 
 
      
-    printf("beacon: (%d %d) -- speed: (%d %d %d %d)\n", beacon[id0], beacon[id1], leftspeed, rightspeed, para.locatebeacon_forward_speed[0], para.locatebeacon_forward_speed[1]);
+    printf("beacon: (%d %d) -- speed: (%d %d %d %d)\n", beacon[id0], beacon[id1], speed[0], speed[1], para.locatebeacon_forward_speed[0], para.locatebeacon_forward_speed[1]);
     //switch on ir led at 64Hz so the recruitment robot can sensing it
     //and turn on its docking signals, the robot need to switch off ir 
     //led for a while to check if it receives docking signals
@@ -608,8 +608,8 @@ void RobotSCOUT::LocateBeacon()
 //TODO: cleanup the code
 void RobotSCOUT::Alignment()
 {
-    leftspeed = para.aligning_forward_speed[0];
-    rightspeed = para.aligning_forward_speed[1];
+    speed[0] = para.aligning_forward_speed[0];
+    speed[1] = para.aligning_forward_speed[1];
 
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
@@ -628,8 +628,8 @@ void RobotSCOUT::Alignment()
 
     if(docking_region_detected)
     {
-        leftspeed = 0;
-        rightspeed = 0;
+        speed[0] = 0;
+        speed[1] = 0;
 
         if(timestamp % 5==0)
             Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
@@ -674,8 +674,8 @@ void RobotSCOUT::Alignment()
         {
             docking_blocked = false;
             blocking_count=0;
-            leftspeed = 0;
-            rightspeed = 0;
+            speed[0] = 0;
+            speed[1] = 0;
             current_state = RECOVER;
             last_state = ALIGNMENT;
             recover_count = para.aligning_reverse_count;
@@ -683,16 +683,16 @@ void RobotSCOUT::Alignment()
         }
         else if (in_docking_region_hist.Sum()>=3)
         {
-            leftspeed = para.aligning_forward_speed[0];
-            rightspeed = para.aligning_forward_speed[1];
+            speed[0] = para.aligning_forward_speed[0];
+            speed[1] = para.aligning_forward_speed[1];
             printf("forward\n");
         }
         else
         {
             for(int i=0;i<NUM_IRS;i++)
             {
-                leftspeed += (beacon[i] * para.aligning_weightleft[i]) >>2;
-                rightspeed += (beacon[i] * para.aligning_weightright[i]) >>2;
+                speed[0] += (beacon[i] * para.aligning_weightleft[i]) >>2;
+                speed[1] += (beacon[i] * para.aligning_weightright[i]) >>2;
             }
         }
 
@@ -717,8 +717,8 @@ void RobotSCOUT::Recover()
         SetRGBLED(3, 0, 0, 0, 0);
     }
 
-    leftspeed = 0;
-    rightspeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
 
     if(last_state == ALIGNMENT)
     {
@@ -726,15 +726,15 @@ void RobotSCOUT::Recover()
         //robot will stop there for 1 seconds
         if(recover_count >=10)
         {
-            leftspeed = para.aligning_reverse_speed[0];
-            rightspeed = para.aligning_reverse_speed[1];
+            speed[0] = para.aligning_reverse_speed[0];
+            speed[1] = para.aligning_reverse_speed[1];
 
             const int weight_left[2] = {-3,3};
             const int weight_right[2] = {3, -3};
             for(int i=0;i<0;i++)
             {
-                leftspeed += reflective_hist[i].Avg() * weight_left[i]>>8;
-                rightspeed += reflective_hist[i].Avg() * weight_right[i]>>8;
+                speed[0] += reflective_hist[i].Avg() * weight_left[i]>>8;
+                speed[1] += reflective_hist[i].Avg() * weight_right[i]>>8;
             }
         }
         else if(recover_count ==0)
@@ -758,8 +758,8 @@ void RobotSCOUT::Docking()
 
     if(ethernet_status_hist.Sum(assembly_info.side2) > 8) 
     {
-        leftspeed = 0;
-        rightspeed= 0;  
+        speed[0] = 0;
+        speed[1]= 0;  
         SetRGBLED(assembly_info.side2, WHITE, WHITE, WHITE, WHITE);
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED2, 0);
         irobot->SetIRRX(ScoutBot::Side(board_dev_num[assembly_info.side2]), false);
@@ -772,13 +772,13 @@ void RobotSCOUT::Docking()
     {
         if(assembly_info.side2 == ::FRONT)
         {
-            leftspeed = para.docking_forward_speed[0];
-            rightspeed= para.docking_forward_speed[1];  
+            speed[0] = para.docking_forward_speed[0];
+            speed[1]= para.docking_forward_speed[1];  
         }
         else
         {
-            leftspeed = -para.docking_forward_speed[0];
-            rightspeed= -para.docking_forward_speed[1];  
+            speed[0] = -para.docking_forward_speed[0];
+            speed[1]= -para.docking_forward_speed[1];  
         }
     }
 
@@ -786,9 +786,9 @@ void RobotSCOUT::Docking()
 
 void RobotSCOUT::Locking()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     int docking_side = assembly_info.side2;
 
@@ -822,9 +822,9 @@ void RobotSCOUT::Locking()
 
 void RobotSCOUT::Recruitment()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
     static int stage2_count=0;
     std::vector<OrganismSequence>::iterator it1 = mybranches.begin();
     while(it1 !=mybranches.end())
@@ -1031,9 +1031,9 @@ void RobotSCOUT::Recruitment()
 
 void RobotSCOUT::InOrganism()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     //seed robot monitoring total number of robots in the organism
     if(seed)
@@ -1139,9 +1139,9 @@ void RobotSCOUT::InOrganism()
 
 void RobotSCOUT::Disassembly()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     if(!MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
     {
@@ -1187,9 +1187,9 @@ void RobotSCOUT::Disassembly()
 
 void RobotSCOUT::Undocking()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     for(int i=0;i<NUM_DOCKS;i++)
     {
@@ -1207,21 +1207,21 @@ void RobotSCOUT::Undocking()
         // move back
         if( undocking_count < 150 && proximity[4] < 175 && proximity[5] < 175 )
         {
-            leftspeed = -30;
-            rightspeed = -30;
-            sidespeed = 0;
+            speed[0] = -30;
+            speed[1] = -30;
+            speed[2] = 0;
         }
         else if( undocking_count < 300  )
         {
-            leftspeed = 0;//para.debug.para[1];   // was 18
-            rightspeed = 0;//para.debug.para[2]; // was -35
-            sidespeed = 20;
+            speed[0] = 0;//para.debug.para[1];   // was 18
+            speed[1] = 0;//para.debug.para[2]; // was -35
+            speed[2] = 20;
         }
         else
         {
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = 0;
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 0;
 
             for( int i=0;i<NUM_DOCKS; i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
@@ -1290,9 +1290,9 @@ void RobotSCOUT::Lowering()
 
 void RobotSCOUT::Raising()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
     static bool flag=false;
 
     //temp solution, force KIT4 as the coordinator
@@ -1463,9 +1463,9 @@ void RobotSCOUT::Reshaping()
 
 void RobotSCOUT::MacroLocomotion()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     macrolocomotion_count++;
     //flashing RGB leds
@@ -1495,9 +1495,9 @@ void RobotSCOUT::MacroLocomotion()
     if( module_failed ) //|| (seed && macrolocomotion_count >= 300 ))
     {
         // Stop moving
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
 
         // Propagate lowering messages
         PropagateIRMessage(IR_MSG_TYPE_LOWERING);
@@ -1510,9 +1510,9 @@ void RobotSCOUT::MacroLocomotion()
     else if( msg_lowering_received )
     {
         // Stop moving
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
 
         last_state = MACROLOCOMOTION;
         current_state = LOWERING;
@@ -1524,9 +1524,9 @@ void RobotSCOUT::MacroLocomotion()
 
 void RobotSCOUT::Debugging()
 {
-    // leftspeed = 0;
-    // rightspeed = 0;
-    // sidespeed = 0;
+    // speed[0] = 0;
+    // speed[1] = 0;
+    // speed[2] = 0;
 
     //printf("%d Debuging %d:\t", timestamp,para.debug.mode);
     static int clock=0;
@@ -1619,14 +1619,14 @@ void RobotSCOUT::Debugging()
             {
                 for(int i=0;i<NUM_IRS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-                leftspeed = para.debug.para[3];
-                rightspeed = para.debug.para[4];
-                printf("set speed %d %d\n", leftspeed, rightspeed);
+                speed[0] = para.debug.para[3];
+                speed[1] = para.debug.para[4];
+                printf("set speed %d %d\n", speed[0], speed[1]);
             }
             else if(timestamp == (uint32_t)para.debug.para[2])
             {
-                leftspeed = 0;
-                rightspeed = 0;
+                speed[0] = 0;
+                speed[1] = 0;
                 current_state = RESTING;
                 last_state = DEBUGGING;
             }
@@ -1762,16 +1762,16 @@ void RobotSCOUT::Debugging()
             if(clock == para.debug.para[5])
             {
                 log = true;
-                leftspeed = -20;
-                rightspeed = -20;
-                sidespeed = 0;
+                speed[0] = -20;
+                speed[1] = -20;
+                speed[2] = 0;
             }
             else if(clock == para.debug.para[6])
             {
                 log = false;
-                leftspeed = 0;
-                rightspeed = 0;
-                sidespeed = 0;
+                speed[0] = 0;
+                speed[1] = 0;
+                speed[2] = 0;
             }
 
             if(log)
@@ -1846,8 +1846,8 @@ void RobotSCOUT::Debugging()
         case 20://testing motors
             // if(timestamp  == 2)
             { 
-                leftspeed = para.debug.para[4];
-                rightspeed = para.debug.para[5];
+                speed[0] = para.debug.para[4];
+                speed[1] = para.debug.para[5];
                 //  printf("Move motors at speed (%d %d)\n", para.debug.para[4], para.debug.para[5]);
             }
             break;

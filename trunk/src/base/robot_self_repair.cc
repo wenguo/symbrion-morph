@@ -169,13 +169,13 @@ void Robot::LeadRepair()
 			if( move_start == 0 )
 				move_start = timestamp;
 
-			leftspeed = -30;
-			rightspeed = -30;
+			speed[0] = -30;
+			speed[1] = -30;
 
 			if((timestamp/2)%2==0)
-				sidespeed = 10;
+				speed[2] = 10;
 			else
-				sidespeed = -10;
+				speed[2] = -10;
 		}
 		// Flash LEDs whilst moving
 		if(  move_start == 0 || timestamp < move_start+move_duration )
@@ -201,9 +201,9 @@ void Robot::LeadRepair()
 		}
 		else
 		{
-			leftspeed = 0;
-           	rightspeed = 0;
-           	sidespeed = 0;
+			speed[0] = 0;
+           	speed[1] = 0;
+           	speed[2] = 0;
 
            	// No longer docked to failed module
 			docked[parent_side] = 0;
@@ -587,9 +587,9 @@ void Robot::Repair()
 void Robot::Failed()
 {
 
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     
 	if(!MessageWaitingAck(IR_MSG_TYPE_FAILED))

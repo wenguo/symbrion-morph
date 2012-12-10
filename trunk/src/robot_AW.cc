@@ -258,17 +258,17 @@ void RobotAW::Avoidance()
 
     for(int i=0;i<NUM_IRS;i++)
     {
-        //   leftspeed +=(direction * avoid_weightleft[i] * (reflective_avg[i]))>>3;
-        //   rightspeed += (direction * avoid_weightleft[i] * (reflective_avg[i]))>>3;
-        sidespeed += (para.avoid_weightside[i] * (reflective_hist[i].Avg()))>>3;
+        //   speed[0] +=(direction * avoid_weightleft[i] * (reflective_avg[i]))>>3;
+        //   speed[1] += (direction * avoid_weightleft[i] * (reflective_avg[i]))>>3;
+        speed[2] += (para.avoid_weightside[i] * (reflective_hist[i].Avg()))>>3;
     }
 
-    if(abs(sidespeed) < 20)
+    if(abs(speed[2]) < 20)
     {
         if((timestamp / 10 )%2 ==0)
-            sidespeed = 20;
+            speed[2] = 20;
         else
-            sidespeed =-20;
+            speed[2] =-20;
     }
 
     if(reflective_hist[1].Avg() > para.avoidance_threshold || reflective_hist[0].Avg()>para.avoidance_threshold)
@@ -491,17 +491,17 @@ void RobotAW::LocateBeacon()//same as RobotKIT
     }
     else
     {
-            //leftspeed = 15;
-            //rightspeed = 15;
+            //speed[0] = 15;
+            //speed[1] = 15;
 
 //            if((timestamp/10)%2 ==0)
-//                sidespeed = 10;
+//                speed[2] = 10;
 //            else
-//                sidespeed = -10;
+//                speed[2] = -10;
 
     }
 
-    //      printf("beacon: (%d %d) -- speed: (%d %d %d)\n", beacon[1], beacon[0], leftspeed, rightspeed, sidespeed);
+    //      printf("beacon: (%d %d) -- speed: (%d %d %d)\n", beacon[1], beacon[0], speed[0], speed[1], speed[2]);
     //switch on ir led at 64Hz so the recruitment robot can sensing it
     //and turn on its docking signals, the robot need to switch off ir 
     //led for a while to check if it receives docking signals
@@ -571,15 +571,15 @@ void RobotAW::Alignment()
         //					 << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
         if( abs(temp) > 5 )
         {
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = 20 * sign(temp);
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 20 * sign(temp);
         }
         else
         {
-            leftspeed = 40;
-            rightspeed = 40;
-            sidespeed = 0;
+            speed[0] = 40;
+            speed[1] = 40;
+            speed[2] = 0;
         }
     }
     else if( abs(temp2) < 200 )
@@ -593,9 +593,9 @@ void RobotAW::Alignment()
             // pause every so often
             if( timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0 )
             {
-                leftspeed = 0;
-                rightspeed = 0;
-                sidespeed = 0;
+                speed[0] = 0;
+                speed[1] = 0;
+                speed[2] = 0;
             }
             else
             {
@@ -603,15 +603,15 @@ void RobotAW::Alignment()
                 //  docking element casing at close ranges
                 if( abs(temp-5) > 5 )
                 {
-                    leftspeed = 0;
-                    rightspeed = 0;
-                    sidespeed = 15 * sign(temp-5);
+                    speed[0] = 0;
+                    speed[1] = 0;
+                    speed[2] = 15 * sign(temp-5);
                 }
                 else
                 {
-                    leftspeed = 15;
-                    rightspeed = 15;
-                    sidespeed = 0;
+                    speed[0] = 15;
+                    speed[1] = 15;
+                    speed[2] = 0;
                 }
             }
 
@@ -623,23 +623,23 @@ void RobotAW::Alignment()
             //    		        						       << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
             if( abs(temp2) > 20 )
             {
-                leftspeed = -15 * sign(temp2);
-                rightspeed = 15 * sign(temp2);
-                sidespeed = 0;
+                speed[0] = -15 * sign(temp2);
+                speed[1] = 15 * sign(temp2);
+                speed[2] = 0;
             }
             else
             {
-                leftspeed = 20;
-                rightspeed = 20;
-                sidespeed = 0;
+                speed[0] = 20;
+                speed[1] = 20;
+                speed[2] = 0;
             }
         }
     }
     else
     {
-        leftspeed = -30 -15 * sign(temp2);
-        rightspeed = -30 + 15 * sign(temp2);
-        sidespeed = 0;//15 * sign(temp2);
+        speed[0] = -30 -15 * sign(temp2);
+        speed[1] = -30 + 15 * sign(temp2);
+        speed[2] = 0;//15 * sign(temp2);
     }
 
     //check if it is aligned well and also closed enough for docking
@@ -658,9 +658,9 @@ void RobotAW::Alignment()
 
     if(docking_region_detected)
     {
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
         if(robots_in_range_detected_hist.Sum(0) > 5 && robots_in_range_detected_hist.Sum(1) > 5 )
         {
             docking_region_detected = false;
@@ -678,7 +678,7 @@ void RobotAW::Alignment()
         }
     }
 
-    printf("Alignment %d %d %d\n", leftspeed, rightspeed, sidespeed);
+    printf("Alignment %d %d %d\n", speed[0], speed[1], speed[2]);
 }
 void RobotAW::Recover()
 {
@@ -691,12 +691,12 @@ void RobotAW::Recover()
     //      direction = FORWARD;
 
 
-    leftspeed = -30;
-    rightspeed = -30;
+    speed[0] = -30;
+    speed[1] = -30;
     if((timestamp/2)%2==0)
-        sidespeed = 10;
+        speed[2] = 10;
     else
-        sidespeed = -10;
+        speed[2] = -10;
 
     if(beacon_signals_detected & 0x3)
     {
@@ -706,14 +706,14 @@ void RobotAW::Recover()
         current_state = ALIGNMENT;
         last_state = RECOVER;
     }
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 }
 void RobotAW::Docking()
 {
 
-    printf("Docking speed: %d %d %d\n", leftspeed, rightspeed, sidespeed);
+    printf("Docking speed: %d %d %d\n", speed[0], speed[1], speed[2]);
     docking_count++;
     //no guiding signals (proximity) detected, go back to alignment
     if(docking_count > 30 && robots_in_range_detected_hist.Sum(0) < 12 && robots_in_range_detected_hist.Sum(1) < 12) //10 out of 16
@@ -724,9 +724,9 @@ void RobotAW::Docking()
     {
         if(docking_failed_reverse_count++ > para.docking_failed_reverse_time)
         {
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = 0;
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 0;
 
             if(docking_trials < para.docking_trials)
             {
@@ -741,9 +741,9 @@ void RobotAW::Docking()
                     last_state = DOCKING;
                     docking_failed_reverse_count = 0;
                     docking_failed = false;
-                    leftspeed = 0;
-                    rightspeed = 0;
-                    sidespeed = 0;
+                    speed[0] = 0;
+                    speed[1] = 0;
+                    speed[2] = 0;
                 }
             }
             else
@@ -758,9 +758,9 @@ void RobotAW::Docking()
         }
         else
         {
-            leftspeed = para.docking_failed_reverse_speed[0];
-            rightspeed = para.docking_failed_reverse_speed[1];
-            sidespeed = para.docking_failed_reverse_speed[2];
+            speed[0] = para.docking_failed_reverse_speed[0];
+            speed[1] = para.docking_failed_reverse_speed[1];
+            speed[2] = para.docking_failed_reverse_speed[2];
         }
         return;
     }
@@ -805,9 +805,9 @@ void RobotAW::Docking()
     if(in_locking_region_hist.Sum() >= 2 ) // 4 successful predition out of 8
     {
         in_locking_region_hist.Reset();
-        leftspeed = 0;
-        rightspeed= 0;  
-        sidespeed = 0;
+        speed[0] = 0;
+        speed[1]= 0;  
+        speed[2] = 0;
         SetRGBLED(assembly_info.side2, WHITE, WHITE, WHITE, WHITE);
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED2, 0);
         irobot->SetIRRX(ActiveWheel::Side(board_dev_num[assembly_info.side2]), false);
@@ -826,29 +826,29 @@ void RobotAW::Docking()
     switch (status)
     {
         case TURN_RIGHT:
-            leftspeed = para.docking_turn_right_speed[0];
-            rightspeed = para.docking_turn_right_speed[1];
-            sidespeed = para.docking_turn_right_speed[2];
+            speed[0] = para.docking_turn_right_speed[0];
+            speed[1] = para.docking_turn_right_speed[1];
+            speed[2] = para.docking_turn_right_speed[2];
             break;
         case TURN_LEFT:
-            leftspeed = para.docking_turn_left_speed[0];
-            rightspeed = para.docking_turn_left_speed[1];
-            sidespeed = para.docking_turn_left_speed[2];
+            speed[0] = para.docking_turn_left_speed[0];
+            speed[1] = para.docking_turn_left_speed[1];
+            speed[2] = para.docking_turn_left_speed[2];
             break;
         case MOVE_FORWARD:
-            leftspeed = para.docking_forward_speed[0];
-            rightspeed = para.docking_forward_speed[1];
-            sidespeed = para.docking_forward_speed[2];
+            speed[0] = para.docking_forward_speed[0];
+            speed[1] = para.docking_forward_speed[1];
+            speed[2] = para.docking_forward_speed[2];
             break;
         case MOVE_BACKWARD:
-            leftspeed = para.docking_backward_speed[0];
-            rightspeed = para.docking_backward_speed[1];
-            sidespeed = para.docking_backward_speed[2];
+            speed[0] = para.docking_backward_speed[0];
+            speed[1] = para.docking_backward_speed[1];
+            speed[2] = para.docking_backward_speed[2];
             break;
         case CHECKING:
-            leftspeed = 0;
-            rightspeed = 0;
-            sidespeed = 0;
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 0;
             //no beacon2 signals?
             //     if(proximity[0] < 50 && proximity[1]<50)
             //     {
@@ -864,9 +864,9 @@ void RobotAW::Docking()
 
 void RobotAW::Locking()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     int docking_side = assembly_info.side2;
 
@@ -890,9 +890,9 @@ void RobotAW::Locking()
 }
 void RobotAW::Recruitment()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
     static int stage2_count=0;
     std::vector<OrganismSequence>::iterator it1 = mybranches.begin();
     while(it1 !=mybranches.end())
@@ -1102,9 +1102,9 @@ void RobotAW::Recruitment()
 }
 void RobotAW::InOrganism()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     //for testing
     /*
@@ -1196,9 +1196,9 @@ void RobotAW::InOrganism()
 }
 void RobotAW::Disassembly()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     //no need to propagate disassembling messages?
     if(!MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
@@ -1232,9 +1232,9 @@ void RobotAW::Disassembly()
 }
 void RobotAW::Undocking()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     for(int i=0;i<NUM_DOCKS;i++)
     {
@@ -1247,21 +1247,21 @@ void RobotAW::Undocking()
     undocking_count++;
     if(undocking_count >= 120)
     {
-        leftspeed = -30;
-        rightspeed = -30;
+        speed[0] = -30;
+        speed[1] = -30;
 
         if((timestamp/2)%2==0)
-            sidespeed = 10;
+            speed[2] = 10;
         else
-            sidespeed = -10;
+            speed[2] = -10;
 
     }
 
     if( undocking_count >= 150 )
     {
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
 
         last_state = UNDOCKING;
         current_state = FORAGING;
@@ -1326,9 +1326,9 @@ void RobotAW::Lowering()
 
 void RobotAW::Raising()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     /*
     if(timestamp == 40)
@@ -1390,9 +1390,9 @@ void RobotAW::Raising()
 void RobotAW::Reshaping()
 {
 
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
     // If this is the seed or branch received from other module
     if( seed || msg_organism_seq_received )
     {
@@ -1498,17 +1498,17 @@ void RobotAW::Reshaping()
 void RobotAW::MacroLocomotion()
 {
 
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
-    //sidespeed = -20; // don't move
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
+    //speed[2] = -20; // don't move
 
     macrolocomotion_count++;
 
     if(macrolocomotion_count < 50)
-        sidespeed = para.debug.para[7];
+        speed[2] = para.debug.para[7];
     else if(macrolocomotion_count < 100)
-        sidespeed = para.debug.para[8];
+        speed[2] = para.debug.para[8];
 
     //flashing RGB leds
     static int index = 0;
@@ -1537,9 +1537,9 @@ void RobotAW::MacroLocomotion()
     if( module_failed ) //  || (seed && macrolocomotion_count >=300))
     {
         // Stop moving
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
 
         // Propagate lowering messages
         PropagateIRMessage(IR_MSG_TYPE_LOWERING);
@@ -1552,9 +1552,9 @@ void RobotAW::MacroLocomotion()
     else if( msg_lowering_received )
     {
         // Stop moving
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
 
         last_state = MACROLOCOMOTION;
         current_state = LOWERING;
@@ -1565,9 +1565,9 @@ void RobotAW::MacroLocomotion()
 
 void RobotAW::Debugging()
 {
-    //leftspeed = 0;
-    //rightspeed = 0;
-    //sidespeed = 0;
+    //speed[0] = 0;
+    //speed[1] = 0;
+    //speed[2] = 0;
   //  printf("Debuging %d:\n", para.debug.mode);
             
     static int clock=0;
@@ -1785,16 +1785,16 @@ void RobotAW::Debugging()
            if(clock == para.debug.para[5])
             {
                 log = true;
-                leftspeed = -15;
-                rightspeed = -15;
-                sidespeed = 0;
+                speed[0] = -15;
+                speed[1] = -15;
+                speed[2] = 0;
             }
             else if(clock == para.debug.para[6])
             {
                 log = false;
-                leftspeed = 0;
-                rightspeed = 0;
-                sidespeed = 0;
+                speed[0] = 0;
+                speed[1] = 0;
+                speed[2] = 0;
             }
             if(log)
                 Log();

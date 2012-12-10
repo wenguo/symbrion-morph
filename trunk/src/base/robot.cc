@@ -166,9 +166,6 @@ Robot::Robot()
     robots_in_range_detected_hist.Resize(15);
     ethernet_status_hist.Resize(15);
 
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
     direction = FORWARD;
     memset(speed, 0, 3);
 
@@ -183,9 +180,6 @@ Robot::Robot()
     LED0 = 0x1;
     LED1 = 0x2;
     LED2 = 0x4;
-    IR_PULSE0 = 0x1;
-    IR_PULSE1 = 0x2;
-    IR_PULSE2 = 0x4;
 }
 
 // Reset variables used during assembly
@@ -261,7 +255,7 @@ bool Robot::Init(const char * optionfile)
     for(int i=0;i<NUM_DOCKS;i++)
     {
         SetRGBLED(i, 0, 0, 0, 0);
-        SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0|IR_PULSE1);
+        SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1|IRPULSE2);
     }
     
     robots_in_range_detected_hist.Reset();
@@ -399,9 +393,7 @@ void Robot::Update(const uint32_t& ts)
 
 void Robot::Calibrating()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    memset(speed, 0, 3);
 
     static int32_t temp1[8]={0,0,0,0,0,0,0,0};
     static int32_t temp2[8]={0,0,0,0,0,0,0,0};
@@ -677,7 +669,7 @@ void Robot::PrintStatus()
 
     std::cout << timestamp << ": " << name << " in state " << state_names[current_state]
         << " [" << state_names[last_state] << "] recover count: " << recover_count
-        << " speed (" << leftspeed << " , " << rightspeed << " )"  << std::endl;
+        << " speed (" << (int)speed[0] << " , " << (int)speed[1] << ", " << (int)speed[2]<< " )"  << std::endl;
 }
 
 void Robot::LogState()
