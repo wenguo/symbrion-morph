@@ -47,7 +47,7 @@ void RobotSCOUT::InitHardware()
     EnableMotors(true);
 
     IRComm::Initialize();
-    Ethernet::Initialize();
+//    Ethernet::Initialize();
  //   Ethernet::disableSwitch();
 }
 
@@ -97,7 +97,7 @@ void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
         rightspeed = 100;
     else if(rightspeed < -100)
         rightspeed = -100;
-    Move(leftspeed, rightspeed);
+    Move(leftspeed, -rightspeed); // LM: this way works for my robots?
 }
 
 
@@ -263,12 +263,31 @@ void RobotSCOUT::UpdateActuators()
 // for self-repair
 void RobotSCOUT::UpdateFailures()
 {
+	static int failure_delay = 0;
     if( !module_failed )
     {
-        if( current_state == MACROLOCOMOTION )
+        if( current_state == para.fail_in_state  )
         {
-            if( para.debug.para[0] > 0 && macrolocomotion_count > (unsigned) para.debug.para[0] )
-                module_failed = true;
+        	if( failure_delay++ > para.fail_after_delay )
+        	{
+        		// For testing - send spoof IR message to self
+                msg_failed_received |= 1<<para.debug.para[0]; // side received on
+                subog_id = para.debug.para[1];				  // side sent from
+                parent_side = para.debug.para[0];
+                heading = (parent_side + 2) % 4;
+
+                // Propagate lowering messages
+                PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+
+                last_state = MACROLOCOMOTION;
+                current_state = LOWERING;
+                lowering_count = 0;
+
+                msg_unlocked_received |= 1<<para.debug.para[0];
+
+
+                //module_failed = true;
+        	}
         }
     }
 }
@@ -1321,12 +1340,13 @@ void RobotSCOUT::Raising()
     sidespeed = 0;
     static bool flag=false;
 
-    //temp solution, force KIT4 as the coordinator
- //   if(para.debug.para[9]==3)
+    //temp solution, force SCOUT20 as the coordinator
+    if(para.debug.para[9]==3)
 
-    if((ambient_hist[2].Avg() > 1000 && ambient_hist[3].Avg() > 1000)
-     ||(ambient_hist[6].Avg() > 1000 && ambient_hist[7].Avg() > 1000))
+//    if((ambient_hist[2].Avg() > 1000 && ambient_hist[3].Avg() > 1000)
+//     ||(ambient_hist[6].Avg() > 1000 && ambient_hist[7].Avg() > 1000))
         flag = true;
+
     if(flag)
     {
         raising_count++;

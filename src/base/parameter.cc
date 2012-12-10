@@ -51,7 +51,9 @@ Parameter::Parameter():
     ir_msg_repeated_delay(30),
     ir_msg_repeated_num(10),
     ir_msg_ack_delay(10),
-    avoidance_threshold(10)
+    avoidance_threshold(10),
+    fail_in_state(-1),
+    fail_after_delay(0)
 {
     memset(avoid_weightleft, 0, NUM_IRS * sizeof(int));
     memset(avoid_weightright, 0, NUM_IRS * sizeof(int));
@@ -88,7 +90,9 @@ std::ostream& operator<<(std::ostream& os, const Parameter& para)
         << "recruiting_ambient_offset1: "<< para.recruiting_ambient_offset1<<std::endl
         << "recruiting_ambient_offset2: "<< para.recruiting_ambient_offset2<<std::endl
         << "recruiting_proximity_offset1: "<< para.recruiting_proximity_offset1<<std::endl
-        << "recruitint_proximity_offset2: "<< para.recruiting_proximity_offset2<<std::endl;
+        << "recruitint_proximity_offset2: "<< para.recruiting_proximity_offset2<<std::endl
+    	<< "fail_in_state: " << para.fail_in_state << std::endl
+    	<< "fail_after_delay: " << para.fail_after_delay << std::endl;
     os  << "avoidance_weight_left: [";
     for(int i=0;i<NUM_IRS;i++)
     {

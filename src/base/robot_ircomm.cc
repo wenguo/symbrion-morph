@@ -246,6 +246,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 msg_failed_received |= 1<<channel;
                 subog_id = data[2];
                 parent_side = channel;
+                heading = (parent_side + 2) % 4;
                 ack_required = true;
             }
             break;
@@ -266,6 +267,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         parent_side = channel;
                         subog_str[subog_str[0]] |= type<<4;     // 4:5
                         subog_str[subog_str[0]] |= channel<<6;  // 5:6
+
+            			int ind = (int)((uint8_t*)data)[0]+1;	 // get heading index
+            			heading = (int)((uint8_t*)data)[ind];	 // get heading
                     }
 
                     printf("%d Sub-organism string received\n",timestamp);
@@ -389,6 +393,18 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                                     CPrintf1(SCR_GREEN,"%d -- start to reshaping !", timestamp);
                                 }
                                 break;
+                            case IR_MSG_TYPE_RETREAT:
+                            	{
+                            		msg_retreat_received = true;
+                                    CPrintf1(SCR_BLUE,"%d -- retreating !", timestamp);
+                            	}
+                            	break;
+                            case IR_MSG_TYPE_STOP:
+								{
+									msg_stop_received = true;
+                                    CPrintf1(SCR_RED,"%d -- stopping !", timestamp);
+								}
+								break;
                             default:
                                 valid = false;
                                 CPrintf1(SCR_GREEN, "%d -- received unknow message", timestamp);
@@ -595,10 +611,10 @@ void Robot::SendSubOrgStr( int channel, uint8_t *seq )
 
         buf[0] = seq[0]+1;
 
-        if( buf[0] > MAX_IR_MESSAGE_SIZE-2 )
+        if( buf[0] > MAX_IR_MESSAGE_SIZE-3 )
         {
             printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, (int) buf[0] );
-            buf[0] = MAX_IR_MESSAGE_SIZE - 2;
+            buf[0] = MAX_IR_MESSAGE_SIZE - 3;
         }
 
         // copy previous string
@@ -617,7 +633,10 @@ void Robot::SendSubOrgStr( int channel, uint8_t *seq )
             buf[buf[0]] |= channel<<2;  // 2:3
         }
 
-        SendIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+1, true);
+        // Send the direction that the neighbour should move in
+        buf[buf[0]+1] = getNeighbourHeading( docked[channel] );
+
+        SendIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, true);
 
         printf("%d Sending sub-og string\n",timestamp);
         PrintSubOGString(buf);

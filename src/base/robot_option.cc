@@ -215,6 +215,9 @@ bool Robot::LoadParameters(const char * filename)
             para.ir_msg_repeated_delay = optionfile->ReadInt(entity, "ir_msg_repeated_delay", 30);
             para.ir_msg_repeated_num = optionfile->ReadInt(entity, "ir_msg_repeated_num", 10);
             para.ir_msg_ack_delay = optionfile->ReadInt(entity, "ir_msg_ack_delay", 10);
+            para.fail_in_state = optionfile->ReadInt(entity,"fail_in_state",-1);
+            para.fail_after_delay = optionfile->ReadInt(entity,"fail_after_delay",0);
+
             if(para.init_state > STATE_COUNT || para.init_state <0)
                 para.init_state = 0;
 
