@@ -342,6 +342,7 @@ class Robot
     int32_t rightspeed;
     int32_t sidespeed;
     int32_t direction;
+    int8_t speed[3];
 
     uint32_t num_robots_inorganism;
 
@@ -383,9 +384,6 @@ class Robot
     uint8_t LED0;
     uint8_t LED1;
     uint8_t LED2;
-    uint8_t IR_PULSE0;
-    uint8_t IR_PULSE1;
-    uint8_t IR_PULSE2;
 };
 
 #endif

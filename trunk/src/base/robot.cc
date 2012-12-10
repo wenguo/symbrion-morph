@@ -170,6 +170,7 @@ Robot::Robot()
     rightspeed = 0;
     sidespeed = 0;
     direction = FORWARD;
+    memset(speed, 0, 3);
 
     docking_approaching_sensor_id[0] = 0; 
     docking_approaching_sensor_id[1] = 1; 
