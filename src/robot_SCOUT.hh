@@ -5,10 +5,10 @@
 #include <IRobot.h>
 #include <comm/IRComm.h>
 
-class RobotSCOUT:public Robot, public ScoutBot
+class RobotSCOUT:public Robot
 {
     public:
-        RobotSCOUT();
+        RobotSCOUT(ScoutBot * robot);
         virtual ~RobotSCOUT();
 
     protected:
@@ -53,6 +53,7 @@ class RobotSCOUT:public Robot, public ScoutBot
         virtual void Log();
     private:
         void Avoidance();
+        ScoutBot * irobot;
 
 };
 #endif

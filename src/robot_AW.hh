@@ -5,10 +5,10 @@
 #include <IRobot.h>
 #include <comm/IRComm.h>
 
-class RobotAW:public Robot, public ActiveWheel 
+class RobotAW:public Robot
 {
     public:
-        RobotAW();
+        RobotAW(ActiveWheel * r);
         virtual ~RobotAW();
 
     protected:
@@ -57,6 +57,7 @@ class RobotAW:public Robot, public ActiveWheel
 
     private:
         void Avoidance();
+        ActiveWheel * irobot;
 
 };
 

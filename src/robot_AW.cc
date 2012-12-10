@@ -1,11 +1,13 @@
 #include "robot_AW.hh"
 
-RobotAW::RobotAW():Robot()
+RobotAW::RobotAW(ActiveWheel *robot):Robot()
 {
     if(name)
         free(name);
     name = strdup("RobotAW");
     type = ROBOT_AW;
+
+    irobot = robot;
 
     board_dev_num[::FRONT] = ActiveWheel::RIGHT; 
     board_dev_num[::RIGHT] = ActiveWheel::REAR; 
@@ -36,10 +38,10 @@ void RobotAW::InitHardware()
 {
     for(int i=0;i<NUM_DOCKS;i++)
     {
-        SetPrintEnabled(i, false);
+        irobot->SetPrintEnabled(i, false);
     }
 
-    EnableMotors(true);
+    irobot->EnableMotors(true);
     //RobotBase::SetIRRX(board_dev_num[2], false);
 
     IRComm::Initialize();
@@ -55,9 +57,9 @@ void RobotAW::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_l
 {
     int board = board_dev_num[channel];
     // RobotBase::SetIRLED(board, mode, led, pulse_led);
-    RobotBase::SetIRLED(board, led);
-    RobotBase::SetIRPulse(board, pulse_led);
-    RobotBase::SetIRMode(board, mode);
+    irobot->SetIRLED(ActiveWheel::Side(board), led);
+    irobot->SetIRPulse(ActiveWheel::Side(board), pulse_led);
+    irobot->SetIRMode(ActiveWheel::Side(board), mode);
 
     uint8_t status = (uint8_t)mode | 0x4;
     for(int i=0;i<3;i++)
@@ -78,7 +80,7 @@ void RobotAW::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_l
 void RobotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br)
 {
     int board = board_dev_num[channel];
-    RobotBase::SetLED(board, tl, br, bl, tr);
+    irobot->SetLED(ActiveWheel::Side(board), tl, br, bl, tr);
     RGBLED_status[channel] = tl|tr|bl|br;
 }
 
@@ -86,8 +88,8 @@ void RobotAW::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
 {
 //    if( current_state == MACROLOCOMOTION || para.debug.para[9] != 2 )
     {
-        MoveWheelsFront(-leftspeed * direction, -sidespeed);
-        MoveWheelsRear(rightspeed * direction,sidespeed);
+        irobot->MoveWheelsFront(-leftspeed * direction, -sidespeed);
+        irobot->MoveWheelsRear(rightspeed * direction,sidespeed);
     }
 //    else
     {
@@ -135,7 +137,7 @@ bool RobotAW::SetHingeMotor(int status)
             hinge_motor_status = LOWED;
     }
 
-    MoveHinge(45 * status);
+    irobot->MoveHinge(45 * status);
     printf("\n\n------ moving hinge motor ----\n\n");
     return true;
 }
@@ -143,10 +145,10 @@ bool RobotAW::SetHingeMotor(int status)
 void RobotAW::UpdateSensors()
 {
     //for bfin testing
-    IRValues ret_A = GetIRValues(ActiveWheel::RIGHT);
-    IRValues ret_B = GetIRValues(ActiveWheel::FRONT);
-    IRValues ret_C = GetIRValues(ActiveWheel::LEFT);
-    IRValues ret_D = GetIRValues(ActiveWheel::REAR);
+    IRValues ret_A = irobot->GetIRValues(ActiveWheel::RIGHT);
+    IRValues ret_B = irobot->GetIRValues(ActiveWheel::FRONT);
+    IRValues ret_C = irobot->GetIRValues(ActiveWheel::LEFT);
+    IRValues ret_D = irobot->GetIRValues(ActiveWheel::REAR);
     ambient[0] = ret_A.sensor[0].ambient;
     ambient[1] = ret_A.sensor[1].ambient;
     reflective[0] = ret_A.sensor[0].reflective;
@@ -772,7 +774,7 @@ void RobotAW::Docking()
         sidespeed = 0;
         SetRGBLED(assembly_info.side2, WHITE, WHITE, WHITE, WHITE);
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED2, 0);
-        RobotBase::SetIRRX(board_dev_num[assembly_info.side2], false);
+        irobot->SetIRRX(ActiveWheel::Side(board_dev_num[assembly_info.side2]), false);
 
         Robot::SendIRMessage(assembly_info.side2, IR_MSG_TYPE_LOCKME,  true);
         msg_locked_expected |= 1<<assembly_info.side2;
@@ -940,7 +942,7 @@ void RobotAW::Recruitment()
                 {
                     recruitment_stage[i]=STAGE3;
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    RobotBase::SetIRRX(board_dev_num[i], true); //TODO: for demos, if side receiver works, better to switch it
+                    irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), true); //TODO: for demos, if side receiver works, better to switch it
                     //RobotBase::SetIRRX(board_dev_num[i], false);
                     printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
                 }
@@ -952,7 +954,7 @@ void RobotAW::Recruitment()
                 guiding_signals_count[i] = 0;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDOFF, 0, 0);
-                RobotBase::SetIRRX(board_dev_num[i], true);
+                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), true);
                 printf("%d -- Recruitment: channel %d  waits too long, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
 
@@ -976,7 +978,7 @@ void RobotAW::Recruitment()
                 guiding_signals_count[i] = 0;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDOFF, 0, 0);
-                RobotBase::SetIRRX(board_dev_num[i], true);
+                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), true);
                 printf("%d -- Recruitment: channel %d  received docking signals req, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             else if(msg_guideme_received & (1<<i))
@@ -1580,7 +1582,7 @@ void RobotAW::Debugging()
             {
                 SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
                 SetIRLED(0, IRLEDOFF, LED0|LED2, 0);
-                RobotBase::SetIRRX(board_dev_num[0], false);
+                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[0]), false);
             }
             break;
         case 6: //testing request ip via ircomm
@@ -1589,7 +1591,7 @@ void RobotAW::Debugging()
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    RobotBase::SetIRRX(board_dev_num[i], false);
+                    irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false);
                 }
             }
             break;
@@ -1597,12 +1599,12 @@ void RobotAW::Debugging()
             if(timestamp ==para.debug.para[6])
             {
                 printf("lifting hinge\n");
-                MoveHingeToAngle( hinge_start_pos+5, hinge_speed );
+                irobot->MoveHingeToAngle( hinge_start_pos+5, hinge_speed );
             }
             else if(timestamp == para.debug.para[7])
             {
                 printf("lifting hinge\n");
-                MoveHingeToAngle( hinge_start_pos, hinge_speed );
+                irobot->MoveHingeToAngle( hinge_start_pos, hinge_speed );
             }
 
             break;
@@ -1629,7 +1631,7 @@ void RobotAW::Debugging()
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    RobotBase::SetIRRX(board_dev_num[i], true);
+                    irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), true);
                 }
 
                 int num_neighbours = para.debug.para[2];
@@ -1658,7 +1660,7 @@ void RobotAW::Debugging()
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    RobotBase::SetIRRX(board_dev_num[i], false);
+                    irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false);
                 }
             }
             break;
@@ -1667,19 +1669,19 @@ void RobotAW::Debugging()
             {
             for(int i=0;i<NUM_DOCKS;i++)
             {
-                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, isEthernetPortConnected(ActiveWheel::Side(board_dev_num[i])) ? "true":"false",isSwitchActivated()?"true":"false" );
+                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, irobot->isEthernetPortConnected(ActiveWheel::Side(board_dev_num[i])) ? "true":"false",irobot->isSwitchActivated()?"true":"false" );
             }
             }
 #define NEIGHBOUR_IP "192.168.0.7"
             if(timestamp % 10 ==0)
             {
                 uint8_t data[9]={'h','e','l','l','o','-','A','W',0};
-                RobotBase::SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
+                irobot->SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
             }
-            while (HasEthMessage() > 0)
+            while (irobot->HasEthMessage() > 0)
             {
                 uint8_t rx[32];
-                auto_ptr<Message> m = ReceiveEthMessage();
+                auto_ptr<Message> m = irobot->ReceiveEthMessage();
                 memcpy(rx, m->GetData(), m->GetDataLength());
                 printf("%d -- received data: %s\n", timestamp, rx);
             }
