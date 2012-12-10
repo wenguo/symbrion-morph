@@ -119,6 +119,13 @@ class Robot
     void LeadRepair();
     void Repair();
 
+    uint8_t getNextNeighbour(int);
+    uint8_t getNeighbourHeading( uint8_t );
+    void changeState(fsm_state_t);
+	void moveTowardsHeading(int);
+
+
+
     std::string ClockString();
 
     //  void BroadcastMessage(Message); //broadcast message via wired communication bus
@@ -170,6 +177,7 @@ class Robot
     static void Reshaping(Robot * robot){robot->Reshaping();}
     static void MacroLocomotion(Robot * robot){robot->MacroLocomotion();}
     static void Debugging(Robot * robot){robot->Debugging();}
+
     // for self-repair
     static void Failed(Robot * robot){robot->Failed();}
     static void Support(Robot * robot){robot->Support();}
@@ -259,6 +267,7 @@ class Robot
 
     // for self-repair
     bool module_failed;
+    uint8_t heading;
     uint8_t wait_side;
     uint8_t parent_side;
     uint8_t repair_stage;
@@ -321,6 +330,8 @@ class Robot
     uint8_t msg_score_received;
     uint8_t msg_ip_addr_received;
     uint8_t msg_ip_addr_expected;
+    bool msg_retreat_received;
+    bool msg_stop_received;
 
 
 

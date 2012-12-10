@@ -24,6 +24,7 @@ Robot::Robot()
     seed=false;
     organism_formed=false;
     module_failed=false;
+    heading = 0;
     wait_side = FRONT;
     parent_side = SIDE_COUNT;
     repair_stage = STAGE0;
@@ -142,6 +143,9 @@ Robot::Robot()
     msg_score_seq_expected = 0;
     msg_score_received = 0;
 
+    msg_retreat_received = false;
+    msg_stop_received = false;
+
     docking_failed = false;
     docking_trials=0;
 
@@ -185,7 +189,7 @@ void Robot::ResetAssembly()
     msg_raising_received = 0;
     msg_lowering_received = 0;
     msg_score_received = 0;
-    msg_unlocked_received = 0;
+    //msg_unlocked_received = 0;
     num_robots_inorganism=1;
     seed = false;
 
@@ -215,6 +219,9 @@ bool Robot::Init(const char * optionfile)
 
     current_state = fsm_state_t(para.init_state);
     last_state = fsm_state_t(para.init_state);
+
+    // For self-repair - make sure every robot knows the target
+    if(!para.og_seq_list.empty()) target = para.og_seq_list[0];
 
     SPIVerbose = QUIET;
 

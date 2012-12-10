@@ -143,6 +143,9 @@ enum irmsg_type_t {
     IR_MSG_TYPE_SCORE_STRING,
     IR_MSG_TYPE_SCORE,
 
+    IR_MSG_TYPE_RETREAT,
+    IR_MSG_TYPE_STOP,
+
     IR_MSG_TYPE_ACK,              //followed by acknowledged message type
     IR_MSG_TYPE_COUNT
 };
@@ -158,6 +161,15 @@ enum ethmsg_type_t{
     ETH_MSG_TYPE_LOWERING,
     ETH_MSG_TYPE_RESHAPING,
     
+    // for self-repair
+    ETH_MSG_TYPE_FAILED,
+    ETH_MSG_TYPE_SUB_OG_STRING,
+    ETH_MSG_TYPE_SCORE_STRING,
+    ETH_MSG_TYPE_SCORE,
+
+    ETH_MSG_TYPE_RETREAT,
+    ETH_MSG_STOP,
+
     ETH_MSG_TYPE_COUNT
 };
 
