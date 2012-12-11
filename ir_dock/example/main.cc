@@ -27,15 +27,17 @@ int main(int argc, char** args)
     }
 
 
-    RobotBase::RobotType robot_type = RobotBase::Initialize("IRDocking");
+    //Initialise IRobot instance
+    RobotBase::Initialize("IRDocking");
 
-   
+    //Initialise Robot instance for IR docking, it will create the right type of robot automatically
     Robot::Initialise(RobotBase::Instance());
 
+    //Get the robot pointer 
     Robot *robot = Robot::Instance();
     
-    printf("Initialised\n");
 
+    //Define recruiting types: from which robot, which side, recruits which robot, which side
     Robot::Symbol r;
     r.type1 = RobotBase::SCOUTBOT;
     r.side1 = ScoutBot::REAR;
@@ -47,15 +49,13 @@ int main(int argc, char** args)
 
         if(strcmp(args[1], "r")==0)
         {
-            printf("As recruiter\n");
+            //Using Recruiting(Symbol r) to set robot to be recruiter, you must decide 'r' in your own controller
             robot->Recruiting(r);
 
-            usleep(1000000);
-
+            //Using GetRecruitingStatus to check if recruiting is done. If not, your controller should not access Motors + IR sensors
             while (!userQuit && robot->GetRecruitingStatus(ScoutBot::REAR) != Robot::RECRUITING_DONE)
             {
-                printf("checking\n");
-               // robot->Recruiting(r);
+                printf("*\n");
                 usleep(1000000);
             }
 
@@ -63,12 +63,13 @@ int main(int argc, char** args)
         }
         else if(strcmp(args[1],"d")==0)
         {
-            printf("As recruitee\n");
+            //Using Docking(Symbol r) to set robot to be recruitee, you must set 'r' in your own controller
             robot->Docking(r);
-            usleep(1000000);
 
+            //Using GetDockingStatus to check if docking is done. If not, your controller should not access Motors + IR sensors
             while (!userQuit && robot->GetDockingStatus() != Robot::DOCKING_DONE)
             {
+                printf("*\n");
                 usleep(1000000);
             }
 
@@ -81,8 +82,7 @@ int main(int argc, char** args)
     while (!userQuit) 
     {
 
-        //sleep for 1 second
-                printf("mainloop\n");
+        printf("Do something else\n");
         usleep(1000000);
     }
 
