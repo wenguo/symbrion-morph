@@ -47,7 +47,7 @@ void RobotSCOUT::InitHardware()
     EnableMotors(true);
 
     IRComm::Initialize();
-//    Ethernet::Initialize();
+    Ethernet::Initialize();
  //   Ethernet::disableSwitch();
 }
 
@@ -284,7 +284,6 @@ void RobotSCOUT::UpdateFailures()
                 lowering_count = 0;
 
                 msg_unlocked_received |= 1<<para.debug.para[0];
-
 
                 //module_failed = true;
         	}

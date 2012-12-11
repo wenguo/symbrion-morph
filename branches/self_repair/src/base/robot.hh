@@ -120,6 +120,7 @@ class Robot
     void Repair();
 
     uint8_t getNextNeighbour(int);
+    uint8_t getNextMobileNeighbour( int last );
     uint8_t getNeighbourHeading( uint8_t );
     void changeState(fsm_state_t);
 	void moveTowardsHeading(int);
@@ -332,6 +333,7 @@ class Robot
     uint8_t msg_ip_addr_expected;
     bool msg_retreat_received;
     bool msg_stop_received;
+    uint8_t pruning_required;
 
 
 
