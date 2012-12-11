@@ -146,6 +146,8 @@ Robot::Robot()
     msg_retreat_received = false;
     msg_stop_received = false;
 
+    pruning_required = 0;
+
     docking_failed = false;
     docking_trials=0;
 

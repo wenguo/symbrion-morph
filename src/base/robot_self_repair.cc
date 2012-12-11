@@ -72,14 +72,40 @@ bool Robot::StartRepair()
 		best_score = 0;
 		subog_str[0] = 0;
 
-		// Find the first side at which another neighbour is docked (not failed module)
-		while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
-			wait_side++;
+		if( type == ROBOT_SCOUT && (heading == 1 || heading == 3) )
+		{
+			heading = 4;
+		}
+		else
+		{
+			// Check that neighbour will be able to move away properly
+			for( int i=0; i<SIDE_COUNT; i++ )
+			{
+				// If there is a robot docked
+				if( docked[i] )
+				{
+					// If the robot is a scout
+					if(  OrganismSequence::Symbol(docked[i]).type2 == ROBOT_SCOUT )
+					{
+						int h = getNeighbourHeading(docked[i]);
+						if(( h == 1 || h == 3 ) && heading == i )
+						{
+							heading = 4;
+							std::cout << "I'm going to crash into my neighbour" << std::endl;
+						}
+					}
+				}
+			}
+		}
+
+//		wait_side = getNextNeighbour(0);
+		wait_side = getNextMobileNeighbour(0);
 
 		if( wait_side < SIDE_COUNT )
+		{
 			SendSubOrgStr( wait_side, subog_str );
-
-		msg_subog_seq_expected = 1<<wait_side;
+			msg_subog_seq_expected = 1<<wait_side;
+		}
 
 		for( int i=0; i<SIDE_COUNT; i++ )
 			SetRGBLED(i,GREEN,GREEN,GREEN,GREEN);
@@ -89,24 +115,47 @@ bool Robot::StartRepair()
 
 		current_state = LEADREPAIR;
 		msg_unlocked_expected |= 1<<parent_side;
+//		pruning_required |= 1<<parent_side;
 
 		printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d\n",timestamp,subog_id);
 		ret = true;
 	}
 	else if( msg_subog_seq_received )
 	{
+		// Check that neighbour will be able to move away properly
+		for( int i=0; i<SIDE_COUNT; i++ )
+		{
+			// If there is a robot docked
+			if( docked[i] )
+			{
+				// If the robot is a scout
+				if(  OrganismSequence::Symbol(docked[i]).type2 == ROBOT_SCOUT )
+				{
+					int h = getNeighbourHeading(docked[i]);
+					if(( h == 1 || h == 3 ) && heading == i )
+					{
+						heading = 4;
+						std::cout << "I'm going to crash into my neighbour" << std::endl;
+					}
+				}
+			}
+		}
+
+
 		msg_subog_seq_received = 0;
 
-		wait_side = 0;
 		repair_stage = STAGE0;
 		best_score = 0;
+		own_score = 0;
+		subog.Clear();
 
-		// Find the first side at which another neighbour is docked (not parent)
-		while(wait_side < SIDE_COUNT && (!docked[wait_side] || wait_side == parent_side))
-			wait_side++;
+		wait_side = getNextMobileNeighbour(0);
 
 		if( wait_side < SIDE_COUNT )
+		{
 			SendSubOrgStr( wait_side, subog_str );
+			msg_subog_seq_expected = 1<<wait_side;
+		}
 
 		current_state = REPAIR;
 		repair_start = timestamp;
@@ -115,6 +164,7 @@ bool Robot::StartRepair()
 			SetRGBLED(i, YELLOW, YELLOW, YELLOW, YELLOW);
 
 		msg_subog_seq_expected = 1<<wait_side;
+
         printf("%d Detected subog_seq, entering REPAIR\n",timestamp);
         ret = true;
 	}
@@ -200,10 +250,54 @@ uint8_t Robot::getNextNeighbour( int last )
 	return last;
 }
 
+uint8_t Robot::getNextMobileNeighbour( int last )
+{
+
+	bool neighbour_can_move = false;
+	while( last < SIDE_COUNT && !neighbour_can_move )
+	{
+		if( !docked[last] || last == parent_side )
+		{
+			last++;
+			continue;
+		}
+
+		// Check that this neighbour can move this way
+		int h = getNeighbourHeading(docked[last]);
+		if( OrganismSequence::Symbol(docked[last]).type2 == ROBOT_SCOUT )
+		{
+			if( h == 1 || h == 3 )
+			{
+				std::cout << timestamp << ": the neighbour on side " << last << " can't move this way " << std::endl;
+
+				// Send failure message
+				SendFailureMsg(last);
+				pruning_required |= 1<<last;
+				msg_unlocked_expected |= 1<<last;
+				last = getNextNeighbour(++last);
+			}
+			else
+			{
+				neighbour_can_move = true;
+			}
+		}
+		else
+		{
+			neighbour_can_move = true;
+		}
+	}
+
+	return last;
+
+}
+
 // Repair state of the robot nearest
 // to the failed (or support) module
 void Robot::LeadRepair()
 {
+
+	static uint8_t unlock_sent = 0; // Temporary solution
+
 	switch(repair_stage)
 	{
 
@@ -211,12 +305,12 @@ void Robot::LeadRepair()
 	case STAGE0:
 		if( wait_side < SIDE_COUNT )
 		{
-		    // not waiting for Ack from the previous message
+			// not waiting for Ack from the previous message
 			if( !MessageWaitingAck(wait_side, IR_MSG_TYPE_SUB_OG_STRING) )
 			{
 				if( msg_subog_seq_received & 1<<wait_side )
 				{
-					wait_side = getNextNeighbour(++wait_side);
+					wait_side = getNextMobileNeighbour(++wait_side);
 
 					if( wait_side < SIDE_COUNT )
 					{
@@ -228,16 +322,62 @@ void Robot::LeadRepair()
 				}
 			}
 		}
-		// TODO: disconnect from parent
-		else if( msg_unlocked_received )
+		// Prune sub-structures
+		else if( pruning_required )
 		{
-			// TODO: Broadcast RETREAT msg using ethernet
-			//BroadcastEthMessage(ETH_MSG_TYPE_RETREAT);
-			PropagateIRMessage(IR_MSG_TYPE_RETREAT);
-
+			for(int i=0;i<NUM_DOCKS;i++)
+			{
+				if(!MessageWaitingAck(i,IR_MSG_TYPE_FAILED))
+				{
+					if( pruning_required & 1<<i )
+					{
+						if( msg_unlocked_received & 1<<i )
+						// TODO: Check Eth and distance sensors to confirm
+						{
+							docked[i] = 0;
+							pruning_required &= ~(1<<i);
+						}
+						else if(unlocking_required[i])
+						{
+							SetDockingMotor(i, OPEN);
+							unlocking_required[i]=false;
+						}
+						else if( docking_motors_status[i]==OPENED && !(unlock_sent & 1<<i))
+						{
+							BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+							unlock_sent |= 1<<i;
+						}
+					}
+				}
+			}
+		}
+		// Un-dock from parent
+		else if( !(unlock_sent & 1<<parent_side) )
+		{
+			if( msg_unlocked_received & 1<<parent_side )
+			{
+				if(unlocking_required[parent_side])
+				{
+					SetDockingMotor(parent_side, OPEN);
+					unlocking_required[parent_side]=false;
+				}
+				else if( docking_motors_status[parent_side]==OPENED )
+				{
+					//TODO: remove when parent can check by other means
+					BroadcastIRMessage(parent_side, IR_MSG_TYPE_UNLOCKED, true);
+					unlock_sent |= 1<<parent_side;
+				}
+			}
+		}
+		else
+		{
 			repair_stage = STAGE1;
 			docked[parent_side] = 0;
 			msg_subog_seq_expected = 0;
+
+			// TODO: Broadcast RETREAT msg using ethernet
+			//BroadcastEthMessage(ETH_MSG_TYPE_RETREAT);
+			PropagateIRMessage(IR_MSG_TYPE_RETREAT);
 
 			move_start = timestamp;
 
@@ -280,14 +420,14 @@ void Robot::LeadRepair()
 		{
 			// Stop moving
 			leftspeed = 0;
-		    rightspeed = 0;
-		    sidespeed = 0;
+			rightspeed = 0;
+			sidespeed = 0;
 
 			// TODO: Broadcast STOP msg using ethernet
 			//BroadcastEthMessage(ETH_MSG_TYPE_STOP);
-		    PropagateIRMessage(IR_MSG_TYPE_STOP);
+			PropagateIRMessage(IR_MSG_TYPE_STOP);
 
-		    // Set LEDs
+			// Set LEDs
 			for( int i=0; i<NUM_DOCKS; i++ )
 				SetRGBLED(i,GREEN,GREEN,GREEN,GREEN);
 
@@ -358,6 +498,7 @@ void Robot::LeadRepair()
 		break;
 
 	// Broadcast and listen for sub-organism scores
+	// TODO: broadcast from other sides of the robot
 	case STAGE3:
 
 		if( timestamp < broadcast_start+broadcast_duration )
@@ -407,7 +548,7 @@ void Robot::LeadRepair()
 			if( best_id == subog_id )
 			{
 				PropagateReshapeScore( best_score, parent_side );
-			
+
 				if( best_score == own_score )
 				{
 					seed = true;
@@ -436,6 +577,7 @@ void Robot::LeadRepair()
 		}
 		break;
 	}
+
 }
 
 // Initial repair state of remaining modules
@@ -454,7 +596,7 @@ void Robot::Repair()
 			{
 				if( msg_subog_seq_received & 1<<wait_side )
 				{
-	            	wait_side = getNextNeighbour(++wait_side);
+					wait_side = getNextMobileNeighbour(++wait_side);
 
 	            	if( wait_side < SIDE_COUNT )
 	            	{
@@ -588,6 +730,7 @@ void Robot::Repair()
 		break;
 
 	// Listen for sub-organism scores
+	// TODO: broadcast scores as well
 	case STAGE3:
 
 		// until a reshaping message is received
