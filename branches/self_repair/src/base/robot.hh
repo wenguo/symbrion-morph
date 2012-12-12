@@ -113,6 +113,7 @@ class Robot
     virtual void Log()=0;
 
     // for self-repair
+    void CheckForFailures();
     bool StartRepair();
     void Failed();
     void Support();

@@ -310,8 +310,11 @@ void Robot::Update(const uint32_t& ts)
     //update Sensors
     UpdateSensors();
 
-    //check for failures
+    //update simulated failures
     UpdateFailures();
+
+    //check for failures and respond
+    //CheckForFailures();
 
     //update status variable
     beacon_signals_detected = 0;
