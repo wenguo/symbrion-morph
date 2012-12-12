@@ -142,6 +142,24 @@ uint8_t Robot::GetDockingStatus()
     return ret;
 }
 
+void Robot::Docking()
+{
+    switch(docking_status)
+    {
+        case LOCATEBEACON:
+            LocateBeacon();
+            break;
+        case ALIGNING:
+            Aligning();
+            break;
+        case LOCKING:
+            Locking();
+            break;
+        default:
+            break;
+    }
+}
+
 
 bool Robot::Update()
 {
@@ -152,7 +170,6 @@ bool Robot::Update()
     {
         Recruiting();
         //check if all recruiting side done
-        int sum=0;
         for(int i=0;i<NUM_DOCKS;i++)
         {
             if(recruiting_status[i] > RECRUITING_DONE)
@@ -183,6 +200,10 @@ void* Robot::MainThread(void *ptr)
     Robot *robot = (Robot*)ptr;
     robot->main_thread_running = true;
     bool done = false;
+
+    IRComm::Initialize();
+    IRComm::SetMessageCallback(ProcessIRMessage);
+
     while(!done)
     {
         pthread_mutex_lock(&robot->mutex);
@@ -200,3 +221,10 @@ void* Robot::MainThread(void *ptr)
 }
 
 
+void Robot::ProcessIRMessage(Message *msg)
+{
+    printf("recieved message\n");
+
+    //remove that messae from memo
+    IRComm::ReadMessage();
+}

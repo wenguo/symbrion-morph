@@ -5,9 +5,18 @@ void RobotAW::Recruiting()
     printf("\t ActiveWheel Recruiting\n");
 }
 
-void RobotAW::Docking()
+void RobotAW::LocateBeacon()
 {
 }
+
+void RobotAW::Aligning()
+{
+}
+
+void RobotAW::Locking()
+{
+}
+
 
 void RobotAW::UpdateSensors()
 {
