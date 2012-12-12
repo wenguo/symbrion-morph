@@ -4,9 +4,18 @@ void RobotKIT::Recruiting()
 {
 }
 
-void RobotKIT::Docking()
+void RobotKIT::LocateBeacon()
 {
 }
+
+void RobotKIT::Aligning()
+{
+}
+
+void RobotKIT::Locking()
+{
+}
+
 
 void RobotKIT::UpdateSensors()
 {

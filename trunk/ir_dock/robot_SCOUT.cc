@@ -2,8 +2,7 @@
 
 void RobotSCOUT::Recruiting()
 {
-    printf("\t Scout Recruiting\n");
-    printf("ScoutBot Recruiting\n");
+    printf("\tScoutBot Recruiting\n");
     for(int i=0;i<4;i++)
     {
         switch(recruiting_status[i])
@@ -20,30 +19,27 @@ void RobotSCOUT::Recruiting()
     }
 }
 
-void RobotSCOUT::Docking()
+void RobotSCOUT::LocateBeacon()
 {
-    printf("\t Scout Docking\n");
-    printf("ScoutBot Docking\n");
-    switch(docking_status)
-    {
-        case LOCATEBEACON:
-            break;
-        case ALIGNING:
-            break;
-        case LOCKING:
-            break;
-        default:
-            break;
-    }
+    printf("\tScoutBot LocateBeaon\n");
+}
 
+void RobotSCOUT::Aligning()
+{
+    printf("\tScoutBot Aligning\n");
+}
+
+void RobotSCOUT::Locking()
+{
+    printf("\tScoutBot Locking\n");
 }
 
 void RobotSCOUT::UpdateSensors()
 {
-    printf("Scout Update Sensor\n");
+    printf("\tScout Update Sensor\n");
 }
 
 void RobotSCOUT::UpdateActuators()
 {
-    printf("Scout Update Actuators\n");
+    printf("\tScout Update Actuators\n");
 }

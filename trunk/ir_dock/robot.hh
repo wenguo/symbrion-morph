@@ -2,6 +2,7 @@
 #define ROBOT_HH
 
 #include <IRobot.h>
+#include <comm/IRComm.h>
 #include "hist.hh"
 
 #define NUM_IRS 8
@@ -74,9 +75,12 @@ class Robot{
         Robot();
         ~Robot(){};
         virtual void Recruiting()=0;
-        virtual void Docking()=0;
         virtual void UpdateSensors()=0;
         virtual void UpdateActuators()=0;
+
+        virtual void LocateBeacon()=0;
+        virtual void Aligning()=0;
+        virtual void Locking()=0;
 
         uint8_t recruiting_type[NUM_DOCKS];
         uint8_t recruiting_status[NUM_DOCKS];
@@ -109,11 +113,12 @@ class Robot{
         Hist ambient_avg_threshold_hist;
         Hist proximity_hist[NUM_IRS];
 
-        bool docked[NUM_IRS];
     private:
         bool Update();
+        void Docking();
         static Robot * instance;
         static void * MainThread(void *ptr);
+        static void ProcessIRMessage(Message *msg);
 
         uint8_t role;
         pthread_t main_thread;
@@ -127,9 +132,12 @@ class RobotSCOUT: public Robot{
         ~RobotSCOUT(){};
 
         virtual void Recruiting();
-        virtual void Docking();
         virtual void UpdateSensors();
         virtual void UpdateActuators();
+
+        virtual void LocateBeacon();
+        virtual void Aligning();
+        virtual void Locking();
 
 };
 
@@ -139,10 +147,12 @@ class RobotKIT: public Robot{
         ~RobotKIT(){};
 
         virtual void Recruiting();
-        virtual void Docking();
         virtual void UpdateSensors();
         virtual void UpdateActuators();
 
+        virtual void LocateBeacon();
+        virtual void Aligning();
+        virtual void Locking();
 };
 
 class RobotAW: public Robot{
@@ -151,10 +161,12 @@ class RobotAW: public Robot{
         ~RobotAW(){};
 
         virtual void Recruiting();
-        virtual void Docking();
         virtual void UpdateSensors();
         virtual void UpdateActuators();
 
+        virtual void LocateBeacon();
+        virtual void Aligning();
+        virtual void Locking();
 };
 
 #endif
