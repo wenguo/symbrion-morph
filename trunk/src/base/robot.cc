@@ -231,8 +231,6 @@ bool Robot::Init(const char * optionfile)
     current_state = fsm_state_t(para.init_state);
     last_state = fsm_state_t(para.init_state);
 
-    SPIVerbose = QUIET;
-
     InitLog();
 
     InitHardware();
