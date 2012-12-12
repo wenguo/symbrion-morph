@@ -74,6 +74,9 @@ bool Robot::Recruiting(Symbol s)
     {
         recruiting_type[s.side1] = s.data;
         recruiting_status[s.side1] = STAGE1;
+        irobot->SetIRRX(s.side1, true);
+        SetRGBLED(s.side1, 0,0,0,0);
+        SetIRLED(s.side1, IRLEDDOCKING, ScoutBot::IRTOP, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
     }
     else
     {
@@ -203,9 +206,11 @@ void* Robot::MainThread(void *ptr)
 
     IRComm::Initialize();
     IRComm::SetMessageCallback(ProcessIRMessage);
+    robot->timestamp = 0;
 
     while(!done)
     {
+        robot->timestamp++;
         pthread_mutex_lock(&robot->mutex);
         done = robot->Update();
         pthread_mutex_unlock(&robot->mutex);
@@ -215,11 +220,23 @@ void* Robot::MainThread(void *ptr)
     }
 
     printf("Exit Main Thread\n");
+    robot->timestamp = 0;
     robot->role = ROLE_IDLE;
     robot->main_thread_running = false;
     return NULL;
 }
 
+void Robot::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
+{
+    irobot->SetIRLED(channel, led);
+    irobot->SetIRPulse(channel, pulse_led|IRPULSE2);
+    irobot->SetIRMode(channel, mode);
+}
+
+void Robot::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br)
+{
+    irobot->SetLED(channel, tr, bl, br, tl);
+}
 
 void Robot::ProcessIRMessage(Message *msg)
 {

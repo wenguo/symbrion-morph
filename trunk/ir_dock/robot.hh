@@ -74,6 +74,11 @@ class Robot{
     protected:
         Robot();
         ~Robot(){};
+
+
+        void SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led);
+        void SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br);
+
         virtual void Recruiting()=0;
         virtual void UpdateSensors()=0;
         virtual void UpdateActuators()=0;
@@ -89,6 +94,7 @@ class Robot{
 
         RobotBase * irobot;
 
+        uint32_t guiding_signals_count[NUM_DOCKS];
 
         uint8_t beacon_signals_detected;
         uint8_t expelling_signals_detected;
@@ -112,6 +118,10 @@ class Robot{
         Hist beacon_signals_detected_hist;
         Hist ambient_avg_threshold_hist;
         Hist proximity_hist[NUM_IRS];
+        Hist ethernet_status_hist;
+
+        int8_t speed[3];
+        uint32_t timestamp;
 
     private:
         bool Update();
@@ -127,6 +137,7 @@ class Robot{
 };
 
 class RobotSCOUT: public Robot{
+    enum {LEFTWHEEL=0, RIGHTWHEEL=1};
     public:
         RobotSCOUT():Robot(){};
         ~RobotSCOUT(){};
