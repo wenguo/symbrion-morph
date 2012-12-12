@@ -7,6 +7,7 @@ RobotAW::RobotAW(ActiveWheel *robot):Robot()
     name = strdup("RobotAW");
     type = ROBOT_AW;
 
+    SPIVerbose = VERBOSE;
     irobot = robot;
 
     board_dev_num[::FRONT] = ActiveWheel::RIGHT; 
@@ -139,7 +140,6 @@ bool RobotAW::SetHingeMotor(int status)
 
 void RobotAW::UpdateSensors()
 {
-    //for bfin testing
     IRValues ret_A = irobot->GetIRValues(ActiveWheel::RIGHT);
     IRValues ret_B = irobot->GetIRValues(ActiveWheel::FRONT);
     IRValues ret_C = irobot->GetIRValues(ActiveWheel::LEFT);
@@ -210,17 +210,22 @@ void RobotAW::UpdateSensors()
     aux_beacon[6] = ret_D.sensor[4].docking;
     aux_beacon[7] = ret_D.sensor[5].docking;
 
+    /*
     printf("aux_reflective:");
     for(int i=0;i<8;i++)
     {
         printf("%d\t", aux_reflective[i]);
     }
-    printf("\n");
+    printf("\n");*/
 
-
-
-    //    for(int i=0;i<NUM_DOCKS;i++)
-    //        color[i] = GetRGB(ActiveWheel::Side(i));
+    uint8_t ethernet_status=0;
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+    //    color[i] = GetRGB(ScoutBot::Side(i));
+        if(irobot->isEthernetPortConnected(ActiveWheel::Side(board_dev_num[i])))
+            ethernet_status |= 1<<i;
+    }
+    ethernet_status_hist.Push2(ethernet_status);
 
     for(int i=0;i<NUM_IRS;i++)
     {
@@ -321,6 +326,7 @@ void RobotAW::Seeding() //the same as in RobotKIT
     og->GraphToSequence(mytree);
     std::cout<<*og<<std::endl;
     std::cout<<mytree<<std::endl;*/
+
     if(!para.og_seq_list.empty())
     {
         mytree = target = para.og_seq_list[0];
@@ -902,7 +908,6 @@ void RobotAW::Recruitment()
         bool erase_required = false;
         if(recruitment_stage[i]==STAGE0)
         {
-            //if((robot_in_range_detected & (0x3<<(2*i))) !=0)
             if(robots_in_range_detected_hist.Sum(2*i) > 14 || robots_in_range_detected_hist.Sum(2*i+1) >14)
             {
                 recruitment_stage[i]=STAGE1;
@@ -946,8 +951,8 @@ void RobotAW::Recruitment()
         else if(recruitment_stage[i]==STAGE2)
         {
             stage2_count++;
-            // printf("%d %d\n", para.ambient_calibrated[2*i]-ambient[2*i], para.ambient_calibrated[2*i+1]-ambient[2*i+1]);
 
+            /*
             proximity_hist[2*i].Push(proximity[2*i]);
             proximity_hist[2*i+1].Push(proximity[2*i+1]);
             msg_guideme_received &= ~(1<<i);
@@ -957,31 +962,23 @@ void RobotAW::Recruitment()
             if(ambient_hist[2*i+1].Avg() > para.recruiting_ambient_offset2)
                 ambient_trigger |= 1<<(2*i+1);
             ambient_avg_threshold_hist.Push2(ambient_trigger);
-            //ambient_avg_threshold_hist.Print2();;
 
-        //    std::cout << ambient_hist[2*i].Avg() << " " << ambient_hist[2*i+1].Avg()
-        //        << " trig: " << ambient_trigger << std::endl;
-
-            //temporary solution, as  left IR sensor on SideBoard of ActiveWheel Noname doesn't work
-#if 0
-            if( ambient_avg_threshold_hist.Sum(2*i+1)>3
-                    && proximity_hist[2*i+1].Avg()> para.recruiting_proximity_offset2)
-#else 
                 if(stage2_count > 20 && ambient_avg_threshold_hist.Sum(2*i) > 6 && ambient_avg_threshold_hist.Sum(2*i+1)>6
                         && proximity_hist[2*i].Avg() > para.recruiting_proximity_offset1 && proximity_hist[2*i+1].Avg()> para.recruiting_proximity_offset2)
-#endif
-                    /*
-                       if(ambient_hist[2*i].Avg() > para.recruiting_ambient_offset2 
-                       && ambient_hist[2*i+1].Avg() > para.recruiting_ambient_offset2 
-                       && proximity_hist[2*i].Avg() > para.recruiting_proximity_offset1 
-                       && proximity_hist[2*i+1].Avg() > para.recruiting_proximity_offset2)*/
                 {
                     recruitment_stage[i]=STAGE3;
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), true); //TODO: for demos, if side receiver works, better to switch it
-                    //RobotBase::SetIRRX(board_dev_num[i], false);
+                    irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false);
                     printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
                 }
+*/
+            if(stage2_count > 20 && msg_locked_received &(1<<i))
+            {
+                recruitment_stage[i]=STAGE3;
+                SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+            }
 
             //give up, back to stage 1
             if((msg_docking_signal_req_received & (1<<i)) || guiding_signals_count[i]++ >= para.recruiting_guiding_signals_time)
@@ -1814,7 +1811,10 @@ void RobotAW::Debugging()
             break;
         case 17://Test IRComm as listener
             if(timestamp ==2)
-                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[para.debug.para[0]]), para.debug.para[1]);
+            {
+                for(int i=0;i<4;i++)
+                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false);
+            }
             break;
         case 18://print out sensor data
             if(timestamp ==2)
