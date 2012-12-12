@@ -57,16 +57,43 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
     Ethernet::IP sender = msg.get()->GetSender();
     char * data = (char *)msg.get()->GetData();
 
+    if( sender == 0 )
+    	return;
+
     switch(data[0])
     {
         case ETH_MSG_TYPE_PROPAGATED:
             {
-                PropagateEthMessage(data[1], (uint8_t*)&data[2], size-2, sender);
+            	bool valid = true;
+            	switch( data[1] )
+            	{
+            	case ETH_MSG_TYPE_RETREAT:
+					{
+						msg_retreat_received = true;
+						CPrintf1(SCR_BLUE,"%d -- retreating !", timestamp);
+					}
+            		break;
+            	case ETH_MSG_TYPE_STOP:
+					{
+						msg_stop_received = true;
+						CPrintf1(SCR_RED,"%d -- stopping !", timestamp);
+					}
+					break;
+            	default:
+            		valid = false;
+            		CPrintf1(SCR_GREEN, "%d -- received unknown ETH message", timestamp);
+            		break;
+            	}
+
+            	if( valid )
+            		PropagateEthMessage(data[1], (uint8_t*)&data[2], size-2, sender);
             }
             break;
         default:
             break;
     }
+
+    printf("%d Ethernet message received: %d from %s\n",timestamp,data[0],Ethernet::IPToString(sender));
 
 }
 
@@ -89,7 +116,11 @@ void Robot::SendEthMessage(const EthMessage& msg)
         RGBLED_flashing |=1<<msg.channel;
     }
 
-}
+    if(msg.type == ETH_MSG_TYPE_PROPAGATED)
+    	printf("%d: %s send ETH message %s (%s) via channel %d (%s)\n",timestamp, name, ethmessage_names[msg.type],ethmessage_names[msg.data[0]],msg.channel,Ethernet::IPToString(neighbours_IP[msg.channel]));
+    else
+    	printf("%d: %s send ETH message %s via channel %d (%#x)\n",timestamp, name, ethmessage_names[msg.type],msg.channel, Ethernet::IPToString(neighbours_IP[msg.channel]));
+ }
 
 void Robot::SendEthMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
 {

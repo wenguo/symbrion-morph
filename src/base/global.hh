@@ -168,7 +168,7 @@ enum ethmsg_type_t{
     ETH_MSG_TYPE_SCORE,
 
     ETH_MSG_TYPE_RETREAT,
-    ETH_MSG_STOP,
+    ETH_MSG_TYPE_STOP,
 
     ETH_MSG_TYPE_COUNT
 };
@@ -192,6 +192,7 @@ enum hinge_motor_status_t{
 
 extern const char* state_names[STATE_COUNT];
 extern const char* irmessage_names[IR_MSG_TYPE_COUNT];
+extern const char* ethmessage_names[ETH_MSG_TYPE_COUNT];
 //enum led_t {LED0=0x1,LED1=0x2,LED2=0x4, IR_PULSE0=0x1, IR_PULSE1=0x2, IR_PULSE2=0x4}; //TODO: ActiveWheel has different no
 
 

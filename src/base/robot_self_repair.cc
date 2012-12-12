@@ -115,7 +115,6 @@ bool Robot::StartRepair()
 
 		current_state = LEADREPAIR;
 		msg_unlocked_expected |= 1<<parent_side;
-//		pruning_required |= 1<<parent_side;
 
 		printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d\n",timestamp,subog_id);
 		ret = true;
@@ -194,18 +193,18 @@ void Robot::changeState( fsm_state_t next_state )
 
 // Work out neighbours new heading based
 //	upon own heading and docking info
-uint8_t Robot::getNeighbourHeading( uint8_t n )
+int8_t Robot::getNeighbourHeading( int8_t n )
 {
 	OrganismSequence::Symbol sym = OrganismSequence::Symbol(n);
-//	std::cout << id << " docking info: " << sym << " s1:" << (int) sym.side1
-//								  	     << " s2:" << (int) sym.side2 << std::endl;
+	std::cout << timestamp << " docking info: " << sym << " s1:" << (int) sym.side1
+								  	     << " s2:" << (int) sym.side2 << std::endl;
 
-	uint8_t o = (sym.side1+2) % 4;  // get opposite side
-	uint8_t d = (heading-o) % 4; 	// get the difference;
+	int8_t o = (sym.side1+2) % 4;  // get opposite side
+	int8_t d = (heading-o) % 4; 	// get the difference;
 	if( d < 0 ) d += 4;			 	// handle negative result
-	uint8_t h = (sym.side2+d) % 4;	// calculate heading
+	int8_t h = (sym.side2+d) % 4;	// calculate heading
 
-//	std::cout << id << " neighbour heading: " << (int) h << std::endl;
+	std::cout << timestamp << " neighbour heading: " << (int) h << std::endl;
 
 	return h;
 
@@ -291,6 +290,33 @@ uint8_t Robot::getNextMobileNeighbour( int last )
 
 }
 
+// Check whether there a module docked using
+// both infrared sensors and ethernet
+bool Robot::isNeighbourConnected(int i)
+{
+	int a,p,r = 0; // threshold values
+
+	// If Ethernet enabled
+	if( Ethernet::isSwitchActive() )
+	{
+		return Ethernet::switchIsPortConnected(i+1);
+
+		// TODO: choose appropriate threshold values
+//		return (Ethernet::switchIsPortConnected(i+1) 		  ||
+//			   (ambient[i*2] 	< a && ambient[i*2+1] 	 < a) ||
+//			   (proximity[i*2] 	< p && proximity[i*2+1]  < p) ||
+//			   (reflective[i*2] < r && reflective[i*2+1] < r) );
+	}
+	// If Ethernet not enabled - fall back to ir sensors
+	else
+	{
+		// TODO: choose appropriate threshold values
+		return ((ambient[i*2] 	< a && ambient[i*2+1] 	 < a) ||
+			   (proximity[i*2] 	< p && proximity[i*2+1]  < p) ||
+			   (reflective[i*2] < r && reflective[i*2+1] < r) );
+	}
+}
+
 // Repair state of the robot nearest
 // to the failed (or support) module
 void Robot::LeadRepair()
@@ -331,8 +357,7 @@ void Robot::LeadRepair()
 				{
 					if( pruning_required & 1<<i )
 					{
-						if( msg_unlocked_received & 1<<i )
-						// TODO: Check Eth and distance sensors to confirm
+						if( (msg_unlocked_received & 1<<i) || !isNeighbourConnected(i) )
 						{
 							docked[i] = 0;
 							pruning_required &= ~(1<<i);
@@ -342,9 +367,9 @@ void Robot::LeadRepair()
 							SetDockingMotor(i, OPEN);
 							unlocking_required[i]=false;
 						}
-						else if( docking_motors_status[i]==OPENED && !(unlock_sent & 1<<i))
+						else if( docking_motors_status[i]==OPENED && !(unlock_sent & 1<<i) )
 						{
-							BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+							SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
 							unlock_sent |= 1<<i;
 						}
 					}
@@ -363,8 +388,7 @@ void Robot::LeadRepair()
 				}
 				else if( docking_motors_status[parent_side]==OPENED )
 				{
-					//TODO: remove when parent can check by other means
-					BroadcastIRMessage(parent_side, IR_MSG_TYPE_UNLOCKED, true);
+					BroadcastIRMessage(parent_side, IR_MSG_TYPE_UNLOCKED, false);
 					unlock_sent |= 1<<parent_side;
 				}
 			}
@@ -375,8 +399,7 @@ void Robot::LeadRepair()
 			docked[parent_side] = 0;
 			msg_subog_seq_expected = 0;
 
-			// TODO: Broadcast RETREAT msg using ethernet
-			//BroadcastEthMessage(ETH_MSG_TYPE_RETREAT);
+			PropagateEthMessage(ETH_MSG_TYPE_RETREAT);
 			PropagateIRMessage(IR_MSG_TYPE_RETREAT);
 
 			move_start = timestamp;
@@ -388,11 +411,7 @@ void Robot::LeadRepair()
 	// Move away from failed module
 	case STAGE1:
 
-		if( timestamp < move_start+move_duration/2 )
-		{
-			// Short delay to allow retreat message to arrive
-		}
-		else if( timestamp < move_start+move_duration )
+		if( timestamp < move_start+move_duration )
 		{
 			// Move away
 			moveTowardsHeading(heading);
@@ -423,8 +442,7 @@ void Robot::LeadRepair()
 			rightspeed = 0;
 			sidespeed = 0;
 
-			// TODO: Broadcast STOP msg using ethernet
-			//BroadcastEthMessage(ETH_MSG_TYPE_STOP);
+			PropagateEthMessage(ETH_MSG_TYPE_STOP);
 			PropagateIRMessage(IR_MSG_TYPE_STOP);
 
 			// Set LEDs
@@ -583,6 +601,7 @@ void Robot::LeadRepair()
 // Initial repair state of remaining modules
 void Robot::Repair()
 {
+	static uint8_t unlock_sent = 0; // Temporary solution
 
 	switch(repair_stage)
 	{
@@ -605,6 +624,34 @@ void Robot::Repair()
 	            	}
 
 					msg_subog_seq_received = 0;
+				}
+			}
+		}
+		// Prune sub-structures
+		else if( pruning_required )
+		{
+			for(int i=0;i<NUM_DOCKS;i++)
+			{
+				if(!MessageWaitingAck(i,IR_MSG_TYPE_FAILED))
+				{
+					if( pruning_required & 1<<i )
+					{
+						if( (msg_unlocked_received & 1<<i) || !isNeighbourConnected(i) )
+						{
+							docked[i] = 0;
+							pruning_required &= ~(1<<i);
+						}
+						else if(unlocking_required[i])
+						{
+							SetDockingMotor(i, OPEN);
+							unlocking_required[i]=false;
+						}
+						else if( docking_motors_status[i]==OPENED && !(unlock_sent & 1<<i) )
+						{
+							SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+							unlock_sent |= 1<<i;
+						}
+					}
 				}
 			}
 		}

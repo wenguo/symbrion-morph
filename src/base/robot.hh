@@ -121,7 +121,8 @@ class Robot
 
     uint8_t getNextNeighbour(int);
     uint8_t getNextMobileNeighbour( int last );
-    uint8_t getNeighbourHeading( uint8_t );
+    int8_t getNeighbourHeading( int8_t );
+    bool isNeighbourConnected(int i);
     void changeState(fsm_state_t);
 	void moveTowardsHeading(int);
 
