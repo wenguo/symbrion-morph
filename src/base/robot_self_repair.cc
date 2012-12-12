@@ -34,6 +34,213 @@ uint8_t Robot::calculateSubOrgScore( OrganismSequence &seq1, OrganismSequence &s
 
 }
 
+void Robot::CheckForFailures()
+{
+	bool start_recovery = false;
+
+	if( module_failed )
+	{
+		switch(current_state)
+		{
+		case RECRUITMENT:
+			{
+				// TODO: check what stage recruitment is at
+				if( recruitment_stage[0] > STAGE3 ) break;
+			}
+			/* no break */
+		case RESHAPING:
+		case SEEDING:
+		case DOCKING:
+		case INORGANISM:
+			{
+				// Send 'failed' message to all neighbours
+				for( int i=0; i<NUM_DOCKS; i++ )
+				{
+					if( docked[i] )
+						SendFailureMsg(i);
+				}
+
+				current_state = FAILED;
+
+				for( int i=0; i<SIDE_COUNT; i++ )
+					SetRGBLED(i, RED, RED, RED, RED);
+
+				printf("%d Module failed!\n",timestamp);
+				start_recovery = true;
+			}
+			break;
+		case MACROLOCOMOTION:
+		case RAISING:
+			{
+				// Stop moving
+				leftspeed = 0;
+				rightspeed = 0;
+				sidespeed = 0;
+
+				// Propagate lowering messages
+				PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+
+				last_state = current_state;
+				current_state = LOWERING;
+				lowering_count = 0;
+			}
+			break;
+		default:
+			break;
+		}
+
+	}
+	else if( msg_failed_received )
+	{
+		switch(current_state)
+		{
+		case RECRUITMENT:
+			{
+				// TODO: check what stage recruitment is at
+				if( recruitment_stage[0] > STAGE3 ) break;
+			}
+			/* no break */
+		case INORGANISM:
+		case RESHAPING:
+		case LOWERING:
+			{
+				msg_failed_received = 0;
+
+				wait_side = 0;
+				repair_stage = STAGE0;
+				subog.Clear();
+				best_score = 0;
+				subog_str[0] = 0;
+
+				if( type == ROBOT_SCOUT && (heading == 1 || heading == 3) )
+				{
+					heading = 4;
+				}
+				else
+				{
+					// Check that neighbour will be able to move away properly
+					for( int i=0; i<SIDE_COUNT; i++ )
+					{
+						// If there is a robot docked
+						if( docked[i] )
+						{
+							// If the robot is a scout
+							if(  OrganismSequence::Symbol(docked[i]).type2 == ROBOT_SCOUT )
+							{
+								int h = getNeighbourHeading(docked[i]);
+								if(( h == 1 || h == 3 ) && heading == i )
+								{
+									heading = 4;
+									std::cout << "I'm going to crash into my neighbour" << std::endl;
+								}
+							}
+						}
+					}
+				}
+
+		//		wait_side = getNextNeighbour(0);
+				wait_side = getNextMobileNeighbour(0);
+
+				if( wait_side < SIDE_COUNT )
+				{
+					SendSubOrgStr( wait_side, subog_str );
+					msg_subog_seq_expected = 1<<wait_side;
+				}
+
+				for( int i=0; i<SIDE_COUNT; i++ )
+					SetRGBLED(i,GREEN,GREEN,GREEN,GREEN);
+
+				// Turn side at which failed module detected red
+				SetRGBLED(parent_side,RED,RED,RED,RED);
+
+				current_state = LEADREPAIR;
+				msg_unlocked_expected |= 1<<parent_side;
+
+				printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d\n",timestamp,subog_id);
+				start_recovery = true;
+			}
+			break;
+		default:
+			break;
+		}
+
+	}
+	else if( msg_subog_seq_received )
+	{
+		switch(current_state)
+		{
+		case RECRUITMENT:
+			{
+				// TODO: check what stage recruitment is at
+				if( recruitment_stage[0] > STAGE3 ) break;
+			}
+			/* no break */
+		case INORGANISM:
+		case RESHAPING:
+		case LOWERING:
+			{
+				// Check that neighbour will be able to move away properly
+				for( int i=0; i<SIDE_COUNT; i++ )
+				{
+					// If there is a robot docked
+					if( docked[i] )
+					{
+						// If the robot is a scout
+						if(  OrganismSequence::Symbol(docked[i]).type2 == ROBOT_SCOUT )
+						{
+							int h = getNeighbourHeading(docked[i]);
+							if(( h == 1 || h == 3 ) && heading == i )
+							{
+								heading = 4;
+								std::cout << "I'm going to crash into my neighbour" << std::endl;
+							}
+						}
+					}
+				}
+
+
+				msg_subog_seq_received = 0;
+
+				repair_stage = STAGE0;
+				best_score = 0;
+				own_score = 0;
+				subog.Clear();
+
+				wait_side = getNextMobileNeighbour(0);
+
+				if( wait_side < SIDE_COUNT )
+				{
+					SendSubOrgStr( wait_side, subog_str );
+					msg_subog_seq_expected = 1<<wait_side;
+				}
+
+				current_state = REPAIR;
+				repair_start = timestamp;
+
+				for( int i=0; i<SIDE_COUNT; i++ )
+					SetRGBLED(i, YELLOW, YELLOW, YELLOW, YELLOW);
+
+				msg_subog_seq_expected = 1<<wait_side;
+
+				printf("%d Detected subog_seq, entering REPAIR\n",timestamp);
+				start_recovery = true;
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
+	if( start_recovery )
+	{
+		last_state = LOWERING;
+		lowering_count = 0;
+		seed = false;
+		ResetAssembly();
+	}
+}
+
+
 bool Robot::StartRepair()
 {
 	bool ret = false;
