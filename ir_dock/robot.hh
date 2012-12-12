@@ -16,14 +16,16 @@ class Robot{
             ROLE_DOCKING=2
         };
         enum recruiting_status_t {
-            RECRUITING_DONE = 0,
+            RECRUITING_UNKNOWN=0,
+            RECRUITING_DONE,
             STAGE1, 
             STAGE2, 
             STAGE3, 
             STAGE4 
         };
         enum docking_stats_t {
-            DOCKING_DONE = 0,
+            DOCKING_UNKNOWN = 0,
+            DOCKING_DONE,
             LOCATEBEACON, 
             ALIGNING, 
             LOCKING 
