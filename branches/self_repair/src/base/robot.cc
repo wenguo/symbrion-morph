@@ -243,6 +243,14 @@ bool Robot::Init(const char * optionfile)
         return false;
     }
 
+    ret_tx = pthread_create(&ethcomm_tx_thread, NULL, EthCommTxThread, this);
+    ret_rx = pthread_create(&ethcomm_rx_thread, NULL, EthCommRxThread, this);
+    if (ret_tx != 0 || ret_rx!=0)
+    {
+        printf("Error: Cannot create EthComm Thread.\n");
+        return false;
+    }
+
 
     //turn off all RGB led
     //turn off all IR pulse

@@ -259,7 +259,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                     msg_subog_seq_received |= 1<<channel;
                     memcpy(subog_str,data+2,data[2]+1);
 
-                    printf("%d parent_side: %d type: %d channel: %d\n", timestamp, parent_side,type,channel);
+                    printf("%d parent_side: %d type: %d channel: %d\n", timestamp,parent_side,type,channel);
                     // if module has not yet entered a repair state
                     //if( parent_side >= SIDE_COUNT )
                     if(  current_state != REPAIR && current_state != LEADREPAIR )
@@ -270,6 +270,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
             			int ind = (int)((uint8_t*)data)[0]+1;	 // get heading index
             			heading = (int)((uint8_t*)data)[ind];	 // get heading
+            			printf("%d My heading is: %d\n",timestamp,heading);
                     }
 
                     printf("%d Sub-organism string received\n",timestamp);

@@ -64,5 +64,25 @@ const char * irmessage_names[IR_MSG_TYPE_COUNT]={
 };
 
 
+const char * ethmessage_names[ETH_MSG_TYPE_COUNT]={
+    "Unknown",
+
+    "Propagated",
+    "Disassembly",
+    "NewRobot_Joined",
+    "Organism_Formed",
+    "Raising",
+    "Lowering",
+    "Reshaping",
+
+    // for self-repair
+    "Failed",
+    "Sub_OG_String",
+    "Sub_OG_Score_String",
+    "Sub_OG_Score",
+    "Retreat",
+    "Stop"
+};
+
 
 
