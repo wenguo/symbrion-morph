@@ -25,6 +25,8 @@ bool Robot::Initialise(RobotBase *robot)
 
     instance->Reset();
 
+    SPIVerbose = QUIET;
+
     return true;
 }
 
@@ -35,11 +37,10 @@ void Robot::Reset()
     role = ROLE_IDLE;
     for(int i=0;i<NUM_DOCKS;i++)
     {
-        recruiting_status[i] = RECRUITING_DONE;
+        recruiting_status[i] = RECRUITING_UNKNOWN;
         recruiting_type[i] = 0;
-        docked[i]=false;
     }
-    docking_status = DOCKING_DONE;
+    docking_status = DOCKING_UNKNOWN;
     docking_type = 0;
     main_thread_running = false;
     pthread_mutex_unlock(&mutex);
@@ -69,7 +70,7 @@ bool Robot::Recruiting(Symbol s)
 
     pthread_mutex_lock(&mutex);
     role = ROLE_RECRUITING;
-    if(recruiting_status[s.side1] == RECRUITING_DONE && !docked[s.side1])
+    if(recruiting_status[s.side1] == RECRUITING_UNKNOWN)
     {
         recruiting_type[s.side1] = s.data;
         recruiting_status[s.side1] = STAGE1;
@@ -108,8 +109,15 @@ bool Robot::Docking(Symbol s)
 
     pthread_mutex_lock(&mutex);
     role = ROLE_DOCKING;
-    docking_status = LOCATEBEACON; 
-    docking_type = s.data;
+    if(docking_status == DOCKING_UNKNOWN)
+    {
+        docking_status = LOCATEBEACON; 
+        docking_type = s.data;
+    }
+    else
+    {
+        printf("This robot is already docked\n");
+    }
     pthread_mutex_unlock(&mutex);
     printf("\tSet Role to be Recruitee: %#x\n", role);
 
@@ -139,22 +147,27 @@ bool Robot::Update()
 {
     UpdateSensors();
 
-    bool ret = false;
+    bool ret = true;
     if(role == ROLE_RECRUITING)
     {
         Recruiting();
         //check if all recruiting side done
         int sum=0;
         for(int i=0;i<NUM_DOCKS;i++)
-            sum += recruiting_status[i];
-        if(sum == NUM_DOCKS * RECRUITING_DONE)
-            ret = true;
+        {
+            if(recruiting_status[i] > RECRUITING_DONE)
+            {
+                ret = false;
+                break;
+            }
+        }
+
     }
     else if(role == ROLE_DOCKING)
     {
         Docking();
-        if(docking_status == DOCKING_DONE)
-            ret = true;
+        if(docking_status != DOCKING_DONE)
+            ret = false;
     }
     else
         printf("Unknown role %#x\n", role);
@@ -180,7 +193,9 @@ void* Robot::MainThread(void *ptr)
         usleep(100000);
     }
 
-    robot->Reset();
+    printf("Exit Main Thread\n");
+    robot->role = ROLE_IDLE;
+    robot->main_thread_running = false;
     return NULL;
 }
 
