@@ -177,6 +177,8 @@ Robot::Robot()
     aligning_region_detected = false;
     blocking_count = 0;
 
+    assembly_info = 0;
+
     LED0 = 0x1;
     LED1 = 0x2;
     LED2 = 0x4;
@@ -209,6 +211,8 @@ void Robot::ResetAssembly()
     docking_region_detected = false;
     aligning_region_detected = false;
     blocking_count = 0;
+
+    assembly_info = 0;
 
     ethernet_status_hist.Reset();
 }

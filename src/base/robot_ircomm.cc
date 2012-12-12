@@ -86,7 +86,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     if(data[0] !=0 && ((data[0] & 0xF) != ((docked[channel] >>4) & 0xF) ||  (data[0] >> 4 & 0xF) != ((docked[channel]) & 0xF)))
     {
         printf("%d channel %d received message %s, expected receiver is %#x(%#x) but I have %#x(%#x), skip it\n",
-                timestamp, channel, irmessage_names[data[1]], data[0]&0xF, data[0], (docked[channel]>>4) & 0xF, docked[channel]);
+                timestamp, channel, irmessage_names[data[1]], data[0]&0xF, (uint8_t)data[0], (docked[channel]>>4) & 0xF, docked[channel]);
         return;
     }
 
@@ -99,13 +99,21 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 if(current_state!=INORGANISM)
                 {
                     comm_status[channel] = 1;
+                    OrganismSequence::Symbol sym(data[2]);
 
-                    if (!organism_found)
+                    if(sym.type2 == type)
                     {
-                        organism_found = true;
-                        assembly_count = DEFAULT_ASSEMBLY_COUNT;
+                        if (!organism_found)
+                        {
+                            organism_found = true;
+                            assembly_count = DEFAULT_ASSEMBLY_COUNT;
+                        }
+
+                        if(assembly_info!=0 && assembly_info!=sym)
+                            printf("Received conflicting assembly info, may need to check !!!\n");
+                
+                        assembly_info = sym;
                     }
-                    assembly_info = OrganismSequence::Symbol(data[2]);
                 }
             }
             break;

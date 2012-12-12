@@ -60,6 +60,8 @@ void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t puls
     irobot->SetIRPulse(ScoutBot::Side(board), pulse_led|IRPULSE2);
     irobot->SetIRMode(ScoutBot::Side(board), mode);
 
+    irobot->SetIRRX(ScoutBot::Side(board), led & LED1 ? false : true);
+
     uint8_t status = (uint8_t)mode | 0x4;
     for(int i=0;i<3;i++)
     {
@@ -625,6 +627,9 @@ void RobotSCOUT::Alignment()
         SetRGBLED(assembly_info.side2, WHITE,WHITE,WHITE,WHITE);
     }
 
+    int reflective_diff = abs(reflective_hist[id0].Avg() - reflective_hist[id1].Avg());
+    int reflective_max = std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+    printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
 
     if(docking_region_detected)
     {
@@ -658,16 +663,15 @@ void RobotSCOUT::Alignment()
         // define the bad case
         // case 1: difference between two front reflective_calibrated reading is significant 
         // case 2: some reflective_calibrated readings but two beacon readings are diff
-        int reflective_diff = abs(reflective_hist[id0].Avg() - reflective_hist[id1].Avg());
-        int reflective_max = std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
         int input[4] = {reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]};
         in_docking_region_hist.Push(in_docking_region(input));
 
-        if(reflective_hist[id0].Avg() > 1000 && reflective_hist[id1].Avg() > 1000)
+        if(reflective_hist[id0].Avg() > 300 && reflective_hist[id1].Avg() > 300)
             blocking_count++;
 
         //3 second is allowed until fully docked, otherwise, treated as blocked.
-        if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
+        if((reflective_diff > 300 && reflective_diff > reflective_max * 0.5) ||blocking_count > 30)
+        //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
             docking_blocked = true;
 
         if(docking_blocked)
@@ -691,9 +695,10 @@ void RobotSCOUT::Alignment()
         {
             for(int i=0;i<NUM_IRS;i++)
             {
-                speed[0] += (beacon[i] * para.aligning_weightleft[i]) >>2;
-                speed[1] += (beacon[i] * para.aligning_weightright[i]) >>2;
+                speed[0] += (beacon[i] * para.aligning_weightleft[i]) >>4;
+                speed[1] += (beacon[i] * para.aligning_weightright[i]) >>4;
             }
+            printf("\tat speed (%d %d)\n", speed[0], speed[1]);
         }
 
     }
@@ -795,10 +800,13 @@ void RobotSCOUT::Locking()
     SetRGBLED(docking_side, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
 
     //docking motor is done?
-    if(docking_motors_status[docking_side] == CLOSED) //replace 0 with corresponding docking face
+    if(docking_motors_status[docking_side] == CLOSED)
     {
         if(docked[docking_side]==0)
         {
+            //TODO: this cause some issues if robot receives the assembly_info from different resources
+            //To reproduce the problem, using an activewheel as recruiter and open its front and back side
+            //robot will pickup recruitment message sent from both sides.
             docked[docking_side] = assembly_info.type2  | assembly_info.side2 << 2 | assembly_info.type1 << 4 | assembly_info.side1 << 6;
             unlocking_required[docking_side] = true;
             //for(int i=0;i<NUM_DOCKS;i++)
