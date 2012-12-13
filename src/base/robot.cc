@@ -314,7 +314,7 @@ void Robot::Update(const uint32_t& ts)
     UpdateFailures();
 
     //check for failures and respond
-    //CheckForFailures();
+    CheckForFailures();
 
     //update status variable
     beacon_signals_detected = 0;

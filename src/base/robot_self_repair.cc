@@ -42,17 +42,19 @@ void Robot::CheckForFailures()
 	{
 		switch(current_state)
 		{
+		case LOWERING:
 		case RECRUITMENT:
-			{
-				// TODO: check what stage recruitment is at
-				if( recruitment_stage[0] > STAGE3 ) break;
-			}
-			/* no break */
 		case RESHAPING:
-		case SEEDING:
 		case DOCKING:
 		case INORGANISM:
 			{
+
+				if( current_state == LOWERING &&  lowering_count <= 30 ) break;
+				if( current_state == RECRUITMENT && recruitmentProgress() > STAGE3 ) break;
+				// TODO: check that IP addresses successfully exchanged
+				if( current_state == INORGANISM && (msg_organism_seq_expected && !msg_organism_seq_received) ) break;
+
+
 				// Send 'failed' message to all neighbours
 				for( int i=0; i<NUM_DOCKS; i++ )
 				{
@@ -60,12 +62,13 @@ void Robot::CheckForFailures()
 						SendFailureMsg(i);
 				}
 
+				last_state = current_state;
 				current_state = FAILED;
 
 				for( int i=0; i<SIDE_COUNT; i++ )
 					SetRGBLED(i, RED, RED, RED, RED);
 
-				printf("%d Module failed!\n",timestamp);
+				printf("%d Module failed, initiating self-repair\n",timestamp);
 				start_recovery = true;
 			}
 			break;
@@ -83,6 +86,8 @@ void Robot::CheckForFailures()
 				last_state = current_state;
 				current_state = LOWERING;
 				lowering_count = 0;
+
+				printf("%d Module failed, initiating Lowering\n",timestamp);
 			}
 			break;
 		default:
@@ -94,16 +99,17 @@ void Robot::CheckForFailures()
 	{
 		switch(current_state)
 		{
-		case RECRUITMENT:
-			{
-				// TODO: check what stage recruitment is at
-				if( recruitment_stage[0] > STAGE3 ) break;
-			}
-			/* no break */
-		case INORGANISM:
-		case RESHAPING:
 		case LOWERING:
+		case RECRUITMENT:
+		case RESHAPING:
+		case INORGANISM:
 			{
+
+				if( current_state == LOWERING &&  lowering_count <= 30 ) break;
+				if( current_state == RECRUITMENT && recruitmentProgress() > STAGE3 ) break;
+				if( current_state == INORGANISM && (msg_organism_seq_expected && !msg_organism_seq_received) ) break;
+
+
 				msg_failed_received = 0;
 
 				wait_side = 0;
@@ -153,6 +159,7 @@ void Robot::CheckForFailures()
 				// Turn side at which failed module detected red
 				SetRGBLED(parent_side,RED,RED,RED,RED);
 
+				last_state = current_state;
 				current_state = LEADREPAIR;
 				msg_unlocked_expected |= 1<<parent_side;
 
@@ -169,16 +176,16 @@ void Robot::CheckForFailures()
 	{
 		switch(current_state)
 		{
-		case RECRUITMENT:
-			{
-				// TODO: check what stage recruitment is at
-				if( recruitment_stage[0] > STAGE3 ) break;
-			}
-			/* no break */
-		case INORGANISM:
-		case RESHAPING:
 		case LOWERING:
+		case RECRUITMENT:
+		case RESHAPING:
+		case INORGANISM:
 			{
+				if( current_state == LOWERING &&  lowering_count <= 30 ) break;
+				if( current_state == RECRUITMENT && recruitmentProgress() > STAGE3 ) break;
+				if( current_state == INORGANISM && (msg_organism_seq_expected && !msg_organism_seq_received) ) break;
+
+
 				// Check that neighbour will be able to move away properly
 				for( int i=0; i<SIDE_COUNT; i++ )
 				{
@@ -214,6 +221,7 @@ void Robot::CheckForFailures()
 					msg_subog_seq_expected = 1<<wait_side;
 				}
 
+				last_state = current_state;
 				current_state = REPAIR;
 				repair_start = timestamp;
 
@@ -233,14 +241,13 @@ void Robot::CheckForFailures()
 
 	if( start_recovery )
 	{
-		last_state = LOWERING;
 		lowering_count = 0;
 		seed = false;
 		ResetAssembly();
 	}
 }
 
-
+// TODO: remove - no longer used
 bool Robot::StartRepair()
 {
 	bool ret = false;
@@ -384,6 +391,9 @@ void Robot::changeState( fsm_state_t next_state )
 	switch(next_state)
 	{
 	case RESHAPING:
+		msg_subog_seq_received = 0;
+		msg_subog_seq_expected = 0;
+		msg_failed_received = 0;
 		repair_stage = STAGE0;
 		best_score = 0;
     	own_score = 0;
@@ -416,6 +426,22 @@ int8_t Robot::getNeighbourHeading( int8_t n )
 	return h;
 
 
+}
+
+// Returns the recruiting state of the
+//	side which has made the most progress
+uint8_t Robot::recruitmentProgress()
+{
+	uint8_t stage = STAGE0;
+	for( int i=0; i<SIDE_COUNT; i++ )
+	{
+		// TODO: remove once I have checked that IP addresses are successfully exchanged
+		if( recruitment_stage[i] == STAGE5 ) continue;
+
+		if( recruitment_stage[i] > stage )
+			stage = recruitment_stage[i];
+	}
+	return stage;
 }
 
 void Robot::moveTowardsHeading( int h )
@@ -501,7 +527,10 @@ uint8_t Robot::getNextMobileNeighbour( int last )
 // both infrared sensors and ethernet
 bool Robot::isNeighbourConnected(int i)
 {
-	int a,p,r = 0; // threshold values
+	// threshold value;
+	int a = 0;
+	int p = 0;
+	int r = 0;
 
 	// If Ethernet enabled
 	if( Ethernet::isSwitchActive() )
