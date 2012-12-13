@@ -592,10 +592,39 @@ void Robot::SendSubOrgStr( int channel, uint8_t *seq )
         buf[buf[0]+1] = getNeighbourHeading( docked[channel] );
 
         SendIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, true);
-        SendEthMessage(channel, ETH_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, false);
+        SendEthMessage(channel, ETH_MSG_TYPE_SUB_OG_STRING, buf, ((int)buf[0])+2, false);
 
-        printf("%d Sending sub-og string\n",timestamp);
+        printf("%d Sending sub-og string, size: %d\n",timestamp,((int)buf[0])+2);
         PrintSubOGString(buf);
+    }
+}
+
+void Robot::SendScoreStr( int channel, const OrganismSequence& seq, uint8_t score )
+{
+
+    if( channel < SIDE_COUNT && docked[channel] )
+    {
+        uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
+        buf[0] = seq.Size();
+
+
+        if( buf[0] > MAX_IR_MESSAGE_SIZE-2 )
+        {
+            printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, (int) buf[0] );
+            buf[0] = MAX_IR_MESSAGE_SIZE - 2;
+        }
+
+        for(unsigned int i=0; i < buf[0];i++)
+            buf[i+1] =seq.Encoded_Seq()[i].data;
+
+        buf[(int)(buf[0])+1] = score;
+
+        std::cout << "sending score: " << (int) score << " and seq: " << seq
+        		  << " size: " <<  ((int)buf[0])+2 << std::endl;
+        SendIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0]+2, true);
+        SendEthMessage(channel, ETH_MSG_TYPE_SCORE_STRING, buf, ((int)buf[0])+2, false);
+
+
     }
 }
 
