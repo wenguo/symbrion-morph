@@ -899,7 +899,6 @@ void RobotAW::Recruitment()
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
-    static int stage2_count=0;
     std::vector<OrganismSequence>::iterator it1 = mybranches.begin();
     while(it1 !=mybranches.end())
     {
@@ -935,15 +934,14 @@ void RobotAW::Recruitment()
             }
             else if(msg_assembly_info_req_received & (1<<i))
             {
+                msg_locked_expected |= 1<<i;
+                SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 //wait for ack
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_ASSEMBLY_INFO))
                 {
-                    if(it1->getSymbol(0).type2 == ROBOT_SCOUT)
-                        msg_locked_expected |= 1<<i;
                     msg_assembly_info_req_received &= ~(1<<i);
                     guiding_signals_count[i]=0;
                     recruitment_stage[i]=STAGE2;
-                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                     printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
                 }
             }
@@ -955,7 +953,7 @@ void RobotAW::Recruitment()
                 msg_locked_expected |= 1<<i;
                 msg_guideme_received &= ~(1<<i);
                 recruitment_stage[i]=STAGE2;
-                stage2_count=0;
+                guiding_signals_count[i]=0;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 proximity_hist[2*i].Reset();
                 proximity_hist[2*i+1].Reset();
@@ -966,28 +964,8 @@ void RobotAW::Recruitment()
         else if(recruitment_stage[i]==STAGE2)
         {
             guiding_signals_count[i]++;
-
             msg_guideme_received &= ~(1<<i);
-            /*
-            proximity_hist[2*i].Push(proximity[2*i]);
-            proximity_hist[2*i+1].Push(proximity[2*i+1]);
-            msg_guideme_received &= ~(1<<i);
-            uint8_t ambient_trigger = 0;
-            if(ambient_hist[2*i].Avg() > para.recruiting_ambient_offset2)
-                ambient_trigger |= 1<<(2*i);
-            if(ambient_hist[2*i+1].Avg() > para.recruiting_ambient_offset2)
-                ambient_trigger |= 1<<(2*i+1);
-            ambient_avg_threshold_hist.Push2(ambient_trigger);
 
-                if(stage2_count > 20 && ambient_avg_threshold_hist.Sum(2*i) > 6 && ambient_avg_threshold_hist.Sum(2*i+1)>6
-                        && proximity_hist[2*i].Avg() > para.recruiting_proximity_offset1 && proximity_hist[2*i+1].Avg()> para.recruiting_proximity_offset2)
-                {
-                    recruitment_stage[i]=STAGE3;
-                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-                    irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false);
-                    printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
-                }
-*/
             if(guiding_signals_count[i] > 20 && msg_locked_received &(1<<i))
             {
                 recruitment_stage[i]=STAGE3;
