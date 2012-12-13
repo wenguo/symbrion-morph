@@ -723,7 +723,7 @@ void RobotKIT::Docking()
 
                 //Request beacon signals
                 if(timestamp % 5 ==0)
-                    Robot::BroadcastIRMessage(0, IR_MSG_TYPE_DOCKING_SIGNALS_REQ);
+                    Robot::BroadcastIRMessage(0, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
 
                 if(beacon_signals_detected_hist.Sum(0) > 5 && beacon_signals_detected_hist.Sum(1)>5)
                 {
@@ -925,7 +925,7 @@ void RobotKIT::Locking()
                 // irobot->SetIRRX(board_dev_num[docking_side], false);
 
             }
-            Robot::BroadcastIRMessage(docking_side, IR_MSG_TYPE_LOCKED, true);
+            Robot::BroadcastIRMessage(docking_side, IR_MSG_TYPE_LOCKED, para.ir_msg_repeated_num);
         }
         else if(docked[docking_side] && !MessageWaitingAck(docking_side, IR_MSG_TYPE_LOCKED))
         {
@@ -966,7 +966,7 @@ void RobotKIT::Recruitment()
                 SetRGBLED(i, 0,0,0,0);
                 if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == i)
                 {
-                    Robot::BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data);
+                    Robot::BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data, 0);
                 }
             }
         }
@@ -1089,7 +1089,7 @@ void RobotKIT::Recruitment()
                 unlocking_required[i] = true;
                 msg_subog_seq_expected |= 1<<i;
                 docked[i]= it1->getSymbol(0).data;
-                Robot::BroadcastIRMessage(i, IR_MSG_TYPE_LOCKED, true);
+                Robot::BroadcastIRMessage(i, IR_MSG_TYPE_LOCKED, para.ir_msg_repeated_num);
             }
             else if(docked[i] && !docking_done[i])
             {
@@ -1129,7 +1129,7 @@ void RobotKIT::Recruitment()
                 uint8_t data[5];
                 data[0] = it1->getSymbol(0).data; //TODO: remove this as it is already included when using SendIRMessage
                 memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+                Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, 0);
             }
             //get new ip address?
             else if(msg_ip_addr_received & (1<<i))
@@ -1294,7 +1294,7 @@ void RobotKIT::Disassembly()
                 //TODO: how about two KIT robots docked to each other
                 else if(docking_motors_status[i]==OPENED)
                 {
-                    Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+                    Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
                     docked[i]=0;
                     num_docked--;
                 }
@@ -1739,7 +1739,7 @@ void RobotKIT::Debugging()
                 uint8_t data[5];
                 data[0] = sym.data;
                 memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                Robot::SendIRMessage(::BACK, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, true);
+                Robot::SendIRMessage(::BACK, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, para.ir_msg_repeated_num);
             }
 
             break;
@@ -1787,7 +1787,7 @@ void RobotKIT::Debugging()
         case 9:
             if(timestamp > 40)
             {
-                Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_SCORE);
+                Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_SCORE, para.ir_msg_repeated_num);
             }
             break;
         case 10:
@@ -1881,7 +1881,7 @@ void RobotKIT::Debugging()
                     uint8_t data[5];
                     data[0] = docked[0]; //TODO: remove this as it is already included when using SendIRMessage
                     memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                    Robot::SendIRMessage(0, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+                    Robot::SendIRMessage(0, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, 0);
                 }
             }
             else

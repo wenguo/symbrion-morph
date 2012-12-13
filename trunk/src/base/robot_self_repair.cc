@@ -609,7 +609,7 @@ void Robot::Failed()
 				//TODO: how about two KIT robots docked to each other
 				else if(docking_motors_status[i]==OPENED)
 				{
-					BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+					BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
 					docked[i]=0;
 					num_docked--;
 				}
