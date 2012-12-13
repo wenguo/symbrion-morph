@@ -600,49 +600,7 @@ void Robot::SendFailureMsg( int channel )
     printf("%d Sending failure message %d %#x\n",timestamp,(int)buf[0],docked[channel]);
 }
 
-/*
- * If a module is present on side 'channel' it
- * is sent the current sub-organism string.
- */
-void Robot::SendSubOrgStr( int channel, uint8_t *seq )
-{
-    if( channel < SIDE_COUNT && docked[channel] )
-    {
-        uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
 
-        buf[0] = seq[0]+1;
-
-        if( buf[0] > MAX_IR_MESSAGE_SIZE-3 )
-        {
-            printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, (int) buf[0] );
-            buf[0] = MAX_IR_MESSAGE_SIZE - 3;
-        }
-
-        // copy previous string
-        memcpy(buf+1,seq+1,seq[0]);
-
-        // if sending string back to parent
-        if( channel == parent_side )
-        {
-            // add zeros
-            buf[buf[0]] = 0;
-        }
-        else
-        {
-            buf[buf[0]] = 0;
-            buf[buf[0]] |= type;	    // 0:1
-            buf[buf[0]] |= channel<<2;  // 2:3
-        }
-
-        // Send the direction that the neighbour should move in
-        buf[buf[0]+1] = getNeighbourHeading( docked[channel] );
-
-        SendIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, true);
-
-        printf("%d Sending sub-og string\n",timestamp);
-        PrintSubOGString(buf);
-    }
-}
 
 void Robot::SendScoreStr( int channel, const OrganismSequence& seq, uint8_t score )
 {
@@ -746,6 +704,36 @@ void Robot::SendBranchTree(int channel, const OrganismSequence& seq)
     SendIRMessage(channel, IR_MSG_TYPE_ORGANISM_SEQ, buf, buf[0] + 1, true);
     std::cout<<timestamp<<": "<<name<<" send branch:"<<seq<<std::endl;
 
+}
+
+// Messages that have not been acknowledged can sometimes
+// block the queue - if a message no longer requires ack-
+// nowledgement, this method can remove it from the queue
+void Robot::RemoveFromQueue(int channel, uint8_t type)
+{
+    std::vector<IRMessage>::iterator it = IR_TXMsgQueue[channel].begin();
+    pthread_mutex_lock(&ir_txqueue_mutex);
+    while(it!=IR_TXMsgQueue[channel].end())
+    {
+        if((*it).type == type)
+        {
+        	printf("%d Ack no longer needed for message %s, removing it from queue.\n", timestamp, irmessage_names[(*it).type]);
+        	it = IR_TXMsgQueue[channel].erase(it);
+        }
+        else
+        {
+            it++;
+        }
+    }
+    pthread_mutex_unlock(&ir_txqueue_mutex);
+}
+
+void Robot::RemoveFromQueue( uint8_t type )
+{
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+    	RemoveFromQueue(i,type);
+    }
 }
 
 bool Robot::MessageWaitingAck(int channel, uint8_t type)
