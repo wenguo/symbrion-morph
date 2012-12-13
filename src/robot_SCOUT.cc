@@ -655,7 +655,13 @@ void RobotSCOUT::Alignment()
             msg_assembly_info_expected = 0;
 
             if(assembly_info == OrganismSequence::Symbol(0))
-                printf("failed! To be implemented\n\n");//failed
+            {
+                speed[0] = 0;
+                speed[1] = 0;
+                current_state = RECOVER;
+                last_state = ALIGNMENT;
+                recover_count = para.aligning_reverse_count;
+            }
             else
             {
                 docking_region_detected =false;
@@ -692,7 +698,7 @@ void RobotSCOUT::Alignment()
             msg_assembly_info_expected |= 1 << assembly_info.side2;
         }
 
-        printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
+      //  printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
 
         //TODO sometimes not in good position, need to reverse and try again
         // define the bad case
@@ -766,32 +772,64 @@ void RobotSCOUT::Recover()
         //robot will stop there for 1 seconds
         if(recover_count >=10)
         {
-            if(assembly_info.side2 == FRONT)
+            //docked to the wrong robots
+            if(assembly_info == OrganismSequence::Symbol(0))
             {
-                speed[0] = para.aligning_reverse_speed[0];
-                speed[1] = para.aligning_reverse_speed[1];
+                //just reverse
+                if(reflective_hist[0].Avg() + reflective_hist[1].Avg() >
+                reflective_hist[3].Avg() + reflective_hist[4].Avg() )
+                {
+                    speed[0] = para.aligning_reverse_speed[0];
+                    speed[1] = para.aligning_reverse_speed[1];
+                }
+                else
+                {
+                    speed[0] = -para.aligning_reverse_speed[0];
+                    speed[1] = -para.aligning_reverse_speed[1];
+                }
+
+
             }
+            //blocked
             else
             {
-                speed[0] = -para.aligning_reverse_speed[0];
-                speed[1] = -para.aligning_reverse_speed[1];
-            }
+                if(assembly_info.side2 == FRONT)
+                {
+                    speed[0] = para.aligning_reverse_speed[0];
+                    speed[1] = para.aligning_reverse_speed[1];
+                }
+                else
+                {
+                    speed[0] = -para.aligning_reverse_speed[0];
+                    speed[1] = -para.aligning_reverse_speed[1];
+                }
 
-            const int weight_left[2] = {-3,3};
-            const int weight_right[2] = {3, -3};
-            for(int i=0;i<0;i++)
-            {
-                speed[0] += reflective_hist[i].Avg() * weight_left[i]>>8;
-                speed[1] += reflective_hist[i].Avg() * weight_right[i]>>8;
+                //TODO: test reverse behaviour with new robots
+                const int weight_left[8] = {-3,3, 0,0,0,0,0,0};
+                const int weight_right[8] = {3,-3,0,0,0,0,0,0};
+                for(int i=0;i<0;i++)
+                {
+                    speed[0] += reflective_hist[i].Avg() * weight_left[i]>>8;
+                    speed[1] += reflective_hist[i].Avg() * weight_right[i]>>8;
+                }
             }
         }
         else if(recover_count ==0)
         {
             SetRGBLED(1, 0, 0, 0, 0);
             SetRGBLED(3, 0, 0, 0, 0);
-            current_state = ALIGNMENT;
-            last_state = RECOVER;
-                
+            if(assembly_info == OrganismSequence::Symbol(0))
+            {
+                ResetAssembly();
+                current_state = FORAGING;
+                last_state = RECOVER;
+            }
+            else
+            {
+                current_state = ALIGNMENT;
+                last_state = RECOVER;
+            }
+
         }
     }
 }
