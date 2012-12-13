@@ -130,6 +130,7 @@ void Robot::CheckForFailures()
 						// If there is a robot docked
 						if( docked[i] )
 						{
+							std::cout << timestamp << "docked: " << (int)docked[i] << std::endl;
 							// If the robot is a scout
 							if(  OrganismSequence::Symbol(docked[i]).type2 == ROBOT_SCOUT )
 							{
@@ -410,7 +411,7 @@ void Robot::changeState( fsm_state_t next_state )
 
 // Work out neighbours new heading based
 //	upon own heading and docking info
-int8_t Robot::getNeighbourHeading( int8_t n )
+uint8_t Robot::getNeighbourHeading( int8_t n )
 {
 	OrganismSequence::Symbol sym = OrganismSequence::Symbol(n);
 	std::cout << timestamp << " docking info: " << sym << " s1:" << (int) sym.side1
@@ -423,7 +424,7 @@ int8_t Robot::getNeighbourHeading( int8_t n )
 
 	std::cout << timestamp << " neighbour heading: " << (int) h << std::endl;
 
-	return h;
+	return (uint8_t) h;
 
 
 }
@@ -551,6 +552,51 @@ bool Robot::isNeighbourConnected(int i)
 			   (proximity[i*2] 	< p && proximity[i*2+1]  < p) ||
 			   (reflective[i*2] < r && reflective[i*2+1] < r) );
 	}
+}
+
+/*
+ * If a module is present on side 'channel' it
+ * is sent the current sub-organism string.
+ */
+void Robot::SendSubOrgStr( int channel, uint8_t *seq )
+{
+    if( channel < SIDE_COUNT && docked[channel] )
+    {
+        uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
+
+        buf[0] = seq[0]+1;
+
+        if( buf[0] > MAX_IR_MESSAGE_SIZE-3 )
+        {
+            printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, (int) buf[0] );
+            buf[0] = MAX_IR_MESSAGE_SIZE - 3;
+        }
+
+        // copy previous string
+        memcpy(buf+1,seq+1,seq[0]);
+
+        // if sending string back to parent
+        if( channel == parent_side )
+        {
+            // add zeros
+            buf[buf[0]] = 0;
+        }
+        else
+        {
+            buf[buf[0]] = 0;
+            buf[buf[0]] |= type;	    // 0:1
+            buf[buf[0]] |= channel<<2;  // 2:3
+        }
+
+        // Send the direction that the neighbour should move in
+        buf[buf[0]+1] = getNeighbourHeading( docked[channel] );
+
+        SendIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, true);
+        SendEthMessage(channel, ETH_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, false);
+
+        printf("%d Sending sub-og string\n",timestamp);
+        PrintSubOGString(buf);
+    }
 }
 
 // Repair state of the robot nearest

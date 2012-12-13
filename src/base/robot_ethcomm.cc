@@ -51,17 +51,67 @@ void * Robot::EthCommTxThread(void * para)
     return NULL;
 }
 
+// Given an IP address, get the channel
+// through which it was delivered.
+uint8_t Robot::getEthChannel(Ethernet::IP ip)
+{
+	for( int i=0; i<SIDE_COUNT; i++ )
+	{
+		if( neighbours_IP[i] == ip )
+			return i;
+	}
+
+	// If message originated from an unknown (non-neighbouring) IP
+	return SIDE_COUNT+1;
+}
+
+
 void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
 {
     int size = msg.get()->GetDataLength();
     Ethernet::IP sender = msg.get()->GetSender();
     char * data = (char *)msg.get()->GetData();
 
+    printf("%d Processing Ethernet message: %d from %s\n",timestamp,data[0],Ethernet::IPToString(sender));
+
     if( sender == 0 )
     	return;
 
+    uint8_t channel = getEthChannel(sender);
+
     switch(data[0])
     {
+    	// Note that the indexes are slightly different for ETH than for IR
+    	case ETH_MSG_TYPE_SUB_OG_STRING:
+			{
+				// only copy string when it is expected
+				if( msg_subog_seq_expected & 1<<channel )
+				{
+					msg_subog_seq_expected &= ~(1<<channel);
+					msg_subog_seq_received |= 1<<channel;
+					memcpy(subog_str,data+1,data[1]+1);
+
+					printf("%d parent_side: %d type: %d channel: %d\n", timestamp,parent_side,type,channel);
+					// if module has not yet entered a repair state
+					//if( parent_side >= SIDE_COUNT )
+					if(  current_state != REPAIR && current_state != LEADREPAIR )
+					{
+						parent_side = channel;
+						subog_str[subog_str[0]] |= type<<4;     // 4:5
+						subog_str[subog_str[0]] |= channel<<6;  // 5:6
+
+						int ind = (int)((uint8_t*)data)[1]+1;	 // get heading index
+						heading = (int)((uint8_t*)data)[ind];	 // get heading
+						printf("%d My heading is: %d\n",timestamp,heading);
+					}
+
+					printf("%d Sub-organism string received\n",timestamp);
+					PrintSubOGString(subog_str);
+
+					RemoveFromQueue(channel,IR_MSG_TYPE_SUB_OG_STRING);
+				}
+			}
+			break;
         case ETH_MSG_TYPE_PROPAGATED:
             {
             	bool valid = true;
@@ -71,6 +121,9 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
 					{
 						msg_retreat_received = true;
 						CPrintf1(SCR_BLUE,"%d -- retreating !", timestamp);
+
+						// Robot no longer needs to send sub_og_string
+						RemoveFromQueue(channel,IR_MSG_TYPE_SUB_OG_STRING);
 					}
             		break;
             	case ETH_MSG_TYPE_STOP:
@@ -119,7 +172,7 @@ void Robot::SendEthMessage(const EthMessage& msg)
     if(msg.type == ETH_MSG_TYPE_PROPAGATED)
     	printf("%d: %s send ETH message %s (%s) via channel %d (%s)\n",timestamp, name, ethmessage_names[msg.type],ethmessage_names[msg.data[0]],msg.channel,Ethernet::IPToString(neighbours_IP[msg.channel]));
     else
-    	printf("%d: %s send ETH message %s via channel %d (%#x)\n",timestamp, name, ethmessage_names[msg.type],msg.channel, Ethernet::IPToString(neighbours_IP[msg.channel]));
+    	printf("%d: %s send ETH message %s via channel %d (%s) len: %d\n",timestamp, name, ethmessage_names[msg.type],msg.channel, Ethernet::IPToString(neighbours_IP[msg.channel]),msg.data_len);
  }
 
 void Robot::SendEthMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)

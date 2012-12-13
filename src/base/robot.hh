@@ -122,11 +122,12 @@ class Robot
 
     uint8_t getNextNeighbour(int);
     uint8_t getNextMobileNeighbour( int last );
-    int8_t getNeighbourHeading( int8_t );
+    uint8_t getNeighbourHeading( int8_t );
     bool isNeighbourConnected(int i);
     void changeState(fsm_state_t);
 	void moveTowardsHeading(int);
 	uint8_t recruitmentProgress();
+	uint8_t getEthChannel(Ethernet::IP);
 
 
 
@@ -195,6 +196,10 @@ class Robot
     static void *IRCommRxThread(void* robot);
     static void *EthCommTxThread(void* robot);
     static void *EthCommRxThread(void* robot);
+
+    void RemoveFromQueue(int channel, uint8_t type);
+    void RemoveFromQueue(uint8_t type);
+
 
     void SendIRMessage(const IRMessage& msg);
     void SendEthMessage(const EthMessage& msg);
