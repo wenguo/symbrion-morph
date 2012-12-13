@@ -126,6 +126,7 @@ class Robot
     bool isNeighbourConnected(int i);
     void changeState(fsm_state_t);
 	void moveTowardsHeading(int);
+	uint8_t recruitmentProgress();
 
 
 

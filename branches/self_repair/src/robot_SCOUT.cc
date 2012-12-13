@@ -284,8 +284,9 @@ void RobotSCOUT::UpdateFailures()
                 lowering_count = 0;
 
                 msg_unlocked_received |= 1<<para.debug.para[0];
+                /////////////////////////////////////////////
 
-                //module_failed = true;
+//                module_failed = true;
         	}
         }
     }
@@ -912,6 +913,7 @@ void RobotSCOUT::Recruitment()
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
+            // TODO: add a timeout that reverts back to STAGE0
         }
         else if(recruitment_stage[i]==STAGE2)
         {
@@ -1037,6 +1039,9 @@ void RobotSCOUT::Recruitment()
 
                 //remove branches since it has been sent to newly joined robot
                 erase_required = true;
+
+                // Reset stage variable
+                recruitment_stage[i] = STAGE0;
             }
         }
 
@@ -1284,17 +1289,17 @@ void RobotSCOUT::Lowering()
 {
     lowering_count++;
 
-    if( lowering_count <= 30 )
-    {
-
-    }
-    else if( StartRepair()  )
-    {
-        last_state = LOWERING;
-        lowering_count = 0;
-        seed = false;
-        ResetAssembly();
-    }
+//    if( lowering_count <= 30 )
+//    {
+//
+//    }
+//    else if( StartRepair()  )
+//    {
+//        last_state = LOWERING;
+//        lowering_count = 0;
+//        seed = false;
+//        ResetAssembly();
+//    }
 
     return; // for testing - do not allow to enter disassembly
 
@@ -1537,33 +1542,46 @@ void RobotSCOUT::MacroLocomotion()
         }
     }
 
-    if( module_failed ) //|| (seed && macrolocomotion_count >= 300 ))
-    {
-        // Stop moving
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+    if( msg_lowering_received )
+	{
+		// Stop moving
+		leftspeed = 0;
+		rightspeed = 0;
+		sidespeed = 0;
 
-        // Propagate lowering messages
-        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+		last_state = MACROLOCOMOTION;
+		current_state = LOWERING;
+		lowering_count = 0;
+		seed = false;
+	}
 
-        last_state = MACROLOCOMOTION;
-        current_state = LOWERING;
-        lowering_count = 0;
-        seed = true;
-    }
-    else if( msg_lowering_received )
-    {
-        // Stop moving
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
-
-        last_state = MACROLOCOMOTION;
-        current_state = LOWERING;
-        lowering_count = 0;
-        seed = false;
-    }
+//    if( module_failed ) //|| (seed && macrolocomotion_count >= 300 ))
+//    {
+//        // Stop moving
+//        leftspeed = 0;
+//        rightspeed = 0;
+//        sidespeed = 0;
+//
+//        // Propagate lowering messages
+//        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+//
+//        last_state = MACROLOCOMOTION;
+//        current_state = LOWERING;
+//        lowering_count = 0;
+//        seed = true;
+//    }
+//    else if( msg_lowering_received )
+//    {
+//        // Stop moving
+//        leftspeed = 0;
+//        rightspeed = 0;
+//        sidespeed = 0;
+//
+//        last_state = MACROLOCOMOTION;
+//        current_state = LOWERING;
+//        lowering_count = 0;
+//        seed = false;
+//    }
 
 }
 
