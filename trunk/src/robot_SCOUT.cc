@@ -888,19 +888,17 @@ void RobotSCOUT::Recruitment()
             }
             else if(msg_assembly_info_req_received & (1<<i))
             {
+                if(it1->getSymbol(0).type2 != ROBOT_AW)
+                    msg_locked_expected |= 1<<i;
+                SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 //wait for ack
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_ASSEMBLY_INFO))
                 {
-                    if(it1->getSymbol(0).type2 == ROBOT_SCOUT)
-                        msg_locked_expected |= 1<<i;
                     msg_assembly_info_req_received &= ~(1<<i);
                     guiding_signals_count[i]=0;
                     recruitment_stage[i]=STAGE2;
-                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                     printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
-
                 }
-
             }
             else if(msg_guideme_received & (1<<i))
             {
