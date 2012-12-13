@@ -191,6 +191,8 @@ void Robot::ResetAssembly()
     msg_raising_received = 0;
     msg_lowering_received = 0;
     msg_score_received = 0;
+	msg_stop_received = false;
+	msg_retreat_received = false;
     //msg_unlocked_received = 0;
     num_robots_inorganism=1;
     seed = false;

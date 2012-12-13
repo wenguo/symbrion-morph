@@ -25,8 +25,8 @@ class IRMessage
 class EthMessage
 {
     public:
-        EthMessage(uint8_t ch, uint8_t type, const uint8_t * data, uint16_t data_len, bool ack=false):
-            channel(ch),type(type), data(data, data+data_len), ack_required(ack){};
+        EthMessage(uint8_t ch, uint8_t type, const uint8_t * data, uint8_t data_len, bool ack=false):
+            channel(ch),type(type), data(data, data+data_len),data_len(data_len), ack_required(ack){};
         ~EthMessage(){};
 
         uint8_t channel;

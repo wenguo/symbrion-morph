@@ -602,31 +602,7 @@ void Robot::SendFailureMsg( int channel )
 
 
 
-void Robot::SendScoreStr( int channel, const OrganismSequence& seq, uint8_t score )
-{
 
-    if( channel < SIDE_COUNT && docked[channel] )
-    {
-        uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
-        buf[0] = seq.Size();
-
-
-        if( buf[0] > MAX_IR_MESSAGE_SIZE-2 )
-        {
-            printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, (int) buf[0] );
-            buf[0] = MAX_IR_MESSAGE_SIZE - 2;
-        }
-
-        for(unsigned int i=0; i < buf[0];i++)
-            buf[i+1] =seq.Encoded_Seq()[i].data;
-
-        buf[(int)(buf[0])+1] = score;
-
-
-        std::cout << "sending score: " << (int) score << " and seq: " << seq << std::endl;
-        SendIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0] + 2, true);
-    }
-}
 
 
 void Robot::PropagateReshapeScore( uint8_t score, int ignore_side )

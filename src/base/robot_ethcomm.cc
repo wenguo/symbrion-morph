@@ -72,8 +72,6 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
     Ethernet::IP sender = msg.get()->GetSender();
     char * data = (char *)msg.get()->GetData();
 
-    printf("%d Processing Ethernet message: %d from %s\n",timestamp,data[0],Ethernet::IPToString(sender));
-
     if( sender == 0 )
     	return;
 
@@ -112,6 +110,21 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
 				}
 			}
 			break;
+    	case ETH_MSG_TYPE_SCORE_STRING:
+    		{
+    			if( msg_score_seq_expected & 1<<channel )
+				{
+					msg_score_seq_expected &= ~(1<<channel);
+					msg_score_seq_received |= 1<<channel;
+
+					memcpy(subog_str,data+1,data[1]+1);
+					best_score = data[(int)(data[1])+2];
+
+					std::cout << "Score received: " << (int) best_score << std::endl;
+					PrintSubOGString(subog_str);
+				}
+    		}
+    		break;
         case ETH_MSG_TYPE_PROPAGATED:
             {
             	bool valid = true;
@@ -146,7 +159,12 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
             break;
     }
 
-    printf("%d Ethernet message received: %d from %s\n",timestamp,data[0],Ethernet::IPToString(sender));
+    printf("%d Ethernet message received: %s",timestamp,ethmessage_names[(int)data[0]]);
+
+    if( data[0] == ETH_MSG_TYPE_PROPAGATED )
+    	printf("(%s)",ethmessage_names[(int)data[1]]);
+
+    printf(" from %s\n",Ethernet::IPToString(sender));
 
 }
 
