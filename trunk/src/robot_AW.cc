@@ -909,7 +909,8 @@ void RobotAW::Recruitment()
         if(recruitment_stage[i]==STAGE0)
         {
             if(robots_in_range_detected_hist.Sum(2*i) > 14 || robots_in_range_detected_hist.Sum(2*i+1) >14)
-            {
+            {                
+                msg_assembly_info_req_expected |= 1<<i;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
@@ -917,7 +918,7 @@ void RobotAW::Recruitment()
             else
             {
                 //or send recruitment message
-                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDOFF, LED1, 0);
                 SetRGBLED(i, 0,0,0,0);
                 if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == i)
                 {
@@ -931,6 +932,20 @@ void RobotAW::Recruitment()
             {
                 msg_docking_signal_req_received &= ~(1<<i);
                 SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
+            }
+            else if(msg_assembly_info_req_received & (1<<i))
+            {
+                //wait for ack
+                if(!MessageWaitingAck(i, IR_MSG_TYPE_ASSEMBLY_INFO))
+                {
+                    if(it1->getSymbol(0).type2 == ROBOT_SCOUT)
+                        msg_locked_expected |= 1<<i;
+                    msg_assembly_info_req_received &= ~(1<<i);
+                    guiding_signals_count[i]=0;
+                    recruitment_stage[i]=STAGE2;
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
+                    printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+                }
             }
             else if((msg_guideme_received & (1<<i)) || ((robot_in_range_detected & (0x3<<(2*i))) ==0
                         && ambient_hist[2*i].Avg()> para.recruiting_ambient_offset1
@@ -950,8 +965,9 @@ void RobotAW::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE2)
         {
-            stage2_count++;
+            guiding_signals_count[i]++;
 
+            msg_guideme_received &= ~(1<<i);
             /*
             proximity_hist[2*i].Push(proximity[2*i]);
             proximity_hist[2*i+1].Push(proximity[2*i+1]);
@@ -972,16 +988,16 @@ void RobotAW::Recruitment()
                     printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
                 }
 */
-            if(stage2_count > 20 && msg_locked_received &(1<<i))
+            if(guiding_signals_count[i] > 20 && msg_locked_received &(1<<i))
             {
                 recruitment_stage[i]=STAGE3;
+                guiding_signals_count[i] = 0;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
                 irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false);
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
 
-            //give up, back to stage 1
-            if((msg_docking_signal_req_received & (1<<i)) || guiding_signals_count[i]++ >= para.recruiting_guiding_signals_time)
+            if((msg_docking_signal_req_received & (1<<i)))
             {
                 msg_docking_signal_req_received &=~(1<<i);
                 guiding_signals_count[i] = 0;
@@ -990,17 +1006,26 @@ void RobotAW::Recruitment()
                 irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), true);
                 printf("%d -- Recruitment: channel %d  waits too long, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
-
+            //nothing happens, assumed wrong robots docked, back to stage 0
+            else if(guiding_signals_count[i] >= (uint32_t)para.recruiting_guiding_signals_time)
+            {
+                guiding_signals_count[i] = 0;
+                recruitment_stage[i]=STAGE0;
+                SetIRLED(i, IRLEDOFF, 0, 0);
+                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), true);
+                printf("%d -- Recruitment: channel %d  waits too long, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+            }
         }
         else if(recruitment_stage[i]==STAGE3)
         {
             if(msg_locked_received & (1<<i))
             {
+                msg_locked_expected &=~(1<<i);
                 msg_locked_received &=~(1<<i);
                 msg_subog_seq_expected |= 1<<i;
-                docked[i] = it1->getSymbol(0).data;//true;
+                docked[i] = it1->getSymbol(0).data;
 
-                SendBranchTree(i, (*it1));
+                SendBranchTree(i, (*it1)); //new in AW
 
                 recruitment_stage[i]=STAGE4;
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
@@ -1008,7 +1033,6 @@ void RobotAW::Recruitment()
             else if(msg_docking_signal_req_received & 1<<i)
             {
                 msg_docking_signal_req_received &=~(1<<i);
-                guiding_signals_count[i] = 0;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDOFF, 0, 0);
                 irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), true);
@@ -1017,16 +1041,16 @@ void RobotAW::Recruitment()
             else if(msg_guideme_received & (1<<i))
             {
                 msg_guideme_received &= ~(1<<i);
-                proximity_hist[2*i].Reset();
-                proximity_hist[2*i+1].Reset();
+                proximity_hist[2*i].Reset(); //new in AW
+                proximity_hist[2*i+1].Reset(); //new in AW
                 ambient_avg_threshold_hist.Reset();
                 recruitment_stage[i] = STAGE2;
-                stage2_count = 0;
+                guiding_signals_count[i] = 0;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 printf("%d -- Recruitment: channel %d  switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
         }
-        else if(recruitment_stage[i]==STAGE4)
+        else if(recruitment_stage[i]==STAGE4) //new in AW
         {
             //recevied acks after sending sequence information?
             if(!MessageWaitingAck(i, IR_MSG_TYPE_ORGANISM_SEQ))

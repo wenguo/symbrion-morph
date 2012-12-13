@@ -133,6 +133,11 @@ Robot::Robot()
     msg_organism_seq_received = false;
     msg_organism_seq_expected = false;
     msg_ip_addr_received = 0;
+    msg_ip_addr_expected = 0;
+    msg_assembly_info_received = 0;
+    msg_assembly_info_expected = 0;
+    msg_assembly_info_req_received = 0;
+    msg_assembly_info_req_expected = 0;
 
     // for self-repair
     msg_failed_received = 0;
@@ -194,6 +199,10 @@ void Robot::ResetAssembly()
     msg_lowering_received = 0;
     msg_score_received = 0;
     msg_unlocked_received = 0;
+    msg_assembly_info_received = 0;
+    msg_assembly_info_expected = 0;
+    msg_assembly_info_req_received = 0;
+    msg_assembly_info_req_expected = 0;
     num_robots_inorganism=1;
     seed = false;
 

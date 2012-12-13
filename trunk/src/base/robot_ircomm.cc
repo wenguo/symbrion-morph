@@ -47,7 +47,7 @@ void * Robot::IRCommTxThread(void * para)
                 {
                     if(robot->timestamp - msg.timestamp > robot->para.ir_msg_repeated_delay)
                     {
-                        msg.repeated++;
+                        msg.repeated--;
                         robot->SendIRMessage(msg);
                         msg.timestamp = robot->timestamp;
                     }
@@ -96,13 +96,14 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
         //broadcast, no ack required
         case IR_MSG_TYPE_RECRUITING:
             {
-                if(current_state!=INORGANISM)
+                if(current_state==FORAGING || current_state == WAITING)
                 {
-                    comm_status[channel] = 1;
                     OrganismSequence::Symbol sym(data[2]);
 
                     if(sym.type2 == type)
                     {
+                        comm_status[channel] = 1;
+
                         if (!organism_found)
                         {
                             organism_found = true;
@@ -193,17 +194,32 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
             }
             break;
         case IR_MSG_TYPE_ASSEMBLY_INFO:
+            if(msg_assembly_info_expected & 1<< channel)
             {
-                assembly_info_checked = true;
-                assembly_info = OrganismSequence::Symbol(data[3]);
+                printf("%d received assemby_info %#x\n", timestamp, data[2]);
+                msg_assembly_info_received |=1<<channel;
+                //msg_assembly_info_expected &=~(1<<channel);
+                OrganismSequence::Symbol sym(data[2]);
+                if(sym.type2 != type && sym.side2 != assembly_info.side2)
+                    assembly_info = OrganismSequence::Symbol(0);
+                else
+                    assembly_info = sym; //it is ok to update assembly_info, even they are not the same
+
+                ack_required = true;
             }
             break;
         case IR_MSG_TYPE_ASSEMBLY_INFO_REQ:
+            if(msg_assembly_info_req_expected & 1<< channel)
             {
+                printf("%d received assemby_info_req \n", timestamp);
+                msg_assembly_info_req_expected &= ~(1<<channel);
+                msg_assembly_info_req_received |= 1<<channel;
                 OrganismSequence seq;
                 rt_status ret = mytree.getBranch(seq, (robot_side)channel);
+                std::cout<<seq<<std::endl;
+                printf("assembly_info %#x\n", seq.getSymbol(0).data);
                 if(ret.status == RT_OK)
-                    SendIRMessage(channel, IR_MSG_TYPE_ASSEMBLY_INFO, &(seq.getSymbol(0).data), 1, true);
+                    SendIRMessage(channel, IR_MSG_TYPE_ASSEMBLY_INFO, seq.getSymbol(0).data, true);
                 else
                     printf("Error in getting branch, no Assembly info be sent\n");
             }
