@@ -542,8 +542,16 @@ void RobotSCOUT::LocateBeacon()
     }
     else
     {
-        speed[0] = para.locatebeacon_forward_speed[0];
-        speed[1] = para.locatebeacon_forward_speed[1];
+        if(assembly_info.side2 == FRONT)
+        {
+            speed[0] = para.locatebeacon_forward_speed[0];
+            speed[1] = para.locatebeacon_forward_speed[1];
+        }
+        else
+        {
+            speed[0] = -para.locatebeacon_forward_speed[0];
+            speed[1] = -para.locatebeacon_forward_speed[1];
+        }
 
         for(int i=0;i<NUM_IRS;i++)
         {
@@ -614,8 +622,16 @@ void RobotSCOUT::LocateBeacon()
 //TODO: cleanup the code
 void RobotSCOUT::Alignment()
 {
-    speed[0] = para.aligning_forward_speed[0];
-    speed[1] = para.aligning_forward_speed[1];
+    if(assembly_info.side2 == FRONT)
+    {
+        speed[0] = para.aligning_forward_speed[0];
+        speed[1] = para.aligning_forward_speed[1];
+    }
+    else
+    {
+        speed[0] = -para.aligning_forward_speed[0];
+        speed[1] = -para.aligning_forward_speed[1];
+    }
 
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
@@ -750,8 +766,16 @@ void RobotSCOUT::Recover()
         //robot will stop there for 1 seconds
         if(recover_count >=10)
         {
-            speed[0] = para.aligning_reverse_speed[0];
-            speed[1] = para.aligning_reverse_speed[1];
+            if(assembly_info.side2 == FRONT)
+            {
+                speed[0] = para.aligning_reverse_speed[0];
+                speed[1] = para.aligning_reverse_speed[1];
+            }
+            else
+            {
+                speed[0] = -para.aligning_reverse_speed[0];
+                speed[1] = -para.aligning_reverse_speed[1];
+            }
 
             const int weight_left[2] = {-3,3};
             const int weight_right[2] = {3, -3};
@@ -795,7 +819,7 @@ void RobotSCOUT::Docking()
     }
     else
     {
-        if(assembly_info.side2 == ::FRONT)
+        if(assembly_info.side2 == FRONT)
         {
             speed[0] = para.docking_forward_speed[0];
             speed[1]= para.docking_forward_speed[1];  
