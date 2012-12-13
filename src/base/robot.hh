@@ -61,18 +61,18 @@ class Robot
     void PropagateEthMessage(uint8_t type, uint8_t *data = NULL, uint32_t size = 0, Ethernet::IP = 0);
 
     //send to specified receiver (defined in docked[i]), ack may be required
-    void SendIRMessage(int channel, uint8_t type, bool ack_required = true);
-    void SendIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required = true);
-    void SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = true);
+    void SendIRMessage(int channel, uint8_t type, uint8_t ack_required);
+    void SendIRMessage(int channel, uint8_t type, const uint8_t data, uint8_t ack_required);
+    void SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size, uint8_t ack_required);
     void SendIRAckMessage(int channel, uint8_t type);
     void SendIRAckMessage(int channel, uint8_t type, uint8_t *data, int size=1);
     void PropagateIRMessage(uint8_t type, uint8_t *data = NULL, uint32_t size = 0, int excluded_channel = -1);
     void PropagateSingleIRMessage(uint8_t type, int channel, uint8_t *data = NULL, uint32_t size = 0 );
 
     //no specified reciever, ack is not required
-    void BroadcastIRMessage(int channel, uint8_t type, bool ack_required = false);
-    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required = false);
-    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
+    void BroadcastIRMessage(int channel, uint8_t type, uint8_t ack_required);
+    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, uint8_t ack_required);
+    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size, uint8_t ack_required);
 
     bool MessageWaitingAck(int channel, uint8_t type);
     bool MessageWaitingAck(uint8_t type);

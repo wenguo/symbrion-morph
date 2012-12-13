@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-IRMessage::IRMessage(uint8_t ch, uint32_t ts, uint8_t r, uint8_t t, const uint8_t * d, uint16_t len, bool ack)
+IRMessage::IRMessage(uint8_t ch, uint32_t ts, uint8_t r, uint8_t t, const uint8_t * d, uint16_t len, uint8_t ack)
 {
     channel = ch;
     repeated = 0;

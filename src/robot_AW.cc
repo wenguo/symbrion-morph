@@ -739,7 +739,7 @@ void RobotAW::Docking()
 
                 //Request beacon signals
                 if(timestamp % 5 ==0)
-                    Robot::BroadcastIRMessage(0, IR_MSG_TYPE_DOCKING_SIGNALS_REQ);
+                    Robot::BroadcastIRMessage(0, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
 
                 if(beacon_signals_detected_hist.Sum(0) > 5 && beacon_signals_detected_hist.Sum(1)>5)
                 {
@@ -818,7 +818,7 @@ void RobotAW::Docking()
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED2, 0);
         irobot->SetIRRX(ActiveWheel::Side(board_dev_num[assembly_info.side2]), false);
 
-        Robot::SendIRMessage(assembly_info.side2, IR_MSG_TYPE_LOCKME,  true);
+        Robot::SendIRMessage(assembly_info.side2, IR_MSG_TYPE_LOCKME,  para.ir_msg_repeated_num);
         msg_locked_expected |= 1<<assembly_info.side2;
 
         //TODO depend which types of robot it docks to, it may be required to send lockme messages
@@ -921,7 +921,7 @@ void RobotAW::Recruitment()
                 SetRGBLED(i, 0,0,0,0);
                 if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == i)
                 {
-                    Robot::BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data);
+                    Robot::BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data, 0);
                 }
             }
         }
@@ -1051,7 +1051,7 @@ void RobotAW::Recruitment()
                 uint8_t data[5];
                 data[0] = it1->getSymbol(0).data; //TODO: remove this as it is already included when using SendIRMessage
                 memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+                Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, 0);
             }
             //get new ip address?
             else if(msg_ip_addr_received & (1<<i))
@@ -1775,7 +1775,7 @@ void RobotAW::Debugging()
                     uint8_t data[5];
                     data[0] = docked[0]; //TODO: remove this as it is already included when using SendIRMessage
                     memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                    Robot::SendIRMessage(0, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+                    Robot::SendIRMessage(0, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, 0);
                 }
             }
             else
@@ -1808,7 +1808,7 @@ void RobotAW::Debugging()
             {
                 OrganismSequence::Symbol sym(0);
                 sym.reBuild("AFSF");
-                Robot::BroadcastIRMessage(para.debug.para[0], IR_MSG_TYPE_RECRUITING, sym.data);
+                Robot::BroadcastIRMessage(para.debug.para[0], IR_MSG_TYPE_RECRUITING, sym.data, 0);
             }
             break;
         case 17://Test IRComm as listener

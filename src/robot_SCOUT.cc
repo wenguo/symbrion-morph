@@ -631,7 +631,7 @@ void RobotSCOUT::Alignment()
 
         //request for assembly_info
         if(msg_assembly_info_expected && timestamp % 10 ==0)
-            Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_ASSEMBLY_INFO_REQ);
+            Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_ASSEMBLY_INFO_REQ, 0);
 
         if(msg_assembly_info_received)
         {
@@ -835,7 +835,7 @@ void RobotSCOUT::Locking()
                 // RobotBase::SetIRRX(board_dev_num[docking_side], false);
 
             }
-            Robot::BroadcastIRMessage(docking_side, IR_MSG_TYPE_LOCKED, true);
+            Robot::BroadcastIRMessage(docking_side, IR_MSG_TYPE_LOCKED, para.ir_msg_repeated_num);
         }
         else if(docked[docking_side] && !MessageWaitingAck(docking_side, IR_MSG_TYPE_LOCKED))
         {
@@ -875,7 +875,7 @@ void RobotSCOUT::Recruitment()
                 SetRGBLED(i, 0,0,0,0);
                 if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == i)
                 {
-                    Robot::BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data);
+                    Robot::BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data, 0);
                 }
             }
         }
@@ -992,7 +992,7 @@ void RobotSCOUT::Recruitment()
                 unlocking_required[i] = true;
                 msg_subog_seq_expected |= 1<<i;
                 docked[i]= it1->getSymbol(0).data;
-                Robot::BroadcastIRMessage(i, IR_MSG_TYPE_LOCKED, true);
+                Robot::BroadcastIRMessage(i, IR_MSG_TYPE_LOCKED, para.ir_msg_repeated_num);
             }
             else if(docked[i] && !docking_done[i])
             {
@@ -1032,7 +1032,7 @@ void RobotSCOUT::Recruitment()
                 uint8_t data[5];
                 data[0] = it1->getSymbol(0).data; //TODO: remove this as it is already included when using SendIRMessage
                 memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+                Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, 0);
             }
             //get new ip address?
             else if(msg_ip_addr_received & (1<<i))
@@ -1212,7 +1212,7 @@ void RobotSCOUT::Disassembly()
                 //TODO: how about two Scout robots docked to each other
                 else if(docking_motors_status[i]==OPENED)
                 {
-                    Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+                    Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
                     docked[i]=0;
                     num_docked--;
                 }
@@ -1662,7 +1662,7 @@ void RobotSCOUT::Debugging()
                 data[0] = sym.data;
                 docked[0]=sym.data;
                 memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, true);
+                Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, para.ir_msg_repeated_num);
             }
 
             break;
@@ -1710,7 +1710,7 @@ void RobotSCOUT::Debugging()
         case 9:
             if(timestamp > 40)
             {
-                Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_SCORE);
+                Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_SCORE, para.ir_msg_repeated_num);
             }
             break;
         case 10:
@@ -1804,7 +1804,7 @@ void RobotSCOUT::Debugging()
                     uint8_t data[5];
                     data[0] = docked[0]; //TODO: remove this as it is already included when using SendIRMessage
                     memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
-                    Robot::SendIRMessage(0, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, false);
+                    Robot::SendIRMessage(0, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, 0);
                 }
             }
             else
@@ -1874,7 +1874,7 @@ void RobotSCOUT::Debugging()
             {
                 OrganismSequence::Symbol sym(0);
                 sym.reBuild("SFSB");
-                Robot::BroadcastIRMessage(para.debug.para[0], IR_MSG_TYPE_RECRUITING, sym.data);
+                Robot::BroadcastIRMessage(para.debug.para[0], IR_MSG_TYPE_RECRUITING, sym.data, 0);
             }
             break;
         case 17://Test IRComm as listener
