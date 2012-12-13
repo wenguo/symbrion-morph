@@ -60,7 +60,11 @@ void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t puls
     irobot->SetIRPulse(ScoutBot::Side(board), pulse_led|IRPULSE2);
     irobot->SetIRMode(ScoutBot::Side(board), mode);
 
-    irobot->SetIRRX(ScoutBot::Side(board), led & LED1 ? false : true);
+    if(mode !=IRLEDOFF)
+        irobot->SetIRRX(ScoutBot::Side(board), led & LED1 ? false : true);
+    else
+        irobot->SetIRRX(ScoutBot::Side(board), led & LED1 ? true : false);
+
 
     uint8_t status = (uint8_t)mode | 0x4;
     for(int i=0;i<3;i++)
@@ -616,49 +620,64 @@ void RobotSCOUT::Alignment()
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
 
-    //check if it is aligned well and also closed enough for docking
-    //this is done by checking if ehternet port is connected
-    if(ethernet_status_hist.Sum(assembly_info.side2) > 2) 
-    {
-        docking_region_detected = true;
-        in_docking_region_hist.Reset();
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-        SetRGBLED(assembly_info.side2, WHITE,WHITE,WHITE,WHITE);
-    }
-
     int reflective_diff = abs(reflective_hist[id0].Avg() - reflective_hist[id1].Avg());
     int reflective_max = std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
-    printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
+    //printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
 
     if(docking_region_detected)
     {
         speed[0] = 0;
         speed[1] = 0;
 
-        if(timestamp % 5==0)
-            Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME);
+        //request for assembly_info
+        if(msg_assembly_info_expected && timestamp % 10 ==0)
+            Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_ASSEMBLY_INFO_REQ);
 
-        if(robots_in_range_detected_hist.Sum(id0) > 5 && robots_in_range_detected_hist.Sum(id1) > 5)
+        if(msg_assembly_info_received)
         {
-            docking_region_detected =false;
-            in_docking_region_hist.Reset();
-            docking_count = 0;
-            docking_failed_reverse_count = 0;
+            msg_assembly_info_received = 0;
+            msg_assembly_info_expected = 0;
 
-            docking_blocked = false;
-            blocking_count=0;
+            if(assembly_info == OrganismSequence::Symbol(0))
+                printf("failed! To be implemented\n\n");//failed
+            else
+            {
+                docking_region_detected =false;
+                in_docking_region_hist.Reset();
+                docking_count = 0;
+                docking_failed_reverse_count = 0;
 
-            docking_trials++;
+                docking_blocked = false;
+                blocking_count=0;
 
-            current_state = DOCKING;
-            last_state = ALIGNMENT;
+                docking_trials++;
 
-            SetRGBLED(assembly_info.side2, 0,0,0,0);
+                current_state = DOCKING;
+                last_state = ALIGNMENT;
+
+                SetRGBLED(assembly_info.side2, 0,0,0,0);
+            }
         }
-    }
+
+     } 
     else
     {
+        //check if it is aligned well and also closed enough for docking
+        //this is done by checking if ehternet port is connected
+        if(ethernet_status_hist.Sum(assembly_info.side2) > 2) 
+        {
+            printf("Docking region detected\n");
+            docking_region_detected = true;
+            in_docking_region_hist.Reset();
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+            SetRGBLED(assembly_info.side2, WHITE,WHITE,WHITE,WHITE);
+
+            msg_assembly_info_expected |= 1 << assembly_info.side2;
+        }
+
+        printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
+
         //TODO sometimes not in good position, need to reverse and try again
         // define the bad case
         // case 1: difference between two front reflective_calibrated reading is significant 
@@ -671,7 +690,7 @@ void RobotSCOUT::Alignment()
 
         //3 second is allowed until fully docked, otherwise, treated as blocked.
         if((reflective_diff > 300 && reflective_diff > reflective_max * 0.5) ||blocking_count > 30)
-        //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
+            //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
             docking_blocked = true;
 
         if(docking_blocked)
@@ -768,6 +787,7 @@ void RobotSCOUT::Docking()
         SetRGBLED(assembly_info.side2, WHITE, WHITE, WHITE, WHITE);
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED2, 0);
         irobot->SetIRRX(ScoutBot::Side(board_dev_num[assembly_info.side2]), false);
+
         SetDockingMotor(assembly_info.side2, CLOSE);
 
         current_state = LOCKING;
@@ -833,7 +853,6 @@ void RobotSCOUT::Recruitment()
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
-    static int stage2_count=0;
     std::vector<OrganismSequence>::iterator it1 = mybranches.begin();
     while(it1 !=mybranches.end())
     {
@@ -844,6 +863,7 @@ void RobotSCOUT::Recruitment()
         {
             if(robots_in_range_detected_hist.Sum(2*i) > 14 || robots_in_range_detected_hist.Sum(2*i+1) >14)
             {
+                msg_assembly_info_req_expected |= 1<<i;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
@@ -851,7 +871,7 @@ void RobotSCOUT::Recruitment()
             else
             {
                 //or send recruitment message
-                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDOFF, LED1, 0);
                 SetRGBLED(i, 0,0,0,0);
                 if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == i)
                 {
@@ -866,12 +886,28 @@ void RobotSCOUT::Recruitment()
                 msg_docking_signal_req_received &= ~(1<<i);
                 SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
             }
+            else if(msg_assembly_info_req_received & (1<<i))
+            {
+                //wait for ack
+                if(!MessageWaitingAck(i, IR_MSG_TYPE_ASSEMBLY_INFO))
+                {
+                    if(it1->getSymbol(0).type2 == ROBOT_SCOUT)
+                        msg_locked_expected |= 1<<i;
+                    msg_assembly_info_req_received &= ~(1<<i);
+                    guiding_signals_count[i]=0;
+                    recruitment_stage[i]=STAGE2;
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
+                    printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+
+                }
+
+            }
             else if(msg_guideme_received & (1<<i))
             {
                 if(it1->getSymbol(0).type2 == ROBOT_SCOUT)
                     msg_locked_expected |= 1<<i;
                 msg_guideme_received &= ~(1<<i);
-                stage2_count=0;
+                guiding_signals_count[i]=0;
                 recruitment_stage[i]=STAGE2;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
@@ -879,25 +915,36 @@ void RobotSCOUT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE2)
         {
-            stage2_count++;
+            guiding_signals_count[i]++;
 
             msg_guideme_received &= ~(1<<i);
             msg_lockme_expected |=1<<i;
 
-            if(stage2_count > 20 && (msg_lockme_received & (1<<i) || msg_locked_received &(1<<i)))
+            //received lockme or locked message
+            if(guiding_signals_count[i] > 20 && (msg_lockme_received & (1<<i) || msg_locked_received &(1<<i)))
             {
                 recruitment_stage[i]=STAGE3;
+                guiding_signals_count[i] = 0;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
                 irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), false);
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
 
-            //give up, back to stage 1
-            if((msg_docking_signal_req_received & (1<<i)) || guiding_signals_count[i]++ >= (uint32_t)para.recruiting_guiding_signals_time)
+            //received docking_signals req, back to stage 1
+            if((msg_docking_signal_req_received & (1<<i)))
             {
                 msg_docking_signal_req_received &=~(1<<i);
                 guiding_signals_count[i] = 0;
                 recruitment_stage[i]=STAGE1;
+                SetIRLED(i, IRLEDOFF, 0, 0);
+                irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), true);
+                printf("%d -- Recruitment: channel %d  waits too long, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+            }
+            //nothing happens, assumed wrong robots docked, back to stage 0
+            else if(guiding_signals_count[i] >= (uint32_t)para.recruiting_guiding_signals_time)
+            {
+                guiding_signals_count[i] = 0;
+                recruitment_stage[i]=STAGE0;
                 SetIRLED(i, IRLEDOFF, 0, 0);
                 irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), true);
                 printf("%d -- Recruitment: channel %d  waits too long, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
@@ -909,7 +956,7 @@ void RobotSCOUT::Recruitment()
             if(msg_lockme_received & (1<<i))
             {
                 msg_lockme_received &=~(1<<i);
-                SetDockingMotor(i, CLOSE); //here it is safe to call clos motor repeately
+                SetDockingMotor(i, CLOSE); 
 
                 recruitment_stage[i]=STAGE4;
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
@@ -926,7 +973,6 @@ void RobotSCOUT::Recruitment()
             else if(msg_docking_signal_req_received & 1<<i)
             {
                 msg_docking_signal_req_received &=~(1<<i);
-                guiding_signals_count[i] = 0;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDOFF, 0, 0);
                 irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), true);
@@ -936,7 +982,7 @@ void RobotSCOUT::Recruitment()
             {
                 msg_guideme_received &= ~(1<<i);
                 recruitment_stage[i] = STAGE2;
-                stage2_count = 0;
+                guiding_signals_count[i] = 0;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 printf("%d -- Recruitment: channel %d  switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }

@@ -317,6 +317,10 @@ class Robot
     uint8_t msg_docking_signal_req_received;
     bool msg_organism_seq_received;
     bool msg_organism_seq_expected;
+    uint8_t msg_assembly_info_received;
+    uint8_t msg_assembly_info_expected;
+    uint8_t msg_assembly_info_req_received;
+    uint8_t msg_assembly_info_req_expected;
     // for self-repair
     uint8_t msg_failed_received;
     uint8_t msg_subog_seq_received;
