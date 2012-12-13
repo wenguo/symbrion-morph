@@ -80,18 +80,27 @@ void RobotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t
     RGBLED_status[channel] = tl|tr|bl|br;
 }
 
-void RobotAW::SetSpeed(int8_t frontleft, int8_t frontright, int8_t rear)
+void RobotAW::SetSpeed(int8_t left, int8_t right, int8_t side)
 {
-//    if( current_state == MACROLOCOMOTION || para.debug.para[9] != 2 )
+    int frontleft=0;
+    int frontright=0;
+    int rear = 0;
+    if(side > 0)
     {
-        irobot->MoveWheelsFront(-frontright, frontleft);
-        irobot->MoveWheelsRear(rear,0);
+        frontleft = side;
+        frontright = side;
+        rear = 0;
     }
-//    else
+    else
     {
-//        MoveWheelsFront(0,0);
-//        MoveWheelsRear(0,0);
+        const float adjust_factor=0.85;
+        frontleft = left;
+        frontright = -left;
+        rear = -right * adjust_factor;
+
     }
+    irobot->MoveWheelsFront(-frontright, frontleft);
+    irobot->MoveWheelsRear(rear,0);
 
 }
 
@@ -238,7 +247,7 @@ void RobotAW::UpdateSensors()
 void RobotAW::UpdateActuators()
 {
     CheckHingeMotor();
-    SetSpeed(speed[WHEEL_FRONT_LEFT], speed[WHEEL_FRONT_RIGHT], speed[WHEEL_REAR]); 
+    SetSpeed(speed[0], speed[1], speed[2]); 
 }
 
 // for self-repair
@@ -256,9 +265,9 @@ void RobotAW::UpdateFailures()
 
 void RobotAW::Avoidance()
 {
-    speed[WHEEL_FRONT_LEFT] = 40;
-    speed[WHEEL_FRONT_RIGHT] = 40;
-    speed[WHEEL_REAR] = 0;
+    speed[0] = 40;
+    speed[1] = 40;
+    speed[2] = 0;
 
 
     for(int i=0;i<NUM_IRS;i++)
@@ -281,9 +290,9 @@ void RobotAW::Avoidance()
     else if(reflective_hist[4].Avg() > para.avoidance_threshold || reflective_hist[5].Avg()>para.avoidance_threshold)
         direction = FORWARD;
 
-    speed[WHEEL_FRONT_LEFT] = 0;
-    speed[WHEEL_FRONT_RIGHT] = 0;
-    speed[WHEEL_REAR] = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
 }
 
@@ -388,9 +397,9 @@ void RobotAW::Foraging() //the same as RobotKIT
         current_state = WAITING;
         last_state = FORAGING;
 
-        speed[WHEEL_FRONT_LEFT] = 0;
-        speed[WHEEL_FRONT_RIGHT] = 0;
-        speed[WHEEL_REAR] = 0;
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
     }
     else
     {
@@ -405,9 +414,9 @@ void RobotAW::Foraging() //the same as RobotKIT
 }
 void RobotAW::Waiting()//same as RobotKIT
 {
-    speed[WHEEL_FRONT_LEFT] = 0;
-    speed[WHEEL_FRONT_RIGHT] = 0;
-    speed[WHEEL_REAR] = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     msg_unlockme_received = 0;
     msg_locked_received = 0;
@@ -459,9 +468,9 @@ void RobotAW::Assembly()
 }
 void RobotAW::LocateEnergy()//same as RobotKIT
 {
-    speed[WHEEL_FRONT_LEFT] = 0;
-    speed[WHEEL_FRONT_RIGHT] = 0;
-    speed[WHEEL_REAR] = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     if(1)
     {
@@ -481,18 +490,18 @@ void RobotAW::LocateBeacon()//same as RobotKIT
         if(beacon[0]>5 && beacon[1]>5)
         {
             //stay there and wait to transfer to state Alignment
-            speed[WHEEL_FRONT_LEFT] = 0;
-            speed[WHEEL_FRONT_RIGHT] = 0;
-            speed[WHEEL_REAR] = 0;
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 0;
         }
         else
         {
             printf("only one beacon detected, shift left and right a little bit\n");
             int temp = beacon[1]-beacon[0];
 
-            speed[WHEEL_FRONT_LEFT] = 0;
-            speed[WHEEL_FRONT_RIGHT] = 0;
-            speed[WHEEL_REAR] = 0;
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 0;
         }
     }
     else
@@ -1835,9 +1844,12 @@ void RobotAW::Debugging()
         case 20://testing motors
             // if(timestamp  == 2)
             { 
-                speed[WHEEL_FRONT_LEFT] = para.debug.para[3];
-                speed[WHEEL_FRONT_RIGHT] = para.debug.para[4];
-                speed[WHEEL_REAR] = para.debug.para[5];
+                int velocity = para.debug.para[3];
+                int phi = para.debug.para[4];
+                int rotation = para.debug.para[5];
+                speed[0] =para.debug.para[3];
+                speed[1] =  para.debug.para[4];
+                speed[2] =para.debug.para[5];
                 printf("Move motors at speed (%d %d %d)\n", para.debug.para[3], para.debug.para[4], para.debug.para[5]);
             }
             break;
