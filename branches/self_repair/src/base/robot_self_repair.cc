@@ -9,7 +9,6 @@
 
 // TODO:
 //  1. Reduce code duplication
-//	2. Integrate ethernet
 
 uint8_t Robot::calculateSubOrgScore( OrganismSequence &seq1, OrganismSequence &seq2 )
 {
@@ -53,7 +52,6 @@ void Robot::CheckForFailures()
 				if( current_state == RECRUITMENT && recruitmentProgress() > STAGE3 ) break;
 				// TODO: check that IP addresses successfully exchanged
 				if( current_state == INORGANISM && (msg_organism_seq_expected && !msg_organism_seq_received) ) break;
-
 
 				// Send 'failed' message to all neighbours
 				for( int i=0; i<NUM_DOCKS; i++ )
@@ -107,8 +105,8 @@ void Robot::CheckForFailures()
 
 				if( current_state == LOWERING &&  lowering_count <= 30 ) break;
 				if( current_state == RECRUITMENT && recruitmentProgress() > STAGE3 ) break;
+				// TODO: check that IP addresses successfully exchanged
 				if( current_state == INORGANISM && (msg_organism_seq_expected && !msg_organism_seq_received) ) break;
-
 
 				msg_failed_received = 0;
 
@@ -130,7 +128,6 @@ void Robot::CheckForFailures()
 						// If there is a robot docked
 						if( docked[i] )
 						{
-							std::cout << timestamp << "docked: " << (int)docked[i] << std::endl;
 							// If the robot is a scout
 							if(  OrganismSequence::Symbol(docked[i]).type2 == ROBOT_SCOUT )
 							{
@@ -184,8 +181,8 @@ void Robot::CheckForFailures()
 			{
 				if( current_state == LOWERING &&  lowering_count <= 30 ) break;
 				if( current_state == RECRUITMENT && recruitmentProgress() > STAGE3 ) break;
+				// TODO: check that IP addresses successfully exchanged
 				if( current_state == INORGANISM && (msg_organism_seq_expected && !msg_organism_seq_received) ) break;
-
 
 				// Check that neighbour will be able to move away properly
 				for( int i=0; i<SIDE_COUNT; i++ )
@@ -414,15 +411,15 @@ void Robot::changeState( fsm_state_t next_state )
 uint8_t Robot::getNeighbourHeading( int8_t n )
 {
 	OrganismSequence::Symbol sym = OrganismSequence::Symbol(n);
-	std::cout << timestamp << " docking info: " << sym << " s1:" << (int) sym.side1
-								  	     << " s2:" << (int) sym.side2 << std::endl;
+//	std::cout << timestamp << " docking info: " << sym << " s1:" << (int) sym.side1
+//								  	     << " s2:" << (int) sym.side2 << std::endl;
 
 	int8_t o = (sym.side1+2) % 4;  // get opposite side
 	int8_t d = (heading-o) % 4; 	// get the difference;
 	if( d < 0 ) d += 4;			 	// handle negative result
 	int8_t h = (sym.side2+d) % 4;	// calculate heading
 
-	std::cout << timestamp << " neighbour heading: " << (int) h << std::endl;
+//	std::cout << timestamp << " neighbour heading: " << (int) h << std::endl;
 
 	return (uint8_t) h;
 
@@ -566,6 +563,7 @@ void Robot::SendSubOrgStr( int channel, uint8_t *seq )
 
         buf[0] = seq[0]+1;
 
+        // TODO: if message too long, only send via Ethernet
         if( buf[0] > MAX_IR_MESSAGE_SIZE-3 )
         {
             printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, (int) buf[0] );
@@ -607,7 +605,7 @@ void Robot::SendScoreStr( int channel, const OrganismSequence& seq, uint8_t scor
         uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
         buf[0] = seq.Size();
 
-
+        // TODO: if message too long, only send via Ethernet
         if( buf[0] > MAX_IR_MESSAGE_SIZE-2 )
         {
             printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, (int) buf[0] );
@@ -619,8 +617,8 @@ void Robot::SendScoreStr( int channel, const OrganismSequence& seq, uint8_t scor
 
         buf[(int)(buf[0])+1] = score;
 
-        std::cout << "sending score: " << (int) score << " and seq: " << seq
-        		  << " size: " <<  ((int)buf[0])+2 << std::endl;
+//        std::cout << "sending score: " << (int) score << " and seq: " << seq
+//        		  << " size: " <<  ((int)buf[0])+2 << std::endl;
         SendIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0]+2, true);
         SendEthMessage(channel, ETH_MSG_TYPE_SCORE_STRING, buf, ((int)buf[0])+2, false);
 
@@ -672,6 +670,9 @@ void Robot::LeadRepair()
 						{
 							docked[i] = 0;
 							pruning_required &= ~(1<<i);
+
+							// No longer necessary to send UNLOCKED messages
+							RemoveFromQueue(i,IR_MSG_TYPE_UNLOCKED);
 						}
 						else if(unlocking_required[i])
 						{
@@ -706,6 +707,7 @@ void Robot::LeadRepair()
 		}
 		else
 		{
+			unlock_sent = 0;
 			repair_stage = STAGE1;
 			docked[parent_side] = 0;
 			msg_subog_seq_expected = 0;
@@ -813,9 +815,10 @@ void Robot::LeadRepair()
 			wait_side = getNextNeighbour(0);
 			best_id = subog_id;
 			broadcast_start = timestamp;
-			broadcast_period = 6 + (6*(target.Size()/2))-(6*(subog.Size()/2));
 
 			// TODO: find out what the broadcast constant should be
+			broadcast_period = 6 + (6*(target.Size()/2))-(6*(subog.Size()/2));
+
 
 			for( int i=0; i<NUM_DOCKS; i++ )
 				SetRGBLED(i,MAGENTA,MAGENTA,MAGENTA,MAGENTA);
@@ -972,6 +975,7 @@ void Robot::Repair()
 			// sending message back to parent module
 			if( timestamp > repair_start+repair_duration )
 			{
+				unlock_sent = 0;
 				SendSubOrgStr( parent_side, subog_str );
 				repair_stage = STAGE1;
 				msg_score_seq_expected = 1 << parent_side;

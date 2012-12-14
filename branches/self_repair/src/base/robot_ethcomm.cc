@@ -51,8 +51,8 @@ void * Robot::EthCommTxThread(void * para)
     return NULL;
 }
 
-// Given an IP address, get the channel
-// through which it was delivered.
+// Given an IP address, return the channel
+// at which the sending robot is docked
 uint8_t Robot::getEthChannel(Ethernet::IP ip)
 {
 	for( int i=0; i<SIDE_COUNT; i++ )
@@ -89,9 +89,9 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
 					msg_subog_seq_received |= 1<<channel;
 					memcpy(subog_str,data+1,data[1]+1);
 
-					printf("%d parent_side: %d type: %d channel: %d\n", timestamp,parent_side,type,channel);
+					//printf("%d parent_side: %d type: %d channel: %d\n", timestamp,parent_side,type,channel);
+
 					// if module has not yet entered a repair state
-					//if( parent_side >= SIDE_COUNT )
 					if(  current_state != REPAIR && current_state != LEADREPAIR )
 					{
 						parent_side = channel;
@@ -100,7 +100,7 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
 
 						int ind = (int)((uint8_t*)data)[1]+1;	 // get heading index
 						heading = (int)((uint8_t*)data)[ind];	 // get heading
-						printf("%d My heading is: %d\n",timestamp,heading);
+						printf("%d: My heading is: %d\n",timestamp,heading);
 					}
 
 					printf("%d Sub-organism string received\n",timestamp);

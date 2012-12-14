@@ -259,7 +259,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                     msg_subog_seq_received |= 1<<channel;
                     memcpy(subog_str,data+2,data[2]+1);
 
-                    printf("%d parent_side: %d type: %d channel: %d\n", timestamp,parent_side,type,channel);
+                    //printf("%d parent_side: %d type: %d channel: %d\n", timestamp,parent_side,type,channel);
                     // if module has not yet entered a repair state
                     //if( parent_side >= SIDE_COUNT )
                     if(  current_state != REPAIR && current_state != LEADREPAIR )
@@ -565,6 +565,7 @@ void Robot::PropagateIRMessage(uint8_t type, uint8_t *data, uint32_t len, int ex
         {
             PropagateSingleIRMessage( type, i, data, len );
 
+            // TODO: remove, no longer needed
             // 			  MOVED TO 'PropagateSingleIRMessage'
             //
             //            uint8_t buf[MAX_IR_MESSAGE_SIZE-1];

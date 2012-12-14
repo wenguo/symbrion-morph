@@ -202,12 +202,31 @@ printf("speed: %d %d %d\n", leftspeed, rightspeed, sidespeed);
 // for self-repair
 void RobotAW::UpdateFailures()
 {
+	static int failure_delay = 0;
 	if( !module_failed )
 	{
-		if( current_state == MACROLOCOMOTION )
+		if( current_state == para.fail_in_state  )
 		{
-			if( para.debug.para[0] > 0 && macrolocomotion_count  > (unsigned) para.debug.para[0] )
+			if( failure_delay++ > para.fail_after_delay )
+			{
+				// For testing - send spoof IR message to self
+//                msg_failed_received |= 1<<para.debug.para[0]; // side received on
+//                subog_id = para.debug.para[1];				  // side sent from
+//                parent_side = para.debug.para[0];
+//                heading = (parent_side + 2) % 4;
+//
+//                // Propagate lowering messages
+//                PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+//
+//                last_state = MACROLOCOMOTION;
+//                current_state = LOWERING;
+//                lowering_count = 0;
+//
+//                msg_unlocked_received |= 1<<para.debug.para[0];
+				/////////////////////////////////////////////
+
 				module_failed = true;
+			}
 		}
 	}
 }
@@ -1027,6 +1046,9 @@ void RobotAW::Recruitment()
 
                 //remove branches since it has been sent to newly joined robot
                 erase_required = true;
+
+                // Reset stage variable
+                recruitment_stage[i] = STAGE0;
             }
         }
 
@@ -1242,13 +1264,14 @@ void RobotAW::Lowering()
             //MoveHingeToAngle(hinge_start_pos, hinge_speed );
             SetHingeMotor(DOWN);
     }
-    else if( StartRepair()  )
-    {
-        last_state = LOWERING;
-        lowering_count = 0;
-        seed = false;
-        ResetAssembly();
-    }
+// TODO: remove, no longer needed
+//    else if( StartRepair()  )
+//    {
+//        last_state = LOWERING;
+//        lowering_count = 0;
+//        seed = false;
+//        ResetAssembly();
+//    }
 
     return; // for testing - do not allow to enter disassembly
 
@@ -1496,33 +1519,36 @@ void RobotAW::MacroLocomotion()
         }
     }
 
-    if( module_failed ) //  || (seed && macrolocomotion_count >=300))
-    {
-        // Stop moving
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+    if( msg_lowering_received )
+	{
+		// Stop moving
+		leftspeed = 0;
+		rightspeed = 0;
+		sidespeed = 0;
 
-        // Propagate lowering messages
-        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+		last_state = MACROLOCOMOTION;
+		current_state = LOWERING;
+		lowering_count = 0;
+		seed = false;
+	}
 
-        last_state = MACROLOCOMOTION;
-        current_state = LOWERING;
-        lowering_count = 0;
-        seed = true;
-    }
-    else if( msg_lowering_received )
-    {
-        // Stop moving
-        leftspeed = 0;
-        rightspeed = 0;
-        sidespeed = 0;
+//    // TODO: remove, longer needed
+//    if( module_failed ) //  || (seed && macrolocomotion_count >=300))
+//    {
+//        // Stop moving
+//        leftspeed = 0;
+//        rightspeed = 0;
+//        sidespeed = 0;
+//
+//        // Propagate lowering messages
+//        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+//
+//        last_state = MACROLOCOMOTION;
+//        current_state = LOWERING;
+//        lowering_count = 0;
+//        seed = true;
+//    }
 
-        last_state = MACROLOCOMOTION;
-        current_state = LOWERING;
-        lowering_count = 0;
-        seed = false;
-    }
 }
 
 void RobotAW::Debugging()
