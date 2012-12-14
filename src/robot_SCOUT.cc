@@ -927,7 +927,7 @@ void RobotSCOUT::Recruitment()
             {
                 msg_assembly_info_req_expected |= 1<<i;
                 recruitment_stage[i]=STAGE1;
-                SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDDOCKING, LED1, 0); 
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             else
@@ -946,7 +946,7 @@ void RobotSCOUT::Recruitment()
             if(msg_docking_signal_req_received & (1<<i))
             {
                 msg_docking_signal_req_received &= ~(1<<i);
-                SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDDOCKING, LED1, 0); 
             }
             else if(msg_assembly_info_req_received & (1<<i))
             {
@@ -1652,7 +1652,7 @@ void RobotSCOUT::Debugging()
         case 0: //simulating recruitment, stage 2, 64Hz helper signals
             if(timestamp ==2)
             {
-                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, IRPULSE0|IRPULSE1);
+                SetIRLED(para.debug.para[9], IRLEDPROXIMITY, LED0|LED2, 0);
             }
 
             printf("%d %d %d %d\n",  proximity[4], proximity[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
@@ -1673,7 +1673,7 @@ void RobotSCOUT::Debugging()
             if(timestamp == 2)
             {
               //  SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, 0);
-                SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1);
+                SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, 0);
             }
             printf("%d %d %d %d\n", reflective[4]-para.reflective_calibrated[4], reflective[5] - para.reflective_calibrated[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
             break;
