@@ -100,7 +100,7 @@ void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t speed3)
         rightspeed = 100;
     else if(rightspeed < -100)
         rightspeed = -100;
-    irobot->Move(leftspeed, rightspeed);
+    irobot->Move(para.scout_wheels_direction[0]*leftspeed, para.scout_wheels_direction[1]*rightspeed);
 }
 
 
@@ -209,10 +209,10 @@ void RobotSCOUT::UpdateSensors()
     //5 -- rear right
     //6 -- right rear
     //7 -- right front
-    IRValues ret_A;// = irobot->GetIRValues(ScoutBot::FRONT);
-    IRValues ret_B;// = irobot->GetIRValues(ScoutBot::LEFT);
+    IRValues ret_A = irobot->GetIRValues(ScoutBot::FRONT);
+    IRValues ret_B = irobot->GetIRValues(ScoutBot::LEFT);
     IRValues ret_C = irobot->GetIRValues(ScoutBot::REAR);
-    IRValues ret_D;// = irobot->GetIRValues(ScoutBot::RIGHT);
+    IRValues ret_D = irobot->GetIRValues(ScoutBot::RIGHT);
     ambient[0] = ret_A.sensor[0].ambient;
     ambient[1] = ret_A.sensor[1].ambient;
     reflective[0] = ret_A.sensor[0].reflective;

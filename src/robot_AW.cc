@@ -23,6 +23,8 @@ RobotAW::RobotAW(ActiveWheel *robot):Robot()
     LED0 = 0x1;
     LED1 = 0x4;
     LED2 = 0x2;
+
+    free_move = false;
     printf("Consctruction RobotAW\n");
 }
 
@@ -85,19 +87,29 @@ void RobotAW::SetSpeed(int8_t left, int8_t right, int8_t side)
     int frontleft=0;
     int frontright=0;
     int rear = 0;
-    if(side > 0)
+    //free move
+    if(free_move)
     {
-        frontleft = side;
-        frontright = side;
-        rear = 0;
+        frontleft = left;
+        frontright = right;
+        rear = side;
     }
     else
     {
-        const float adjust_factor=0.85;
-        frontleft = left;
-        frontright = -left;
-        rear = -right * adjust_factor;
-
+        //side move
+        if(side > 0)
+        {
+            frontleft = side;
+            frontright = side;
+            rear = 0;
+        }
+        //approx differential move
+        else
+        {
+            frontleft = left;
+            frontright = -left;
+            rear = -right * para.aw_adjustment_ratio;
+        }
     }
     irobot->MoveWheelsFront(-frontright, frontleft);
     irobot->MoveWheelsRear(rear,0);
@@ -460,6 +472,7 @@ void RobotAW::Assembly()
     //right type of recruitment message recived, then locatebeacon
     else if (assembly_info.type2 == type)
     {
+        free_move = false;
         current_state = LOCATEBEACON;
         last_state = FORAGING;
     }
