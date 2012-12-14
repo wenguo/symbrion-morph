@@ -44,7 +44,6 @@ int main(int argc, char * argv[])
     RobotBase::RobotType robot_type = RobotBase::Initialize("morph");
 
     IRComm::Initialize();
-    Ethernet::Initialize();
 
     //create robot object
     Robot * robot;

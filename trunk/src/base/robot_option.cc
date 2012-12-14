@@ -190,6 +190,13 @@ bool Robot::LoadParameters(const char * filename)
         {
             para.speed_forward = optionfile->ReadInt(entity, "speed_forward", 30);
             para.speed_sideward = optionfile->ReadInt(entity, "speed_sideward", 0);
+            para.aw_adjustment_ratio = optionfile->ReadFloat(entity, "aw_adjustment_ratio",0.9);
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "scout_wheels_direction" ) )
+            {
+                for(int i=0;i<2;i++)
+                    para.scout_wheels_direction[i] =  atoi(optionfile->GetPropertyValue(prop, i));
+            }
+
 
         }
         else if( strcmp( typestr, "Debugging" ) == 0 )
