@@ -507,6 +507,8 @@ void RobotAW::LocateEnergy()//same as RobotKIT
 }
 void RobotAW::LocateBeacon()//same as RobotKIT
 {
+    assembly_info.side2 = FRONT;
+
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
     //any beacon signals
@@ -523,7 +525,7 @@ void RobotAW::LocateBeacon()//same as RobotKIT
         else
         {
             printf("only one beacon detected, shift left and right a little bit\n");
-            int temp = beacon[id1]-beacon[id0];
+            int temp = beacon[id0]-beacon[id1];
 
             speed[0] = 0;
             speed[1] = 0;
@@ -605,6 +607,7 @@ void RobotAW::Alignment()
     int id1 = docking_approaching_sensor_id[1];
 
     int temp = beacon[id0]-beacon[id1];
+    int temp_max = std::max(beacon[id0], beacon[id1]);
     int temp2 = (reflective_hist[id0].Avg())-(reflective_hist[id1].Avg());
 
     static bool docking_region_detected = false;
@@ -612,81 +615,77 @@ void RobotAW::Alignment()
     // Far away from recruiting robot - move sideways or forward
     if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 20 )
     {
-        //std::cout << " FAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1] << " temp: " << temp
-        //					 << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
-        if( abs(temp) > 5 )
+        std::cout << "FAR " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+            << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+        if( abs(temp) > 0.1 * temp_max )
         {
             speed[0] = 0;
             speed[1] = 0;
-            speed[2] = 20 * sign(temp);
+            speed[2] = -20 * sign(temp);
         }
         else
         {
-            speed[0] = 40;
-            speed[1] = 40;
+            speed[0] = direction * 25;
+            speed[1] = direction * 25;
             speed[2] = 0;
         }
     }
-    else if( abs(temp2) < 200 )
+    //getting close to robots, but not too close
+    else if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 )
     {
-        // Very close to the recruiting robot - move sideways or forward
-        if( beacon[id0] < 30 && beacon[id1] < 30 )
-        {
-            //std::cout << " VERY NEAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
-            //					       << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
-
-            // pause every so often
-            if( timestamp % (DOCKING_CHECKING_INTERVAL/2) == 0 )
-            {
-                speed[0] = 0;
-                speed[1] = 0;
-                speed[2] = 0;
-            }
-            else
-            {
-                // -5 to account for the asymmetry caused by the
-                //  docking element casing at close ranges
-                if( abs(temp-5) > 5 )
-                {
-                    speed[0] = 0;
-                    speed[1] = 0;
-                    speed[2] = 15 * sign(temp-5);
-                }
-                else
-                {
-                    speed[0] = 15;
-                    speed[1] = 15;
-                    speed[2] = 0;
-                }
-            }
-
+        if( abs(temp2) > 150)
+        {           
+            std::cout << " Zone 1, adjusting orientantion " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+                << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+            speed[0] = 10 * sign(temp2);
+            speed[1] = -25 * sign(temp2);
+            speed[2] = 0;//15 * sign(temp2);
         }
-        // Quite close to the recruiting robot - turn left or right
         else
         {
-            //std::cout << " NEAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
-            //    		        						       << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
-            if( abs(temp2) > 20 )
+            if( abs(temp) > 0.2 * temp_max )
             {
-                speed[0] = -15 * sign(temp2);
-                speed[1] = 15 * sign(temp2);
-                speed[2] = 0;
+                std::cout << " Zone 1, adjusting pose " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+                    << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+                speed[0] = 0;
+                speed[1] = 0;
+                speed[2] = -15 * sign(temp);
             }
             else
             {
-                speed[0] = 20;
-                speed[1] = 20;
+                speed[0] = direction * 20;
+                speed[1] = direction * 20;
                 speed[2] = 0;
             }
         }
+       
     }
+    //blocked or very close to another robots
     else
     {
-        speed[0] = -30 -15 * sign(temp2);
-        speed[1] = -30 + 15 * sign(temp2);
-        speed[2] = 0;//15 * sign(temp2);
+        std::cout << " Blocked or very close " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+            << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+        speed[0]=0;
+        speed[1]=0;
+        speed[2]=0;
+
+        {
+            SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, 0);
+            docking_region_detected = false;
+            in_docking_region_hist.Reset();
+            docking_count = 0;
+            docking_failed_reverse_count = 0;
+
+            docking_trials++;
+
+            current_state = DOCKING;
+            last_state = ALIGNMENT;
+
+            SetRGBLED(0,0,0,0,0);
+        }
     }
 
+    /*
     //check if it is aligned well and also closed enough for docking
     int input[4] = {reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]};
     in_docking_region_hist.Push(in_docking_region(input));
@@ -722,8 +721,9 @@ void RobotAW::Alignment()
 
         }
     }
+    */
 
-    printf("Alignment %d %d %d\n", speed[0], speed[1], speed[2]);
+    printf("\t\tAlignment %d %d %d\n", speed[0], speed[1], speed[2]);
 }
 void RobotAW::Recover()
 {
@@ -760,6 +760,51 @@ void RobotAW::Docking()
 
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
+
+    if(ethernet_status_hist.Sum(assembly_info.side2) > 8) 
+    {
+        speed[0] = 0;
+        speed[1]= 0;  
+        speed[2] = 0;
+        SetRGBLED(assembly_info.side2, WHITE, WHITE, WHITE, WHITE);
+        SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, 0);
+        irobot->SetIRRX(ActiveWheel::Side(board_dev_num[assembly_info.side2]), false);
+
+        Robot::SendIRMessage(assembly_info.side2, IR_MSG_TYPE_LOCKME,  para.ir_msg_repeated_num);
+        msg_locked_expected |= 1<<assembly_info.side2;
+
+        current_state = LOCKING;
+        last_state = DOCKING;
+        return;
+    }
+
+    if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5 )
+    {
+        if(timestamp % 10 ==0)
+        {
+            BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME, 0);
+        }
+    }
+    else
+    {
+        docking_count++;
+        if(docking_count > 30 && robots_in_range_detected_hist.Sum(id0) < 12 && robots_in_range_detected_hist.Sum(id1) < 12) //10 out of 16
+        {
+            docking_failed = true;
+        }
+
+        if(docking_failed)
+        {
+            printf("Not implemented yet\n");
+        }
+        else
+        {
+            printf("\ntry to move to dock Not implemented yet\n");
+        }
+
+    }
+
+    return;
 
     printf("Docking speed: %d %d %d\n", speed[0], speed[1], speed[2]);
     docking_count++;
@@ -908,6 +953,11 @@ void RobotAW::Docking()
         default:
             break;
     }
+
+
+    speed[0]=0;
+    speed[1]=0;
+    speed[2]=0;
 }
 
 void RobotAW::Locking()
