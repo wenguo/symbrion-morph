@@ -97,7 +97,7 @@ void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
         rightspeed = 100;
     else if(rightspeed < -100)
         rightspeed = -100;
-    Move(leftspeed, -rightspeed); // LM: this way works for my robots?
+    Move(leftspeed, -rightspeed); // LM: this way works for my robots.
 }
 
 
@@ -271,22 +271,22 @@ void RobotSCOUT::UpdateFailures()
         	if( failure_delay++ > para.fail_after_delay )
         	{
         		// For testing - send spoof IR message to self
-                msg_failed_received |= 1<<para.debug.para[0]; // side received on
-                subog_id = para.debug.para[1];				  // side sent from
-                parent_side = para.debug.para[0];
-                heading = (parent_side + 2) % 4;
-
-                // Propagate lowering messages
-                PropagateIRMessage(IR_MSG_TYPE_LOWERING);
-
-                last_state = MACROLOCOMOTION;
-                current_state = LOWERING;
-                lowering_count = 0;
-
-                msg_unlocked_received |= 1<<para.debug.para[0];
+//                msg_failed_received |= 1<<para.debug.para[0]; // side received on
+//                subog_id = para.debug.para[1];				  // side sent from
+//                parent_side = para.debug.para[0];
+//                heading = (parent_side + 2) % 4;
+//
+//                // Propagate lowering messages
+//                PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+//
+//                last_state = MACROLOCOMOTION;
+//                current_state = LOWERING;
+//                lowering_count = 0;
+//
+//                msg_unlocked_received |= 1<<para.debug.para[0];
                 /////////////////////////////////////////////
 
-//                module_failed = true;
+                module_failed = true;
         	}
         }
     }
@@ -1289,6 +1289,7 @@ void RobotSCOUT::Lowering()
 {
     lowering_count++;
 
+// TODO: remove, no longer needed
 //    if( lowering_count <= 30 )
 //    {
 //
@@ -1555,6 +1556,7 @@ void RobotSCOUT::MacroLocomotion()
 		seed = false;
 	}
 
+// TODO: remove, longer needed
 //    if( module_failed ) //|| (seed && macrolocomotion_count >= 300 ))
 //    {
 //        // Stop moving
