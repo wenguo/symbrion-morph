@@ -97,7 +97,7 @@ void RobotAW::SetSpeed(int8_t left, int8_t right, int8_t side)
     else
     {
         //side move
-        if(side > 0)
+        if(side != 0)
         {
             frontleft = side;
             frontright = side;
@@ -473,6 +473,19 @@ void RobotAW::Assembly()
     else if (assembly_info.type2 == type)
     {
         free_move = false;
+        if(assembly_info.side2 == FRONT)
+        {
+            docking_approaching_sensor_id[0] = 0;
+            docking_approaching_sensor_id[1] = 1;
+            direction = FORWARD;
+        }
+        else
+        {
+            docking_approaching_sensor_id[0] = 4;
+            docking_approaching_sensor_id[1] = 5;
+            direction = BACKWARD;
+        }
+
         current_state = LOCATEBEACON;
         last_state = FORAGING;
     }
@@ -494,13 +507,13 @@ void RobotAW::LocateEnergy()//same as RobotKIT
 }
 void RobotAW::LocateBeacon()//same as RobotKIT
 {
-    direction = FORWARD;
-
+    int id0 = docking_approaching_sensor_id[0];
+    int id1 = docking_approaching_sensor_id[1];
     //any beacon signals
-    if(beacon[1]> 3 || beacon[0]>3)
+    if(beacon[id0]> 3 || beacon[id1]>3)
     {
         //too beacon signals 
-        if(beacon[0]>5 && beacon[1]>5)
+        if(beacon[id0]>5 && beacon[id1]>5)
         {
             //stay there and wait to transfer to state Alignment
             speed[0] = 0;
@@ -510,11 +523,11 @@ void RobotAW::LocateBeacon()//same as RobotKIT
         else
         {
             printf("only one beacon detected, shift left and right a little bit\n");
-            int temp = beacon[1]-beacon[0];
+            int temp = beacon[id1]-beacon[id0];
 
             speed[0] = 0;
             speed[1] = 0;
-            speed[2] = 0;
+            speed[2] = -15 * sign(temp);
         }
     }
     else
@@ -557,7 +570,7 @@ void RobotAW::LocateBeacon()//same as RobotKIT
             case 5:
                 {
                     //check if received docking signals
-                    if(beacon_signals_detected_hist.Sum(0) >= 5 && beacon_signals_detected_hist.Sum(1) >= 5)  //TODO:only FRONT side at the moment, should changes according to message received
+                    if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)  //TODO:only FRONT side at the moment, should changes according to message received
                     {
                         current_state = ALIGNMENT;
                         last_state = LOCATEBEACON;
@@ -587,13 +600,17 @@ void RobotAW::LocateBeacon()//same as RobotKIT
 #define MOVE_RIGHT 11
 void RobotAW::Alignment()
 {
-    int temp = beacon[0]-beacon[1];
-    int temp2 = (reflective_hist[0].Avg())-(reflective_hist[1].Avg());
+
+    int id0 = docking_approaching_sensor_id[0];
+    int id1 = docking_approaching_sensor_id[1];
+
+    int temp = beacon[id0]-beacon[id1];
+    int temp2 = (reflective_hist[id0].Avg())-(reflective_hist[id1].Avg());
 
     static bool docking_region_detected = false;
 
     // Far away from recruiting robot - move sideways or forward
-    if( std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) < 20 )
+    if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 20 )
     {
         //std::cout << " FAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1] << " temp: " << temp
         //					 << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
@@ -613,7 +630,7 @@ void RobotAW::Alignment()
     else if( abs(temp2) < 200 )
     {
         // Very close to the recruiting robot - move sideways or forward
-        if( beacon[0] < 30 && beacon[1] < 30 )
+        if( beacon[id0] < 30 && beacon[id1] < 30 )
         {
             //std::cout << " VERY NEAR " << " beacon[0]: " << beacon[0] << " beacon[1]: " << beacon[1]
             //					       << " reflective_hist[0].Avg(): " << reflective_hist[0].Avg() << " reflective_hist[1].Avg(): " << reflective_hist[1].Avg() << std::endl;
@@ -671,7 +688,7 @@ void RobotAW::Alignment()
     }
 
     //check if it is aligned well and also closed enough for docking
-    int input[4] = {reflective_hist[0].Avg(), reflective_hist[1].Avg(), beacon[0], beacon[1]};
+    int input[4] = {reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]};
     in_docking_region_hist.Push(in_docking_region(input));
 
     if(in_docking_region_hist.Sum() >= 3) // at least 7 successful prediction out of 8  in docking region
@@ -689,7 +706,7 @@ void RobotAW::Alignment()
         speed[0] = 0;
         speed[1] = 0;
         speed[2] = 0;
-        if(robots_in_range_detected_hist.Sum(0) > 5 && robots_in_range_detected_hist.Sum(1) > 5 )
+        if(robots_in_range_detected_hist.Sum(id0) > 5 && robots_in_range_detected_hist.Sum(id1) > 5 )
         {
             docking_region_detected = false;
             in_docking_region_hist.Reset();
@@ -741,10 +758,13 @@ void RobotAW::Recover()
 void RobotAW::Docking()
 {
 
+    int id0 = docking_approaching_sensor_id[0];
+    int id1 = docking_approaching_sensor_id[1];
+
     printf("Docking speed: %d %d %d\n", speed[0], speed[1], speed[2]);
     docking_count++;
     //no guiding signals (proximity) detected, go back to alignment
-    if(docking_count > 30 && robots_in_range_detected_hist.Sum(0) < 12 && robots_in_range_detected_hist.Sum(1) < 12) //10 out of 16
+    if(docking_count > 30 && robots_in_range_detected_hist.Sum(id0) < 12 && robots_in_range_detected_hist.Sum(id1) < 12) //10 out of 16
     {
         docking_failed = true;
     }
@@ -763,7 +783,7 @@ void RobotAW::Docking()
                 if(timestamp % 5 ==0)
                     Robot::BroadcastIRMessage(0, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
 
-                if(beacon_signals_detected_hist.Sum(0) > 5 && beacon_signals_detected_hist.Sum(1)>5)
+                if(beacon_signals_detected_hist.Sum(id0) > 5 && beacon_signals_detected_hist.Sum(id1)>5)
                 {
                     current_state = ALIGNMENT;
                     last_state = DOCKING;
@@ -798,11 +818,11 @@ void RobotAW::Docking()
     //else if(proximity[0]<20 && proximity[1]< 20)
     //     SetRGBLED(0, WHITE, WHITE, WHITE, WHITE);
 
-    int input[4]={proximity[0], proximity[1], reflective_hist[0].Avg(), reflective_hist[1].Avg()};
+    int input[4]={proximity[id0], proximity[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg()};
     in_locking_region_hist.Push(in_locking_region(input));
 
-    int temp_reflective = reflective_hist[1].Avg() - reflective_hist[0].Avg();
-    int temp_proximity = proximity[1] - proximity[0];
+    int temp_reflective = reflective_hist[id1].Avg() - reflective_hist[id0].Avg();
+    int temp_proximity = proximity[id1] - proximity[id0];
     static  int status = 0;
 
 
@@ -820,9 +840,9 @@ void RobotAW::Docking()
         if(abs(temp_reflective) > 1200 ) //|| abs(temp_proximity)> 450 ) // && std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 600 ))
             status = MOVE_BACKWARD;
         //else if(temp_proximity > 220 || temp_reflective > 500)
-        else if(std::max(proximity[0], proximity[1]) > 500 && temp_reflective > 500) // was 300
+        else if(std::max(proximity[id0], proximity[id1]) > 500 && temp_reflective > 500) // was 300
             status = TURN_LEFT;
-        else if(std::max(proximity[0], proximity[1]) > 500 && temp_reflective < -500) // was 300
+        else if(std::max(proximity[id0], proximity[id1]) > 500 && temp_reflective < -500) // was 300
             status = TURN_RIGHT;
         else
             status = MOVE_FORWARD;
