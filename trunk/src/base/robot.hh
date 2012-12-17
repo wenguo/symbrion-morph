@@ -252,7 +252,7 @@ class Robot
     //led1, bits 3, 4, 5
     //led2, bits 6, 7, 8
     //IR_Pulse0, bits 9
-    //IR_Pulse§, bits 10
+    //IR_Pulse1, bits 10
     uint32_t RGBLED_status[NUM_DOCKS];
     uint8_t docking_motors_status[NUM_DOCKS]; //each two bits, 0b00 -- open, 0b01 -- opening, 0b10 -- closed, 0b11 -- closing
     uint8_t hinge_motor_status;

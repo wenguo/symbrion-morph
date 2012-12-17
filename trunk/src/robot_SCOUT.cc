@@ -986,6 +986,7 @@ void RobotSCOUT::Recruitment()
                 recruitment_stage[i]=STAGE3;
                 guiding_signals_count[i] = 0;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                SetRGBLED(i, 0,0,0,0);
                 irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), false);
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
