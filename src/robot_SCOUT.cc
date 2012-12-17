@@ -47,7 +47,7 @@ void RobotSCOUT::InitHardware()
     EnableMotors(true);
 
     IRComm::Initialize();
-    Ethernet::Initialize();
+//    Ethernet::Initialize();
  //   Ethernet::disableSwitch();
 }
 
@@ -97,7 +97,7 @@ void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)
         rightspeed = 100;
     else if(rightspeed < -100)
         rightspeed = -100;
-    Move(leftspeed, -rightspeed); // LM: this way works for my robots.
+    Move(leftspeed, -rightspeed);
 }
 
 
@@ -1343,16 +1343,15 @@ void RobotSCOUT::Raising()
     leftspeed = 0;
     rightspeed = 0;
     sidespeed = 0;
-    static bool flag=false;
 
     //temp solution, force SCOUT20 as the coordinator
-    if(para.debug.para[9]==3)
+//    if(para.debug.para[9]==3)
+//
+////    if((ambient_hist[2].Avg() > 1000 && ambient_hist[3].Avg() > 1000)
+////     ||(ambient_hist[6].Avg() > 1000 && ambient_hist[7].Avg() > 1000))
+//        flag = true;
 
-//    if((ambient_hist[2].Avg() > 1000 && ambient_hist[3].Avg() > 1000)
-//     ||(ambient_hist[6].Avg() > 1000 && ambient_hist[7].Avg() > 1000))
-        flag = true;
-
-    if(flag)
+    if(seed)
     {
         raising_count++;
 
@@ -1360,7 +1359,9 @@ void RobotSCOUT::Raising()
         {
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-            PropagateIRMessage(IR_MSG_TYPE_RAISING);
+//            PropagateIRMessage(IR_MSG_TYPE_RAISING);
+            PropagateEthMessage(ETH_MSG_TYPE_RAISING);
+
         }
     }
     else if(msg_raising_received)

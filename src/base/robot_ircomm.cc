@@ -268,9 +268,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         subog_str[subog_str[0]] |= type<<4;     // 4:5
                         subog_str[subog_str[0]] |= channel<<6;  // 5:6
 
-            			int ind = (int)((uint8_t*)data)[0]+1;	 // get heading index
-            			heading = (int)((uint8_t*)data)[ind];	 // get heading
-            			printf("%d My heading is: %d\n",timestamp,heading);
+            			int ind = (int)(((uint8_t*)data)[2])+3;	 // get heading index
+            			heading = ((uint8_t*)data)[ind];	 	// get heading
+            			printf("%d My heading is: %d @ %d\n",timestamp,(int)heading,ind);
                     }
 
                     printf("%d Sub-organism string received\n",timestamp);
