@@ -419,7 +419,7 @@ uint8_t Robot::getNeighbourHeading( int8_t n )
 	if( d < 0 ) d += 4;			 	// handle negative result
 	int8_t h = (sym.side2+d) % 4;	// calculate heading
 
-//	std::cout << timestamp << " neighbour heading: " << (int) h << std::endl;
+	//std::cout << timestamp << " neighbour heading: " << (int) h << std::endl;
 
 	return (uint8_t) h;
 

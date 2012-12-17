@@ -98,9 +98,9 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
 						subog_str[subog_str[0]] |= type<<4;     // 4:5
 						subog_str[subog_str[0]] |= channel<<6;  // 5:6
 
-						int ind = (int)((uint8_t*)data)[1]+1;	 // get heading index
-						heading = (int)((uint8_t*)data)[ind];	 // get heading
-						printf("%d: My heading is: %d\n",timestamp,heading);
+						int ind = (int)(((uint8_t*)data)[1])+2;	 // get heading index
+						heading = ((uint8_t*)data)[ind];	 // get heading
+						printf("%d: My heading is: %d @ %d\n",timestamp,(int)heading,ind);
 					}
 
 					printf("%d Sub-organism string received\n",timestamp);
@@ -145,6 +145,12 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
 						CPrintf1(SCR_RED,"%d -- stopping !", timestamp);
 					}
 					break;
+            	case ETH_MSG_TYPE_RAISING:
+            		{
+                        msg_raising_received |= 1<<channel;
+                        CPrintf1(SCR_GREEN,"%d -- start to raise !", timestamp);
+            		}
+            		break;
             	default:
             		valid = false;
             		CPrintf1(SCR_GREEN, "%d -- received unknown ETH message", timestamp);
