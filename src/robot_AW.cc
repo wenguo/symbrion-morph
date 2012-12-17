@@ -395,6 +395,8 @@ void RobotAW::Seeding() //the same as in RobotKIT
 void RobotAW::Foraging() //the same as RobotKIT
 {
     //time up?
+    //
+    /*
     if(foraging_count--<=0)
     {
         foraging_count = DEFAULT_FORAGING_COUNT;
@@ -414,6 +416,7 @@ void RobotAW::Foraging() //the same as RobotKIT
         speed[2] = 0;
     }
     else
+        */
     {
         Avoidance();
 
@@ -422,6 +425,16 @@ void RobotAW::Foraging() //the same as RobotKIT
             current_state = LOCATEENERGY;
             last_state = FORAGING;
         }
+
+        if(organism_found)
+        {
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+
+            current_state = ASSEMBLY;
+            last_state = FORAGING;
+        }
+
     }
 }
 void RobotAW::Waiting()//same as RobotKIT
@@ -509,15 +522,43 @@ void RobotAW::LocateBeacon()
 {
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
-    //any beacon signals
-    if(beacon[id0]> 3 || beacon[id1]>3)
+
+
+    speed[0] = direction * 10;
+    speed[1] = direction * 10;
+    speed[2] = 0;
+
+    const int locatebeacon_weight_left[NUM_IRS] = {0, 0, 0, 0, -1, 1, 0, 0};
+    const int locatebeacon_weight_right[NUM_IRS] = {0, 0, 0,0, 1, -1, 0, 0};
+
+
+    bool turning = true;
+    int temp_front = std::min(beacon[0], beacon[1]);
+    int temp_rear = std::min(beacon[4], beacon[5]);
+    if(id0==0)
     {
-        //two beacon signals 
+        if(temp_front >= temp_rear && temp_front >=5)
+            turning = false;
+    }
+    else
+    {
+        if(temp_front <= temp_rear && temp_rear >=5)
+            turning = false;
+    }
+
+    if(turning)
+    {
+        speed[0] = 20;
+        speed[1] = -20;
+    }
+    else
+    {
+            //two beacon signals 
         if(beacon[id0]>5 && beacon[id1]>5)
         {
             //stay there and wait to transfer to state Alignment
-            speed[0] = 0;
-            speed[1] = 0;
+            speed[0] = direction * 15;
+            speed[1] = direction * 15;
             speed[2] = 0;
         }
         else
@@ -529,19 +570,18 @@ void RobotAW::LocateBeacon()
             speed[1] = 0;
             speed[2] = -15 * sign(temp) * direction;
         }
+
     }
-    else
+
+
+    printf("beacon: ");
+    for(int i=0;i< NUM_IRS;i++)
     {
-            //speed[0] = 15;
-            //speed[1] = 15;
-
-//            if((timestamp/10)%2 ==0)
-//                speed[2] = 10;
-//            else
-//                speed[2] = -10;
-
+        printf("%d\t", beacon[i]);
     }
 
+    printf("\n\tSpeed: %d %d\n", speed[0], speed[1]);
+  
     //      printf("beacon: (%d %d) -- speed: (%d %d %d)\n", beacon[1], beacon[0], speed[0], speed[1], speed[2]);
     //switch on ir led at 64Hz so the recruitment robot can sensing it
     //and turn on its docking signals, the robot need to switch off ir 
@@ -633,8 +673,8 @@ void RobotAW::Alignment()
     {
         if( abs(temp2) > 150)
         {           
-            std::cout << " Zone 1, adjusting orientantion " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-                << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+      //      std::cout << " Zone 1, adjusting orientantion " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+      //          << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
             speed[0] = 10 * sign(temp2); //No need to taken direction in to accout here, worked on robot.02
             speed[1] = -25 * sign(temp2);
             speed[2] = 0;
@@ -643,8 +683,8 @@ void RobotAW::Alignment()
         {
             if( abs(temp) > 0.2 * temp_max )
             {
-                std::cout << " Zone 1, adjusting pose " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-                    << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+      //          std::cout << " Zone 1, adjusting pose " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+      //              << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
                 speed[0] = 0;
                 speed[1] = 0;
                 speed[2] = -15 * sign(temp) * direction;
@@ -658,11 +698,11 @@ void RobotAW::Alignment()
         }
        
     }
-    //blocked or very close to another robots
+    // very close to another robots
     else
     {
-        std::cout << " Blocked or very close " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-            << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+ //       std::cout << " Blocked or very close " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+//            << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
         speed[0]=0;
         speed[1]=0;
         speed[2]=0;
@@ -683,9 +723,8 @@ void RobotAW::Alignment()
             SetRGBLED(0,0,0,0,0);
         }
     }
-
-    printf("\t\tAlignment %d %d %d\n", speed[0], speed[1], speed[2]);
 }
+
 void RobotAW::Recover()
 {
     recover_count--;
@@ -865,7 +904,7 @@ void RobotAW::Docking()
         {
             if(timestamp % 5 ==0)
                 BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME, 0);
-            std::cout<<"assembly_info: "<<assembly_info<<"\tdirection: "<<direction<<std::endl;
+
             synchronised = false;
         }
         else
@@ -898,7 +937,7 @@ void RobotAW::Docking()
         }
         else
         {
-            if(docking_count >= 70)
+            if(docking_count >= 80)
             {
                 printf("docking_count %d reaches threshold\n", docking_count);
                 docking_blocked = true;
@@ -927,9 +966,8 @@ void RobotAW::Docking()
                 }
                 else if(timestamp % DOCKING_CHECKING_INTERVAL == 5 )
                 {
-                    if(abs(reflective_diff) > 1200 ) //|| abs(temp_proximity)> 450 ) // && std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 600 ))
+                    if(abs(reflective_diff) > 1200 ) 
                         status = MOVE_BACKWARD;
-                    //else if(temp_proximity > 220 || temp_reflective > 500)
                     else if(std::max(proximity[id0], proximity[id1]) > 500 && proximity_diff > 100) // was 300
                         status = TURN_LEFT;
                     else if(std::max(proximity[id0], proximity[id1]) > 500 && proximity_diff < -100) // was 300
