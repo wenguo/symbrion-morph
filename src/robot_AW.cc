@@ -766,8 +766,26 @@ void RobotAW::Recover()
                 }
                 else
                 {
-                    current_state = ALIGNMENT;
-                    last_state = RECOVER;
+                    int id0 = docking_approaching_sensor_id[0];
+                    int id1 = docking_approaching_sensor_id[1];
+
+                    if(docking_trials >= para.docking_trials)
+                    {
+                        ResetAssembly();
+                        current_state = FORAGING;
+                        last_state = RECOVER;
+                    }
+                    else if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)
+                    {
+
+                        current_state = ALIGNMENT;
+                        last_state = RECOVER;
+                    }
+                    else
+                    {
+                        if(timestamp % 5 ==0)
+                            Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
+                    }
                 }
             }
         }
@@ -896,7 +914,12 @@ void RobotAW::Docking()
         }
         else
         {
-            if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5)
+            if(docking_count >= 70)
+            {
+                printf("docking_count %d reaches threshold\n", docking_count);
+                docking_blocked = true;
+            }
+            else if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5)
             {
                 printf("No proximity signals detected\n");
                 docking_blocked = true;
@@ -923,9 +946,9 @@ void RobotAW::Docking()
                     if(abs(reflective_diff) > 1200 ) //|| abs(temp_proximity)> 450 ) // && std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 600 ))
                         status = MOVE_BACKWARD;
                     //else if(temp_proximity > 220 || temp_reflective > 500)
-                    else if(std::max(proximity[id0], proximity[id1]) > 500 && proximity_diff > 200) // was 300
+                    else if(std::max(proximity[id0], proximity[id1]) > 500 && proximity_diff > 100) // was 300
                         status = TURN_LEFT;
-                    else if(std::max(proximity[id0], proximity[id1]) > 500 && proximity_diff < -200) // was 300
+                    else if(std::max(proximity[id0], proximity[id1]) > 500 && proximity_diff < -100) // was 300
                         status = TURN_RIGHT;
                     else
                         status = MOVE_FORWARD;

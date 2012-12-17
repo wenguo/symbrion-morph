@@ -819,7 +819,7 @@ void RobotSCOUT::Recover()
                 }
             }
         }
-        else if(recover_count ==0)
+        else if(recover_count <=0)
         {
             SetRGBLED(1, 0, 0, 0, 0);
             SetRGBLED(3, 0, 0, 0, 0);
@@ -831,16 +831,25 @@ void RobotSCOUT::Recover()
             }
             else
             {
+                int id0 = docking_approaching_sensor_id[0];
+                int id1 = docking_approaching_sensor_id[1];
+                
                 if(docking_trials >= para.docking_trials)
                 {
                     ResetAssembly();
                     current_state = FORAGING;
                     last_state = RECOVER;
                 }
-                else
+                else if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)
                 {
+
                     current_state = ALIGNMENT;
                     last_state = RECOVER;
+                }
+                else
+                {
+                    if(timestamp % 5 ==0)
+                        Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
                 }
             }
 
@@ -980,6 +989,9 @@ void RobotSCOUT::Recruitment()
             {
                 if(it1->getSymbol(0).type2 == ROBOT_SCOUT)
                     msg_locked_expected |= 1<<i;
+                else if(it1->getSymbol(0).type2 == ROBOT_AW)
+                    msg_lockme_expected |= 1<<i;
+                msg_guideme_received &= ~(1<<i);
                 msg_guideme_received &= ~(1<<i);
                 guiding_signals_count[i]=0;
                 recruitment_stage[i]=STAGE2;
@@ -1005,6 +1017,21 @@ void RobotSCOUT::Recruitment()
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
 
+            if(msg_assembly_info_req_received & (1<<i))
+            {
+                if(it1->getSymbol(0).type2 != ROBOT_AW)
+                    msg_locked_expected |= 1<<i;
+                else
+                    msg_lockme_expected |= 1<<i;
+                SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
+                //wait for ack
+                if(!MessageWaitingAck(i, IR_MSG_TYPE_ASSEMBLY_INFO))
+                {
+                    msg_assembly_info_req_received &= ~(1<<i);
+                }
+            }
+
+
             //received docking_signals req, back to stage 1
             if((msg_docking_signal_req_received & (1<<i)))
             {
@@ -1013,7 +1040,7 @@ void RobotSCOUT::Recruitment()
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDOFF, 0, 0);
                 irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), true);
-                printf("%d -- Recruitment: channel %d  waits too long, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  recieved docking signals request, switch back to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             //nothing happens, assumed wrong robots docked, back to stage 0
             else if(guiding_signals_count[i] >= (uint32_t)para.recruiting_guiding_signals_time)
