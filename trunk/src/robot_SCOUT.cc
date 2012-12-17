@@ -672,7 +672,6 @@ void RobotSCOUT::Alignment()
                 docking_blocked = false;
                 blocking_count=0;
 
-                docking_trials++;
 
                 current_state = DOCKING;
                 last_state = ALIGNMENT;
@@ -711,7 +710,7 @@ void RobotSCOUT::Alignment()
             blocking_count++;
 
         //3 second is allowed until fully docked, otherwise, treated as blocked.
-        if((reflective_diff > 300 && reflective_diff > reflective_max * 0.5) ||blocking_count > 30)
+        if((reflective_diff > 300 && reflective_diff > reflective_max * 0.5) || blocking_count > 30)
             //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
             docking_blocked = true;
 
@@ -721,6 +720,9 @@ void RobotSCOUT::Alignment()
             blocking_count=0;
             speed[0] = 0;
             speed[1] = 0;
+
+            docking_trials++;
+
             current_state = RECOVER;
             last_state = ALIGNMENT;
             recover_count = para.aligning_reverse_count;
@@ -804,6 +806,9 @@ void RobotSCOUT::Recover()
                     speed[1] = -para.aligning_reverse_speed[1];
                 }
 
+                if(timestamp % 5 ==0)
+                    Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
+
                 //TODO: test reverse behaviour with new robots
                 const int weight_left[8] = {-3,3, 0,0,0,0,0,0};
                 const int weight_right[8] = {3,-3,0,0,0,0,0,0};
@@ -826,8 +831,17 @@ void RobotSCOUT::Recover()
             }
             else
             {
-                current_state = ALIGNMENT;
-                last_state = RECOVER;
+                if(docking_trials >= para.docking_trials)
+                {
+                    ResetAssembly();
+                    current_state = FORAGING;
+                    last_state = RECOVER;
+                }
+                else
+                {
+                    current_state = ALIGNMENT;
+                    last_state = RECOVER;
+                }
             }
 
         }

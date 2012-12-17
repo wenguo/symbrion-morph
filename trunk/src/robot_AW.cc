@@ -676,7 +676,8 @@ void RobotAW::Alignment()
             docking_count = 0;
             docking_failed_reverse_count = 0;
 
-            docking_trials++;
+
+            docking_blocked = false;
 
             current_state = DOCKING;
             last_state = ALIGNMENT;
@@ -689,33 +690,89 @@ void RobotAW::Alignment()
 }
 void RobotAW::Recover()
 {
-    SetRGBLED(1, RED, RED, RED, RED);
-    SetRGBLED(3, RED, RED, RED, RED);
+    recover_count--;
 
-    //  if(reflective_hist[1].Avg() > AVOIDANCE_THRESHOLD || reflective_hist[0].Avg()>AVOIDANCE_THRESHOLD)
-    //      direction = BACKWARD;
-    //  else if(reflective_hist[4].Avg() > AVOIDANCE_THRESHOLD || reflective_hist[5].Avg()>AVOIDANCE_THRESHOLD)
-    //      direction = FORWARD;
-
-
-    speed[0] = -30;
-    speed[1] = -30;
-    if((timestamp/2)%2==0)
-        speed[2] = 10;
-    else
-        speed[2] = -10;
-
-    if(beacon_signals_detected & 0x3)
+    //flasing RGB LEDs
+    if(timestamp % 4 ==0)
     {
-        SetRGBLED(1, 0,0,0,0);
-        SetRGBLED(3, 0,0,0,0);
-        direction = FORWARD;
-        current_state = ALIGNMENT;
-        last_state = RECOVER;
+        SetRGBLED(1, RED, RED, RED, RED);
+        SetRGBLED(2, RED, RED, RED, RED);
+        SetRGBLED(3, RED, RED, RED, RED);
     }
+    else
+    {
+        SetRGBLED(1, 0, 0, 0, 0);
+        SetRGBLED(2, 0, 0, 0, 0);
+        SetRGBLED(3, 0, 0, 0, 0);
+    }
+
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
+
+    if(last_state == ALIGNMENT)
+    {
+        //turn left/right according to reflective value;
+        //robot will stop there for 1 seconds
+        if(recover_count >=10)
+        {
+            //docked to the wrong robots
+            if(assembly_info == OrganismSequence::Symbol(0))
+            {
+                //just reverse
+                if(reflective_hist[0].Avg() + reflective_hist[1].Avg() >
+                reflective_hist[3].Avg() + reflective_hist[4].Avg() )
+                {
+                    speed[0] = para.aligning_reverse_speed[0];
+                    speed[1] = para.aligning_reverse_speed[1];
+                    speed[2] = 0;
+                }
+                else
+                {
+                    speed[0] = -para.aligning_reverse_speed[0];
+                    speed[1] = -para.aligning_reverse_speed[1];
+                    speed[2] = 0;
+                }
+
+            }
+            //failed
+            else
+            {
+                if(timestamp % 5 ==0)
+                    Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
+
+                speed[0] = direction * para.aligning_reverse_speed[0];
+                speed[1] = direction * para.aligning_reverse_speed[1];
+                speed[2] = 0;
+            }
+        }
+        else if(recover_count ==0)
+        {
+            SetRGBLED(1, 0, 0, 0, 0);
+            SetRGBLED(3, 0, 0, 0, 0);
+            if(assembly_info == OrganismSequence::Symbol(0))
+            {
+                ResetAssembly();
+                current_state = FORAGING;
+                last_state = RECOVER;
+            }
+            else
+            {
+                if(docking_trials >= para.docking_trials)
+                {
+                    ResetAssembly();
+                    current_state = FORAGING;
+                    last_state = RECOVER;
+                }
+                else
+                {
+                    current_state = ALIGNMENT;
+                    last_state = RECOVER;
+                }
+            }
+        }
+    }
+
 }
 
 const char *docking_status_name[] ={"turn left", "turn right", "move forward", "move backward", "check" };
@@ -725,30 +782,77 @@ void RobotAW::Docking()
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
 
+    //TODO, remove this two static variables as they may cause problems
     static bool synchronised = false;
+    static  int status = 0;
     docking_count++;
 
     //docking done
-    if(ethernet_status_hist.Sum(assembly_info.side2) > 8) 
+    if(docking_region_detected)
+    {
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
+
+        //request for assembly_info
+        if(msg_assembly_info_expected && timestamp % 10 ==0)
+            Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_ASSEMBLY_INFO_REQ, 0);
+
+        if(msg_assembly_info_received)
+        {
+            msg_assembly_info_received = 0;
+            msg_assembly_info_expected = 0;
+
+            if(assembly_info == OrganismSequence::Symbol(0))
+            {
+                speed[0] = 0;
+                speed[1] = 0;
+                for(int i=0; i<NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+                current_state = RECOVER;
+                last_state = ALIGNMENT;
+                recover_count = para.aligning_reverse_count;
+            }
+            else
+            {
+                docking_region_detected =false;
+                docking_count = 0;
+                docking_failed_reverse_count = 0;
+
+                docking_blocked = false;
+                blocking_count=0;
+
+
+                SetRGBLED(assembly_info.side2, WHITE, WHITE, WHITE, WHITE);
+                SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, 0);
+                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[assembly_info.side2]), false);
+
+                Robot::SendIRMessage(assembly_info.side2, IR_MSG_TYPE_LOCKME,  para.ir_msg_repeated_num);
+                msg_locked_expected |= 1<<assembly_info.side2;
+
+                synchronised = false;
+                current_state = LOCKING;
+                last_state = DOCKING;
+
+                SetRGBLED(assembly_info.side2, 0,0,0,0);
+            }
+        }
+    }
+    else if(ethernet_status_hist.Sum(assembly_info.side2) > 8) 
     {
         speed[0] = 0;
         speed[1]= 0;  
         speed[2] = 0;
-        SetRGBLED(assembly_info.side2, WHITE, WHITE, WHITE, WHITE);
+
+        docking_region_detected = true;
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, 0);
-        irobot->SetIRRX(ActiveWheel::Side(board_dev_num[assembly_info.side2]), false);
+        SetRGBLED(assembly_info.side2, WHITE,WHITE,WHITE,WHITE);
 
-        Robot::SendIRMessage(assembly_info.side2, IR_MSG_TYPE_LOCKME,  para.ir_msg_repeated_num);
-        msg_locked_expected |= 1<<assembly_info.side2;
+        msg_assembly_info_expected |= 1 << assembly_info.side2;
 
-        synchronised = false;
-        current_state = LOCKING;
-        last_state = DOCKING;
-        return;
     }
-
     //request for guiding signals for a while,
-    if(docking_count < 30 && !synchronised)
+    else if(docking_count < 30 && !synchronised)
     {
         if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5 )
         {
@@ -766,141 +870,101 @@ void RobotAW::Docking()
         speed[0] = 0;
         speed[1] = 0;
         speed[2] = 0;
-        return;
-    }
-
-
-    int reflective_diff = reflective_hist[id1].Avg() - reflective_hist[id0].Avg();
-    int proximity_diff = proximity[id1] - proximity[id0];
-    //if no signals detected, marked as failure
-    //TODO, more failure case
-    if (!docking_failed) 
-    {
-        if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5)
-        {
-            printf("No proximity signals detected\n");
-            docking_failed = true;
-        }
-        else if(abs(proximity_diff) > 0.5 * std::max(proximity[id0], proximity[id1]) )
-        {
-            printf("proximity signals are significant different %d %D\n", proximity[id0], proximity[id1]);
-            docking_failed = true;
-        }
-    }
-
-
-    //blocked or something goes wrong
-    if(docking_failed)
-    {
-       if(docking_failed_reverse_count++ > para.docking_failed_reverse_time)
-        {
-            speed[0] = 0;
-            speed[1] = 0;
-            speed[2] = 0;
-
-            if(docking_trials < para.docking_trials)
-            {
-
-                //Request beacon signals
-                if(timestamp % 5 ==0)
-                    Robot::BroadcastIRMessage(0, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
-
-                if(beacon_signals_detected_hist.Sum(id0) > 5 && beacon_signals_detected_hist.Sum(id1)>5)
-                {
-                    synchronised = false;
-                    current_state = ALIGNMENT;
-                    last_state = DOCKING;
-                    docking_failed_reverse_count = 0;
-                    docking_failed = false;
-                    docking_count = 0;
-                    speed[0] = 0;
-                    speed[1] = 0;
-                    speed[2] = 0;
-                }
-            }
-            else
-            {
-                //TODO: give up trying
-                //send message to info recruiting robot
-                printf("\n\n\nNot implemented yet\n\n\n");
-                synchronised = false;
-                last_state = DOCKING;
-                docking_failed_reverse_count = 0;
-                docking_failed = false;
-            }
-        }
-        else
-        {
-            speed[0] = para.docking_failed_reverse_speed[0];
-            speed[1] = para.docking_failed_reverse_speed[1];
-            speed[2] = para.docking_failed_reverse_speed[2];
-        }
     }
     else
     {
 
-        printf("proximity %d %d\treflective %d %d\n", proximity[id0], proximity[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
-        static  int status = 0;
+        int reflective_diff = reflective_hist[id1].Avg() - reflective_hist[id0].Avg();
+        int proximity_diff = proximity[id1] - proximity[id0];
+        //if no signals detected, marked as failure
+        //TODO, more failure case
 
-        if(timestamp % (DOCKING_CHECKING_INTERVAL) == 0)
+        //blocked or something goes wrong
+        if(docking_blocked)
         {
-            if( status != MOVE_FORWARD )
-                status = CHECKING;
+            docking_blocked = false;
+            blocking_count=0;
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 0;
+            synchronised = false;
+            docking_trials++;
+            current_state = RECOVER;
+            last_state = ALIGNMENT;
+            recover_count = para.aligning_reverse_count;
+            printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
         }
-        else if(timestamp % (DOCKING_CHECKING_INTERVAL) == 2)
+        else
         {
-            status = CHECKING;
-        }
-        else if(timestamp % DOCKING_CHECKING_INTERVAL == 5 )
-        {
-            if(abs(reflective_diff) > 1200 ) //|| abs(temp_proximity)> 450 ) // && std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 600 ))
-                status = MOVE_BACKWARD;
-            //else if(temp_proximity > 220 || temp_reflective > 500)
-            else if(std::max(proximity[id0], proximity[id1]) > 500 && proximity_diff > 200) // was 300
-                status = TURN_LEFT;
-            else if(std::max(proximity[id0], proximity[id1]) > 500 && reflective_diff < -100) // was 300
-                status = TURN_RIGHT;
+            if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5)
+            {
+                printf("No proximity signals detected\n");
+                docking_blocked = true;
+            }
+            else if(abs(proximity_diff) > 0.5 * std::max(proximity[id0], proximity[id1]) )
+            {
+                printf("proximity signals are significant different %d %D\n", proximity[id0], proximity[id1]);
+                docking_blocked = true;
+            }
             else
-                status = MOVE_FORWARD;
-        }
+            {
 
-        switch (status)
-        {
-            case TURN_RIGHT:
-                speed[0] = para.docking_turn_right_speed[0];
-                speed[1] = para.docking_turn_right_speed[1];
-                speed[2] = para.docking_turn_right_speed[2];
-                break;
-            case TURN_LEFT:
-                speed[0] = para.docking_turn_left_speed[0];
-                speed[1] = para.docking_turn_left_speed[1];
-                speed[2] = para.docking_turn_left_speed[2];
-                break;
-            case MOVE_FORWARD:
-                speed[0] = para.docking_forward_speed[0];
-                speed[1] = para.docking_forward_speed[1];
-                speed[2] = para.docking_forward_speed[2];
-                break;
-            case MOVE_BACKWARD:
-                speed[0] = para.docking_backward_speed[0];
-                speed[1] = para.docking_backward_speed[1];
-                speed[2] = para.docking_backward_speed[2];
-                break;
-            case CHECKING:
-                speed[0] = 0;
-                speed[1] = 0;
-                speed[2] = 0;
-                break;
-            default:
-                break;
+                if(timestamp % (DOCKING_CHECKING_INTERVAL) == 0)
+                {
+                    if( status != MOVE_FORWARD )
+                        status = CHECKING;
+                }
+                else if(timestamp % (DOCKING_CHECKING_INTERVAL) == 2)
+                {
+                    status = CHECKING;
+                }
+                else if(timestamp % DOCKING_CHECKING_INTERVAL == 5 )
+                {
+                    if(abs(reflective_diff) > 1200 ) //|| abs(temp_proximity)> 450 ) // && std::max(reflective_hist[0].Avg(), reflective_hist[1].Avg()) > 600 ))
+                        status = MOVE_BACKWARD;
+                    //else if(temp_proximity > 220 || temp_reflective > 500)
+                    else if(std::max(proximity[id0], proximity[id1]) > 500 && proximity_diff > 200) // was 300
+                        status = TURN_LEFT;
+                    else if(std::max(proximity[id0], proximity[id1]) > 500 && proximity_diff < -200) // was 300
+                        status = TURN_RIGHT;
+                    else
+                        status = MOVE_FORWARD;
+                }
+
+                switch (status)
+                {
+                    case TURN_RIGHT:
+                        speed[0] = para.docking_turn_right_speed[0];
+                        speed[1] = para.docking_turn_right_speed[1];
+                        speed[2] = para.docking_turn_right_speed[2];
+                        break;
+                    case TURN_LEFT:
+                        speed[0] = para.docking_turn_left_speed[0];
+                        speed[1] = para.docking_turn_left_speed[1];
+                        speed[2] = para.docking_turn_left_speed[2];
+                        break;
+                    case MOVE_FORWARD:
+                        speed[0] = para.docking_forward_speed[0];
+                        speed[1] = para.docking_forward_speed[1];
+                        speed[2] = para.docking_forward_speed[2];
+                        break;
+                    case MOVE_BACKWARD:
+                        speed[0] = para.docking_backward_speed[0];
+                        speed[1] = para.docking_backward_speed[1];
+                        speed[2] = para.docking_backward_speed[2];
+                        break;
+                    case CHECKING:
+                        speed[0] = 0;
+                        speed[1] = 0;
+                        speed[2] = 0;
+                        break;
+                    default:
+                        break;
+                }
+                // printf("Docking routine %#x (%s) speed (%d %d %d)\n", status, docking_status_name[status], speed[0], speed[1], speed[2]);
+            }
         }
-        printf("Docking routine %#x (%s) speed (%d %d %d)\n", status, docking_status_name[status], speed[0], speed[1], speed[2]);
     }
-
-   // speed[0]=0;
-   // speed[1]=0;
-   // speed[2]=0;
-    return;
 
 }
 
@@ -1141,23 +1205,6 @@ void RobotAW::InOrganism()
     speed[1] = 0;
     speed[2] = 0;
 
-    //for testing
-    /*
-       printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-       (my_IP >> 24) & 0xFF,
-       (my_IP >> 16) & 0xFF,
-       (my_IP >> 8) & 0xFF,
-       my_IP & 0xFF);
-       for(int i=0;i<NUM_DOCKS;i++)
-       {
-       printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-       (neighbours_IP[i] >> 24) & 0xFF,
-       (neighbours_IP[i] >> 16) & 0xFF,
-       (neighbours_IP[i] >> 8) & 0xFF,
-       neighbours_IP[i] & 0xFF);
-       }
-       */
-
     //seed robot monitoring total number of robots in the organism
     if(seed)
     {
@@ -1178,6 +1225,21 @@ void RobotAW::InOrganism()
             raising_count = 0;
             current_state = RAISING;
             last_state = INORGANISM;
+
+            printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
+                    my_IP & 0xFF,
+                    (my_IP >> 8) & 0xFF,
+                    (my_IP >> 16) & 0xFF,
+                    (my_IP >> 24) & 0xFF);
+            for(int i=0;i<NUM_DOCKS;i++)
+            {
+                printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
+                        neighbours_IP[i] & 0xFF,
+                        (neighbours_IP[i] >> 8) & 0xFF,
+                        (neighbours_IP[i] >> 16) & 0xFF,
+                        (neighbours_IP[i] >> 24) & 0xFF);
+            }
+
         }
     }
     //otherwise check if new info received
@@ -1226,6 +1288,22 @@ void RobotAW::InOrganism()
             raising_count = 0;
             current_state = RAISING;
             last_state = INORGANISM;
+
+            printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
+                    my_IP & 0xFF,
+                    (my_IP >> 8) & 0xFF,
+                    (my_IP >> 16) & 0xFF,
+                    (my_IP >> 24) & 0xFF);
+            for(int i=0;i<NUM_DOCKS;i++)
+            {
+                printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
+                        neighbours_IP[i] & 0xFF,
+                        (neighbours_IP[i] >> 8) & 0xFF,
+                        (neighbours_IP[i] >> 16) & 0xFF,
+                        (neighbours_IP[i] >> 24) & 0xFF);
+            }
+
+
         }
     }
 }
