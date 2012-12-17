@@ -460,8 +460,6 @@ void RobotAW::Waiting()//same as RobotKIT
 }
 void RobotAW::Assembly()
 {
-
-
     if(assembly_count--<=0)
     {
         organism_found = false;
@@ -472,6 +470,8 @@ void RobotAW::Assembly()
     //right type of recruitment message recived, then locatebeacon
     else if (assembly_info.type2 == type)
     {
+        std::cout<<"assembly_info: "<<assembly_info<<"\tdirection: "<<direction<<std::endl;
+
         free_move = false;
         if(assembly_info.side2 == FRONT)
         {
@@ -505,10 +505,8 @@ void RobotAW::LocateEnergy()//same as RobotKIT
         return;
     }
 }
-void RobotAW::LocateBeacon()//same as RobotKIT
+void RobotAW::LocateBeacon()
 {
-    assembly_info.side2 = FRONT;
-
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
     //any beacon signals
@@ -529,7 +527,7 @@ void RobotAW::LocateBeacon()//same as RobotKIT
 
             speed[0] = 0;
             speed[1] = 0;
-            speed[2] = -15 * sign(temp);
+            speed[2] = -15 * sign(temp) * direction;
         }
     }
     else
@@ -615,13 +613,13 @@ void RobotAW::Alignment()
     // Far away from recruiting robot - move sideways or forward
     if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 20 )
     {
-        std::cout << "FAR " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-            << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+ //       std::cout << "FAR " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+ //           << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
         if( abs(temp) > 0.1 * temp_max )
         {
             speed[0] = 0;
             speed[1] = 0;
-            speed[2] = -20 * sign(temp);
+            speed[2] = -20 * sign(temp) * direction;
         }
         else
         {
@@ -637,9 +635,9 @@ void RobotAW::Alignment()
         {           
             std::cout << " Zone 1, adjusting orientantion " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
                 << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
-            speed[0] = 10 * sign(temp2);
+            speed[0] = 10 * sign(temp2); //No need to taken direction in to accout here, worked on robot.02
             speed[1] = -25 * sign(temp2);
-            speed[2] = 0;//15 * sign(temp2);
+            speed[2] = 0;
         }
         else
         {
@@ -649,7 +647,7 @@ void RobotAW::Alignment()
                     << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
                 speed[0] = 0;
                 speed[1] = 0;
-                speed[2] = -15 * sign(temp);
+                speed[2] = -15 * sign(temp) * direction;
             }
             else
             {
@@ -725,13 +723,11 @@ void RobotAW::Recover()
                 {
                     speed[0] = para.aligning_reverse_speed[0];
                     speed[1] = para.aligning_reverse_speed[1];
-                    speed[2] = 0;
                 }
                 else
                 {
                     speed[0] = -para.aligning_reverse_speed[0];
                     speed[1] = -para.aligning_reverse_speed[1];
-                    speed[2] = 0;
                 }
 
             }
@@ -743,7 +739,6 @@ void RobotAW::Recover()
 
                 speed[0] = direction * para.aligning_reverse_speed[0];
                 speed[1] = direction * para.aligning_reverse_speed[1];
-                speed[2] = 0;
             }
         }
         else if(recover_count ==0)
@@ -804,14 +799,14 @@ void RobotAW::Docking()
     static bool synchronised = false;
     static  int status = 0;
     docking_count++;
+        
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     //docking done
     if(docking_region_detected)
     {
-        speed[0] = 0;
-        speed[1] = 0;
-        speed[2] = 0;
-
         //request for assembly_info
         if(msg_assembly_info_expected && timestamp % 10 ==0)
             Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_ASSEMBLY_INFO_REQ, 0);
@@ -823,8 +818,6 @@ void RobotAW::Docking()
 
             if(assembly_info == OrganismSequence::Symbol(0))
             {
-                speed[0] = 0;
-                speed[1] = 0;
                 for(int i=0; i<NUM_DOCKS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
                 current_state = RECOVER;
@@ -858,10 +851,6 @@ void RobotAW::Docking()
     }
     else if(ethernet_status_hist.Sum(assembly_info.side2) > 8) 
     {
-        speed[0] = 0;
-        speed[1]= 0;  
-        speed[2] = 0;
-
         docking_region_detected = true;
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, 0);
         SetRGBLED(assembly_info.side2, WHITE,WHITE,WHITE,WHITE);
@@ -876,6 +865,7 @@ void RobotAW::Docking()
         {
             if(timestamp % 5 ==0)
                 BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_GUIDEME, 0);
+            std::cout<<"assembly_info: "<<assembly_info<<"\tdirection: "<<direction<<std::endl;
             synchronised = false;
         }
         else
@@ -885,9 +875,6 @@ void RobotAW::Docking()
             SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
         }
 
-        speed[0] = 0;
-        speed[1] = 0;
-        speed[2] = 0;
     }
     else
     {
@@ -902,15 +889,12 @@ void RobotAW::Docking()
         {
             docking_blocked = false;
             blocking_count=0;
-            speed[0] = 0;
-            speed[1] = 0;
-            speed[2] = 0;
             synchronised = false;
             docking_trials++;
             current_state = RECOVER;
             last_state = ALIGNMENT;
             recover_count = para.aligning_reverse_count;
-            printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
+          //  printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
         }
         else
         {
@@ -957,24 +941,24 @@ void RobotAW::Docking()
                 switch (status)
                 {
                     case TURN_RIGHT:
-                        speed[0] = para.docking_turn_right_speed[0];
-                        speed[1] = para.docking_turn_right_speed[1];
-                        speed[2] = para.docking_turn_right_speed[2];
+                        speed[0] = direction * para.docking_turn_right_speed[0];
+                        speed[1] = direction * para.docking_turn_right_speed[1];
+                        speed[2] = direction * para.docking_turn_right_speed[2];
                         break;
                     case TURN_LEFT:
-                        speed[0] = para.docking_turn_left_speed[0];
-                        speed[1] = para.docking_turn_left_speed[1];
-                        speed[2] = para.docking_turn_left_speed[2];
+                        speed[0] = direction * para.docking_turn_left_speed[0];
+                        speed[1] = direction * para.docking_turn_left_speed[1];
+                        speed[2] = direction * para.docking_turn_left_speed[2];
                         break;
                     case MOVE_FORWARD:
-                        speed[0] = para.docking_forward_speed[0];
-                        speed[1] = para.docking_forward_speed[1];
-                        speed[2] = para.docking_forward_speed[2];
+                        speed[0] = direction * para.docking_forward_speed[0];
+                        speed[1] = direction * para.docking_forward_speed[1];
+                        speed[2] = direction * para.docking_forward_speed[2];
                         break;
                     case MOVE_BACKWARD:
-                        speed[0] = para.docking_backward_speed[0];
-                        speed[1] = para.docking_backward_speed[1];
-                        speed[2] = para.docking_backward_speed[2];
+                        speed[0] = direction * para.docking_backward_speed[0];
+                        speed[1] = direction * para.docking_backward_speed[1];
+                        speed[2] = direction * para.docking_backward_speed[2];
                         break;
                     case CHECKING:
                         speed[0] = 0;
