@@ -411,6 +411,7 @@ void RobotSCOUT::Seeding()
 }
 void RobotSCOUT::Foraging()
 {
+    /*
     //time up?
     if(foraging_count--<=0)
     {
@@ -428,9 +429,8 @@ void RobotSCOUT::Foraging()
 
         speed[0] = 0;
         speed[1] = 0;
-        speed[2] = 0;
     }
-    else
+    else*/
     {
         Avoidance();
 
@@ -439,6 +439,15 @@ void RobotSCOUT::Foraging()
             current_state = LOCATEENERGY;
             last_state = FORAGING;
         }
+        else if(organism_found)
+        {
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+
+            current_state = ASSEMBLY;
+            last_state = WAITING;
+        }
+
     }
 
 
@@ -447,7 +456,6 @@ void RobotSCOUT::Waiting()
 {
     speed[0] = 0;
     speed[1] = 0;
-    speed[2] = 0;
 
     msg_unlockme_received = 0;
     msg_locked_received = 0;
@@ -490,19 +498,23 @@ void RobotSCOUT::Assembly()
     //right type of recruitment message recived, then locatebeacon
     else if (assembly_info.type2 == type)
     {
-        current_state = LOCATEBEACON;
-        last_state = FORAGING;
+        std::cout<<"assembly_info: "<<assembly_info<<"\tdirection: "<<direction<<std::endl;
 
-        if(assembly_info.side2 == ::FRONT)
+        if(assembly_info.side2 == FRONT)
         {
             docking_approaching_sensor_id[0] = 0;
             docking_approaching_sensor_id[1] = 1;
+            direction = FORWARD;
         }
         else
         {
             docking_approaching_sensor_id[0] = 4;
             docking_approaching_sensor_id[1] = 5;
+            direction = BACKWARD;
         }
+
+        current_state = LOCATEBEACON;
+        last_state = FORAGING;
     }
     else
         Avoidance();
@@ -512,7 +524,6 @@ void RobotSCOUT::LocateEnergy()
 {
     speed[0] = 0;
     speed[1] = 0;
-    speed[2] = 0;
 
     if(1)
     {
@@ -528,60 +539,69 @@ void RobotSCOUT::LocateBeacon()
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
 
-    //check if received docking signals
-    int beacon_trigger_count=0;
-    if(assembly_info.side2 == ::FRONT)
-    {
-        if(beacon_signals_detected_hist.Sum(0) >= 3)
-            beacon_trigger_count++;
-        if(beacon_signals_detected_hist.Sum(1) >= 3)
-            beacon_trigger_count++;
-        if(beacon_signals_detected_hist.Sum(2) >= 3)
-            beacon_trigger_count++;
-        if(beacon_signals_detected_hist.Sum(7) >= 3)
-            beacon_trigger_count++;
-    }
-    else
-    {
-        if(beacon_signals_detected_hist.Sum(3) >= 3)
-            beacon_trigger_count++;
-        if(beacon_signals_detected_hist.Sum(4) >= 3)
-            beacon_trigger_count++;
-        if(beacon_signals_detected_hist.Sum(5) >= 3)
-            beacon_trigger_count++;
-        if(beacon_signals_detected_hist.Sum(6) >= 3)
-            beacon_trigger_count++;
-    }
+    speed[0] = 0;
+    speed[1] = 0;
 
-    //no signals, move randomly 
-    if(beacon_trigger_count<1)
+    int turning = 0;
+    if(beacon_signals_detected)
     {
-        //speed[0] = 50;
-        //speed[1] = -50;
-    }
-    else
-    {
-        if(assembly_info.side2 == FRONT)
+        speed[0] = direction *para.locatebeacon_forward_speed[0];
+        speed[1] = direction *para.locatebeacon_forward_speed[1];
+
+        if(id0==0)
         {
-            speed[0] = para.locatebeacon_forward_speed[0];
-            speed[1] = para.locatebeacon_forward_speed[1];
+            if((beacon_signals_detected & 0x3) != 0)
+                turning = 0;
+            //no signals on side 1, turn left 
+            else if((beacon_signals_detected & 0xC) ==0)
+                turning = -1;
+            //no signals on side 3, turn right 
+            else if((beacon_signals_detected & 0xC0) ==0)
+                turning = 1;
+            else 
+                turning = 0;
         }
         else
         {
-            speed[0] = -para.locatebeacon_forward_speed[0];
-            speed[1] = -para.locatebeacon_forward_speed[1];
+
+            if((beacon_signals_detected & 0x30) != 0)
+                turning = 0;
+            //no signals on side 1, turn right
+            else if((beacon_signals_detected & 0xC) ==0)
+                turning = 1;
+            //no signals on side 3, turn left
+            else if((beacon_signals_detected & 0xC0) ==0)
+                turning = -1;
+            else 
+                turning = 0;
+            printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],
+                    beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
         }
 
-        for(int i=0;i<NUM_IRS;i++)
+        //printf("max_beacon: %d %d %d %d\tturning: %d\n", max_beacon[0], max_beacon[1], max_beacon[2], max_beacon[3], turning);
+        if(turning != 0)
         {
-            speed[0] += (beacon[i] * para.locatebeacon_weightleft[i]) >>1;
-            speed[1] += (beacon[i] * para.locatebeacon_weightright[i]) >>1;
+            speed[0] = turning * 30;
+            speed[1] = -turning * 30;
         }
-
+        else
+        {
+            if((beacon_signals_detected & (1<<id0 | 1<<id1)) != 0)
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                {
+                    speed[0] += (beacon[i] * direction * para.locatebeacon_weightleft[i]) >>1;
+                    speed[1] += (beacon[i] * direction * para.locatebeacon_weightright[i]) >>1;
+                }
+            }
+            else
+            {
+                speed[0] = 0;
+                speed[1] = 0;
+            }
+        }
     }
 
-
-     
     printf("beacon: (%d %d) -- speed: (%d %d %d %d)\n", beacon[id0], beacon[id1], speed[0], speed[1], para.locatebeacon_forward_speed[0], para.locatebeacon_forward_speed[1]);
     //switch on ir led at 64Hz so the recruitment robot can sensing it
     //and turn on its docking signals, the robot need to switch off ir 
@@ -608,11 +628,7 @@ void RobotSCOUT::LocateBeacon()
             case 2:
             case 5:
                 {
-                    if(beacon_trigger_count>1 && beacon[id0] >= 30 && beacon[id1] >= 30)  
-                        aligning_region_detected= true;
-
-
-                    if(aligning_region_detected )
+                    if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 30 && beacon[id1] >= 30)  
                     {
                         current_state = ALIGNMENT;
                         last_state = LOCATEBEACON;
@@ -622,7 +638,7 @@ void RobotSCOUT::LocateBeacon()
                             SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1);
 
                     } 
-                    else if( beacon_trigger_count <1)
+                    else if (beacon_signals_detected ==0 )
                     {
                         //then swith on all ir led at 64Hz frequency
                         for(int i=0;i<NUM_DOCKS;i++)
@@ -641,23 +657,14 @@ void RobotSCOUT::LocateBeacon()
 //TODO: cleanup the code
 void RobotSCOUT::Alignment()
 {
-    if(assembly_info.side2 == FRONT)
-    {
-        speed[0] = para.aligning_forward_speed[0];
-        speed[1] = para.aligning_forward_speed[1];
-    }
-    else
-    {
-        speed[0] = -para.aligning_forward_speed[0];
-        speed[1] = -para.aligning_forward_speed[1];
-    }
+    speed[0] = direction * para.aligning_forward_speed[0];
+    speed[1] = direction * para.aligning_forward_speed[1];
 
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
 
     int reflective_diff = abs(reflective_hist[id0].Avg() - reflective_hist[id1].Avg());
     int reflective_max = std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
-    //printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
 
     if(docking_region_detected)
     {
@@ -675,8 +682,6 @@ void RobotSCOUT::Alignment()
 
             if(assembly_info == OrganismSequence::Symbol(0))
             {
-                speed[0] = 0;
-                speed[1] = 0;
                 current_state = RECOVER;
                 last_state = ALIGNMENT;
                 recover_count = para.aligning_reverse_count;
@@ -684,7 +689,6 @@ void RobotSCOUT::Alignment()
             else
             {
                 docking_region_detected =false;
-                in_docking_region_hist.Reset();
                 docking_count = 0;
                 docking_failed_reverse_count = 0;
 
@@ -715,57 +719,49 @@ void RobotSCOUT::Alignment()
 
             msg_assembly_info_expected |= 1 << assembly_info.side2;
         }
-
-      //  printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
-
-        //TODO sometimes not in good position, need to reverse and try again
-        // define the bad case
-        // case 1: difference between two front reflective_calibrated reading is significant 
-        // case 2: some reflective_calibrated readings but two beacon readings are diff
-        int input[4] = {reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]};
-        in_docking_region_hist.Push(in_docking_region(input));
-
-        if(reflective_hist[id0].Avg() > 300 && reflective_hist[id1].Avg() > 300)
-            blocking_count++;
-
-        //3 second is allowed until fully docked, otherwise, treated as blocked.
-        if((reflective_diff > 300 && reflective_diff > reflective_max * 0.5) || blocking_count > 30)
-            //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
-            docking_blocked = true;
-
-        if(docking_blocked)
-        {
-            docking_blocked = false;
-            blocking_count=0;
-            speed[0] = 0;
-            speed[1] = 0;
-
-            docking_trials++;
-
-            current_state = RECOVER;
-            last_state = ALIGNMENT;
-            recover_count = para.aligning_reverse_count;
-            printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
-        }
-        else if (in_docking_region_hist.Sum()>=3)
-        {
-            speed[0] = para.aligning_forward_speed[0];
-            speed[1] = para.aligning_forward_speed[1];
-            printf("forward\n");
-        }
         else
         {
-            for(int i=0;i<NUM_IRS;i++)
+            //  printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
+            //TODO sometimes not in good position, need to reverse and try again
+            // define the bad case
+            // case 1: difference between two front reflective_calibrated reading is significant 
+            // case 2: some reflective_calibrated readings but two beacon readings are diff
+            if(reflective_hist[id0].Avg() > 300 && reflective_hist[id1].Avg() > 300)
+                blocking_count++;
+
+            //3 second is allowed until fully docked, otherwise, treated as blocked.
+            if((reflective_diff > 300 && reflective_diff > reflective_max * 0.5) || blocking_count > 30)
+                //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
+                docking_blocked = true;
+
+            if(docking_blocked || beacon_signals_detected == 0)
             {
-                speed[0] += (beacon[i] * para.aligning_weightleft[i]) >>4;
-                speed[1] += (beacon[i] * para.aligning_weightright[i]) >>4;
+                docking_blocked = false;
+                blocking_count=0;
+                speed[0] = 0;
+                speed[1] = 0;
+
+                docking_trials++;
+
+                current_state = RECOVER;
+                last_state = ALIGNMENT;
+                recover_count = para.aligning_reverse_count;
+                printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
+                printf("blocking_count %d reflective: %d %d\t beacon:%d %d\n",blocking_count, reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
             }
-            printf("\tat speed (%d %d)\n", speed[0], speed[1]);
+            else
+            {
+                for(int i=id0;i<=id1;i++)
+                {
+                    speed[0] += (beacon[i] * para.aligning_weightleft[i]) >>4;
+                    speed[1] += (beacon[i] * para.aligning_weightright[i]) >>4;
+                }
+                printf("\tbeacon: %d %d\tat speed (%d %d)\n", beacon[id0], beacon[id1], speed[0], speed[1]);
+            }
         }
-
     }
-
 }
+
 void RobotSCOUT::Recover()
 {
     recover_count--;
@@ -878,9 +874,8 @@ void RobotSCOUT::Recover()
 
 void RobotSCOUT::Docking()
 {
-
-    //int id0 = docking_approaching_sensor_id[0];
-    //int id1 = docking_approaching_sensor_id[1];
+    speed[0] = direction * para.docking_forward_speed[0];
+    speed[1] = direction * para.docking_forward_speed[1];  
 
     docking_count++;
 
@@ -897,19 +892,6 @@ void RobotSCOUT::Docking()
         current_state = LOCKING;
         last_state = DOCKING;
     }
-    else
-    {
-        if(assembly_info.side2 == FRONT)
-        {
-            speed[0] = para.docking_forward_speed[0];
-            speed[1]= para.docking_forward_speed[1];  
-        }
-        else
-        {
-            speed[0] = -para.docking_forward_speed[0];
-            speed[1]= -para.docking_forward_speed[1];  
-        }
-    }
 
 }
 
@@ -917,7 +899,6 @@ void RobotSCOUT::Locking()
 {
     speed[0] = 0;
     speed[1] = 0;
-    speed[2] = 0;
 
     int docking_side = assembly_info.side2;
 
@@ -928,17 +909,8 @@ void RobotSCOUT::Locking()
     {
         if(docked[docking_side]==0)
         {
-            //TODO: this cause some issues if robot receives the assembly_info from different resources
-            //To reproduce the problem, using an activewheel as recruiter and open its front and back side
-            //robot will pickup recruitment message sent from both sides.
             docked[docking_side] = assembly_info.type2  | assembly_info.side2 << 2 | assembly_info.type1 << 4 | assembly_info.side1 << 6;
             unlocking_required[docking_side] = true;
-            //for(int i=0;i<NUM_DOCKS;i++)
-            {
-                // SetIRLED(docking_side, IRLEDOFF, LED0|LED2, 0);
-                // RobotBase::SetIRRX(board_dev_num[docking_side], false);
-
-            }
             Robot::BroadcastIRMessage(docking_side, IR_MSG_TYPE_LOCKED, para.ir_msg_repeated_num);
         }
         else if(docked[docking_side] && !MessageWaitingAck(docking_side, IR_MSG_TYPE_LOCKED))
@@ -956,7 +928,6 @@ void RobotSCOUT::Recruitment()
 {
     speed[0] = 0;
     speed[1] = 0;
-    speed[2] = 0;
     std::vector<OrganismSequence>::iterator it1 = mybranches.begin();
     while(it1 !=mybranches.end())
     {
@@ -1017,7 +988,6 @@ void RobotSCOUT::Recruitment()
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
-            // TODO: add a timeout that reverts back to STAGE0
         }
         else if(recruitment_stage[i]==STAGE2)
         {
@@ -1050,7 +1020,6 @@ void RobotSCOUT::Recruitment()
                     msg_assembly_info_req_received &= ~(1<<i);
                 }
             }
-
 
             //received docking_signals req, back to stage 1
             if((msg_docking_signal_req_received & (1<<i)))
@@ -1212,7 +1181,6 @@ void RobotSCOUT::InOrganism()
 {
     speed[0] = 0;
     speed[1] = 0;
-    speed[2] = 0;
 
     //seed robot monitoring total number of robots in the organism
     if(seed)
@@ -1320,7 +1288,6 @@ void RobotSCOUT::Disassembly()
 {
     speed[0] = 0;
     speed[1] = 0;
-    speed[2] = 0;
 
     if(!MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
     {
@@ -1368,7 +1335,6 @@ void RobotSCOUT::Undocking()
 {
     speed[0] = 0;
     speed[1] = 0;
-    speed[2] = 0;
 
     for(int i=0;i<NUM_DOCKS;i++)
     {
@@ -1388,19 +1354,16 @@ void RobotSCOUT::Undocking()
         {
             speed[0] = -30;
             speed[1] = -30;
-            speed[2] = 0;
         }
         else if( undocking_count < 300  )
         {
             speed[0] = 0;//para.debug.para[1];   // was 18
             speed[1] = 0;//para.debug.para[2]; // was -35
-            speed[2] = 20;
         }
         else
         {
             speed[0] = 0;
             speed[1] = 0;
-            speed[2] = 0;
 
             for( int i=0;i<NUM_DOCKS; i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
@@ -1639,7 +1602,6 @@ void RobotSCOUT::MacroLocomotion()
 {
     speed[0] = 0;
     speed[1] = 0;
-    speed[2] = 0;
 
     macrolocomotion_count++;
     //flashing RGB leds
@@ -1685,7 +1647,6 @@ void RobotSCOUT::Debugging()
 {
     // speed[0] = 0;
     // speed[1] = 0;
-    // speed[2] = 0;
 
     //printf("%d Debuging %d:\t", timestamp,para.debug.mode);
     static int clock=0;
@@ -1923,14 +1884,12 @@ void RobotSCOUT::Debugging()
                 log = true;
                 speed[0] = -20;
                 speed[1] = -20;
-                speed[2] = 0;
             }
             else if(clock == para.debug.para[6])
             {
                 log = false;
                 speed[0] = 0;
                 speed[1] = 0;
-                speed[2] = 0;
             }
 
             if(log)
