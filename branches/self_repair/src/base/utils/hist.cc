@@ -48,15 +48,15 @@ void Hist::Push(int32_t value)
 }
 
 //used for robot_in_range_detected
-void Hist::Push2(int32_t value)
+void Hist::Push2(uint8_t value)
 {
-        uint32_t temp_sum=0;
+        uint64_t temp_sum=0;
         for(int i=0;i<8;i++)
         {
-                temp_sum = (sum2 >> (i*4)) & 0xF;
+                temp_sum = (sum2 >> (i*8)) & 0xFF;
                 temp_sum = temp_sum - (((valueHist[valPointer] & (1<<i)) ==0 ) ? 0 : 1) + (((value & (1<<i))==0) ? 0 : 1);
-                sum2 &= ~(0xF << (i*4));
-                sum2 |= (temp_sum & 0xF) << (i*4);//MAX 15
+                sum2 &= ~(uint64_t(0xFF) << (i*8));
+                sum2 |= (temp_sum) << (i*8);//MAX 255 
         }
         valueHist[valPointer] = value;
         valPointer++;

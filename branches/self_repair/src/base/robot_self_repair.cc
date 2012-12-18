@@ -74,9 +74,9 @@ void Robot::CheckForFailures()
 		case RAISING:
 			{
 				// Stop moving
-				leftspeed = 0;
-				rightspeed = 0;
-				sidespeed = 0;
+				speed[0] = 0;
+				speed[1] = 0;
+				speed[2] = 0;
 
 				// Propagate lowering messages
 				PropagateIRMessage(IR_MSG_TYPE_LOWERING);
@@ -453,27 +453,27 @@ void Robot::moveTowardsHeading( int h )
 {
 	// TODO: check that sidespeed set correctly
 
-	leftspeed = 0;
-	rightspeed = 0;
-	sidespeed = 0;
+	speed[0] = 0;
+	speed[1] = 0;
+	speed[2] = 0;
 
 	if( h == 0 )
 	{
-		leftspeed = 30;
-		rightspeed = 30;
+		speed[0] = 30;
+		speed[1] = 30;
 	}
 	else if( h == 1 )
 	{
-		sidespeed = 10;
+		speed[2] = 10;
 	}
 	else if( h == 2 )
 	{
-		leftspeed = -30;
-		rightspeed = -30;
+		speed[0] = -30;
+		speed[1] = -30;
 	}
 	else
 	{
-		sidespeed = -10;
+		speed[2] = -10;
 	}
 }
 
@@ -757,10 +757,9 @@ void Robot::LeadRepair()
 		}
 		else
 		{
-			// Stop moving
-			leftspeed = 0;
-			rightspeed = 0;
-			sidespeed = 0;
+			speed[0] = 0;
+           	speed[1] = 0;
+           	speed[2] = 0;
 
 			PropagateEthMessage(ETH_MSG_TYPE_STOP);
 			PropagateIRMessage(IR_MSG_TYPE_STOP);
@@ -997,11 +996,11 @@ void Robot::Repair()
 
 		if( msg_retreat_received ) moveTowardsHeading(heading);
 
-		if( msg_stop_received ) leftspeed = rightspeed = sidespeed = 0;
+		if( msg_stop_received ) speed[0] = speed[1] = speed[2] = 0;
 
 		if( msg_score_seq_received & 1<<parent_side )
 		{
-			leftspeed = rightspeed = sidespeed = 0;
+			speed[0] = speed[1] = speed[2] = 0;
 
 			for( int i=0; i<NUM_DOCKS; i++ )
 				SetRGBLED(i,YELLOW,YELLOW,YELLOW,YELLOW);
@@ -1159,9 +1158,9 @@ void Robot::Repair()
 void Robot::Failed()
 {
 
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     
 	if(!MessageWaitingAck(IR_MSG_TYPE_FAILED))
@@ -1181,7 +1180,7 @@ void Robot::Failed()
 				//TODO: how about two KIT robots docked to each other
 				else if(docking_motors_status[i]==OPENED)
 				{
-					BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+					BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
 					docked[i]=0;
 					num_docked--;
 				}

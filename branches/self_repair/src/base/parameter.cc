@@ -13,6 +13,7 @@ Parameter::Parameter():
     init_state(0),
     speed_forward(30),
     speed_sideward(2),
+    aw_adjustment_ratio(0.9),
     recruiting_ambient_offset1(500),
     recruiting_ambient_offset2(500),
     recruiting_proximity_offset1(500),

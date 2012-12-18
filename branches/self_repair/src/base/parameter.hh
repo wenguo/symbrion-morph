@@ -24,6 +24,8 @@ class Parameter
         int init_state;
         int speed_forward;
         int speed_sideward;
+        float aw_adjustment_ratio;
+        int scout_wheels_direction[2];
         int locatebeacon_forward_speed[3];
         int aligning_forward_speed[3];
         int aligning_reverse_speed[3];

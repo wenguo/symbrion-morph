@@ -61,18 +61,18 @@ class Robot
     void PropagateEthMessage(uint8_t type, uint8_t *data = NULL, uint32_t size = 0, Ethernet::IP = 0);
 
     //send to specified receiver (defined in docked[i]), ack may be required
-    void SendIRMessage(int channel, uint8_t type, bool ack_required = true);
-    void SendIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required = true);
-    void SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = true);
+    void SendIRMessage(int channel, uint8_t type, uint8_t ack_required);
+    void SendIRMessage(int channel, uint8_t type, const uint8_t data, uint8_t ack_required);
+    void SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size, uint8_t ack_required);
     void SendIRAckMessage(int channel, uint8_t type);
     void SendIRAckMessage(int channel, uint8_t type, uint8_t *data, int size=1);
     void PropagateIRMessage(uint8_t type, uint8_t *data = NULL, uint32_t size = 0, int excluded_channel = -1);
     void PropagateSingleIRMessage(uint8_t type, int channel, uint8_t *data = NULL, uint32_t size = 0 );
 
     //no specified reciever, ack is not required
-    void BroadcastIRMessage(int channel, uint8_t type, bool ack_required = false);
-    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required = false);
-    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
+    void BroadcastIRMessage(int channel, uint8_t type, uint8_t ack_required);
+    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, uint8_t ack_required);
+    void BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size, uint8_t ack_required);
 
     bool MessageWaitingAck(int channel, uint8_t type);
     bool MessageWaitingAck(uint8_t type);
@@ -246,6 +246,7 @@ class Robot
     Hist beacon_signals_detected_hist;
     Hist ambient_avg_threshold_hist;
     Hist proximity_hist[NUM_IRS];
+    Hist ethernet_status_hist;
 
     //status
     uint8_t bumped;
@@ -257,6 +258,9 @@ class Robot
     //bits 6-7: neighbour's side
     bool docking_done[NUM_DOCKS];   
     bool docking_failed;
+    bool docking_blocked;
+    bool docking_region_detected;
+    bool aligning_region_detected;
     bool unlocking_required[NUM_DOCKS];
     uint8_t recruitment_stage[NUM_DOCKS];//using an array in case parallel docking is enabled
     uint32_t IRLED_status[NUM_DOCKS]; //each ir led (bits 0 and 1): 0 or 1-- off,
@@ -265,7 +269,7 @@ class Robot
     //led1, bits 3, 4, 5
     //led2, bits 6, 7, 8
     //IR_Pulse0, bits 9
-    //IR_Pulse§, bits 10
+    //IR_Pulse1, bits 10
     uint32_t RGBLED_status[NUM_DOCKS];
     uint8_t docking_motors_status[NUM_DOCKS]; //each two bits, 0b00 -- open, 0b01 -- opening, 0b10 -- closed, 0b11 -- closing
     uint8_t hinge_motor_status;
@@ -306,6 +310,7 @@ class Robot
     uint32_t docking_failed_reverse_count;
     uint32_t hinge_motor_operating_count;
     uint32_t guiding_signals_count[NUM_DOCKS];
+    uint32_t blocking_count;
 
     uint8_t docking_trials;
 
@@ -330,6 +335,10 @@ class Robot
     uint8_t msg_docking_signal_req_received;
     bool msg_organism_seq_received;
     bool msg_organism_seq_expected;
+    uint8_t msg_assembly_info_received;
+    uint8_t msg_assembly_info_expected;
+    uint8_t msg_assembly_info_req_received;
+    uint8_t msg_assembly_info_req_expected;
     // for self-repair
     uint8_t msg_failed_received;
     uint8_t msg_subog_seq_received;
@@ -354,10 +363,8 @@ class Robot
     unsigned char newrobot_attached; //indicating new robot joined the organism, used to propagate the message to the whole organism
     bool assembly_info_checked;
 
-    int32_t leftspeed;
-    int32_t rightspeed;
-    int32_t sidespeed;
     int32_t direction;
+    int8_t speed[3];
 
     uint32_t num_robots_inorganism;
 
@@ -371,6 +378,8 @@ class Robot
     OrganismSequence::Symbol assembly_info; //information for which types of robot and which side is required by recruiting robots
     bool seed;
     Robot * neighbours[NUM_DOCKS];
+
+    uint8_t docking_approaching_sensor_id[2]; //store the id of ir sensors on the approaching side
 
     Morph::Worldfile * optionfile;
     Parameter para;
@@ -397,9 +406,6 @@ class Robot
     uint8_t LED0;
     uint8_t LED1;
     uint8_t LED2;
-    uint8_t IR_PULSE0;
-    uint8_t IR_PULSE1;
-    uint8_t IR_PULSE2;
 };
 
 #endif
