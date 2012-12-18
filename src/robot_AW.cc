@@ -425,8 +425,7 @@ void RobotAW::Foraging() //the same as RobotKIT
             current_state = LOCATEENERGY;
             last_state = FORAGING;
         }
-
-        if(organism_found)
+        else if(organism_found)
         {
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
@@ -610,7 +609,7 @@ void RobotAW::LocateBeacon()
             case 5:
                 {
                     //check if received docking signals
-                    if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)  //TODO:only FRONT side at the moment, should changes according to message received
+                    if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)        
                     {
                         current_state = ALIGNMENT;
                         last_state = LOCATEBEACON;
@@ -792,34 +791,25 @@ void RobotAW::Recover()
             }
             else
             {
+                int id0 = docking_approaching_sensor_id[0];
+                int id1 = docking_approaching_sensor_id[1];
+
                 if(docking_trials >= para.docking_trials)
                 {
                     ResetAssembly();
                     current_state = FORAGING;
                     last_state = RECOVER;
                 }
+                else if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)
+                {
+
+                    current_state = ALIGNMENT;
+                    last_state = RECOVER;
+                }
                 else
                 {
-                    int id0 = docking_approaching_sensor_id[0];
-                    int id1 = docking_approaching_sensor_id[1];
-
-                    if(docking_trials >= para.docking_trials)
-                    {
-                        ResetAssembly();
-                        current_state = FORAGING;
-                        last_state = RECOVER;
-                    }
-                    else if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)
-                    {
-
-                        current_state = ALIGNMENT;
-                        last_state = RECOVER;
-                    }
-                    else
-                    {
-                        if(timestamp % 5 ==0)
-                            Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
-                    }
+                    if(timestamp % 5 ==0)
+                        Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
                 }
             }
         }
