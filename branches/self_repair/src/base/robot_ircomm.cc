@@ -406,6 +406,18 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                                     CPrintf1(SCR_GREEN,"%d -- start to raise !", timestamp);
                                 }
                                 break;
+                        	case IR_MSG_TYPE_RAISING_START:
+                        		{
+                                    msg_raising_start_received = true;
+                                    CPrintf1(SCR_GREEN,"%d -- start to raise !", timestamp);
+                        		}
+                        		break;
+                        	case IR_MSG_TYPE_RAISING_STOP:
+                        		{
+                                    msg_raising_stop_received = true;;
+                                    CPrintf1(SCR_RED,"%d -- stopping raise !", timestamp);
+                        		}
+                        		break;
                             case IR_MSG_TYPE_LOWERING:
                                 {
                                     msg_lowering_received |= 1<<channel;

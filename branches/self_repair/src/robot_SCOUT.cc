@@ -1437,22 +1437,56 @@ void RobotSCOUT::Raising()
     speed[1] = 0;
     speed[2] = 0;
 
+    // Leds symbolise the raising process
+	bool flash_leds = false;
+
+	// Wait longer with larger structures
+	int raising_delay = (mytree.Size()/2+1)*30;
+
     if(seed)
     {
-        if(raising_count == 20)
+        raising_count++;
+
+        if(raising_count == raising_delay )
         {
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-            PropagateIRMessage(IR_MSG_TYPE_RAISING);
-            PropagateEthMessage(ETH_MSG_TYPE_RAISING);
+            PropagateIRMessage(IR_MSG_TYPE_RAISING_START);
+            PropagateEthMessage(ETH_MSG_TYPE_RAISING_START);
+        	flash_leds = true;
         }
+        else if( raising_count >= raising_delay + 30 )
+        {
+        	for(int i=0;i<NUM_DOCKS;i++)
+        		SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+        	PropagateIRMessage(IR_MSG_TYPE_RAISING_STOP);
+        	PropagateEthMessage(ETH_MSG_TYPE_RAISING_STOP);
 
-        raising_count++;
+        	current_state = MACROLOCOMOTION;
+            last_state = RAISING;
+            raising_count = 0;
+        	flash_leds = false;
+        }
+        else if( raising_count >= raising_delay )
+        {
+        	flash_leds = true;
+        }
     }
-    else if(msg_raising_received)
-        raising_count++;
+    else if( msg_raising_stop_received )
+    {
+    	msg_raising_start_received = false;
+    	msg_raising_stop_received = false;
+        current_state = MACROLOCOMOTION;
+        last_state = RAISING;
+        raising_count = 0;
+    	flash_leds = false;
+    }
+    else if( msg_raising_start_received )
+    {
+    	flash_leds = true;
+    }
 
-    if((seed && raising_count > 20) || (!seed && raising_count > 0))
+    if(flash_leds)
     {
         //flashing RGB leds
         static int index = 0;
@@ -1477,12 +1511,6 @@ void RobotSCOUT::Raising()
                     break;
             }
         }
-    }
-
-    if(raising_count > 30 && !MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
-    {
-        current_state = MACROLOCOMOTION;
-        last_state = RAISING;
     }
 
 }
