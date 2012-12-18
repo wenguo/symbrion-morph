@@ -34,7 +34,7 @@ void * Robot::IRCommTxThread(void * para)
             {
                 IRMessage &msg = robot->IR_TXMsgQueue[i].front();
 
-                if(!msg.ack_required)
+                if(msg.ack_required==0)
                 {
                     //delay a second for acknowledgement
                     if(msg.type != IR_MSG_TYPE_ACK || robot->timestamp - msg.timestamp > robot->para.ir_msg_ack_delay)
@@ -43,7 +43,7 @@ void * Robot::IRCommTxThread(void * para)
                         robot->IR_TXMsgQueue[i].erase(robot->IR_TXMsgQueue[i].begin());
                     }
                 }
-                else if(msg.repeated < robot->para.ir_msg_repeated_num)
+                else if(msg.repeated < msg.ack_required)//robot->para.ir_msg_repeated_num)
                 {
                     if(robot->timestamp - msg.timestamp > robot->para.ir_msg_repeated_delay)
                     {
@@ -86,7 +86,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     if(data[0] !=0 && ((data[0] & 0xF) != ((docked[channel] >>4) & 0xF) ||  (data[0] >> 4 & 0xF) != ((docked[channel]) & 0xF)))
     {
         printf("%d channel %d received message %s, expected receiver is %#x(%#x) but I have %#x(%#x), skip it\n",
-                timestamp, channel, irmessage_names[data[1]], data[0]&0xF, data[0], (docked[channel]>>4) & 0xF, docked[channel]);
+                timestamp, channel, irmessage_names[data[1]], data[0]&0xF, (uint8_t)data[0], (docked[channel]>>4) & 0xF, docked[channel]);
         return;
     }
 
@@ -96,16 +96,25 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
         //broadcast, no ack required
         case IR_MSG_TYPE_RECRUITING:
             {
-                if(current_state!=INORGANISM)
+                if(current_state==FORAGING || current_state == WAITING)
                 {
-                    comm_status[channel] = 1;
+                    OrganismSequence::Symbol sym(data[2]);
 
-                    if (!organism_found)
+                    if(sym.type2 == type)
                     {
-                        organism_found = true;
-                        assembly_count = DEFAULT_ASSEMBLY_COUNT;
+                        comm_status[channel] = 1;
+
+                        if (!organism_found)
+                        {
+                            organism_found = true;
+                            assembly_count = DEFAULT_ASSEMBLY_COUNT;
+                        }
+
+                        if(assembly_info!=0 && assembly_info!=sym)
+                            printf("Received conflicting assembly info, may need to check !!!\n");
+                
+                        assembly_info = sym;
                     }
-                    assembly_info = OrganismSequence::Symbol(data[2]);
                 }
             }
             break;
@@ -185,17 +194,32 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
             }
             break;
         case IR_MSG_TYPE_ASSEMBLY_INFO:
+            if(msg_assembly_info_expected & 1<< channel)
             {
-                assembly_info_checked = true;
-                assembly_info = OrganismSequence::Symbol(data[3]);
+                printf("%d received assemby_info %#x\n", timestamp, data[2]);
+                msg_assembly_info_received |=1<<channel;
+                //msg_assembly_info_expected &=~(1<<channel);
+                OrganismSequence::Symbol sym(data[2]);
+                if(sym.type2 != type && sym.side2 != assembly_info.side2)
+                    assembly_info = OrganismSequence::Symbol(0);
+                else
+                    assembly_info = sym; //it is ok to update assembly_info, even they are not the same
+
+                ack_required = true;
             }
             break;
         case IR_MSG_TYPE_ASSEMBLY_INFO_REQ:
+            if(msg_assembly_info_req_expected & 1<< channel)
             {
+                printf("%d received assemby_info_req \n", timestamp);
+                msg_assembly_info_req_expected &= ~(1<<channel);
+                msg_assembly_info_req_received |= 1<<channel;
                 OrganismSequence seq;
                 rt_status ret = mytree.getBranch(seq, (robot_side)channel);
+                std::cout<<seq<<std::endl;
+                printf("assembly_info %#x\n", seq.getSymbol(0).data);
                 if(ret.status == RT_OK)
-                    SendIRMessage(channel, IR_MSG_TYPE_ASSEMBLY_INFO, &(seq.getSymbol(0).data), 1, true);
+                    SendIRMessage(channel, IR_MSG_TYPE_ASSEMBLY_INFO, seq.getSymbol(0).data, 5);
                 else
                     printf("Error in getting branch, no Assembly info be sent\n");
             }
@@ -221,7 +245,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                     uint8_t replied_data[5];
                     replied_data[0] = data[2];
                     memcpy((uint8_t*)&replied_data[1], (uint8_t*)&my_IP, 4);
-                    SendIRMessage(channel, IR_MSG_TYPE_IP_ADDR, replied_data, 5, true);
+                    SendIRMessage(channel, IR_MSG_TYPE_IP_ADDR, replied_data, 5, para.ir_msg_repeated_num);
                     memcpy((uint8_t*)&neighbours_IP[channel], (uint8_t*)&data[3], 4);
                 }
             }
@@ -483,7 +507,7 @@ void Robot::SendIRMessage(const IRMessage& msg)
         printf("%d: %s send message %s via channel %d (%#x)\n",msg.timestamp, name, irmessage_names[msg.type],msg.channel, board_dev_num[msg.channel]);
 }
 
-void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
+void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size, uint8_t ack_required)
 {
     //all messages are pushed into a queue waiting to be processed by TxThread
     //This function should be called only when robots are docked, so docked[channel]!=0 TODO: check this
@@ -494,19 +518,19 @@ void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int si
     pthread_mutex_unlock(&ir_txqueue_mutex);
 }
 
-void Robot::SendIRMessage(int channel, uint8_t type, bool ack_required)
+void Robot::SendIRMessage(int channel, uint8_t type, uint8_t ack_required)
 {
     SendIRMessage(channel, type, NULL, 0, ack_required);
 }
 
-void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required)
+void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t data, uint8_t ack_required)
 {
     SendIRMessage(channel, type, &data, 1, ack_required);
 }
 
 void Robot::SendIRAckMessage(int channel, uint8_t type)
 {
-    SendIRMessage(channel, IR_MSG_TYPE_ACK, (const uint8_t*)&type, 1, false);
+    SendIRMessage(channel, IR_MSG_TYPE_ACK, (const uint8_t*)&type, 1, 0);
 }
 
 void Robot::SendIRAckMessage(int channel, uint8_t type, uint8_t *data, int size)
@@ -517,17 +541,17 @@ void Robot::SendIRAckMessage(int channel, uint8_t type, uint8_t *data, int size)
     SendIRMessage(channel, IR_MSG_TYPE_ACK, dst_data, size+1, false);
 }
 
-void Robot::BroadcastIRMessage(int channel, uint8_t type, bool ack_required)
+void Robot::BroadcastIRMessage(int channel, uint8_t type, uint8_t ack_required)
 {
     BroadcastIRMessage(channel, type, NULL, 0, ack_required);
 }
 
-void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, bool ack_required)
+void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, uint8_t ack_required)
 {
     BroadcastIRMessage(channel, type, &data, 1, ack_required);
 }
 
-void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
+void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size, uint8_t ack_required)
 {
     //push broadcast message into a queue, the receiver is set to 0 to be distinguished from SendIRMessages
     pthread_mutex_lock(&ir_txqueue_mutex);
@@ -553,7 +577,7 @@ void Robot::PropagateSingleIRMessage(uint8_t type, int channel, uint8_t *data, u
             data_size = MAX_IR_MESSAGE_SIZE - 6;
         }
         memcpy(buf + 5, data, data_size);
-        SendIRMessage(channel, IR_MSG_TYPE_PROPAGATED, buf, data_size + 5, true);
+        SendIRMessage(channel, IR_MSG_TYPE_PROPAGATED, buf, data_size + 5, para.ir_msg_repeated_num);
     }
 }
 
@@ -596,10 +620,11 @@ void Robot::SendFailureMsg( int channel )
     uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
     buf[0] = channel;
 
-    SendIRMessage(channel, IR_MSG_TYPE_FAILED, buf, 1, true);
+    SendIRMessage(channel, IR_MSG_TYPE_FAILED, buf, 1, para.ir_msg_repeated_num);
 
     printf("%d Sending failure message %d %#x\n",timestamp,(int)buf[0],docked[channel]);
 }
+
 
 
 
@@ -637,7 +662,6 @@ void Robot::PropagateSubOrgScore( uint8_t id, uint8_t score, int ignore_side )
     PropagateIRMessage(IR_MSG_TYPE_SCORE, buf, 2, ignore_side);
     printf("%d Propagating id score: %d %d\n",timestamp,id,score);
 
-
 //    for( int i=0; i<SIDE_COUNT; i++ )
 //    {
 //        if( docked[i] && i != ignore_side )
@@ -656,7 +680,7 @@ void Robot::BroadcastScore( int i, uint8_t score, uint8_t id )
     buf[1] = score;
 
     printf("%d Broadcasting id score %d %d\n",timestamp,id,score);
-    BroadcastIRMessage( i, IR_MSG_TYPE_SCORE, buf, 2);
+    BroadcastIRMessage( i, IR_MSG_TYPE_SCORE, buf, 2, 0);
 
 }
 
@@ -685,7 +709,7 @@ void Robot::SendBranchTree(int channel, const OrganismSequence& seq)
     for(unsigned int i=0; i < buf[0];i++)
         buf[i+1] =seq.Encoded_Seq()[i].data;
 
-    SendIRMessage(channel, IR_MSG_TYPE_ORGANISM_SEQ, buf, buf[0] + 1, true);
+    SendIRMessage(channel, IR_MSG_TYPE_ORGANISM_SEQ, buf, buf[0] + 1, para.ir_msg_repeated_num);
     std::cout<<timestamp<<": "<<name<<" send branch:"<<seq<<std::endl;
 
 }

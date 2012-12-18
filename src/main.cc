@@ -43,6 +43,8 @@ int main(int argc, char * argv[])
 
     RobotBase::RobotType robot_type = RobotBase::Initialize("morph");
 
+    IRComm::Initialize();
+
     //create robot object
     Robot * robot;
     char cf_path[64];
@@ -55,17 +57,19 @@ int main(int argc, char * argv[])
 
     if(robot_type == RobotBase::KABOT)
     {
-        robot = new RobotKIT;
+        robot = new RobotKIT((KaBot*)RobotBase::Instance());
         sprintf(cf_name,"%s/kit_option.cfg", cf_path);
     }
     else if(robot_type == RobotBase::ACTIVEWHEEL)
     {
-        robot = new RobotAW;
+        printf("create new robots\n");
+        robot = new RobotAW ((ActiveWheel *)RobotBase::Instance());
+        printf("create new robots done\n");
         sprintf(cf_name,"%s/aw_option.cfg", cf_path);
     }
     else if(robot_type == RobotBase::SCOUTBOT)
     {
-        robot = new RobotSCOUT;
+        robot = new RobotSCOUT((ScoutBot *)RobotBase::Instance());
         sprintf(cf_name,"%s/scout_option.cfg", cf_path);
     }
     else

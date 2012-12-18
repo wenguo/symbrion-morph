@@ -134,6 +134,11 @@ Robot::Robot()
     msg_organism_seq_received = false;
     msg_organism_seq_expected = false;
     msg_ip_addr_received = 0;
+    msg_ip_addr_expected = 0;
+    msg_assembly_info_received = 0;
+    msg_assembly_info_expected = 0;
+    msg_assembly_info_req_received = 0;
+    msg_assembly_info_req_expected = 0;
 
     // for self-repair
     msg_failed_received = 0;
@@ -150,6 +155,7 @@ Robot::Robot()
 
     docking_failed = false;
     docking_trials=0;
+    docking_blocked = false;
 
     //clear just in case 
     mytree.Clear();
@@ -169,17 +175,24 @@ Robot::Robot()
     pthread_mutex_init(&eth_txqueue_mutex, NULL);
 
     robots_in_range_detected_hist.Resize(15);
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    ethernet_status_hist.Resize(15);
+
     direction = FORWARD;
+    memset(speed, 0, 3);
+
+    docking_approaching_sensor_id[0] = 0; 
+    docking_approaching_sensor_id[1] = 1; 
+
+    docking_blocked = false;
+    docking_region_detected = false;
+    aligning_region_detected = false;
+    blocking_count = 0;
+
+    assembly_info = 0;
 
     LED0 = 0x1;
     LED1 = 0x2;
     LED2 = 0x4;
-    IR_PULSE0 = 0x1;
-    IR_PULSE1 = 0x2;
-    IR_PULSE2 = 0x4;
 }
 
 // Reset variables used during assembly
@@ -194,6 +207,10 @@ void Robot::ResetAssembly()
 	msg_stop_received = false;
 	msg_retreat_received = false;
     //msg_unlocked_received = 0;
+    msg_assembly_info_received = 0;
+    msg_assembly_info_expected = 0;
+    msg_assembly_info_req_received = 0;
+    msg_assembly_info_req_expected = 0;
     num_robots_inorganism=1;
     seed = false;
 
@@ -204,6 +221,17 @@ void Robot::ResetAssembly()
         recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
     }
 
+    docking_approaching_sensor_id[0] = 0; 
+    docking_approaching_sensor_id[1] = 1; 
+
+    docking_blocked = false;
+    docking_region_detected = false;
+    aligning_region_detected = false;
+    blocking_count = 0;
+
+    assembly_info = 0;
+
+    ethernet_status_hist.Reset();
 }
 
 Robot::~Robot()
@@ -223,6 +251,7 @@ bool Robot::Init(const char * optionfile)
 
     current_state = fsm_state_t(para.init_state);
     last_state = fsm_state_t(para.init_state);
+
 
     // For self-repair - make sure every robot knows the target
     if(!para.og_seq_list.empty()) target = para.og_seq_list[0];
@@ -259,7 +288,7 @@ bool Robot::Init(const char * optionfile)
     for(int i=0;i<NUM_DOCKS;i++)
     {
         SetRGBLED(i, 0, 0, 0, 0);
-        SetIRLED(i, IRLEDOFF, LED1, IR_PULSE0|IR_PULSE1);
+        SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1|IRPULSE2);
     }
     
     robots_in_range_detected_hist.Reset();
@@ -400,9 +429,7 @@ void Robot::Update(const uint32_t& ts)
 
 void Robot::Calibrating()
 {
-    leftspeed = 0;
-    rightspeed = 0;
-    sidespeed = 0;
+    memset(speed, 0, 3);
 
     static int32_t temp1[8]={0,0,0,0,0,0,0,0};
     static int32_t temp2[8]={0,0,0,0,0,0,0,0};
@@ -678,7 +705,7 @@ void Robot::PrintStatus()
 
     std::cout << timestamp << ": " << name << " in state " << state_names[current_state]
         << " [" << state_names[last_state] << "] recover count: " << recover_count
-        << " speed (" << leftspeed << " , " << rightspeed << " )"  << std::endl;
+        << " speed (" << (int)speed[0] << " , " << (int)speed[1] << ", " << (int)speed[2]<< " )"  << std::endl;
 }
 
 void Robot::LogState()
