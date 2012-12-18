@@ -280,22 +280,22 @@ void RobotSCOUT::UpdateFailures()
         	if( failure_delay++ > para.fail_after_delay )
         	{
         		// For testing - send spoof IR message to self
-                msg_failed_received |= 1<<para.debug.para[0]; // side received on
-                subog_id = para.debug.para[1];				  // side sent from
-                parent_side = para.debug.para[0];
-                heading = (parent_side + 2) % 4;
-
-                // Propagate lowering messages
-                PropagateIRMessage(IR_MSG_TYPE_LOWERING);
-
-                last_state = MACROLOCOMOTION;
-                current_state = LOWERING;
-                lowering_count = 0;
-
-                msg_unlocked_received |= 1<<para.debug.para[0];
+//                msg_failed_received |= 1<<para.debug.para[0]; // side received on
+//                subog_id = para.debug.para[1];				  // side sent from
+//                parent_side = para.debug.para[0];
+//                heading = (parent_side + 2) % 4;
+//
+//                // Propagate lowering messages
+//                PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+//
+//                last_state = MACROLOCOMOTION;
+//                current_state = LOWERING;
+//                lowering_count = 0;
+//
+//                msg_unlocked_received |= 1<<para.debug.para[0];
                 /////////////////////////////////////////////
 
-//                module_failed = true;
+                module_failed = true;
         	}
         }
     }
@@ -1474,30 +1474,22 @@ void RobotSCOUT::Raising()
     speed[1] = 0;
     speed[2] = 0;
 
-    //temp solution, force SCOUT20 as the coordinator
-//    if(para.debug.para[9]==3)
-//
-////    if((ambient_hist[2].Avg() > 1000 && ambient_hist[3].Avg() > 1000)
-////     ||(ambient_hist[6].Avg() > 1000 && ambient_hist[7].Avg() > 1000))
-//        flag = true;
-
     if(seed)
     {
-        raising_count++;
-
-        if(raising_count ==20)
+        if(raising_count == 20)
         {
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
             PropagateIRMessage(IR_MSG_TYPE_RAISING);
             PropagateEthMessage(ETH_MSG_TYPE_RAISING);
-
         }
+
+        raising_count++;
     }
     else if(msg_raising_received)
         raising_count++;
 
-    if(raising_count >=2)
+    if((seed && raising_count > 20) || (!seed && raising_count > 0))
     {
         //flashing RGB leds
         static int index = 0;
