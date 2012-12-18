@@ -41,6 +41,7 @@ void RobotSCOUT::InitHardware()
     for(int i=0;i<NUM_DOCKS;i++)
     {
         irobot->SetPrintEnabled(i, false); 
+        irobot->enableDockingSense(i, true);
     }
 
     irobot->EnableMotors(true);
@@ -146,6 +147,7 @@ bool RobotSCOUT::SetDockingMotor(int channel, int status)
         {
             docking_motors_status[channel] = CLOSED;
         }
+        irobot->MoveDocking(ScoutBot::Side(board_dev_num[channel]), 0);
     }
 
     //TODO: checking this
@@ -247,13 +249,23 @@ void RobotSCOUT::UpdateSensors()
     beacon[7] = ret_D.sensor[1].docking;
 
     uint8_t ethernet_status=0;
+    uint8_t isense=0;
+    //printf("Isense: ");
     for(int i=0;i<NUM_DOCKS;i++)
     {
-    //    color[i] = GetRGB(ScoutBot::Side(i));
         if(irobot->isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])))
             ethernet_status |= 1<<i;
+        
+        if(irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i]))> 200)
+            isense |= 1<<i;
+        
+    //    printf("%d\t", irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])));
     }
+    //printf("\n");
     ethernet_status_hist.Push2(ethernet_status);
+    docking_motor_isense_hist.Push2(isense);
+
+
 
     for(int i=0;i<NUM_IRS;i++)
     {
@@ -318,7 +330,6 @@ void RobotSCOUT::Avoidance()
     else if(reflective_hist[4].Avg() > para.avoidance_threshold || reflective_hist[5].Avg()>para.avoidance_threshold)
         direction = FORWARD;
 
-    speed[2] = 0;
     speed[0] = 0;
     speed[1] = 0;
 
@@ -810,16 +821,8 @@ void RobotSCOUT::Recover()
             //blocked
             else
             {
-                if(assembly_info.side2 == FRONT)
-                {
-                    speed[0] = para.aligning_reverse_speed[0];
-                    speed[1] = para.aligning_reverse_speed[1];
-                }
-                else
-                {
-                    speed[0] = -para.aligning_reverse_speed[0];
-                    speed[1] = -para.aligning_reverse_speed[1];
-                }
+                speed[0] = direction * para.aligning_reverse_speed[0];
+                speed[1] = direction * para.aligning_reverse_speed[1];
 
                 if(timestamp % 5 ==0)
                     Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
@@ -2001,6 +2004,54 @@ void RobotSCOUT::Debugging()
             if(timestamp==2)
                 SetRGBLED(para.debug.para[4], para.debug.para[0] * BLUE, para.debug.para[1]*BLUE, para.debug.para[2]*BLUE, para.debug.para[3]*BLUE);
             break;
+
+        case 22://calibrate docking units
+            if(timestamp ==2)
+            {
+                SetIRLED(para.debug.para[9], IRLEDOFF, 0, IRPULSE0|IRPULSE1);
+                irobot->enableDockingSense(para.debug.para[9], true);
+            }
+            else if(timestamp == 30)
+            {
+                ((ScoutBot*)irobot)->CalibrateDocking(ScoutBot::Side(para.debug.para[9]));
+                printf("start to calibrate docking unit %d\n", para.debug.para[9]);
+            }
+            break;
+        case 23://open docking units
+            {
+                if(timestamp ==2)
+                {
+                    //SetIRLED(para.debug.para[9], IRLEDOFF, 0, IRPULSE0|IRPULSE1);
+                    irobot->enableDockingSense(para.debug.para[9], true);
+                }
+                else if(timestamp == 30)
+                {
+                    ((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[9]));
+                    printf("open docking unit %d\n", para.debug.para[9]);
+                }
+                uint8_t rev = ((ScoutBot*)irobot)->GetDScrewRevolutions(ScoutBot::Side(para.debug.para[9]));
+                uint8_t ise = ((ScoutBot*)irobot)->GetDScrewISense(ScoutBot::Side(para.debug.para[9]));
+                printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
+            }
+            break;
+        case 24://close docking units
+            {
+                if(timestamp ==2)
+                {
+                    //SetIRLED(para.debug.para[9], IRLEDOFF, 0, IRPULSE0|IRPULSE1);
+                    irobot->enableDockingSense(para.debug.para[9], true);
+                }
+                else if(timestamp == 30)
+                {
+                    ((ScoutBot*)irobot)->CloseDocking(ScoutBot::Side(para.debug.para[9]));
+                    printf("close docking unit %d\n", para.debug.para[9]);
+                }
+                uint8_t rev = ((ScoutBot*)irobot)->GetDScrewRevolutions(ScoutBot::Side(para.debug.para[9]));
+                uint8_t ise = ((ScoutBot*)irobot)->GetDScrewISense(ScoutBot::Side(para.debug.para[9]));
+                printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
+            }
+            break;
+
 
         default:
             break;
