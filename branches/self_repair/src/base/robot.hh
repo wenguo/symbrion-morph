@@ -236,6 +236,7 @@ class Robot
     int32_t beacon[NUM_IRS];
     rgb_t   color[NUM_DOCKS];
     float comm_status[NUM_IRCOMMS];
+    int32_t docking_motor_isense[NUM_DOCKS];
 
     //windowed sensor array
     Hist reflective_hist[NUM_IRS];
@@ -247,6 +248,7 @@ class Robot
     Hist ambient_avg_threshold_hist;
     Hist proximity_hist[NUM_IRS];
     Hist ethernet_status_hist;
+    Hist docking_motor_isense_hist;
 
     //status
     uint8_t bumped;

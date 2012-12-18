@@ -178,6 +178,7 @@ Robot::Robot()
 
     robots_in_range_detected_hist.Resize(15);
     ethernet_status_hist.Resize(15);
+    docking_motor_isense_hist.Resize(8);
 
     direction = FORWARD;
     memset(speed, 0, 3);
@@ -540,7 +541,14 @@ void Robot::CheckDockingMotor()
         //closing
         if(docking_motors_status[i] == CLOSING)
         {
-            if(docking_motor_operating_count[i]++ >= para.docking_motor_closing_time)
+            docking_motor_isense_hist.Print2();
+            docking_motor_operating_count[i]++ ;   
+            if(docking_motor_operating_count[i] > 10 && docking_motor_isense_hist.Sum(i) >=2)
+            {
+                SetDockingMotor(i, STOP);
+                CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", docking_motor_operating_count[i]);
+            }
+            else if(docking_motor_operating_count[i] >= para.docking_motor_closing_time)
             {
                 SetDockingMotor(i, STOP);
                 CPrintf1(SCR_RED, "Stop docking motor, after closing -- %d", docking_motor_operating_count[i]);
@@ -550,7 +558,14 @@ void Robot::CheckDockingMotor()
         //opeing
         else if(docking_motors_status[i] == OPENING)
         {
-            if(docking_motor_operating_count[i]++ >= para.docking_motor_opening_time)
+            docking_motor_operating_count[i]++ ;   
+            docking_motor_isense_hist.Print2();
+            if(docking_motor_operating_count[i] > 10 && docking_motor_isense_hist.Sum(i) >=2)
+            {
+                SetDockingMotor(i, STOP);
+                CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", docking_motor_operating_count[i]);
+            }
+            else if(docking_motor_operating_count[i] >= para.docking_motor_opening_time)
             {
                 SetDockingMotor(i, STOP);
                 CPrintf1(SCR_RED,"Stop docking motor, after opening -- %d", docking_motor_operating_count[i]);
