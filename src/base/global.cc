@@ -52,6 +52,8 @@ const char * irmessage_names[IR_MSG_TYPE_COUNT]={
     "NewRobot_Joined",
     "Organism_Formed",
     "Raising",
+    "Raising Start",
+    "Raising Stop",
     "Lowering",
     "Reshaping",
     "Failed",
@@ -72,6 +74,8 @@ const char * ethmessage_names[ETH_MSG_TYPE_COUNT]={
     "NewRobot_Joined",
     "Organism_Formed",
     "Raising",
+    "Raising Start",
+    "Raising Stop",
     "Lowering",
     "Reshaping",
 

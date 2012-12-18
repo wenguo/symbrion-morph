@@ -151,6 +151,18 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
                         CPrintf1(SCR_GREEN,"%d -- start to raise !", timestamp);
             		}
             		break;
+            	case ETH_MSG_TYPE_RAISING_START:
+            		{
+                        msg_raising_start_received = true;
+                        CPrintf1(SCR_GREEN,"%d -- start to raise !", timestamp);
+            		}
+            		break;
+            	case ETH_MSG_TYPE_RAISING_STOP:
+            		{
+                        msg_raising_stop_received = true;;
+                        CPrintf1(SCR_RED,"%d -- stopping raise !", timestamp);
+            		}
+            		break;
             	default:
             		valid = false;
             		CPrintf1(SCR_GREEN, "%d -- received unknown ETH message", timestamp);

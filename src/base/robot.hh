@@ -321,6 +321,8 @@ class Robot
     uint8_t msg_reshaping_received;
     uint8_t msg_reshaping_expected;
     uint8_t msg_raising_received;
+    bool msg_raising_start_received;
+    bool msg_raising_stop_received;
     uint8_t msg_lowering_received;
     uint8_t msg_disassembly_received;
     uint8_t msg_locked_received;

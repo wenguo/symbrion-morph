@@ -128,6 +128,8 @@ Robot::Robot()
     msg_disassembly_received = 0;
     msg_reshaping_received=0;
     msg_raising_received = 0;
+    msg_raising_start_received = false;
+    msg_raising_stop_received = false;
     msg_lowering_received = 0;
     msg_guideme_received = 0;
     msg_docking_signal_req_received = 0;
