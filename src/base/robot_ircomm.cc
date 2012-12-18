@@ -267,11 +267,11 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         parent_side = channel;
                         subog_str[subog_str[0]] |= type<<4;     // 4:5
                         subog_str[subog_str[0]] |= channel<<6;  // 5:6
-
-            			int ind = (int)(((uint8_t*)data)[2])+3;	 // get heading index
-            			heading = ((uint8_t*)data)[ind];	 	// get heading
-            			printf("%d My heading is: %d @ %d\n",timestamp,(int)heading,ind);
                     }
+
+        			int ind = (int)(((uint8_t*)data)[2])+3;	 // get heading index
+        			heading = ((uint8_t*)data)[ind];	 	// get heading
+        			printf("%d My heading is: %d @ %d\n",timestamp,(int)heading,ind);
 
                     printf("%d Sub-organism string received\n",timestamp);
                     PrintSubOGString(subog_str);
@@ -611,14 +611,17 @@ void Robot::PropagateReshapeScore( uint8_t score, int ignore_side )
     uint8_t buf[MAX_IR_MESSAGE_SIZE-1];
     buf[0] = score;
 
-    for( int i=0; i<SIDE_COUNT; i++ )
-    {
-        if( docked[i] && i != ignore_side )
-        {
-            SendIRMessage(i, IR_MSG_TYPE_RESHAPING, buf, 1, true);
-            printf("%d Propagating reshaping score: %d on side %d\n",timestamp, score,i);
-        }
-    }
+    printf("%d Propagating reshaping score: %d\n",timestamp, score);
+    PropagateIRMessage(IR_MSG_TYPE_RESHAPING,buf,1,ignore_side);
+
+//    for( int i=0; i<SIDE_COUNT; i++ )
+//    {
+//        if( docked[i] && i != ignore_side )
+//        {
+//            Pro(i, IR_MSG_TYPE_RESHAPING, buf, 1, true);
+//            printf("%d Propagating reshaping score: %d on side %d\n",timestamp, score,i);
+//        }
+//    }
 
 
 }
@@ -631,14 +634,18 @@ void Robot::PropagateSubOrgScore( uint8_t id, uint8_t score, int ignore_side )
     buf[0] = id;
     buf[1] = score;
 
-    for( int i=0; i<SIDE_COUNT; i++ )
-    {
-        if( docked[i] && i != ignore_side )
-        {
-            SendIRMessage(i, IR_MSG_TYPE_SCORE, buf, 2, true);
-            printf("%d Propagating id score: %d %d on side %d\n",timestamp,id,score,i);
-        }
-    }
+    PropagateIRMessage(IR_MSG_TYPE_SCORE, buf, 2, ignore_side);
+    printf("%d Propagating id score: %d %d\n",timestamp,id,score);
+
+
+//    for( int i=0; i<SIDE_COUNT; i++ )
+//    {
+//        if( docked[i] && i != ignore_side )
+//        {
+//            SendIRMessage(i, IR_MSG_TYPE_SCORE, buf, 2, true);
+//            printf("%d Propagating id score: %d %d on side %d\n",timestamp,id,score,i);
+//        }
+//    }
 
 }
 void Robot::BroadcastScore( int i, uint8_t score, uint8_t id )

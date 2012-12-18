@@ -97,11 +97,11 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
 						parent_side = channel;
 						subog_str[subog_str[0]] |= type<<4;     // 4:5
 						subog_str[subog_str[0]] |= channel<<6;  // 5:6
-
-						int ind = (int)(((uint8_t*)data)[1])+2;	 // get heading index
-						heading = ((uint8_t*)data)[ind];	 // get heading
-						printf("%d: My heading is: %d @ %d\n",timestamp,(int)heading,ind);
 					}
+
+					int ind = (int)(((uint8_t*)data)[1])+2;	 // get heading index
+					heading = ((uint8_t*)data)[ind];	 // get heading
+					printf("%d: My heading is: %d @ %d\n",timestamp,(int)heading,ind);
 
 					printf("%d Sub-organism string received\n",timestamp);
 					PrintSubOGString(subog_str);
