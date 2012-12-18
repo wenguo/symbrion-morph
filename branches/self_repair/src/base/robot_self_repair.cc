@@ -188,7 +188,7 @@ void Robot::CheckForFailures()
 				for( int i=0; i<SIDE_COUNT; i++ )
 				{
 					// If there is a robot docked
-					if( docked[i] )
+					if( docked[i]  && (i != parent_side) ) // Ignore parent side
 					{
 						// If the robot is a scout
 						if(  OrganismSequence::Symbol(docked[i]).type2 == ROBOT_SCOUT )
@@ -410,6 +410,13 @@ void Robot::changeState( fsm_state_t next_state )
 //	upon own heading and docking info
 uint8_t Robot::getNeighbourHeading( int8_t n )
 {
+	// If I can't move, it doesn't matter whether my neighbour can
+	if( heading == 4 )
+		{
+			std::cout << timestamp << " neighbour can't move" << std::endl;
+			return 4;
+		}
+
 	OrganismSequence::Symbol sym = OrganismSequence::Symbol(n);
 //	std::cout << timestamp << " docking info: " << sym << " s1:" << (int) sym.side1
 //								  	     << " s2:" << (int) sym.side2 << std::endl;
