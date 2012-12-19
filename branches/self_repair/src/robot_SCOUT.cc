@@ -797,7 +797,6 @@ void RobotSCOUT::Alignment()
                     speed[0] += (beacon[i] * para.aligning_weightleft[i]) >>4;
                     speed[1] += (beacon[i] * para.aligning_weightright[i]) >>4;
                 }
-                printf("\tbeacon: %d %d\tat speed (%d %d)\n", beacon[id0], beacon[id1], speed[0], speed[1]);
             }
         }
     }
@@ -823,6 +822,8 @@ void RobotSCOUT::Recover()
 
     speed[0] = 0;
     speed[1] = 0;
+    int id0 = docking_approaching_sensor_id[0];
+    int id1 = docking_approaching_sensor_id[1];
 
     if(last_state == ALIGNMENT)
     {
@@ -858,9 +859,9 @@ void RobotSCOUT::Recover()
                     Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
 
                 //TODO: test reverse behaviour with new robots
-                const int weight_left[8] = {-3,3, 0,0,0,0,0,0};
-                const int weight_right[8] = {3,-3,0,0,0,0,0,0};
-                for(int i=0;i<0;i++)
+                const int weight_left[8] = {-3,3, 0,0,-3,3,0,0};
+                const int weight_right[8] = {3,-3,0,0,3,-3,0,0};
+                for(int i=id0;i<=id1;i++)
                 {
                     speed[0] += reflective_hist[i].Avg() * weight_left[i]>>8;
                     speed[1] += reflective_hist[i].Avg() * weight_right[i]>>8;
@@ -879,8 +880,6 @@ void RobotSCOUT::Recover()
             }
             else
             {
-                int id0 = docking_approaching_sensor_id[0];
-                int id1 = docking_approaching_sensor_id[1];
                 
                 if(docking_trials >= para.docking_trials)
                 {
