@@ -870,6 +870,11 @@ void RobotSCOUT::Recover()
                 }
             }
         }
+        else if( recover_count == para.aligning_reverse_count )
+        {
+            for(int i=0; i<SIDE_COUNT; i++)
+            	SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,0);
+        }
         else
         {
             SetRGBLED(1, 0, 0, 0, 0);
@@ -877,6 +882,10 @@ void RobotSCOUT::Recover()
             if(assembly_info == OrganismSequence::Symbol(0))
             {
                 ResetAssembly();
+
+                for(int i=0; i<SIDE_COUNT; i++)
+                	SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
+
                 current_state = FORAGING;
                 last_state = RECOVER;
             }
@@ -886,11 +895,17 @@ void RobotSCOUT::Recover()
                 if(docking_trials >= para.docking_trials)
                 {
                     ResetAssembly();
+
+                    for(int i=0; i<SIDE_COUNT; i++)
+                    	SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
+
                     current_state = FORAGING;
                     last_state = RECOVER;
                 }
                 else if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)
                 {
+                    for(int i=0; i<SIDE_COUNT; i++)
+                    	SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
 
                     current_state = ALIGNMENT;
                     last_state = RECOVER;
