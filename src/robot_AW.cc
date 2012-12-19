@@ -549,64 +549,74 @@ void RobotAW::LocateBeacon()
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
 
-
-    speed[0] = direction * 10;
-    speed[1] = direction * 10;
+    speed[0] = 0;
+    speed[1] = 0;
     speed[2] = 0;
 
-    const int locatebeacon_weight_left[NUM_IRS] = {0, 0, 0, 0, -1, 1, 0, 0};
-    const int locatebeacon_weight_right[NUM_IRS] = {0, 0, 0,0, 1, -1, 0, 0};
 
+    locatebeacon_count++;
 
-    bool turning = true;
-    int temp_front = std::min(beacon[0], beacon[1]);
-    int temp_rear = std::min(beacon[4], beacon[5]);
-    if(id0==0)
+    int turning = 0;
+    if(beacon_signals_detected)
     {
-        if(temp_front >= temp_rear && temp_front >=5)
-            turning = false;
-    }
-    else
-    {
-        if(temp_front <= temp_rear && temp_rear >=5)
-            turning = false;
-    }
-
-    if(turning)
-    {
-        speed[0] = 20;
-        speed[1] = -20;
-    }
-    else
-    {
-            //two beacon signals 
-        if(beacon[id0]>5 && beacon[id1]>5)
+        /*
+        if(id0 == 0)
         {
-            //stay there and wait to transfer to state Alignment
-            speed[0] = direction * 15;
-            speed[1] = direction * 15;
-            speed[2] = 0;
+            if((beacon_signals_detected & 0x3) != 0)
+                turning = 0;
+            else 
+                turning = 1;
         }
         else
         {
-            printf("only one beacon detected, shift left and right a little bit\n");
-            int temp = beacon[id0]-beacon[id1];
+            if((beacon_signals_detected & 0x30) != 0)
+                turning = 0;
+            else 
+                turning = 1;
+        }*/
 
-            speed[0] = 0;
-            speed[1] = 0;
-            speed[2] = -15 * sign(temp) * direction;
+        if((beacon_signals_detected & (1<<id0 | 1<<id1))!=0)
+            turning = 0;
+        else 
+            turning = 1;
+
+        if(turning != 0)
+        {
+            speed[0] = 20;
+            speed[1] = -20;
         }
+        else
+        {
+            //two beacon signals 
+            if(beacon[id0]>5 && beacon[id1]>5)
+            {
+                //stay there and wait to transfer to state Alignment
+                speed[0] = direction * 15;
+                speed[1] = direction * 15;
+                speed[2] = 0;
+            }
+            else
+            {
+                printf("only one beacon detected, shift left and right a little bit\n");
+                int temp = beacon[id0]-beacon[id1];
 
+                speed[0] = 0;
+                speed[1] = 0;
+                speed[2] = -15 * sign(temp) * direction;
+            }
+
+        }
     }
 
 
+    /*
     printf("beacon: ");
     for(int i=0;i< NUM_IRS;i++)
     {
         printf("%d\t", beacon[i]);
     }
 
-    printf("\n\tSpeed: %d %d\n", speed[0], speed[1]);
+    printf("\n\tSpeed: %d %d\n", speed[0], speed[1]);*/
   
     //      printf("beacon: (%d %d) -- speed: (%d %d %d)\n", beacon[1], beacon[0], speed[0], speed[1], speed[2]);
     //switch on ir led at 64Hz so the recruitment robot can sensing it
@@ -772,7 +782,7 @@ void RobotAW::Alignment()
 
 void RobotAW::Recover()
 {
-    recover_count--;
+    recover_count++;
 
     //flasing RGB LEDs
     if(timestamp % 4 ==0)
@@ -796,7 +806,7 @@ void RobotAW::Recover()
     {
         //turn left/right according to reflective value;
         //robot will stop there for 1 seconds
-        if(recover_count >=10)
+        if(recover_count > para.aligning_reverse_count)
         {
             //docked to the wrong robots
             if(assembly_info == OrganismSequence::Symbol(0))
@@ -825,7 +835,7 @@ void RobotAW::Recover()
                 speed[1] = direction * para.aligning_reverse_speed[1];
             }
         }
-        else if(recover_count ==0)
+        else
         {
             SetRGBLED(1, 0, 0, 0, 0);
             SetRGBLED(3, 0, 0, 0, 0);
@@ -897,7 +907,7 @@ void RobotAW::Docking()
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
                 current_state = RECOVER;
                 last_state = ALIGNMENT;
-                recover_count = para.aligning_reverse_count;
+                recover_count = 0;
             }
             else
             {
@@ -968,7 +978,7 @@ void RobotAW::Docking()
             docking_trials++;
             current_state = RECOVER;
             last_state = ALIGNMENT;
-            recover_count = para.aligning_reverse_count;
+            recover_count = 0;
           //  printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
         }
         else
@@ -2019,9 +2029,6 @@ void RobotAW::Debugging()
         case 20://testing motors
             // if(timestamp  == 2)
             { 
-                int velocity = para.debug.para[3];
-                int phi = para.debug.para[4];
-                int rotation = para.debug.para[5];
                 speed[0] =para.debug.para[3];
                 speed[1] =  para.debug.para[4];
                 speed[2] =para.debug.para[5];
