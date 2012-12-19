@@ -540,13 +540,11 @@ bool Robot::isNeighbourConnected(int i)
 	// If Ethernet enabled
 	if( Ethernet::isSwitchActive() )
 	{
-		return Ethernet::switchIsPortConnected(i+1);
+//		return Ethernet::switchIsPortConnected(i+1);
 
 		// TODO: choose appropriate threshold values
-//		return (Ethernet::switchIsPortConnected(i+1) 		  ||
-//			   (ambient[i*2] 	< a && ambient[i*2+1] 	 < a) ||
-//			   (proximity[i*2] 	< p && proximity[i*2+1]  < p) ||
-//			   (reflective[i*2] < r && reflective[i*2+1] < r) );
+		return ( Ethernet::switchIsPortConnected(i+1) ||
+			   ( reflective_hist[2*i].Avg() < 100 && reflective_hist[2*i+1].Avg() < 100 ));
 	}
 	// If Ethernet not enabled - fall back to ir sensors
 	else
@@ -714,15 +712,19 @@ void Robot::LeadRepair()
 		}
 		else
 		{
+			// Reset variables
 			unlock_sent = 0;
-			repair_stage = STAGE1;
 			docked[parent_side] = 0;
 			msg_subog_seq_expected = 0;
+			msg_unlocked_received = 0;
+			msg_unlocked_expected = 0;
 
 			PropagateEthMessage(ETH_MSG_TYPE_RETREAT);
 			PropagateIRMessage(IR_MSG_TYPE_RETREAT);
 
 			move_start = timestamp;
+
+			repair_stage = STAGE1;
 
 			std::cout << timestamp << ": Shape determined, entering STAGE1" << std::endl;
 		}
@@ -981,7 +983,11 @@ void Robot::Repair()
 			// sending message back to parent module
 			if( timestamp > repair_start+repair_duration )
 			{
+				// Reset variable
 				unlock_sent = 0;
+				msg_unlocked_received = 0;
+				msg_unlocked_expected = 0;
+
 				SendSubOrgStr( parent_side, subog_str );
 				repair_stage = STAGE1;
 				msg_score_seq_expected = 1 << parent_side;

@@ -250,18 +250,19 @@ void RobotSCOUT::UpdateSensors()
 
     uint8_t ethernet_status=0;
     uint8_t isense=0;
-    //printf("Isense: ");
+//    printf("Isense: ");
     for(int i=0;i<NUM_DOCKS;i++)
     {
         if(irobot->isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])))
             ethernet_status |= 1<<i;
         
-        if(irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])) > 150)
+        if(irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])) > 200)
             isense |= 1<<i;
         
-      //  printf("%d\t", irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])));
+//        printf("%d\t", irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])));
     }
-   // printf("\n");
+//    printf("\n");
+
     ethernet_status_hist.Push2(ethernet_status);
     docking_motor_isense_hist.Push2(isense);
 
@@ -308,6 +309,7 @@ void RobotSCOUT::UpdateFailures()
                 /////////////////////////////////////////////
 
                 module_failed = true;
+                failure_delay = 0;
         	}
         }
     }
@@ -968,8 +970,12 @@ void RobotSCOUT::Recruitment()
         bool erase_required = false;
         if(recruitment_stage[i]==STAGE0)
         {
-            if(robots_in_range_detected_hist.Sum(2*i) > 14 || robots_in_range_detected_hist.Sum(2*i+1) >14)
+            if( robots_in_range_detected_hist.Sum(2*i) > 14 ||
+                robots_in_range_detected_hist.Sum(2*i+1) >14 ||
+                (msg_docking_signal_req_received & (1<<i)) )
             {
+                msg_docking_signal_req_received &= ~(1<<i);
+
                 msg_assembly_info_req_expected |= 1<<i;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDDOCKING, LED1, 0); 
@@ -988,7 +994,13 @@ void RobotSCOUT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE1)
         {
-            if(msg_docking_signal_req_received & (1<<i))
+        	if( recruitment_count[i]++ > 500 )
+        	{
+        		recruitment_count[i]=0;
+        		recruitment_stage[i]=STAGE0;
+        		SetIRLED(i,IRLEDOFF,LED1,0);
+        	}
+        	else if(msg_docking_signal_req_received & (1<<i))
             {
                 msg_docking_signal_req_received &= ~(1<<i);
                 SetIRLED(i, IRLEDDOCKING, LED1, 0); 
@@ -1004,6 +1016,7 @@ void RobotSCOUT::Recruitment()
                     msg_assembly_info_req_received &= ~(1<<i);
                     guiding_signals_count[i]=0;
                     recruitment_stage[i]=STAGE2;
+            		recruitment_count[i]=0;
                     printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
                 }
             }
@@ -1017,6 +1030,7 @@ void RobotSCOUT::Recruitment()
                 msg_guideme_received &= ~(1<<i);
                 guiding_signals_count[i]=0;
                 recruitment_stage[i]=STAGE2;
+                recruitment_count[i]=0;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
@@ -1380,23 +1394,24 @@ void RobotSCOUT::Undocking()
 
     undocking_count++;
 
-    printf("%d: %d %d %d %d\n",timestamp,reflective_hist[0].Avg(),reflective_hist[1].Avg(),reflective_hist[4].Avg(),reflective_hist[5].Avg());
+//    printf("%d: %d %d %d %d\n",timestamp,reflective_hist[0].Avg(),reflective_hist[1].Avg(),reflective_hist[4].Avg(),reflective_hist[5].Avg());
 
     if( undocking_count < 100 )
     {
-    	// Check for other robots at front and back
-    	bool back = false;
-    	bool front = false;
-		if( reflective_hist[4].Avg() < 100 && reflective_hist[5].Avg() < 100 ) back = true;
-		if( reflective_hist[0].Avg() < 100 && reflective_hist[1].Avg() < 100 ) front = true;
+    	bool f = isNeighbourConnected(FRONT);
+    	bool b = isNeighbourConnected(BACK);
+    	bool l = isNeighbourConnected(LEFT);
+    	bool r = isNeighbourConnected(RIGHT);
 
-		if( front && !back )
+//    	std::cout << f << " " << l << " " << b << " " << r << std::endl;
+
+		if( f && r && l && !b )
 		{
 			//printf("%d moving forwards\n",timestamp);
 			speed[0] = 30;
 			speed[1] = 30;
 		}
-		else if( back && !front )
+		else if( b && l && r && !f )
 		{
 			//printf("%d moving backwards\n",timestamp);
 			speed[0] = -30;
@@ -1416,6 +1431,8 @@ void RobotSCOUT::Undocking()
 
 		last_state = UNDOCKING;
 		current_state = FORAGING;
+
+		RemoveFromQueue(IR_MSG_TYPE_UNLOCKED);
 		ResetAssembly(); // reset variables used during assembly
 	}
 }
@@ -1425,18 +1442,32 @@ void RobotSCOUT::Lowering()
 {
     lowering_count++;
 
-// TODO: remove, no longer needed
-//    if( lowering_count <= 30 )
-//    {
-//
-//    }
-//    else if( StartRepair()  )
-//    {
-//        last_state = LOWERING;
-//        lowering_count = 0;
-//        seed = false;
-//        ResetAssembly();
-//    }
+	//flashing RGB leds
+	static int index = 0;
+	index = (timestamp / 2) % 6;
+	for(int i=0;i<NUM_DOCKS;i++)
+	{
+		switch (index)
+		{
+			case 0:
+				SetRGBLED(i, 0, 0, YELLOW, YELLOW);
+				break;
+			case 1:
+				SetRGBLED(i, 0, 0, 0, 0);
+				break;
+			case 2:
+				SetRGBLED(i, YELLOW, YELLOW, 0, 0);
+				break;
+            case 3: //
+            case 4: // short delay to better symbolise lowering
+            case 5: //
+				SetRGBLED(i, 0, 0, 0, 0);
+				break;
+			default:
+				break;
+		}
+	}
+
 
     return; // for testing - do not allow to enter disassembly
 
@@ -1533,7 +1564,7 @@ void RobotSCOUT::Raising()
     {
         //flashing RGB leds
         static int index = 0;
-        index = (timestamp / 2) % 4;
+        index = (timestamp / 2) % 6;
         for(int i=0;i<NUM_DOCKS;i++)
         {
             switch (index)
@@ -1547,7 +1578,9 @@ void RobotSCOUT::Raising()
                 case 2:
                     SetRGBLED(i, 0, 0, YELLOW, YELLOW);
                     break;
-                case 3:
+                case 3: //
+                case 4: // short delay to better symbolise raising
+                case 5: //
                     SetRGBLED(i, 0, 0, 0, 0);
                     break;
                 default:

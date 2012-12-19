@@ -216,6 +216,8 @@ void Robot::ResetAssembly()
     msg_assembly_info_req_received = 0;
     msg_assembly_info_req_expected = 0;
     num_robots_inorganism=1;
+	msg_raising_start_received = false;
+	msg_raising_stop_received = false;
     seed = false;
 
     for(int i=0; i<SIDE_COUNT; i++)
