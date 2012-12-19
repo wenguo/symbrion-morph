@@ -256,12 +256,12 @@ void RobotSCOUT::UpdateSensors()
         if(irobot->isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])))
             ethernet_status |= 1<<i;
         
-        if(irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i]))> 200)
+        if(irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])) > 150)
             isense |= 1<<i;
         
-    //    printf("%d\t", irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])));
+      //  printf("%d\t", irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])));
     }
-    //printf("\n");
+   // printf("\n");
     ethernet_status_hist.Push2(ethernet_status);
     docking_motor_isense_hist.Push2(isense);
 
@@ -422,6 +422,8 @@ void RobotSCOUT::Seeding()
 }
 void RobotSCOUT::Foraging()
 {
+    speed[0]=0;
+    speed[1]=0;
     /*
     //time up?
     if(foraging_count--<=0)
@@ -455,6 +457,7 @@ void RobotSCOUT::Foraging()
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
 
+            assembly_count = DEFAULT_ASSEMBLY_COUNT;
             current_state = ASSEMBLY;
             last_state = WAITING;
         }
@@ -494,11 +497,16 @@ void RobotSCOUT::Waiting()
 
         current_state = ASSEMBLY;
         last_state = WAITING;
+
+        assembly_count = DEFAULT_ASSEMBLY_COUNT;
     }
 }
 
 void RobotSCOUT::Assembly()
 {
+    speed[0]=0;
+    speed[1]=0;
+
     if(assembly_count--<=0)
     {
         organism_found = false;
@@ -526,6 +534,8 @@ void RobotSCOUT::Assembly()
 
         current_state = LOCATEBEACON;
         last_state = FORAGING;
+
+        locatebeacon_count = 0;
     }
     else
         Avoidance();
@@ -552,6 +562,8 @@ void RobotSCOUT::LocateBeacon()
 
     speed[0] = 0;
     speed[1] = 0;
+
+    locatebeacon_count++;
 
     int turning = 0;
     if(beacon_signals_detected)
@@ -651,9 +663,27 @@ void RobotSCOUT::LocateBeacon()
                     } 
                     else if (beacon_signals_detected ==0 )
                     {
-                        //then swith on all ir led at 64Hz frequency
-                        for(int i=0;i<NUM_DOCKS;i++)
-                            SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+                        if(locatebeacon_count >=150)
+                        {
+                            current_state = ASSEMBLY;
+                            last_state = LOCATEBEACON;
+
+                            organism_found = false;
+                            assembly_count = DEFAULT_ASSEMBLY_COUNT;
+                            assembly_info = OrganismSequence::Symbol(0);
+                            
+                            for(int i=0;i<NUM_DOCKS;i++)
+                            {
+                                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1);
+                                SetRGBLED(i, 0, 0, 0, 0);
+                            }
+                        }
+                        else
+                        {
+                            //then swith on all ir led at 64Hz frequency
+                            for(int i=0;i<NUM_DOCKS;i++)
+                                SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+                        }
                     }
                 }
                 break;
@@ -695,7 +725,7 @@ void RobotSCOUT::Alignment()
             {
                 current_state = RECOVER;
                 last_state = ALIGNMENT;
-                recover_count = para.aligning_reverse_count;
+                recover_count = 0;
             }
             else
             {
@@ -756,7 +786,7 @@ void RobotSCOUT::Alignment()
 
                 current_state = RECOVER;
                 last_state = ALIGNMENT;
-                recover_count = para.aligning_reverse_count;
+                recover_count = 0;
                 printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
                 printf("blocking_count %d reflective: %d %d\t beacon:%d %d\n",blocking_count, reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
             }
@@ -775,7 +805,7 @@ void RobotSCOUT::Alignment()
 
 void RobotSCOUT::Recover()
 {
-    recover_count--;
+    recover_count++;
 
     //flasing RGB LEDs
     if(timestamp % 4 ==0)
@@ -798,7 +828,7 @@ void RobotSCOUT::Recover()
     {
         //turn left/right according to reflective value;
         //robot will stop there for 1 seconds
-        if(recover_count >=10)
+        if(recover_count < para.aligning_reverse_count)
         {
             //docked to the wrong robots
             if(assembly_info == OrganismSequence::Symbol(0))
@@ -837,7 +867,7 @@ void RobotSCOUT::Recover()
                 }
             }
         }
-        else if(recover_count <=0)
+        else
         {
             SetRGBLED(1, 0, 0, 0, 0);
             SetRGBLED(3, 0, 0, 0, 0);
@@ -1832,7 +1862,7 @@ void RobotSCOUT::Debugging()
             else if(timestamp == (uint32_t)para.debug.para[9])
             {
                 printf("unlock motor\n");
-                SetDockingMotor(para.debug.para[1], OPEN);
+                SetDockingMotor(para.debug.para[0], OPEN);
             }
             break;
             // For testing self-repair - starting from MacroLocomotion

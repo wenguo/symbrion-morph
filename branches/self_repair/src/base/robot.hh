@@ -313,6 +313,7 @@ class Robot
     uint32_t hinge_motor_operating_count;
     uint32_t guiding_signals_count[NUM_DOCKS];
     uint32_t blocking_count;
+    uint32_t locatebeacon_count;
 
     uint8_t docking_trials;
 

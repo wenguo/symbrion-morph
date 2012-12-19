@@ -111,6 +111,7 @@ Robot::Robot()
     undocking_count = 0;
     raising_count = 0;
     lowering_count = 0;
+    locatebeacon_count = 0;
 
     beacon_signals_detected=0;
     robot_in_range_replied=0;

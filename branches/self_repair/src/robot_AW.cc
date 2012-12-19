@@ -414,6 +414,9 @@ void RobotAW::Seeding() //the same as in RobotKIT
 }
 void RobotAW::Foraging() //the same as RobotKIT
 {
+    speed[0]=0;
+    speed[1]=0;
+    speed[2]=0;
     //time up?
     //
     /*
@@ -492,6 +495,10 @@ void RobotAW::Waiting()//same as RobotKIT
 }
 void RobotAW::Assembly()
 {
+    speed[0]=0;
+    speed[1]=0;
+    speed[2]=0;
+
     if(assembly_count--<=0)
     {
         organism_found = false;
@@ -643,9 +650,28 @@ void RobotAW::LocateBeacon()
                     }
                     else
                     {
-                        //then swith on all ir led at 64Hz frequency
-                        for(int i=0;i<NUM_DOCKS;i++)
-                            SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+                        if(locatebeacon_count >=200)
+                        {
+                            current_state = ASSEMBLY;
+                            last_state = LOCATEBEACON;
+
+                            organism_found = false;
+                            assembly_count = DEFAULT_ASSEMBLY_COUNT;
+                            assembly_info = OrganismSequence::Symbol(0);
+
+                            for(int i=0;i<NUM_DOCKS;i++)
+                            {
+                                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1);
+                                SetRGBLED(i, 0, 0, 0, 0);
+                            }
+                        }
+                        else
+                        {
+
+                            //then swith on all ir led at 64Hz frequency
+                            for(int i=0;i<NUM_DOCKS;i++)
+                                SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+                        }
                     }
                 }
                 break;

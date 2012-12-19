@@ -96,11 +96,11 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
         //broadcast, no ack required
         case IR_MSG_TYPE_RECRUITING:
             {
-                if(current_state==FORAGING || current_state == WAITING)
+                if(current_state==FORAGING || current_state == WAITING || current_state == ASSEMBLY)
                 {
                     OrganismSequence::Symbol sym(data[2]);
 
-                    if(sym.type2 == type)
+                    //if(sym.type2 == type)
                     {
                         comm_status[channel] = 1;
 
