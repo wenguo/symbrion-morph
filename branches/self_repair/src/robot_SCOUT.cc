@@ -1827,12 +1827,12 @@ void RobotSCOUT::Debugging()
             if(timestamp == (uint32_t)para.debug.para[8])
             {
                 printf("lock motor\n");
-                SetDockingMotor(0, CLOSE);
+                SetDockingMotor(para.debug.para[0], CLOSE);
             }
             else if(timestamp == (uint32_t)para.debug.para[9])
             {
                 printf("unlock motor\n");
-                SetDockingMotor(0, OPEN);
+                SetDockingMotor(para.debug.para[1], OPEN);
             }
             break;
             // For testing self-repair - starting from MacroLocomotion
