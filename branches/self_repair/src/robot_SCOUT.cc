@@ -1345,39 +1345,50 @@ void RobotSCOUT::Undocking()
             SetRGBLED(i, 0,0,0,0);
         else
             SetRGBLED(i, RED,RED,RED,RED);
+
+        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
     }
 
     undocking_count++;
 
-    // move
-    if(undocking_count >= 120)
+    printf("%d: %d %d %d %d\n",timestamp,reflective_hist[0].Avg(),reflective_hist[1].Avg(),reflective_hist[4].Avg(),reflective_hist[5].Avg());
+
+    if( undocking_count < 100 )
     {
-        // move back
-        if( undocking_count < 150 && proximity[4] < 175 && proximity[5] < 175 )
-        {
-            speed[0] = -30;
-            speed[1] = -30;
-        }
-        else if( undocking_count < 300  )
-        {
-            speed[0] = 0;//para.debug.para[1];   // was 18
-            speed[1] = 0;//para.debug.para[2]; // was -35
-        }
-        else
-        {
-            speed[0] = 0;
-            speed[1] = 0;
+    	// Check for other robots at front and back
+    	bool back = false;
+    	bool front = false;
+		if( reflective_hist[4].Avg() < 100 && reflective_hist[5].Avg() < 100 ) back = true;
+		if( reflective_hist[0].Avg() < 100 && reflective_hist[1].Avg() < 100 ) front = true;
 
-            for( int i=0;i<NUM_DOCKS; i++)
-                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
-
-            last_state = UNDOCKING;
-            current_state = FORAGING;
-            ResetAssembly(); // reset variables used during assembly
-        }
+		if( front && !back )
+		{
+			//printf("%d moving forwards\n",timestamp);
+			speed[0] = 30;
+			speed[1] = 30;
+		}
+		else if( back && !front )
+		{
+			//printf("%d moving backwards\n",timestamp);
+			speed[0] = -30;
+			speed[1] = -30;
+		}
+		else
+		{
+			//printf("%d do nothing\n",timestamp);
+			speed[0] = 0;
+			speed[1] = 0;
+		}
     }
+	else
+	{
+		speed[0] = 0;
+		speed[1] = 0;
 
-
+		last_state = UNDOCKING;
+		current_state = FORAGING;
+		ResetAssembly(); // reset variables used during assembly
+	}
 }
 
 
