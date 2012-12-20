@@ -1403,38 +1403,34 @@ void RobotSCOUT::Undocking()
             SetRGBLED(i, 0,0,0,0);
         else
             SetRGBLED(i, RED,RED,RED,RED);
-
-        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
     }
 
-    undocking_count++;
-
-//    printf("%d: %d %d %d %d\n",timestamp,reflective_hist[0].Avg(),reflective_hist[1].Avg(),reflective_hist[4].Avg(),reflective_hist[5].Avg());
-
-    if( undocking_count < 100 )
+    if( undocking_count == 0 )
+    {
+        for(int i=0;i<NUM_DOCKS;i++)
+        	SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+    }
+    else if( undocking_count < 100 )
     {
     	bool f = isNeighbourConnected(FRONT);
     	bool b = isNeighbourConnected(BACK);
     	bool l = isNeighbourConnected(LEFT);
     	bool r = isNeighbourConnected(RIGHT);
 
-//    	std::cout << f << " " << l << " " << b << " " << r << std::endl;
+    	std::cout << f << " " << l << " " << b << " " << r << std::endl;
 
-		if( f && r && l && !b )
+		if( !f && !r && !l && b )
 		{
-			//printf("%d moving forwards\n",timestamp);
 			speed[0] = 30;
 			speed[1] = 30;
 		}
-		else if( b && l && r && !f )
+		else if( !b && !l && !r && f )
 		{
-			//printf("%d moving backwards\n",timestamp);
 			speed[0] = -30;
 			speed[1] = -30;
 		}
 		else
 		{
-			//printf("%d do nothing\n",timestamp);
 			speed[0] = 0;
 			speed[1] = 0;
 		}
@@ -1444,12 +1440,19 @@ void RobotSCOUT::Undocking()
 		speed[0] = 0;
 		speed[1] = 0;
 
+		// Turn off LEDs
+		for(int i=0;i<NUM_DOCKS;i++)
+			SetRGBLED(i, 0,0,0,0);
+
 		last_state = UNDOCKING;
 		current_state = FORAGING;
 
 		RemoveFromQueue(IR_MSG_TYPE_UNLOCKED);
 		ResetAssembly(); // reset variables used during assembly
 	}
+
+    undocking_count++;
+
 }
 
 

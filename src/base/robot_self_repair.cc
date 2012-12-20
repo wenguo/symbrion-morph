@@ -544,7 +544,7 @@ bool Robot::isNeighbourConnected(int i)
 
 		// TODO: choose appropriate threshold values
 		return ( Ethernet::switchIsPortConnected(i+1) ||
-			   ( reflective_hist[2*i].Avg() < 100 && reflective_hist[2*i+1].Avg() < 100 ));
+			   ( reflective_hist[2*i].Avg() > 100 && reflective_hist[2*i+1].Avg() > 100 ));
 	}
 	// If Ethernet not enabled - fall back to ir sensors
 	else
