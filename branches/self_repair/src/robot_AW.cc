@@ -1481,25 +1481,12 @@ void RobotAW::Lowering()
 {
     lowering_count++;
 
-    if( lowering_count <= 30 )
+    if( lowering_count == 30 )
     {
-        if( lowering_count == 30 )
-            //MoveHingeToAngle(hinge_start_pos, hinge_speed );
-            SetHingeMotor(DOWN);
+        //MoveHingeToAngle(hinge_start_pos, hinge_speed );
+        SetHingeMotor(DOWN);
     }
-// TODO: remove, no longer needed
-//    else if( StartRepair()  )
-//    {
-//        last_state = LOWERING;
-//        lowering_count = 0;
-//        seed = false;
-//        ResetAssembly();
-//    }
-
-    return; // for testing - do not allow to enter disassembly
-
-    //else if(seed && lowering_count >= 150)
-    if(seed && lowering_count >= 150)
+    else if(seed && lowering_count >= 150)
     {
         PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
 
@@ -1538,19 +1525,63 @@ void RobotAW::Raising()
     speed[1] = 0;
     speed[2] = 0;
 
-    /*
-    if(timestamp == 40)
-    {
-        //docked[0]=true;
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-    }*/
+    // Leds symbolise the raising process
+    bool flash_leds = false;
 
-    if(msg_raising_received)
+    // Wait longer with larger structures
+    int raising_delay = (mytree.Size()/2+1)*30;
+
+    if(seed)
+    {
+        raising_count++;
+
+        if(raising_count == raising_delay )
+        {
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+            PropagateIRMessage(IR_MSG_TYPE_RAISING_START);
+            PropagateEthMessage(ETH_MSG_TYPE_RAISING_START);
+            flash_leds = true;
+
+            SetHingeMotor(UP); 
+        }
+        else if( raising_count >= raising_delay + 50 )
+        {
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+            PropagateIRMessage(IR_MSG_TYPE_RAISING_STOP);
+            PropagateEthMessage(ETH_MSG_TYPE_RAISING_STOP);
+
+            current_state = MACROLOCOMOTION;
+            last_state = RAISING;
+            raising_count = 0;
+            flash_leds = false;
+        }
+        else if( raising_count >= raising_delay )
+        {
+            flash_leds = true;
+        }
+    }
+    else if( msg_raising_stop_received )
+    {
+    	msg_raising_start_received = false;
+    	msg_raising_stop_received = false;
+        current_state = MACROLOCOMOTION;
+        last_state = RAISING;
+        raising_count = 0;
+    	flash_leds = false;
+    }
+    else if( msg_raising_start_received )
+    {
+    	flash_leds = true;
+        SetHingeMotor(UP); 
+    }
+
+    if(flash_leds)
     {
         //flashing RGB leds
         static int index = 0;
-        index = (timestamp / 2) % 4;
+        index = (timestamp / 2) % 6;
         for(int i=0;i<NUM_DOCKS;i++)
         {
             switch (index)
@@ -1564,30 +1595,16 @@ void RobotAW::Raising()
                 case 2:
                     SetRGBLED(i, 0, 0, YELLOW, YELLOW);
                     break;
-                case 3:
+                case 3: //
+                case 4: // short delay to better symbolise raising
+                case 5: //
                     SetRGBLED(i, 0, 0, 0, 0);
                     break;
                 default:
                     break;
             }
         }
-
-        raising_count++;
     }
-
-    if(raising_count==2)
-    {
-        //MoveHingeToAngle( hinge_start_pos+5, hinge_speed );
-        SetHingeMotor(UP); 
-    }
-
-    if(raising_count >=50)
-    {
-        current_state = MACROLOCOMOTION;
-        last_state = RAISING;
-    }
-
-
 }
 
 /*
@@ -1717,6 +1734,21 @@ void RobotAW::MacroLocomotion()
         speed[2] = para.debug.para[7];
     else if(macrolocomotion_count < 100)
         speed[2] = para.debug.para[8];
+    //for testing, only for one AW + 2 Scouts
+    else 
+    {
+        // Stop moving
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
+
+        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+
+        last_state = MACROLOCOMOTION;
+        current_state = LOWERING;
+        lowering_count = 0;
+        seed = false;
+    }
 
     //flashing RGB leds
     static int index = 0;
@@ -1742,14 +1774,14 @@ void RobotAW::MacroLocomotion()
         }
     }
 
-  if( msg_lowering_received )
-  {
-         // Stop moving
-		speed[0] = 0;
-    	speed[1] = 0;
-    	speed[2] = 0;
+    if( msg_lowering_received )
+    {
+        // Stop moving
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
 
-       last_state = MACROLOCOMOTION;
+        last_state = MACROLOCOMOTION;
         current_state = LOWERING;
         lowering_count = 0;
         seed = false;
