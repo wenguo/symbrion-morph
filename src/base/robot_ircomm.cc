@@ -550,7 +550,7 @@ void Robot::SendIRAckMessage(int channel, uint8_t type, uint8_t *data, int size)
     uint8_t dst_data[size+1];
     dst_data[0] = type;
     memcpy(dst_data+1, data, size);
-    SendIRMessage(channel, IR_MSG_TYPE_ACK, dst_data, size+1, false);
+    SendIRMessage(channel, IR_MSG_TYPE_ACK, dst_data, size+1, 0);
 }
 
 void Robot::BroadcastIRMessage(int channel, uint8_t type, uint8_t ack_required)
