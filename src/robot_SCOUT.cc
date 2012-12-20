@@ -1530,10 +1530,10 @@ void RobotSCOUT::Raising()
     speed[2] = 0;
 
     // Leds symbolise the raising process
-	bool flash_leds = false;
+    bool flash_leds = false;
 
-	// Wait longer with larger structures
-	int raising_delay = (mytree.Size()/2+1)*30;
+    // Wait longer with larger structures
+    int raising_delay = (mytree.Size()/2+1)*30;
 
     if(seed)
     {
@@ -1545,37 +1545,37 @@ void RobotSCOUT::Raising()
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
             PropagateIRMessage(IR_MSG_TYPE_RAISING_START);
             PropagateEthMessage(ETH_MSG_TYPE_RAISING_START);
-        	flash_leds = true;
+            flash_leds = true;
         }
         else if( raising_count >= raising_delay + 30 )
         {
-        	for(int i=0;i<NUM_DOCKS;i++)
-        		SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-        	PropagateIRMessage(IR_MSG_TYPE_RAISING_STOP);
-        	PropagateEthMessage(ETH_MSG_TYPE_RAISING_STOP);
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+            PropagateIRMessage(IR_MSG_TYPE_RAISING_STOP);
+            PropagateEthMessage(ETH_MSG_TYPE_RAISING_STOP);
 
-        	current_state = MACROLOCOMOTION;
+            current_state = MACROLOCOMOTION;
             last_state = RAISING;
             raising_count = 0;
-        	flash_leds = false;
+            flash_leds = false;
         }
         else if( raising_count >= raising_delay )
         {
-        	flash_leds = true;
+            flash_leds = true;
         }
     }
     else if( msg_raising_stop_received )
     {
-    	msg_raising_start_received = false;
-    	msg_raising_stop_received = false;
+        msg_raising_start_received = false;
+        msg_raising_stop_received = false;
         current_state = MACROLOCOMOTION;
         last_state = RAISING;
         raising_count = 0;
-    	flash_leds = false;
+        flash_leds = false;
     }
     else if( msg_raising_start_received )
     {
-    	flash_leds = true;
+        flash_leds = true;
     }
 
     if(flash_leds)
@@ -1750,17 +1750,17 @@ void RobotSCOUT::MacroLocomotion()
         }
     }
 
-   if( msg_lowering_received )
-   {
-            // Stop moving
-       		speed[0] = 0;
-        	speed[1] = 0;
-        	speed[2] = 0;
+    if( msg_lowering_received )
+    {
+        // Stop moving
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
 
-            last_state = MACROLOCOMOTION;
-            current_state = LOWERING;
-            lowering_count = 0;
-            seed = false;
+        last_state = MACROLOCOMOTION;
+        current_state = LOWERING;
+        lowering_count = 0;
+        seed = false;
     }
 
 }
