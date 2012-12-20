@@ -308,8 +308,12 @@ void RobotSCOUT::UpdateFailures()
 //                msg_unlocked_received |= 1<<para.debug.para[0];
                 /////////////////////////////////////////////
 
-                module_failed = true;
-                failure_delay = 0;
+        		// For testing
+        		if( seed )
+        		{
+					module_failed = true;
+					failure_delay = 0;
+        		}
         	}
         }
     }
@@ -1417,8 +1421,6 @@ void RobotSCOUT::Undocking()
     	bool l = isNeighbourConnected(LEFT);
     	bool r = isNeighbourConnected(RIGHT);
 
-    	std::cout << f << " " << l << " " << b << " " << r << std::endl;
-
 		if( !f && !r && !l && b )
 		{
 			speed[0] = 30;
@@ -1444,8 +1446,12 @@ void RobotSCOUT::Undocking()
 		for(int i=0;i<NUM_DOCKS;i++)
 			SetRGBLED(i, 0,0,0,0);
 
+		if( last_state ==  FAILED )
+			current_state = RESTING;
+		else
+			current_state = FORAGING;
+
 		last_state = UNDOCKING;
-		current_state = FORAGING;
 
 		RemoveFromQueue(IR_MSG_TYPE_UNLOCKED);
 		ResetAssembly(); // reset variables used during assembly
