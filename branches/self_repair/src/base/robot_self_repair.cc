@@ -255,7 +255,10 @@ bool Robot::StartRepair()
 		for( int i=0; i<NUM_DOCKS; i++ )
 		{
 			if( docked[i] )
+			{
 				SendFailureMsg(i);
+				msg_unlocked_expected |= 1<<i;
+			}
 		}
 
 		current_state = FAILED;
@@ -550,9 +553,8 @@ bool Robot::isNeighbourConnected(int i)
 	else
 	{
 		// TODO: choose appropriate threshold values
-		return ((ambient[i*2] 	< a && ambient[i*2+1] 	 < a) ||
-			   (proximity[i*2] 	< p && proximity[i*2+1]  < p) ||
-			   (reflective[i*2] < r && reflective[i*2+1] < r) );
+		return ( reflective_hist[2*i].Avg() > 100 && reflective_hist[2*i+1].Avg() > 100 );
+
 	}
 }
 
@@ -843,12 +845,15 @@ void Robot::LeadRepair()
 
 		if( timestamp < broadcast_start+broadcast_duration )
 		{
-			// Broadcast
-			if( timestamp % RECRUITMENT_SIGNAL_INTERVAL == 0 )
+			// Broadcast on each side in turn (if no one docked)
+			int side = timestamp % RECRUITMENT_SIGNAL_INTERVAL;
+			if( side < SIDE_COUNT )
 			{
-				SetRGBLED(parent_side,0,0,0,0);
-				// TODO: send a burst instead of a single message?
-				BroadcastScore( parent_side, best_score, best_id );
+				if( !docked[side] )
+				{
+					SetRGBLED(side,0,0,0,0);
+					BroadcastScore( side, best_score, best_id );
+				}
 			}
 			// Listen
 			else
@@ -858,6 +863,9 @@ void Robot::LeadRepair()
 				int new_score_side = -1;
 				for( int i=0; i<SIDE_COUNT; i++ )
 				{
+					if( i !=parent_side )
+						SetRGBLED(i,MAGENTA,MAGENTA,MAGENTA,MAGENTA);
+
 					if( (msg_score_received & 1<<i) && (new_id[i] != best_id) )
 					{
 						msg_score_received &= ~(1<<i);
@@ -1168,6 +1176,7 @@ void Robot::Failed()
     speed[1] = 0;
     speed[2] = 0;
 
+    static uint8_t unlock_sent = 0;
     
 	if(!MessageWaitingAck(IR_MSG_TYPE_FAILED))
 	{
@@ -1183,12 +1192,18 @@ void Robot::Failed()
 					SetDockingMotor(i, OPEN);
 					unlocking_required[i]=false;
 				}
-				//TODO: how about two KIT robots docked to each other
 				else if(docking_motors_status[i]==OPENED)
 				{
-					BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
-					docked[i]=0;
-					num_docked--;
+					if( !(unlock_sent & 1<<i) )
+					{
+						BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
+						unlock_sent |= 1<<i;
+					}
+					else if( (msg_unlocked_received & 1<<i) || !Ethernet::switchIsPortConnected(i+1) )
+					{
+						docked[i]=0;
+						num_docked--;
+					}
 				}
 			}
 		}
@@ -1196,6 +1211,7 @@ void Robot::Failed()
 		//only one  or less
 		if(num_docked ==0)
 		{       
+			unlock_sent = 0;
             undocking_count = 0;
 			current_state = UNDOCKING;
 			last_state = FAILED;

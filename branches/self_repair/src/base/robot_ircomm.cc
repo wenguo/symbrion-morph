@@ -200,7 +200,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 msg_assembly_info_received |=1<<channel;
                 //msg_assembly_info_expected &=~(1<<channel);
                 OrganismSequence::Symbol sym(data[2]);
-                if(sym.type2 != type && sym.side2 != assembly_info.side2)
+                if(sym.type2 != type || sym.side2 != assembly_info.side2)
                     assembly_info = OrganismSequence::Symbol(0);
                 else
                     assembly_info = sym; //it is ok to update assembly_info, even they are not the same
