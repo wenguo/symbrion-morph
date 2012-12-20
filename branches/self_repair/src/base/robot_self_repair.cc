@@ -594,7 +594,7 @@ void Robot::SendSubOrgStr( int channel, uint8_t *seq )
         // Send the direction that the neighbour should move in
         buf[buf[0]+1] = getNeighbourHeading( docked[channel] );
 
-        SendIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, true);
+        SendIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, para.ir_msg_repeated_num);
         SendEthMessage(channel, ETH_MSG_TYPE_SUB_OG_STRING, buf, ((int)buf[0])+2, false);
 
         printf("%d Sending sub-og string, size: %d\n",timestamp,((int)buf[0])+2);
@@ -624,7 +624,7 @@ void Robot::SendScoreStr( int channel, const OrganismSequence& seq, uint8_t scor
 
 //        std::cout << "sending score: " << (int) score << " and seq: " << seq
 //        		  << " size: " <<  ((int)buf[0])+2 << std::endl;
-        SendIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0]+2, true);
+        SendIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0]+2, para.ir_msg_repeated_num);
         SendEthMessage(channel, ETH_MSG_TYPE_SCORE_STRING, buf, ((int)buf[0])+2, false);
 
 
@@ -686,7 +686,7 @@ void Robot::LeadRepair()
 						}
 						else if( docking_motors_status[i]==OPENED && !(unlock_sent & 1<<i) )
 						{
-							SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+							SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
 							unlock_sent |= 1<<i;
 						}
 					}
@@ -705,7 +705,7 @@ void Robot::LeadRepair()
 				}
 				else if( docking_motors_status[parent_side]==OPENED )
 				{
-					BroadcastIRMessage(parent_side, IR_MSG_TYPE_UNLOCKED, false);
+					BroadcastIRMessage(parent_side, IR_MSG_TYPE_UNLOCKED, 0);
 					unlock_sent |= 1<<parent_side;
 				}
 			}
@@ -970,7 +970,7 @@ void Robot::Repair()
 						}
 						else if( docking_motors_status[i]==OPENED && !(unlock_sent & 1<<i) )
 						{
-							SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, true);
+							SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
 							unlock_sent |= 1<<i;
 						}
 					}
