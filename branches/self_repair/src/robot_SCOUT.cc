@@ -712,6 +712,7 @@ void RobotSCOUT::Alignment()
 
     int reflective_diff = abs(reflective_hist[id0].Avg() - reflective_hist[id1].Avg());
     int reflective_max = std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+    int reflective_min = std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
 
     if(docking_region_detected)
     {
@@ -777,7 +778,7 @@ void RobotSCOUT::Alignment()
                 blocking_count++;
 
             //3 second is allowed until fully docked, otherwise, treated as blocked.
-            if((reflective_diff > 300 && reflective_diff > reflective_max * 0.5) || blocking_count > 30)
+            if((reflective_diff > 300 && reflective_diff > reflective_max * 0.5 && reflective_min > 0) || blocking_count > 30)
                 //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
                 docking_blocked = true;
 
