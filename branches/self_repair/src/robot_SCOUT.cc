@@ -1911,15 +1911,20 @@ void RobotSCOUT::Debugging()
             }
             break;
         case 10:
-            if(timestamp == (uint32_t)para.debug.para[8])
+//            if(timestamp == (uint32_t)para.debug.para[8])
+//            {
+//                printf("lock motor\n");
+//                SetDockingMotor(para.debug.para[0], CLOSE);
+//            }
+//            else
+            if(timestamp == 2 )
             {
-                printf("lock motor\n");
-                SetDockingMotor(para.debug.para[0], CLOSE);
+                ((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[0]));
+
             }
-            else if(timestamp == (uint32_t)para.debug.para[9])
+            else if( timestamp == para.debug.para[9] || (timestamp > 12 && docking_motor_isense_hist.Sum(para.debug.para[0]) >=2 ))
             {
-                printf("unlock motor\n");
-                SetDockingMotor(para.debug.para[0], OPEN);
+                ((ScoutBot*)irobot)->MoveDocking((ScoutBot::Side(para.debug.para[0])),0);
             }
             break;
             // For testing self-repair - starting from MacroLocomotion

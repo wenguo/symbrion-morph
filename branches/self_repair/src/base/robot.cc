@@ -291,10 +291,13 @@ bool Robot::Init(const char * optionfile)
 
     //turn off all RGB led
     //turn off all IR pulse
+    // Set motor opening thresholds
     for(int i=0;i<NUM_DOCKS;i++)
     {
         SetRGBLED(i, 0, 0, 0, 0);
         SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1|IRPULSE2);
+
+        docking_motor_opening_threshold[i] = para.docking_motor_opening_time;
     }
     
     robots_in_range_detected_hist.Reset();
@@ -550,6 +553,7 @@ void Robot::CheckDockingMotor()
             {
                 SetDockingMotor(i, STOP);
                 CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", docking_motor_operating_count[i]);
+                docking_motor_opening_threshold[i] = docking_motor_operating_count[i];
             }
             else if(docking_motor_operating_count[i] >= para.docking_motor_closing_time)
             {
@@ -567,11 +571,13 @@ void Robot::CheckDockingMotor()
             {
                 SetDockingMotor(i, STOP);
                 CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", docking_motor_operating_count[i]);
+                docking_motor_opening_threshold[i] = para.docking_motor_opening_time;
             }
-            else if(docking_motor_operating_count[i] >= para.docking_motor_opening_time)
+            else if(docking_motor_operating_count[i] >= docking_motor_opening_threshold[i] )
             {
                 SetDockingMotor(i, STOP);
                 CPrintf1(SCR_RED,"Stop docking motor, after opening -- %d", docking_motor_operating_count[i]);
+                docking_motor_opening_threshold[i] = para.docking_motor_opening_time;
             }
         }
         else
