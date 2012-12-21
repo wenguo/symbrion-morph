@@ -1481,10 +1481,12 @@ void RobotAW::Lowering()
 {
     lowering_count++;
 
+    std::cout << "Lowering count: " << lowering_count << std::endl;
+
     if( lowering_count == 30 )
     {
         //MoveHingeToAngle(hinge_start_pos, hinge_speed );
-        SetHingeMotor(DOWN);
+//        SetHingeMotor(DOWN);
     }
     else if(seed && lowering_count >= 150)
     {
@@ -1543,7 +1545,7 @@ void RobotAW::Raising()
             PropagateEthMessage(ETH_MSG_TYPE_RAISING_START);
             flash_leds = true;
 
-            SetHingeMotor(UP); 
+//            SetHingeMotor(UP);
         }
         else if( raising_count >= raising_delay + 50 )
         {
@@ -1574,7 +1576,7 @@ void RobotAW::Raising()
     else if( msg_raising_start_received )
     {
     	flash_leds = true;
-        SetHingeMotor(UP); 
+//        SetHingeMotor(UP);
     }
 
     if(flash_leds)
@@ -1729,6 +1731,8 @@ void RobotAW::MacroLocomotion()
     //speed[2] = -20; // don't move
 
     macrolocomotion_count++;
+
+    return; // Do nothing for now
 
     if(macrolocomotion_count < 50)
         speed[2] = para.debug.para[7];

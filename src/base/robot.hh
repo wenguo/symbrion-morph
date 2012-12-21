@@ -306,6 +306,7 @@ class Robot
     uint32_t seeding_count;
     uint32_t foraging_blind_count;
     uint32_t docking_motor_operating_count[NUM_DOCKS];
+    uint32_t docking_motor_opening_threshold[NUM_DOCKS];
     uint32_t docking_failed_reverse_count;
     uint32_t hinge_motor_operating_count;
     uint32_t guiding_signals_count[NUM_DOCKS];
