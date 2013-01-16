@@ -1483,12 +1483,15 @@ void RobotAW::Lowering()
 
    // std::cout << "Lowering count: " << lowering_count << std::endl;
 
-    if( lowering_count == 30 )
+    if( lowering_count == 10 )
     {
         //MoveHingeToAngle(hinge_start_pos, hinge_speed );
-//        SetHingeMotor(DOWN);
+        SetHingeMotor(DOWN);
     }
-    else if(seed && lowering_count >= 150)
+
+    // For testing - don't allow to enter disassembly
+    return;
+    /*else if(seed && lowering_count >= 150)
     {
         PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
 
@@ -1517,7 +1520,7 @@ void RobotAW::Lowering()
             if(docked[i])
                 msg_unlocked_expected |=1<<i;
         }
-    }
+    }*/
 }
 
 
@@ -1545,7 +1548,7 @@ void RobotAW::Raising()
             PropagateEthMessage(ETH_MSG_TYPE_RAISING_START);
             flash_leds = true;
 
-//            SetHingeMotor(UP);
+            SetHingeMotor(UP);
         }
         else if( raising_count >= raising_delay + 50 )
         {
@@ -1576,7 +1579,7 @@ void RobotAW::Raising()
     else if( msg_raising_start_received )
     {
     	flash_leds = true;
-//        SetHingeMotor(UP);
+        SetHingeMotor(UP);
     }
 
     if(flash_leds)
