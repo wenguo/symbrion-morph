@@ -308,12 +308,8 @@ void RobotSCOUT::UpdateFailures()
 //                msg_unlocked_received |= 1<<para.debug.para[0];
                 /////////////////////////////////////////////
 
-        		// For testing
-        		if( seed )
-        		{
-					module_failed = true;
-					failure_delay = 0;
-        		}
+				module_failed = true;
+				failure_delay = 0;
         	}
         }
     }
