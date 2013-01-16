@@ -1118,7 +1118,13 @@ void RobotAW::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE1)
         {
-            if(msg_docking_signal_req_received & (1<<i))
+        	if( recruitment_count[i]++ > 500 )
+        	{
+        		recruitment_count[i]=0;
+        		recruitment_stage[i]=STAGE0;
+        		SetIRLED(i,IRLEDOFF,LED1,0);
+        	}
+        	else if(msg_docking_signal_req_received & (1<<i))
             {
                 msg_docking_signal_req_received &= ~(1<<i);
                 SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
