@@ -553,12 +553,17 @@ void Robot::CheckDockingMotor()
             {
                 SetDockingMotor(i, STOP);
                 CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", docking_motor_operating_count[i]);
-                docking_motor_opening_threshold[i] = docking_motor_operating_count[i];
+
+                // Add small amount to ensure that lock opens fully
+                docking_motor_opening_threshold[i] = docking_motor_operating_count[i]+5;
             }
             else if(docking_motor_operating_count[i] >= para.docking_motor_closing_time)
             {
                 SetDockingMotor(i, STOP);
                 CPrintf1(SCR_RED, "Stop docking motor, after closing -- %d", docking_motor_operating_count[i]);
+
+                // Add small amount to ensure that lock opens fully
+                docking_motor_opening_threshold[i] = docking_motor_operating_count[i]+5;
             }
 
         }

@@ -1166,7 +1166,7 @@ void RobotAW::Recruitment()
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
 
-            if((msg_docking_signal_req_received & (1<<i)))
+            if(guiding_signals_count[i] > 50 && (msg_docking_signal_req_received & (1<<i)))
             {
                 msg_docking_signal_req_received &=~(1<<i);
                 guiding_signals_count[i] = 0;
@@ -1481,7 +1481,7 @@ void RobotAW::Lowering()
 {
     lowering_count++;
 
-    std::cout << "Lowering count: " << lowering_count << std::endl;
+   // std::cout << "Lowering count: " << lowering_count << std::endl;
 
     if( lowering_count == 30 )
     {
@@ -1725,35 +1725,43 @@ void RobotAW::Reshaping()
 void RobotAW::MacroLocomotion()
 {
 
-    speed[0] = 0;
-    speed[1] = 0;
-    speed[2] = 0;
-    //speed[2] = -20; // don't move
+//    speed[0] = 0;
+//    speed[1] = 0;
+//    speed[2] = 0;
+//    //speed[2] = -20; // don't move
+//
+//    macrolocomotion_count++;
+//
+//    return; // Do nothing for now
+//
+//    if(macrolocomotion_count < 50)
+//        speed[2] = para.debug.para[7];
+//    else if(macrolocomotion_count < 100)
+//        speed[2] = para.debug.para[8];
+//    //for testing, only for one AW + 2 Scouts
+//    else
+//    {
+//        // Stop moving
+//        speed[0] = 0;
+//        speed[1] = 0;
+//        speed[2] = 0;
+//
+//        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+//
+//        last_state = MACROLOCOMOTION;
+//        current_state = LOWERING;
+//        lowering_count = 0;
+//        seed = false;
+//    }
+
+	// Stop moving
+	speed[0] = 0;
+	speed[1] = 0;
+	speed[2] = 0;
+
+	//TODO: make robot wander a bit
 
     macrolocomotion_count++;
-
-    return; // Do nothing for now
-
-    if(macrolocomotion_count < 50)
-        speed[2] = para.debug.para[7];
-    else if(macrolocomotion_count < 100)
-        speed[2] = para.debug.para[8];
-    //for testing, only for one AW + 2 Scouts
-    else 
-    {
-        // Stop moving
-        speed[0] = 0;
-        speed[1] = 0;
-        speed[2] = 0;
-
-        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
-
-        last_state = MACROLOCOMOTION;
-        current_state = LOWERING;
-        lowering_count = 0;
-        seed = false;
-    }
-
     //flashing RGB leds
     static int index = 0;
     index = (timestamp / 2) % 4;
