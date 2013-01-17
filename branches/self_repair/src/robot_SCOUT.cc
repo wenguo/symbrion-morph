@@ -1443,10 +1443,10 @@ void RobotSCOUT::Undocking()
 		for(int i=0;i<NUM_DOCKS;i++)
 			SetRGBLED(i, 0,0,0,0);
 
-		if( last_state ==  FAILED )
-			current_state = RESTING;
-		else
-			current_state = FORAGING;
+//		if( last_state ==  FAILED )
+//			current_state = RESTING;
+//		else
+		current_state = FORAGING;
 
 		last_state = UNDOCKING;
 
