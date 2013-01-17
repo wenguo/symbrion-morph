@@ -1098,8 +1098,12 @@ void RobotAW::Recruitment()
         bool erase_required = false;
         if(recruitment_stage[i]==STAGE0)
         {
-            if(robots_in_range_detected_hist.Sum(2*i) > 14 || robots_in_range_detected_hist.Sum(2*i+1) >14)
-            {                
+            if( robots_in_range_detected_hist.Sum(2*i) > 14 ||
+                robots_in_range_detected_hist.Sum(2*i+1) >14 ||
+                (msg_docking_signal_req_received & (1<<i)) )
+            {
+                msg_docking_signal_req_received &= ~(1<<i);
+
                 msg_assembly_info_req_expected |= 1<<i;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
@@ -1205,6 +1209,9 @@ void RobotAW::Recruitment()
                 recruitment_stage[i]=STAGE4;
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
+            // When performing parallel docking, occasionally a robot will lock on a recruiting side and
+            // that recruiting side will then revert to an earlier STAGE I think the following two clauses
+            // cause this problem by picking up reflected messages from the other docking robot - LM
             else if(msg_docking_signal_req_received & 1<<i)
             {
                 msg_docking_signal_req_received &=~(1<<i);
