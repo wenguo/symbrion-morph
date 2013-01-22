@@ -660,22 +660,23 @@ void RobotAW::LocateBeacon()
                     }
                     else
                     {
-                        if(locatebeacon_count >=200)
-                        {
-                            current_state = ASSEMBLY;
-                            last_state = LOCATEBEACON;
-
-                            organism_found = false;
-                            assembly_count = DEFAULT_ASSEMBLY_COUNT;
-                            assembly_info = OrganismSequence::Symbol(0);
-
-                            for(int i=0;i<NUM_DOCKS;i++)
-                            {
-                                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1);
-                                SetRGBLED(i, 0, 0, 0, 0);
-                            }
-                        }
-                        else
+                    	// Allow more time for AW to rotate 360
+//                        if(locatebeacon_count >=200)
+//                        {
+//                            current_state = ASSEMBLY;
+//                            last_state = LOCATEBEACON;
+//
+//                            organism_found = false;
+//                            assembly_count = DEFAULT_ASSEMBLY_COUNT;
+//                            assembly_info = OrganismSequence::Symbol(0);
+//
+//                            for(int i=0;i<NUM_DOCKS;i++)
+//                            {
+//                                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1);
+//                                SetRGBLED(i, 0, 0, 0, 0);
+//                            }
+//                        }
+//                        else
                         {
 
                             //then swith on all ir led at 64Hz frequency
@@ -1438,7 +1439,6 @@ void RobotAW::Disassembly()
 
         }
 
-
         //only one  or less 
         if(num_docked ==0)
         {
@@ -1464,29 +1464,35 @@ void RobotAW::Undocking()
             SetRGBLED(i, RED,RED,RED,RED);
     }
 
-    undocking_count++;
-    if(undocking_count >= 120)
+    if( undocking_count == 0 )
     {
-        speed[0] = -30;
-        speed[1] = -30;
-
-        if((timestamp/2)%2==0)
-            speed[2] = 10;
-        else
-            speed[2] = -10;
-
+        for(int i=0;i<NUM_DOCKS;i++)
+        	SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
     }
-
-    if( undocking_count >= 150 )
+    else if(undocking_count < 100)
+    {
+    	// Simply move forward
+        speed[0] = 10;
+        speed[1] = 10;
+        speed[2] = 0;
+    }
+    else
     {
         speed[0] = 0;
         speed[1] = 0;
         speed[2] = 0;
 
+		// Turn off LEDs
+		for(int i=0;i<NUM_DOCKS;i++)
+			SetRGBLED(i, 0,0,0,0);
+
         last_state = UNDOCKING;
         current_state = FORAGING;
         ResetAssembly(); // reset variables used during assembly
     }
+
+    undocking_count++;
+
 
 }
 
@@ -1499,7 +1505,7 @@ void RobotAW::Lowering()
     if( lowering_count == 10 )
     {
         //MoveHingeToAngle(hinge_start_pos, hinge_speed );
-        SetHingeMotor(DOWN);
+        //SetHingeMotor(DOWN);
     }
 
     // For testing - don't allow to enter disassembly
@@ -1561,7 +1567,7 @@ void RobotAW::Raising()
             PropagateEthMessage(ETH_MSG_TYPE_RAISING_START);
             flash_leds = true;
 
-            SetHingeMotor(UP);
+            //SetHingeMotor(UP);
         }
         else if( raising_count >= raising_delay + 50 )
         {
@@ -1592,7 +1598,7 @@ void RobotAW::Raising()
     else if( msg_raising_start_received )
     {
     	flash_leds = true;
-        SetHingeMotor(UP);
+//        SetHingeMotor(UP);
     }
 
     if(flash_leds)
