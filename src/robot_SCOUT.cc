@@ -1015,6 +1015,8 @@ void RobotSCOUT::Recruitment()
         		recruitment_count[i]=0;
         		recruitment_stage[i]=STAGE0;
         		SetIRLED(i,IRLEDOFF,LED1,0);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+
         	}
         	else if(msg_docking_signal_req_received & (1<<i))
             {
@@ -1620,90 +1622,140 @@ void RobotSCOUT::Raising()
 void RobotSCOUT::Reshaping()
 {
 
+	static uint8_t waiting_for_undock = 0;
+	static uint8_t unlock_sent = 0;
+
     // If this is the seed or branch received from other module
     if( seed || msg_organism_seq_received )
     {
-        // Prepare branch sequences
-        rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
-        if(ret.status >= RT_ERROR)
-        {
-            std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
-        }
+    	// If still waiting for some robots to undock
+    	if( waiting_for_undock )
+		{
+    		std::cout << "waiting for someone to undock" << std::endl;
+    		for( int i=0; i<SIDE_COUNT; i++ )
+    		{
+    			if( (waiting_for_undock & 1<<i) && docking_motors_status[i]==OPENED )
+    			{
+    				std::cout << i << " docking motors open" << std::endl;
+    				if( !(unlock_sent & 1<<i) )
+					{
+						BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
+						unlock_sent |= 1<<i;
+					}
+					else if( (msg_unlocked_received & 1<<i) || !Ethernet::switchIsPortConnected(i+1) )
+					{
+	    				std::cout << i << " unlock sent" << std::endl;
+						docked[i]=0;
+						waiting_for_undock &= ~(1<<i);
+					}
+    			}
+    		}
 
-        // disable all LEDs
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
+    		// If no longer waiting for any robots to undock
+    		if( !waiting_for_undock )
+    		{
+				current_state = RECRUITMENT;
 
-        for(int i=0; i<SIDE_COUNT; i++)
-        {
-            recruitment_stage[i]=STAGE0;
-            recruitment_count[i] = 0;
-            recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
+				// Reset to prevent entering STAGE1 immediately
+				msg_docking_signal_req_received = 0;
 
-            // unless this is the seed do not
-            // send messages to parent_side
-            if( !seed && i == parent_side )
-                continue;
+				// turn off LEDs
+				for(int i=0; i<NUM_DOCKS; i++)
+					SetRGBLED(i, 0, 0, 0, 0);
+    		}
+		}
+    	else
+    	{
 
-            // check if branch needs to be sent
-            uint8_t branch_side = SIDE_COUNT;
-            OrganismSequence next_branch;
-            std::vector<OrganismSequence>::iterator it;
-            for(it = mybranches.begin() ; it != mybranches.end(); it++)
-            {
-                if( it->getSymbol(0).side1 == i )
-                {
-                    branch_side = it->getSymbol(0).side1;
-                    next_branch = (*it);
-                    break;
-                }
-            }
+			// Prepare branch sequences
+			rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
+			if(ret.status >= RT_ERROR)
+			{
+				std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
+			}
 
-            // TODO: Check that neighbour is correct type and orientation!
+			// disable all LEDs
+			for(int i=0;i<NUM_DOCKS;i++)
+				SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
 
-            // if there is a neighbour and there should be
-            if( docked[i] && branch_side == i )
-            {
-                // send branch
-                SendBranchTree(i, next_branch);
-                recruitment_stage[i]=STAGE4;
-                docking_done[i] = true; 		// may not be necessary
-                printf("%d Sending branch to side %d\n",timestamp, i);
-            }
-            // if there is a neighbour but there shouldn't be
-            else if( docked[i] && branch_side == SIDE_COUNT )
-            {
-                // send disassembly
-                PropagateSingleIRMessage(IR_MSG_TYPE_DISASSEMBLY,i);
-                printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
-            }
-            // if there isn't a neighbour but there should be
-            else if( docked[i]==0 && branch_side == i )
-            {
-                // start recruiting
-                SetIRLED(branch_side, IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1);
-                printf("%d Preparing to recruit upon side %d\n",timestamp,i);
-            }
+			for(int i=0; i<SIDE_COUNT; i++)
+			{
+				recruitment_stage[i]=STAGE0;
+				recruitment_count[i] = 0;
+				recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
 
-        }
+				// unless this is the seed do not
+				// send messages to parent_side
+				if( !seed && i == parent_side )
+					continue;
 
-        // If there is no new tree - disassemble
-        if( seed && mytree.Size() <= 0 )
-        {
-            current_state = DISASSEMBLY;
-            printf("%d No new tree to assemble, entering disassembly\n",timestamp);
-        }
-        else
-        {
-            current_state = RECRUITMENT;
+				// check if branch needs to be sent
+				uint8_t branch_side = SIDE_COUNT;
+				OrganismSequence next_branch;
+				OrganismSequence::Symbol next_symbol = OrganismSequence::Symbol(0);
+				std::vector<OrganismSequence>::iterator it;
+				for(it = mybranches.begin() ; it != mybranches.end(); it++)
+				{
+					if( it->getSymbol(0).side1 == i )
+					{
+						next_symbol = it->getSymbol(0);
+						branch_side = it->getSymbol(0).side1;
+						next_branch = (*it);
+						break;
+					}
+				}
 
-            // turn off LEDs
-            for(int i=0; i<NUM_DOCKS; i++)
-                SetRGBLED(i, 0, 0, 0, 0);
+				if( docked[i] )
+				{
+					// Check that neighbour is of correct type and orientation
+					if( branch_side == i && (OrganismSequence::Symbol(docked[i]) == next_symbol))
+					{
+						// if there is a neighbour and there should be
+						// send branch
+						SendBranchTree(i, next_branch);
+						recruitment_stage[i]=STAGE4;
+						docking_done[i] = true; 		// may not be necessary
+						printf("%d Sending branch to side %d\n",timestamp, i);
+					}
+					else
+					{
+						// if there is a neighbour but there shouldn't be
+						// send disassembly
+						PropagateSingleIRMessage(IR_MSG_TYPE_DISASSEMBLY,i);
+						printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
 
-        }
+						if( unlocking_required[i] )
+						{
+							SetDockingMotor(i, OPEN);
+							unlocking_required[i]=false;
+							waiting_for_undock |= 1<<i;
+						}
+						else
+						{
+							BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
+							waiting_for_undock |= 1<<i;
+							unlock_sent |= 1<<i;
+						}
+					}
+				}
+				// if there isn't a neighbour but there should be
+				else if( docked[i]==0 && branch_side == i )
+				{
+					// start recruiting
+					SetIRLED(branch_side, IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1);
+					printf("%d Preparing to recruit upon side %d\n",timestamp,i);
+				}
 
-        last_state = RESHAPING;
+			}
+
+			// If there is no new tree - disassemble
+			if( seed && mytree.Size() <= 0 )
+			{
+				current_state = DISASSEMBLY;
+				last_state = RESHAPING;
+				printf("%d No new tree to assemble, entering disassembly\n",timestamp);
+			}
+    	}
 
     }
     else if( msg_disassembly_received )
