@@ -1415,6 +1415,9 @@ void RobotSCOUT::Undocking()
     }
     else if( undocking_count < 100 )
     {
+//    	speed[0] = -30;
+//    	speed[1] = -30;
+
     	bool f = isNeighbourConnected(FRONT);
     	bool b = isNeighbourConnected(BACK);
     	bool l = isNeighbourConnected(LEFT);
@@ -1744,6 +1747,17 @@ void RobotSCOUT::Reshaping()
 					// start recruiting
 					SetIRLED(branch_side, IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1);
 					printf("%d Preparing to recruit upon side %d\n",timestamp,i);
+				}
+				else if( waiting_for_undock == 0 )
+				{
+					current_state = RECRUITMENT;
+
+					// Reset to prevent entering STAGE1 immediately
+					msg_docking_signal_req_received = 0;
+
+					// turn off LEDs
+					for(int i=0; i<NUM_DOCKS; i++)
+						SetRGBLED(i, 0, 0, 0, 0);
 				}
 
 			}
