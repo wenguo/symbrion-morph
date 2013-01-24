@@ -553,61 +553,44 @@ void RobotAW::LocateBeacon()
     speed[1] = 0;
     speed[2] = 0;
 
-
     locatebeacon_count++;
 
-    int turning = 0;
-    if(beacon_signals_detected)
-    {
-        /*
-        if(id0 == 0)
-        {
-            if((beacon_signals_detected & 0x3) != 0)
-                turning = 0;
-            else 
-                turning = 1;
-        }
-        else
-        {
-            if((beacon_signals_detected & 0x30) != 0)
-                turning = 0;
-            else 
-                turning = 1;
-        }*/
+    int turning;
+    // If beacon detected on correct side - don't turn
+	if((beacon_signals_detected & (1<<id0 | 1<<id1))!=0)
+		turning = 0;
+	else
+		turning = 1;
 
-        if((beacon_signals_detected & (1<<id0 | 1<<id1))!=0)
-            turning = 0;
-        else 
-            turning = 1;
+	if( turning == 0 )
+	{
+		//two beacon signals
+		if(beacon[id0]>5 && beacon[id1]>5)
+		{
+			//stay there and wait to transfer to state Alignment
+			speed[0] = direction * 15;
+			speed[1] = direction * 15;
+			speed[2] = 0;
+		}
+		else
+		{
+			printf("only one beacon detected, shift left and right a little bit\n");
+			int temp = beacon[id0]-beacon[id1];
 
-        if(turning != 0)
-        {
-            speed[0] = 20;
-            speed[1] = -20;
-        }
-        else
-        {
-            //two beacon signals 
-            if(beacon[id0]>5 && beacon[id1]>5)
-            {
-                //stay there and wait to transfer to state Alignment
-                speed[0] = direction * 15;
-                speed[1] = direction * 15;
-                speed[2] = 0;
-            }
-            else
-            {
-                printf("only one beacon detected, shift left and right a little bit\n");
-                int temp = beacon[id0]-beacon[id1];
-
-                speed[0] = 0;
-                speed[1] = 0;
-                speed[2] = -15 * sign(temp) * direction;
-            }
-
-        }
-    }
-
+			speed[0] = 0;
+			speed[1] = 0;
+			speed[2] = -20 * sign(temp) * direction;
+		}
+	}
+	else
+	{
+		// Don't turn during first 5 seconds
+		if( locatebeacon_count > 50 )
+		{
+			speed[0] = -20;
+			speed[1] = 20;
+		}
+	}
 
     /*
     printf("beacon: ");
@@ -646,7 +629,7 @@ void RobotAW::LocateBeacon()
             case 5:
                 {
                     //check if received docking signals
-                    if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)        
+                    if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)
                     {
                         current_state = ALIGNMENT;
                         last_state = LOCATEBEACON;
@@ -660,7 +643,6 @@ void RobotAW::LocateBeacon()
                     }
                     else
                     {
-                    	// Allow more time for AW to rotate 360
 //                        if(locatebeacon_count >=200)
 //                        {
 //                            current_state = ASSEMBLY;
@@ -807,7 +789,7 @@ void RobotAW::Recover()
     {
         //turn left/right according to reflective value;
         //robot will stop there for 1 seconds
-        if(recover_count > para.aligning_reverse_count)
+        if(recover_count < para.aligning_reverse_count)
         {
             //docked to the wrong robots
             if(assembly_info == OrganismSequence::Symbol(0))
@@ -1472,8 +1454,8 @@ void RobotAW::Undocking()
     else if(undocking_count < 100)
     {
     	// Simply move forward
-        speed[0] = 10;
-        speed[1] = 10;
+        speed[0] = 15;
+        speed[1] = 15;
         speed[2] = 0;
     }
     else
