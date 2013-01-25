@@ -585,6 +585,8 @@ void RobotAW::LocateBeacon()
 	else
 	{
 		// Don't turn during first 5 seconds
+		// - this will need to be changed, occasionally
+		//	the robot turns when it doesn't need to.
 		if( locatebeacon_count > 50 )
 		{
 			speed[0] = -20;
@@ -1454,9 +1456,9 @@ void RobotAW::Undocking()
     else if(undocking_count < 100)
     {
     	// Simply move forward
-        speed[0] = 15;
-        speed[1] = 15;
-        speed[2] = 0;
+//        speed[0] = 15;
+//        speed[1] = 15;
+//        speed[2] = 0;
     }
     else
     {
@@ -1487,7 +1489,7 @@ void RobotAW::Lowering()
     if( lowering_count == 10 )
     {
         //MoveHingeToAngle(hinge_start_pos, hinge_speed );
-        //SetHingeMotor(DOWN);
+//        SetHingeMotor(DOWN);
     }
 
     // For testing - don't allow to enter disassembly
@@ -1549,7 +1551,7 @@ void RobotAW::Raising()
             PropagateEthMessage(ETH_MSG_TYPE_RAISING_START);
             flash_leds = true;
 
-            //SetHingeMotor(UP);
+//            SetHingeMotor(UP);
         }
         else if( raising_count >= raising_delay + 50 )
         {
@@ -1763,7 +1765,9 @@ void RobotAW::MacroLocomotion()
 	speed[1] = 0;
 	speed[2] = 0;
 
-	//TODO: make robot wander a bit
+//	// Make robot wander a bit
+//	speed[0] = -20;
+//	speed[1] = -20;
 
     macrolocomotion_count++;
     //flashing RGB leds
