@@ -1178,7 +1178,7 @@ void Robot::Failed()
 
     static uint8_t unlock_sent = 0;
     
-	if(!MessageWaitingAck(IR_MSG_TYPE_FAILED))
+    if(!MessageWaitingAck(IR_MSG_TYPE_FAILED))
 	{
 		//check if need to unlocking docking faces which is connected to Activewheel
 		int num_docked = 0;
@@ -1186,8 +1186,24 @@ void Robot::Failed()
 		{
 			if(docked[i])
 			{
+				std::cout << "robot docked on side " << i << std::endl;
 				num_docked++;
-				if(unlocking_required[i])
+				// AW
+				if( type == ROBOT_AW )
+				{
+					if( !(unlock_sent & 1<<i) )
+					{
+						BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
+						unlock_sent |= 1<<i;
+					}
+					else if ((msg_unlocked_received & 1<<i) || !Ethernet::switchIsPortConnected(i/2) )
+					{
+						docked[i]=0;
+						num_docked--;
+					}
+				}
+				// SCOUT or KIT
+				else if(unlocking_required[i])
 				{
 					SetDockingMotor(i, OPEN);
 					unlocking_required[i]=false;
@@ -1199,7 +1215,7 @@ void Robot::Failed()
 						BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
 						unlock_sent |= 1<<i;
 					}
-					else if( (msg_unlocked_received & 1<<i) || !Ethernet::switchIsPortConnected(i+1) )
+					else if ((msg_unlocked_received & 1<<i) || !Ethernet::switchIsPortConnected(i+1) )
 					{
 						docked[i]=0;
 						num_docked--;
