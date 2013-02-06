@@ -2189,7 +2189,8 @@ void RobotSCOUT::Debugging()
                 }
                 else if(timestamp == 30)
                 {
-                    ((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[9]));
+                    //((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[9]));
+                    SetDockingMotor(para.debug.para[9], OPEN);
                     printf("open docking unit %d\n", para.debug.para[9]);
                 }
                 uint8_t rev = ((ScoutBot*)irobot)->GetDScrewRevolutions(ScoutBot::Side(para.debug.para[9]));
@@ -2206,7 +2207,8 @@ void RobotSCOUT::Debugging()
                 }
                 else if(timestamp == 30)
                 {
-                    ((ScoutBot*)irobot)->CloseDocking(ScoutBot::Side(para.debug.para[9]));
+                    //((ScoutBot*)irobot)->CloseDocking(ScoutBot::Side(para.debug.para[9]));
+                    SetDockingMotor(para.debug.para[9], CLOSE);
                     printf("close docking unit %d\n", para.debug.para[9]);
                 }
                 uint8_t rev = ((ScoutBot*)irobot)->GetDScrewRevolutions(ScoutBot::Side(para.debug.para[9]));
