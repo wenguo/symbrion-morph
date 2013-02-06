@@ -980,7 +980,7 @@ void RobotAW::Docking()
             }
             else if(abs(proximity_diff) > 0.5 * std::max(proximity[id0], proximity[id1]) )
             {
-                printf("proximity signals are significant different %d %D\n", proximity[id0], proximity[id1]);
+                printf("proximity signals are significant different %d %d\n", proximity[id0], proximity[id1]);
                 docking_blocked = true;
             }
             else
@@ -2047,7 +2047,7 @@ void RobotAW::Debugging()
         case 16://Test IRComm as sender
             if(timestamp ==2)
             {
-                SetIRLED(para.debug.para[0], IRLEDOFF, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(para.debug.para[0], IRLEDOFF, LED0|LED1|LED2, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
                 SetRGBLED(para.debug.para[0], 0,0,0,0);
             }
             if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == 0)
