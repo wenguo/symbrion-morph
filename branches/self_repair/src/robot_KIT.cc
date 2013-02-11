@@ -93,12 +93,12 @@ void RobotKIT::SetSpeed(int8_t speed0, int8_t speed1, int8_t speed2)
     if(fabs(speed2) > 10)
     {
         irobot->MoveScrewFront(para.speed_sideward * speed2);
-        irobot->MoveScrewRear(para.speed_sideward* speed2);
+        irobot->MoveScrewRear(-para.speed_sideward* speed2);
     }
     else
     {
         irobot->MoveScrewFront(speed0 * direction);
-        irobot->MoveScrewRear(-speed1 * direction);
+        irobot->MoveScrewRear(speed1 * direction);
     }
 }
 
@@ -562,14 +562,13 @@ void RobotKIT::LocateBeacon()
 
     speed[0] = 0;
     speed[1] = 0;
+    speed[2] = 0;
 
     locatebeacon_count++;
 
     int turning = 0;
     if(beacon_signals_detected)
     {
-        speed[0] = direction *para.locatebeacon_forward_speed[0];
-        speed[1] = direction *para.locatebeacon_forward_speed[1];
 
         if(id0==0)
         {
@@ -605,29 +604,30 @@ void RobotKIT::LocateBeacon()
         //printf("max_beacon: %d %d %d %d\tturning: %d\n", max_beacon[0], max_beacon[1], max_beacon[2], max_beacon[3], turning);
         if(turning != 0)
         {
-            speed[0] = turning * 30;
-            speed[1] = -turning * 30;
+            speed[0] = -turning * 30;
+            speed[1] = turning * 30;
+            speed[2] = 0;
         }
         else
         {
 
             if((beacon_signals_detected & (1<<id0 | 1<<id1)) != 0)
             {
-                for(int i=0;i<NUM_IRS;i++)
-                {
-                    speed[0] += (beacon[i] * direction * para.locatebeacon_weightleft[i]) >>1;
-                    speed[1] += (beacon[i] * direction * para.locatebeacon_weightright[i]) >>1;
-                }
+                int temp = beacon[id1] - beacon[id0];
+                speed[0] = direction *para.locatebeacon_forward_speed[0];
+                speed[1] = direction *para.locatebeacon_forward_speed[1];
+                speed[2] = 20 * direction* sign(temp);
             }
             else
             {
                 speed[0] = 0;
                 speed[1] = 0;
+                speed[2] = 0;
             }
         }
     }
 
-    printf("beacon: (%d %d) -- speed: (%d %d %d %d)\n", beacon[id0], beacon[id1], speed[0], speed[1], para.locatebeacon_forward_speed[0], para.locatebeacon_forward_speed[1]);
+    printf("beacon: (%d %d) -- speed: (%d %d %d %d %d)\n", beacon[id0], beacon[id1], speed[0], speed[1], speed[2], para.locatebeacon_forward_speed[0], para.locatebeacon_forward_speed[1]);
     //switch on ir led at 64Hz so the recruitment robot can sensing it
     //and turn on its docking signals, the robot need to switch off ir 
     //led for a while to check if it receives docking signals
@@ -699,6 +699,7 @@ void RobotKIT::Alignment()
 {
     speed[0] = direction * para.aligning_forward_speed[0];
     speed[1] = direction * para.aligning_forward_speed[1];
+    speed[2] = 0;
 
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];

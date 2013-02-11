@@ -1979,12 +1979,12 @@ void RobotSCOUT::Debugging()
 //            else
             if(timestamp == 2 )
             {
-                ((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[0]));
+                ((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[9]));
 
             }
-            else if( timestamp == para.debug.para[9] || (timestamp > 12 && docking_motor_isense_hist.Sum(para.debug.para[0]) >=2 ))
+            else if( timestamp == para.docking_motor_opening_time + 2 || (timestamp > 12 && docking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
             {
-                ((ScoutBot*)irobot)->MoveDocking((ScoutBot::Side(para.debug.para[0])),0);
+                ((ScoutBot*)irobot)->MoveDocking((ScoutBot::Side(para.debug.para[9])),0);
             }
             break;
             // For testing self-repair - starting from MacroLocomotion
@@ -2189,8 +2189,8 @@ void RobotSCOUT::Debugging()
                 }
                 else if(timestamp == 30)
                 {
-                    //((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[9]));
-                    SetDockingMotor(para.debug.para[9], OPEN);
+                    ((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[9]));
+                    //SetDockingMotor(para.debug.para[9], OPEN);
                     printf("open docking unit %d\n", para.debug.para[9]);
                 }
                 uint8_t rev = ((ScoutBot*)irobot)->GetDScrewRevolutions(ScoutBot::Side(para.debug.para[9]));
@@ -2207,8 +2207,8 @@ void RobotSCOUT::Debugging()
                 }
                 else if(timestamp == 30)
                 {
-                    //((ScoutBot*)irobot)->CloseDocking(ScoutBot::Side(para.debug.para[9]));
-                    SetDockingMotor(para.debug.para[9], CLOSE);
+                    ((ScoutBot*)irobot)->CloseDocking(ScoutBot::Side(para.debug.para[9]));
+                    //SetDockingMotor(para.debug.para[9], CLOSE);
                     printf("close docking unit %d\n", para.debug.para[9]);
                 }
                 uint8_t rev = ((ScoutBot*)irobot)->GetDScrewRevolutions(ScoutBot::Side(para.debug.para[9]));
@@ -2216,7 +2216,6 @@ void RobotSCOUT::Debugging()
                 printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
             }
             break;
-
 
         default:
             break;
