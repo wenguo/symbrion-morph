@@ -676,8 +676,6 @@ void RobotAW::LocateBeacon()
     }
 }
 
-#define MOVE_LEFT 10
-#define MOVE_RIGHT 11
 void RobotAW::Alignment()
 {
 
@@ -687,8 +685,6 @@ void RobotAW::Alignment()
     int temp = beacon[id0]-beacon[id1];
     int temp_max = std::max(beacon[id0], beacon[id1]);
     int temp2 = (reflective_hist[id0].Avg())-(reflective_hist[id1].Avg());
-
-    static bool docking_region_detected = false;
 
     // Far away from recruiting robot - move sideways or forward
     if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 20 )
@@ -858,9 +854,9 @@ void RobotAW::Recover()
 
 }
 
-const char *docking_status_name[] ={"turn left", "turn right", "move forward", "move backward", "check" };
 void RobotAW::Docking()
 {
+    const char *docking_status_name[] ={"turn left", "turn right", "move forward", "move backward", "check" };
 
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
