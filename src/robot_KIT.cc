@@ -920,8 +920,8 @@ void RobotKIT::Docking()
 
     //TODO, remove this two static variables as they may cause problems
     static bool synchronised = false;
-    static  int status = 0;
-    static  int last_status = 0;
+    static  int status = MOVE_FORWARD;
+    static  int last_status = MOVE_FORWARD;
     docking_count++;
         
     speed[0] = 0;
@@ -1002,7 +1002,6 @@ void RobotKIT::Docking()
     }
     else
     {
-
         int reflective_diff = reflective_hist[id1].Avg() - reflective_hist[id0].Avg();
         int proximity_diff = proximity[id1] - proximity[id0];
         //if no signals detected, marked as failure
@@ -1037,20 +1036,19 @@ void RobotKIT::Docking()
                 printf("proximity signals are significant different %d %d\n", proximity[id0], proximity[id1]);
                 docking_blocked = true;
             }
-            else
+            else if(docking_count >=30)
             {
 
                 //make a fix pattern movement
-                if(timestamp % 9 == 0)
+                if(docking_count % 6 == 0)
                 {
                     status = CHECKING;
                 }
-                else if(timestamp % 18 == 6)
+                else if(docking_count % 18 == 3)
                 {
-                    //status = MOVE_FORWARD;
-                    status = CHECKING;
+                    status = MOVE_FORWARD;
                 }
-                else if(timestamp % 18 == 15 )
+                else if(docking_count % 18 == 9 || docking_count % 18 == 15)
                 {
                     if(assembly_info.type1 == ROBOT_AW)
                     {
@@ -1066,31 +1064,20 @@ void RobotKIT::Docking()
                     else if(assembly_info.type1 == ROBOT_KIT || assembly_info.type1 == ROBOT_SCOUT)
                     {
 
-                        if(last_status == TURN_LEFT)
-                        {
-                            status = MOVE_RIGHT; //move right a little bit to compensate
-                        }
-                        else if(last_status == TURN_RIGHT)
-                        {
-                            status = MOVE_LEFT;
-                        }
-                        else
-                        {
                             if(std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg())<0)
-                                status = MOVE_FORWARD;
+                                status = MOVE_BACKWARD;
                             else if(reflective_diff > 300)
                                 status = TURN_LEFT;
                             else if(reflective_diff < -300)
                                 status = TURN_RIGHT;
                             else
                                 status = MOVE_FORWARD;
-                        }
 
-                        last_status = status;
+                            last_status = status;
 
                     }
                 }
-
+       
                 switch (status)
                 {
                     case TURN_RIGHT:
@@ -1104,14 +1091,14 @@ void RobotKIT::Docking()
                         speed[2] = direction * para.docking_turn_left_speed[2];
                         break;
                     case MOVE_FORWARD:
-                        speed[0] = 50;//direction * para.docking_forward_speed[0];
-                        speed[1] = 50;//direction * para.docking_forward_speed[1];
-                        speed[2] = 0;//direction * para.docking_forward_speed[2];
+                        speed[0] = direction * para.docking_forward_speed[0];
+                        speed[1] = direction * para.docking_forward_speed[1];
+                        speed[2] = direction * para.docking_forward_speed[2];
                         break;
                     case MOVE_BACKWARD:
-                        speed[0] = 0;//direction * para.docking_backward_speed[0];
-                        speed[1] = 0;//direction * para.docking_backward_speed[1];
-                        speed[2] = 0;//direction * para.docking_backward_speed[2];
+                        speed[0] = direction * para.docking_backward_speed[0];
+                        speed[1] = direction * para.docking_backward_speed[1];
+                        speed[2] = direction * para.docking_backward_speed[2];
                         break;
                     case CHECKING:
                         speed[0] = 0;
@@ -1131,7 +1118,7 @@ void RobotKIT::Docking()
                     default:
                         break;
                 }
-                printf("Docking routine %#x (%s) speed (%d %d %d) proximity (%d %d) reflective(%d %d)\n", status, docking_status_name[status], speed[0], speed[1], speed[2], proximity[id0], proximity[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+                printf(" %d Docking routine %#x (%s) speed (%d %d %d) proximity (%d %d) reflective(%d %d)\n", docking_count %18, status, docking_status_name[status], speed[0], speed[1], speed[2], proximity[id0], proximity[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
             }
         }
     }
