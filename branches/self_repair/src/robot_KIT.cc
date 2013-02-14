@@ -727,7 +727,8 @@ void RobotKIT::Alignment()
         }
     }
     //getting close to robots, but not too close
-    else if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 )
+    else if( (assembly_info.type1 == ROBOT_AW && (std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 500 || abs(temp2) > 200))
+            || (assembly_info.type1 != ROBOT_AW && std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 ))
     {
         if( abs(temp2) > 150)
         {           

@@ -1040,11 +1040,10 @@ void RobotSCOUT::Recruitment()
             }
             else if(msg_guideme_received & (1<<i))
             {
-                if(it1->getSymbol(0).type2 == ROBOT_SCOUT)
+                if(it1->getSymbol(0).type2 == ROBOT_SCOUT || it1->getSymbol(0).type2 == ROBOT_KIT)
                     msg_locked_expected |= 1<<i;
                 else if(it1->getSymbol(0).type2 == ROBOT_AW)
                     msg_lockme_expected |= 1<<i;
-                msg_guideme_received &= ~(1<<i);
                 msg_guideme_received &= ~(1<<i);
                 guiding_signals_count[i]=0;
                 recruitment_stage[i]=STAGE2;

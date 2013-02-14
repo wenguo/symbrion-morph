@@ -1103,13 +1103,13 @@ void RobotAW::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE1)
         {
-        	if( recruitment_count[i]++ > 500 )
-        	{
-        		recruitment_count[i]=0;
-        		recruitment_stage[i]=STAGE0;
-        		SetIRLED(i,IRLEDOFF,LED1,0);
-        	}
-        	else if(msg_docking_signal_req_received & (1<<i))
+            if( recruitment_count[i]++ > 500 )
+            {
+                recruitment_count[i]=0;
+                recruitment_stage[i]=STAGE0;
+                SetIRLED(i,IRLEDOFF,LED1,0);
+            }
+            else if(msg_docking_signal_req_received & (1<<i))
             {
                 msg_docking_signal_req_received &= ~(1<<i);
                 SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
@@ -1127,10 +1127,7 @@ void RobotAW::Recruitment()
                     printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
                 }
             }
-            else if((msg_guideme_received & (1<<i)) || ((robot_in_range_detected & (0x3<<(2*i))) ==0
-                        && ambient_hist[2*i].Avg()> para.recruiting_ambient_offset1
-                        && ambient_hist[2*i+1].Avg()>para.recruiting_ambient_offset1
-                        && reflective_hist[2*i].Avg()>20 && reflective_hist[2*i+1].Avg()>20))
+            else if((msg_guideme_received & (1<<i)) )
             {
                 msg_locked_expected |= 1<<i;
                 msg_guideme_received &= ~(1<<i);
