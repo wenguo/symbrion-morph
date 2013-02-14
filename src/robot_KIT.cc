@@ -962,8 +962,9 @@ void RobotKIT::Docking()
                 SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, 0);
                 irobot->SetIRRX(KaBot::Side(board_dev_num[assembly_info.side2]), false);
 
-                Robot::SendIRMessage(assembly_info.side2, IR_MSG_TYPE_LOCKME,  para.ir_msg_repeated_num);
-                msg_locked_expected |= 1<<assembly_info.side2;
+                //Robot::SendIRMessage(assembly_info.side2, IR_MSG_TYPE_LOCKME,  para.ir_msg_repeated_num);
+                //msg_locked_expected |= 1<<assembly_info.side2;
+                SetDockingMotor(assembly_info.side2, CLOSE);
 
                 synchronised = false;
                 current_state = LOCKING;
@@ -1131,6 +1132,7 @@ void RobotKIT::Locking()
     int docking_side = assembly_info.side2;
 
     SetRGBLED(docking_side, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
+
 
     //docking motor is done?
     if(docking_motors_status[docking_side] == CLOSED)
