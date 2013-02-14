@@ -92,8 +92,8 @@ void RobotKIT::SetSpeed(int8_t speed0, int8_t speed1, int8_t speed2)
 {
     if(fabs(speed2) > 10)
     {
-        irobot->MoveScrewFront(para.speed_sideward * speed2);
-        irobot->MoveScrewRear(-para.speed_sideward* speed2);
+        irobot->MoveScrewFront(para.speed_sideward * speed2 * direction);
+        irobot->MoveScrewRear(-para.speed_sideward* speed2 * direction);
     }
     else
     {
@@ -614,9 +614,9 @@ void RobotKIT::LocateBeacon()
             if((beacon_signals_detected & (1<<id0 | 1<<id1)) != 0)
             {
                 int temp = beacon[id1] - beacon[id0];
-                speed[0] = direction *para.locatebeacon_forward_speed[0];
-                speed[1] = direction *para.locatebeacon_forward_speed[1];
-                speed[2] = 20 * direction* sign(temp);
+                speed[0] = para.locatebeacon_forward_speed[0];
+                speed[1] = para.locatebeacon_forward_speed[1];
+                speed[2] = 20 * sign(temp);
             }
             else
             {
@@ -697,8 +697,8 @@ void RobotKIT::LocateBeacon()
 
 void RobotKIT::Alignment()
 {
-    speed[0] = direction * para.aligning_forward_speed[0];
-    speed[1] = direction * para.aligning_forward_speed[1];
+    speed[0] =  para.aligning_forward_speed[0];
+    speed[1] =  para.aligning_forward_speed[1];
     speed[2] = 0;
 
     int id0 = docking_approaching_sensor_id[0];
@@ -717,12 +717,12 @@ void RobotKIT::Alignment()
         {
             speed[0] = 0;
             speed[1] = 0;
-            speed[2] = 20 * sign(temp) * direction;
+            speed[2] = 20 * sign(temp);
         }
         else
         {
-            speed[0] = direction * 25;
-            speed[1] = direction * 25;
+            speed[0] = 25;
+            speed[1] = 25;
             speed[2] = 0;
         }
     }
@@ -754,12 +754,12 @@ void RobotKIT::Alignment()
                     << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
                 speed[0] = 0;
                 speed[1] = 0;
-                speed[2] = 15 * sign(temp) * direction;
+                speed[2] = 15 * sign(temp);
             }
             else
             {
-                speed[0] = direction * 20;
-                speed[1] = direction * 20;
+                speed[0] = 20;
+                speed[1] = 20;
                 speed[2] = 0;
             }
         }
@@ -842,8 +842,8 @@ void RobotKIT::Recover()
             //blocked
             else
             {
-                speed[0] = direction * para.aligning_reverse_speed[0];
-                speed[1] = direction * para.aligning_reverse_speed[1];
+                speed[0] = para.aligning_reverse_speed[0];
+                speed[1] = para.aligning_reverse_speed[1];
 
                 if(timestamp % 5 ==0)
                     Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
@@ -986,6 +986,7 @@ void RobotKIT::Docking()
     //request for guiding signals for a while,
     else if(docking_count < 30 && !synchronised)
     {
+        /*
         if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5 )
         {
             if(timestamp % 5 ==0)
@@ -998,7 +999,8 @@ void RobotKIT::Docking()
             //switch on the reflective signals
             synchronised = true;
             SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-        }
+        }*/
+        synchronised = true;
 
     }
     else
@@ -1025,6 +1027,7 @@ void RobotKIT::Docking()
                 printf("docking_count %d reaches threshold\n", docking_count);
                 docking_blocked = true;
             }
+            /*
             else if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5)
             {
                 printf("No proximity signals detected\n");
@@ -1034,13 +1037,13 @@ void RobotKIT::Docking()
             {
                 printf("proximity signals are significant different %d %d\n", proximity[id0], proximity[id1]);
                 docking_blocked = true;
-            }
+            }*/
             else if(std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg())<0)
             {
                 printf("signal interference, reflective gives negative values %d %d\n", reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
                 docking_blocked = true;
             }
-            else if(docking_count >=30) 
+            else if(docking_count >=36) 
             {
                 //skip first few step for fix pattern behaviour (checking -- forward -- moving1 --checking -- moving2)
                 //make a fix pattern movement
@@ -1085,24 +1088,24 @@ void RobotKIT::Docking()
                 switch (status)
                 {
                     case TURN_RIGHT:
-                        speed[0] = direction * para.docking_turn_right_speed[0];
-                        speed[1] = direction * para.docking_turn_right_speed[1];
-                        speed[2] = direction * para.docking_turn_right_speed[2];
+                        speed[0] = para.docking_turn_right_speed[0];
+                        speed[1] = para.docking_turn_right_speed[1];
+                        speed[2] = para.docking_turn_right_speed[2];
                         break;
                     case TURN_LEFT:
-                        speed[0] = direction * para.docking_turn_left_speed[0];
-                        speed[1] = direction * para.docking_turn_left_speed[1];
-                        speed[2] = direction * para.docking_turn_left_speed[2];
+                        speed[0] = para.docking_turn_left_speed[0];
+                        speed[1] = para.docking_turn_left_speed[1];
+                        speed[2] = para.docking_turn_left_speed[2];
                         break;
                     case MOVE_FORWARD:
-                        speed[0] = direction * para.docking_forward_speed[0];
-                        speed[1] = direction * para.docking_forward_speed[1];
-                        speed[2] = direction * para.docking_forward_speed[2];
+                        speed[0] = para.docking_forward_speed[0];
+                        speed[1] = para.docking_forward_speed[1];
+                        speed[2] = para.docking_forward_speed[2];
                         break;
                     case MOVE_BACKWARD:
-                        speed[0] = direction * para.docking_backward_speed[0];
-                        speed[1] = direction * para.docking_backward_speed[1];
-                        speed[2] = direction * para.docking_backward_speed[2];
+                        speed[0] = para.docking_backward_speed[0];
+                        speed[1] = para.docking_backward_speed[1];
+                        speed[2] = para.docking_backward_speed[2];
                         break;
                     case CHECKING:
                         speed[0] = 0;
