@@ -727,7 +727,7 @@ void RobotKIT::Alignment()
         }
     }
     //getting close to robots, but not too close
-    else if( (assembly_info.type1 == ROBOT_AW && (std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 500 || abs(temp2) > 200))
+    else if( (assembly_info.type1 == ROBOT_AW && (std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 500 || abs(temp2) > 250))
             || (assembly_info.type1 != ROBOT_AW && std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 ))
     {
         if( abs(temp2) > 150)
@@ -1060,9 +1060,9 @@ void RobotKIT::Docking()
                     {
                         if(abs(proximity_diff)> 400 || abs(reflective_diff) > 1200)
                             status = MOVE_BACKWARD;
-                        else if(proximity_diff > 200 || reflective_diff > 300)
+                        else if(reflective_diff > 300)
                             status = TURN_LEFT;
-                        else if(proximity_diff< -200 || reflective_diff < -300)
+                        else if(reflective_diff < -300)
                             status = TURN_RIGHT;
                         else
                             status = MOVE_FORWARD;
