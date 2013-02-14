@@ -1077,12 +1077,15 @@ void RobotSCOUT::Recruitment()
                     msg_locked_expected |= 1<<i;
                 else
                     msg_lockme_expected |= 1<<i;
-                SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
+                SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch left and right leds
                 //wait for ack
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_ASSEMBLY_INFO))
                 {
                     msg_assembly_info_req_received &= ~(1<<i);
                 }
+
+                //reset the clock as it happens that another robot just docked before it gives up recruiting
+                guiding_signals_count[i] = 0;
             }
 
             //received docking_signals req, back to stage 1
