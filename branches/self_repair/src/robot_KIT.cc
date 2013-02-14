@@ -973,7 +973,7 @@ void RobotKIT::Docking()
             }
         }
     }
-    else if(ethernet_status_hist.Sum(assembly_info.side2) > 2) 
+    else if(ethernet_status_hist.Sum(assembly_info.side2) > 0) 
     {
         docking_region_detected = true;
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, 0);
@@ -1004,8 +1004,6 @@ void RobotKIT::Docking()
     {
         int reflective_diff = reflective_hist[id1].Avg() - reflective_hist[id0].Avg();
         int proximity_diff = proximity[id1] - proximity[id0];
-        //if no signals detected, marked as failure
-        //TODO, more failure case
 
         //blocked or something goes wrong
         if(docking_blocked)
@@ -1036,9 +1034,9 @@ void RobotKIT::Docking()
                 printf("proximity signals are significant different %d %d\n", proximity[id0], proximity[id1]);
                 docking_blocked = true;
             }
-            else if(docking_count >=30)
+            else if(docking_count >=30) 
             {
-
+                //skip first few step for fix pattern behaviour (checking -- forward -- moving1 --checking -- moving2)
                 //make a fix pattern movement
                 if(docking_count % 6 == 0)
                 {
@@ -1262,6 +1260,9 @@ void RobotKIT::Recruitment()
                 {
                     msg_assembly_info_req_received &= ~(1<<i);
                 }
+
+                //reset the clock as it happens that another robot just docked before it gives up recruiting
+                guiding_signals_count[i] = 0;
             }
 
             //received docking_signals req, back to stage 1
