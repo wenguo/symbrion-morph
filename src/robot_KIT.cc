@@ -815,7 +815,7 @@ void RobotKIT::Recover()
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
 
-    if(last_state == ALIGNMENT)
+    if(last_state == DOCKING)
     {
         //turn left/right according to reflective value;
         //robot will stop there for 1 seconds
@@ -945,7 +945,7 @@ void RobotKIT::Docking()
                 for(int i=0; i<NUM_DOCKS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
                 current_state = RECOVER;
-                last_state = ALIGNMENT;
+                last_state = DOCKING;
                 recover_count = 0;
             }
             else
@@ -1014,7 +1014,7 @@ void RobotKIT::Docking()
             synchronised = false;
             docking_trials++;
             current_state = RECOVER;
-            last_state = ALIGNMENT;
+            last_state = DOCKING;
             recover_count = 0;
             //  printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
         }
@@ -1033,6 +1033,11 @@ void RobotKIT::Docking()
             else if(abs(proximity_diff) > 0.5 * std::max(proximity[id0], proximity[id1]) )
             {
                 printf("proximity signals are significant different %d %d\n", proximity[id0], proximity[id1]);
+                docking_blocked = true;
+            }
+            else if(std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg())<0)
+            {
+                printf("signal interference, reflective gives negative values %d %d\n", reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
                 docking_blocked = true;
             }
             else if(docking_count >=30) 
