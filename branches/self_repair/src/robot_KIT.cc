@@ -735,15 +735,15 @@ void RobotKIT::Alignment()
                 << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
             if(temp2 > 0)
             {
-                speed[0] = para.docking_turn_left_speed[0];
-                speed[1] = para.docking_turn_left_speed[1];
-                speed[2] = para.docking_turn_left_speed[2];
+                speed[0] = direction > 0 ? para.docking_turn_left_speed[0] : (direction * para.docking_turn_left_speed[1]);
+                speed[1] = direction > 0 ? para.docking_turn_left_speed[1] : (direction * para.docking_turn_left_speed[0]);
+                speed[2] = 0;
             }
             else
             {   
-                speed[0] = para.docking_turn_right_speed[0];
-                speed[1] = para.docking_turn_right_speed[1];
-                speed[2] = para.docking_turn_right_speed[2];
+                speed[0] = direction > 0 ? para.docking_turn_right_speed[0] : (direction * para.docking_turn_right_speed[1]);
+                speed[1] = direction > 0 ? para.docking_turn_right_speed[1] : (direction * para.docking_turn_right_speed[0]);
+                speed[2] = 0;
             }
         }
         else
@@ -986,7 +986,7 @@ void RobotKIT::Docking()
     //request for guiding signals for a while,
     else if(docking_count < 30 && !synchronised)
     {
-        /*
+        
         if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5 )
         {
             if(timestamp % 5 ==0)
@@ -999,8 +999,7 @@ void RobotKIT::Docking()
             //switch on the reflective signals
             synchronised = true;
             SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-        }*/
-        synchronised = true;
+        }
 
     }
     else
@@ -1027,7 +1026,6 @@ void RobotKIT::Docking()
                 printf("docking_count %d reaches threshold\n", docking_count);
                 docking_blocked = true;
             }
-            /*
             else if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5)
             {
                 printf("No proximity signals detected\n");
@@ -1037,7 +1035,7 @@ void RobotKIT::Docking()
             {
                 printf("proximity signals are significant different %d %d\n", proximity[id0], proximity[id1]);
                 docking_blocked = true;
-            }*/
+            }
             else if(std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg())<0)
             {
                 printf("signal interference, reflective gives negative values %d %d\n", reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
@@ -1088,14 +1086,18 @@ void RobotKIT::Docking()
                 switch (status)
                 {
                     case TURN_RIGHT:
-                        speed[0] = para.docking_turn_right_speed[0];
-                        speed[1] = para.docking_turn_right_speed[1];
-                        speed[2] = para.docking_turn_right_speed[2];
+                        speed[0] = direction > 0 ? para.docking_turn_right_speed[0] : 
+                            (direction * para.docking_turn_right_speed[1]);
+                        speed[1] = direction > 0 ? para.docking_turn_right_speed[1] : 
+                            (direction * para.docking_turn_right_speed[0]);
+                        speed[2] = 0;
                         break;
                     case TURN_LEFT:
-                        speed[0] = para.docking_turn_left_speed[0];
-                        speed[1] = para.docking_turn_left_speed[1];
-                        speed[2] = para.docking_turn_left_speed[2];
+                        speed[0] = direction > 0 ? para.docking_turn_left_speed[0] : 
+                            (direction * para.docking_turn_left_speed[1]);
+                        speed[1] = direction > 0 ? para.docking_turn_left_speed[1] : 
+                            (direction * para.docking_turn_left_speed[0]);
+                        speed[2] = 0;
                         break;
                     case MOVE_FORWARD:
                         speed[0] = para.docking_forward_speed[0];
