@@ -91,7 +91,7 @@ void RobotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint
 
 }
 
-void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t speed3)
+void RobotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
 {
     if(leftspeed > 100)
         leftspeed = 100;
@@ -101,7 +101,7 @@ void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t speed3)
         rightspeed = 100;
     else if(rightspeed < -100)
         rightspeed = -100;
-    irobot->Move(para.scout_wheels_direction[0]*leftspeed, para.scout_wheels_direction[1]*rightspeed);
+    irobot->Move(direction * para.scout_wheels_direction[0] * leftspeed, direction * para.scout_wheels_direction[1] * rightspeed);
 }
 
 
@@ -315,24 +315,22 @@ void RobotSCOUT::UpdateFailures()
 
 void RobotSCOUT::Avoidance()
 {
-    speed[0] = 40;
-    speed[1] = 40;
+    speed[0] = 30;
+    speed[1] = 30;
 
+    uint32_t temp=0;
 
     for(int i=0;i<NUM_IRS;i++)
     {
-           speed[0] +=(para.avoid_weightleft[i] * (reflective_hist[i]).Avg())>>3;
-           speed[1] += (para.avoid_weightleft[i] * (reflective_hist[i]).Avg())>>3;
+        if(reflective_hist[i].Avg() > 0)
+        {
+            temp = reflective_hist[i].Avg();
+            speed[0] +=(para.avoid_weightleft[i] * (temp>>5));
+            speed[1] += (para.avoid_weightright[i] * (temp >> 5));
+        }
     }
 
-    if(reflective_hist[1].Avg() > para.avoid_threshold[1] || reflective_hist[0].Avg()>para.avoid_threshold[0])
-        direction = BACKWARD;
-    else if(reflective_hist[4].Avg() > para.avoid_threshold[4] || reflective_hist[5].Avg()>para.avoid_threshold[0])
-        direction = FORWARD;
-
-    speed[0] = 0;
-    speed[1] = 0;
-
+   // printf("direction: %d bumped: %#x speed: %d %d %d\n",direction, bumped, speed[0], speed[1], speed[2]);
 
 }
 
@@ -568,8 +566,8 @@ void RobotSCOUT::LocateBeacon()
     int turning = 0;
     if(beacon_signals_detected)
     {
-        speed[0] = direction *para.locatebeacon_forward_speed[0];
-        speed[1] = direction *para.locatebeacon_forward_speed[1];
+        speed[0] = para.locatebeacon_forward_speed[0];
+        speed[1] = para.locatebeacon_forward_speed[1];
 
         if(id0==0)
         {
@@ -602,10 +600,20 @@ void RobotSCOUT::LocateBeacon()
         }
 
         //printf("max_beacon: %d %d %d %d\tturning: %d\n", max_beacon[0], max_beacon[1], max_beacon[2], max_beacon[3], turning);
-        if(turning != 0)
+       /* if(turning != 0)
         {
-            speed[0] = turning * 30;
-            speed[1] = -turning * 30;
+            speed[0] = direction * turning * 30;
+            speed[1] = -direction * turning * 30;
+        }*/
+        if(turning ==-1)
+        {
+            speed[0] = -direction * 30;
+            speed[1] = direction * 30;
+        }
+        else if(turning == 1)
+        {
+            speed[0] = direction *  30;
+            speed[1] = -direction *  30;
         }
         else
         {
@@ -613,8 +621,8 @@ void RobotSCOUT::LocateBeacon()
             {
                 for(int i=0;i<NUM_IRS;i++)
                 {
-                    speed[0] += (beacon[i] * direction * para.locatebeacon_weightleft[i]) >>1;
-                    speed[1] += (beacon[i] * direction * para.locatebeacon_weightright[i]) >>1;
+                    speed[0] += (beacon[i] * para.locatebeacon_weightleft[i]) >>1;
+                    speed[1] += (beacon[i] * para.locatebeacon_weightright[i]) >>1;
                 }
             }
             else
@@ -698,8 +706,8 @@ void RobotSCOUT::LocateBeacon()
 //TODO: cleanup the code
 void RobotSCOUT::Alignment()
 {
-    speed[0] = direction * para.aligning_forward_speed[0];
-    speed[1] = direction * para.aligning_forward_speed[1];
+    speed[0] = para.aligning_forward_speed[0];
+    speed[1] = para.aligning_forward_speed[1];
 
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
@@ -853,8 +861,8 @@ void RobotSCOUT::Recover()
             //blocked
             else
             {
-                speed[0] = direction * para.aligning_reverse_speed[0];
-                speed[1] = direction * para.aligning_reverse_speed[1];
+                speed[0] = para.aligning_reverse_speed[0];
+                speed[1] = para.aligning_reverse_speed[1];
 
                 if(timestamp % 5 ==0)
                     Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
@@ -922,8 +930,8 @@ void RobotSCOUT::Recover()
 
 void RobotSCOUT::Docking()
 {
-    speed[0] = direction * para.docking_forward_speed[0];
-    speed[1] = direction * para.docking_forward_speed[1];  
+    speed[0] = para.docking_forward_speed[0];
+    speed[1] = para.docking_forward_speed[1];  
 
     docking_count++;
 

@@ -88,8 +88,21 @@ void RobotKIT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_
 
 }
 
-void RobotKIT::SetSpeed(int8_t speed0, int8_t speed1, int8_t speed2)
+void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
 {
+    if(speed0 > 100)
+        speed0 = 100;
+    if(speed0 < -100)
+        speed0 = -100;
+    if(speed1 > 100)
+        speed1 = 100;
+    if(speed1 < -100)
+        speed1 = -100;
+    if(speed2 > 100)
+        speed2 = 100;
+    if(speed2 < -100)
+        speed2 = -100;
+
     if(fabs(speed2) > 10)
     {
         irobot->MoveScrewFront(para.speed_sideward * speed2 * direction);
