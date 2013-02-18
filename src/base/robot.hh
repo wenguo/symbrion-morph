@@ -152,7 +152,7 @@ class Robot
 
     virtual void SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)=0;
     virtual void SetRGBLED(int channel, uint8_t tl=LED_BLUE, uint8_t tr=0, uint8_t bl=0, uint8_t br=0)=0; 
-    virtual void SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)=0;
+    virtual void SetSpeed(int leftspeed, int rightspeed, int sidespeed)=0;
 
     virtual bool SetDockingMotor(int channel, int status)=0;
     virtual bool SetHingeMotor(int status)=0;
@@ -364,7 +364,7 @@ class Robot
     bool assembly_info_checked;
 
     int32_t direction;
-    int8_t speed[3];
+    int speed[3];
 
     uint32_t num_robots_inorganism;
 

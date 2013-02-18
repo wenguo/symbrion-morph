@@ -82,8 +82,21 @@ void RobotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t
     RGBLED_status[channel] = tl|tr|bl|br;
 }
 
-void RobotAW::SetSpeed(int8_t left, int8_t right, int8_t side)
+void RobotAW::SetSpeed(int left, int right, int side)
 {
+    if(left > 100)
+        left = 100;
+    else if(left < -100)
+        left = -100;
+    if(right > 100)
+        right = 100;
+    else if(right < -100)
+        right = -100;
+    if(side > 100)
+        side = 100;
+    else if(side < -100)
+        side = -100;
+
     int frontleft=0;
     int frontright=0;
     int rear = 0;
