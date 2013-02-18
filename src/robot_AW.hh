@@ -20,9 +20,6 @@ class RobotAW:public Robot
         virtual void SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed);
         virtual void Reset();
 
-        virtual int in_docking_region(int x[4]);
-        virtual int in_locking_region(int x[4]);
-
         virtual void UpdateSensors();
         virtual void UpdateActuators();
         // for self-repair

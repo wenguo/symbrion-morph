@@ -157,9 +157,6 @@ class Robot
     virtual bool SetDockingMotor(int channel, int status)=0;
     virtual bool SetHingeMotor(int status)=0;
 
-    virtual int in_docking_region(int x[4])=0;
-    virtual int in_locking_region(int x[4])=0;
-
     private:
     static void Calibrating(Robot *robot){robot->Calibrating();}
     static void Exploring(Robot * robot) {robot->Exploring();}

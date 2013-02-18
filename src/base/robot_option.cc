@@ -54,6 +54,11 @@ bool Robot::LoadParameters(const char * filename)
                 for(int i=0;i<NUM_IRS;i++)
                     para.avoid_weightside[i] = atoi(optionfile->GetPropertyValue(prop, i));
             }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "threshold" ) )
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.avoid_threshold[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
 
         }
         else if( strcmp( typestr, "LocateBeacon" ) == 0 )
@@ -110,23 +115,11 @@ bool Robot::LoadParameters(const char * filename)
         }
         else if( strcmp( typestr, "Recruitment" ) == 0 )
         {
-            para.recruiting_ambient_offset1 = optionfile->ReadInt(entity, "recruiting_ambient_offset1", 500);
-            para.recruiting_ambient_offset2 = optionfile->ReadInt(entity, "recruiting_ambient_offset2", 500);
-            para.recruiting_proximity_offset1 = optionfile->ReadInt(entity, "recruiting_proximity_offset1", 150);
-            para.recruiting_proximity_offset2 = optionfile->ReadInt(entity, "recruiting_proximity_offset2", 150);
-            para.recruiting_reflective_offset1 = optionfile->ReadInt(entity, "recruiting_reflective_offset1", 20);
-            para.recruiting_reflective_offset2 = optionfile->ReadInt(entity, "recruiting_reflective_offset2", 20);
             para.recruiting_guiding_signals_time = optionfile->ReadInt(entity, "recruiting_guiding_signals_time", 200);
             para.recruiting_beacon_signals_time = optionfile->ReadInt(entity, "recruiting_beacon_signals_time", 500);
         }
         else if( strcmp( typestr, "Docking" ) == 0 )
         {
-            para.docking_reflective_offset1 = optionfile->ReadInt(entity, "docking_reflective_offset1", 20);
-            para.docking_reflective_offset2 = optionfile->ReadInt(entity, "docking_reflective_offset2", 20);
-            para.docking_reflective_diff = optionfile->ReadInt(entity, "docking_reflective_diff", 20);
-            para.docking_beacon_offset1 = optionfile->ReadInt(entity, "docking_beacon_offset1", 20);
-            para.docking_beacon_offset2 = optionfile->ReadInt(entity, "docking_beacon_offset2", 20);
-            para.docking_beacon_diff = optionfile->ReadInt(entity, "docking_beacon_diff", 20);
             para.docking_motor_opening_time = optionfile->ReadInt(entity, "docking_motor_opening_time", 30);
             para.docking_motor_closing_time = optionfile->ReadInt(entity, "docking_motor_closing_time", 40);
             para.docking_trials = optionfile->ReadInt(entity, "docking_trials", 40);
@@ -166,16 +159,6 @@ bool Robot::LoadParameters(const char * filename)
         }
         else if( strcmp( typestr, "Locking" ) == 0 )
         {
-            para.locking_proximity_offset1 = optionfile->ReadInt(entity, "locking_proximity_offset1", 720);
-            para.locking_proximity_offset2 = optionfile->ReadInt(entity, "locking_proximity_offset2", 640);
-            para.locking_proximity_diff1 = optionfile->ReadInt(entity, "locking_proximity_diff1", 40);
-            para.locking_proximity_diff2 = optionfile->ReadInt(entity, "locking_proximity_diff1", 40);
-            para.locking_reflective_offset1 = optionfile->ReadInt(entity, "locking_reflective_offset1", 500);
-            para.locking_reflective_offset2 = optionfile->ReadInt(entity, "locking_reflective_offset2", 500);
-            para.locking_reflective_diff = optionfile->ReadInt(entity, "locking_reflective_diff", 650);
-            para.locking_beacon_offset1 = optionfile->ReadInt(entity, "locking_beacon_offset1", 100);
-            para.locking_beacon_offset2 = optionfile->ReadInt(entity, "locking_beacon_offset2", 100);
-            para.locking_beacon_diff = optionfile->ReadInt(entity, "locking_beacon_diff", 50);
             if( Morph::CProperty* prop = optionfile->GetProperty( entity, "locking_motor_enabled" ) )
             {
                 for(int i=0;i<4;i++)

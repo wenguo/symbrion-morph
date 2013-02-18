@@ -262,7 +262,6 @@ void RobotKIT::UpdateSensors()
     ethernet_status_hist.Push2(ethernet_status);
     docking_motor_isense_hist.Push2(isense);
 
-
     for(int i=0;i<NUM_IRS;i++)
     {
         reflective_hist[i].Push(reflective[i]-para.reflective_calibrated[i]);
@@ -280,32 +279,32 @@ void RobotKIT::UpdateActuators()
 // for self-repair
 void RobotKIT::UpdateFailures()
 {
-	static int failure_delay = 0;
+    static int failure_delay = 0;
     if( !module_failed )
     {
         if( current_state == para.fail_in_state  )
         {
-        	if( failure_delay++ > para.fail_after_delay )
-        	{
-        		// For testing - send spoof IR message to self
-//                msg_failed_received |= 1<<para.debug.para[0]; // side received on
-//                subog_id = para.debug.para[1];				  // side sent from
-//                parent_side = para.debug.para[0];
-//                heading = (parent_side + 2) % 4;
-//
-//                // Propagate lowering messages
-//                PropagateIRMessage(IR_MSG_TYPE_LOWERING);
-//
-//                last_state = MACROLOCOMOTION;
-//                current_state = LOWERING;
-//                lowering_count = 0;
-//
-//                msg_unlocked_received |= 1<<para.debug.para[0];
+            if( failure_delay++ > para.fail_after_delay )
+            {
+                // For testing - send spoof IR message to self
+                //                msg_failed_received |= 1<<para.debug.para[0]; // side received on
+                //                subog_id = para.debug.para[1];				  // side sent from
+                //                parent_side = para.debug.para[0];
+                //                heading = (parent_side + 2) % 4;
+                //
+                //                // Propagate lowering messages
+                //                PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+                //
+                //                last_state = MACROLOCOMOTION;
+                //                current_state = LOWERING;
+                //                lowering_count = 0;
+                //
+                //                msg_unlocked_received |= 1<<para.debug.para[0];
                 /////////////////////////////////////////////
 
-				module_failed = true;
-				failure_delay = 0;
-        	}
+                module_failed = true;
+                failure_delay = 0;
+            }
         }
     }
 }
@@ -316,23 +315,39 @@ void RobotKIT::Avoidance()
     speed[1] = 40;
     speed[2] = 0;
 
-
-    for(int i=0;i<NUM_IRS;i++)
+    /*
+    if(reflective_hist[1].Avg() > para.avoid_threshold[1] || reflective_hist[0].Avg()>para.avoid_threshold[0])
+        direction = BACKWARD;
+    else if(reflective_hist[4].Avg() > para.avoid_threshold[1] || reflective_hist[5].Avg()>para.avoid_threshold[5])
+        direction = FORWARD;
+*/
+    if(bumped)
     {
-        //   speed[0] +=(direction * avoid_weightleft[i] * (reflective_avg[i]))>>3;
-        //   speed[1] += (direction * avoid_weightleft[i] * (reflective_avg[i]))>>3;
-        speed[2] += (para.avoid_weightside[i] * (reflective_hist[i].Avg()))>>3;
+        //front and rear are bumped 
+        if((bumped & (1<<0 | 1<<1)) !=0 && (bumped & (1<<4 | 1<< 5))!=0)
+        {
+            speed[0] = 0;
+            speed[1] = 0;
+            direction = FORWARD;
+        }
+        //only front is bumped
+        else if((bumped & (1<<0 | 1<<1)) !=0) 
+            direction  = BACKWARD;
+        //only rear is bumped
+        else if((bumped & (1<<4 | 1<< 5)) !=0) 
+            direction  = FORWARD;
+
+        //move sideway if necessary
+        if((bumped & (1<<2 | 1<<3)) !=0 && (bumped & (1<<6 | 1<<7)) !=0)
+            speed[2] = 0;
+        else if((bumped & (1<<2 | 1<<3)) !=0)
+            speed[2] = -direction * 20;
+        else if((bumped & (1<<6 | 1<<7)) !=0)
+            speed[2] = direction * 20;
     }
 
-    if(reflective_hist[1].Avg() > para.avoidance_threshold || reflective_hist[0].Avg()>para.avoidance_threshold)
-        direction = BACKWARD;
-    else if(reflective_hist[4].Avg() > para.avoidance_threshold || reflective_hist[5].Avg()>para.avoidance_threshold)
-        direction = FORWARD;
 
-    speed[2] = 0;
-    speed[0] = 0;
-    speed[1] = 0;
-
+    printf("direction: %d bumped: %#x speed: %d %d %d\n",direction, bumped, speed[0], speed[1], speed[2]);
 
 }
 
@@ -2433,33 +2448,6 @@ void RobotKIT::Debugging()
             break;
     }
 
-}
-
-int RobotKIT::in_docking_region(int x[4])
-{
-    if(   x[0] > para.docking_reflective_offset1 
-            && x[1] > para.docking_reflective_offset2 
-            && abs(x[1]-x[0]) < para.docking_reflective_diff
-            && x[2] < para.docking_beacon_offset1 
-            && x[3] < para.docking_beacon_offset2 
-            && abs(x[2]-x[3]) < para.docking_beacon_diff )
-        return 1;
-    else
-        return 0;
-}
-
-int RobotKIT::in_locking_region(int x[4])
-{
-
-    if( x[0] > para.locking_proximity_offset1 - para.locking_proximity_diff1 
-            && x[0] < para.locking_proximity_offset1 + para.locking_proximity_diff1
-            && x[1] > para.locking_proximity_offset2 - para.locking_proximity_diff2 
-            && x[1] < para.locking_proximity_offset2 + para.locking_proximity_diff2
-            && x[2] > para.locking_reflective_offset1 
-            && x[3] > para.locking_reflective_offset2)
-        return 1;
-    else 
-        return 0;
 }
 
 void RobotKIT::Log()

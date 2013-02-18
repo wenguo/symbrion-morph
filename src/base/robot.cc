@@ -358,6 +358,7 @@ void Robot::Update(const uint32_t& ts)
 
     //update status variable
     beacon_signals_detected = 0;
+    bumped = 0;
     for(int i=0;i<NUM_IRS;i++)
     {
         if(beacon[i] > BEACON_SIGNAL_DETECTED_THRESHOLD && beacon[i] > proximity[i])
@@ -370,7 +371,7 @@ void Robot::Update(const uint32_t& ts)
         else
             robot_in_range_detected &=~(1<<i);
 
-        if(reflective[i] > BUMPED_THRESHOLD ||( proximity[i]>BUMPED_THRESHOLD && proximity[i] > beacon[i]))
+        if(reflective_hist[i].Avg() > BUMPED_THRESHOLD)// ||( proximity[i]>BUMPED_THRESHOLD && proximity[i] > beacon[i]))
             bumped |= 1<<i;
     }
     beacon_signals_detected_hist.Push2(beacon_signals_detected);
