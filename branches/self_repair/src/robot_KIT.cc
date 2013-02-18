@@ -106,24 +106,24 @@ void RobotKIT::SetSpeed(int8_t speed0, int8_t speed1, int8_t speed2)
 
 bool RobotKIT::SetDockingMotor(int channel, int status)
 {
-    CPrintf4(SCR_BLUE,"%d -- side %d set motor %#x, (status: %#x)", timestamp, channel, status, docking_motors_status[channel]);
+    CPrintf4(SCR_BLUE,"%d -- side %d set motor %#x, (status: %#x)", timestamp, channel, status, locking_motors_status[channel]);
 
     if(status != STOP)
     {
         //closed -> open?
-        if(docking_motors_status[channel] == CLOSED  && status == OPEN)
+        if(locking_motors_status[channel] == CLOSED  && status == OPEN)
         {
             //change status to be opening
-            docking_motors_status[channel] = OPENING; //clear first
+            locking_motors_status[channel] = OPENING; //clear first
             if(para.locking_motor_enabled[channel])
                 irobot->OpenDocking(KaBot::Side(board_dev_num[channel]));
             printf("open docking\n");
         }
         //or open -> close
-        else if(docking_motors_status[channel]== OPENED &&  status == CLOSE )
+        else if(locking_motors_status[channel]== OPENED &&  status == CLOSE )
         {
             //change status to be closing
-            docking_motors_status[channel] = CLOSING; //clear first
+            locking_motors_status[channel] = CLOSING; //clear first
             if(para.locking_motor_enabled[channel])
                 irobot->CloseDocking(KaBot::Side(board_dev_num[channel]));
             printf("close docking\n");
@@ -135,15 +135,15 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
     else
     {
         // opeing/open -->stop
-        if(docking_motors_status[channel] == OPENED || 
-                docking_motors_status[channel] == OPENING )
+        if(locking_motors_status[channel] == OPENED || 
+                locking_motors_status[channel] == OPENING )
         {
-            docking_motors_status[channel]=OPENED;
+            locking_motors_status[channel]=OPENED;
         }
         // closing/closed -> stop ?
         else
         {
-            docking_motors_status[channel] = CLOSED;
+            locking_motors_status[channel] = CLOSED;
         }
         irobot->MoveDocking(KaBot::Side(board_dev_num[channel]), 0);        
     }
@@ -260,7 +260,7 @@ void RobotKIT::UpdateSensors()
     //    printf("\n");
 
     ethernet_status_hist.Push2(ethernet_status);
-    docking_motor_isense_hist.Push2(isense);
+    locking_motor_isense_hist.Push2(isense);
 
     for(int i=0;i<NUM_IRS;i++)
     {
@@ -311,16 +311,10 @@ void RobotKIT::UpdateFailures()
 
 void RobotKIT::Avoidance()
 {
-    speed[0] = 40;
-    speed[1] = 40;
+    speed[0] = 30;
+    speed[1] = 30;
     speed[2] = 0;
 
-    /*
-    if(reflective_hist[1].Avg() > para.avoid_threshold[1] || reflective_hist[0].Avg()>para.avoid_threshold[0])
-        direction = BACKWARD;
-    else if(reflective_hist[4].Avg() > para.avoid_threshold[1] || reflective_hist[5].Avg()>para.avoid_threshold[5])
-        direction = FORWARD;
-*/
     if(bumped)
     {
         //front and rear are bumped 
@@ -341,13 +335,12 @@ void RobotKIT::Avoidance()
         if((bumped & (1<<2 | 1<<3)) !=0 && (bumped & (1<<6 | 1<<7)) !=0)
             speed[2] = 0;
         else if((bumped & (1<<2 | 1<<3)) !=0)
-            speed[2] = -direction * 20;
+            speed[2] = -direction * 30;
         else if((bumped & (1<<6 | 1<<7)) !=0)
-            speed[2] = direction * 20;
+            speed[2] = direction * 30;
     }
 
-
-    printf("direction: %d bumped: %#x speed: %d %d %d\n",direction, bumped, speed[0], speed[1], speed[2]);
+    //printf("direction: %d bumped: %#x speed: %d %d %d\n",direction, bumped, speed[0], speed[1], speed[2]);
 
 }
 
@@ -475,7 +468,7 @@ void RobotKIT::Foraging()
 
             assembly_count = DEFAULT_ASSEMBLY_COUNT;
             current_state = ASSEMBLY;
-            last_state = WAITING;
+            last_state = FORAGING;
         }
 
     }
@@ -584,13 +577,13 @@ void RobotKIT::LocateBeacon()
     int turning = 0;
     if(beacon_signals_detected)
     {
-
         if(id0==0)
         {
-            if((beacon_signals_detected & 0x3) != 0)
-                turning = 0;
+           // if((beacon_signals_detected & 0x3) != 0)
+           //     turning = 0;
             //no signals on side 1, turn left 
-            else if((beacon_signals_detected & 0xC) ==0)
+           // else 
+                if((beacon_signals_detected & 0xC) ==0)
                 turning = -1;
             //no signals on side 3, turn right 
             else if((beacon_signals_detected & 0xC0) ==0)
@@ -601,10 +594,11 @@ void RobotKIT::LocateBeacon()
         else
         {
 
-            if((beacon_signals_detected & 0x30) != 0)
-                turning = 0;
+           // if((beacon_signals_detected & 0x30) != 0)
+            //    turning = 0;
             //no signals on side 1, turn right
-            else if((beacon_signals_detected & 0xC) ==0)
+            //else 
+                if((beacon_signals_detected & 0xC) ==0)
                 turning = 1;
             //no signals on side 3, turn left
             else if((beacon_signals_detected & 0xC0) ==0)
@@ -693,6 +687,7 @@ void RobotKIT::LocateBeacon()
                             organism_found = false;
                             assembly_count = DEFAULT_ASSEMBLY_COUNT;
                             assembly_info = OrganismSequence::Symbol(0);
+                            locatebeacon_count = 0;
                             
                             for(int i=0;i<NUM_DOCKS;i++)
                             {
@@ -728,88 +723,98 @@ void RobotKIT::Alignment()
     int temp2 = (reflective_hist[id1].Avg())-(reflective_hist[id0].Avg());
     int temp_max = std::max(beacon[id1], beacon[id0]);
     
-     // Far away from recruiting robot - move sideways or forward
-    if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 200 )
+    if(beacon_signals_detected)
     {
-        std::cout << "FAR " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-            << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
-        if( abs(temp) > 0.1 * temp_max )
+        // Far away from recruiting robot - move sideways or forward
+        if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 200 )
         {
-            speed[0] = 0;
-            speed[1] = 0;
-            speed[2] = 20 * sign(temp);
-        }
-        else
-        {
-            speed[0] = 25;
-            speed[1] = 25;
-            speed[2] = 0;
-        }
-    }
-    //getting close to robots, but not too close
-    else if( (assembly_info.type1 == ROBOT_AW && (std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 500 || abs(temp2) > 250))
-            || (assembly_info.type1 != ROBOT_AW && std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 ))
-    {
-        if( abs(temp2) > 150)
-        {           
-           std::cout << " Zone 1, adjusting orientantion " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+            std::cout << "FAR " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
                 << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
-            if(temp2 > 0)
+            if( abs(temp) > 0.1 * temp_max )
             {
-                speed[0] = direction > 0 ? para.docking_turn_left_speed[0] : (direction * para.docking_turn_left_speed[1]);
-                speed[1] = direction > 0 ? para.docking_turn_left_speed[1] : (direction * para.docking_turn_left_speed[0]);
-                speed[2] = 0;
-            }
-            else
-            {   
-                speed[0] = direction > 0 ? para.docking_turn_right_speed[0] : (direction * para.docking_turn_right_speed[1]);
-                speed[1] = direction > 0 ? para.docking_turn_right_speed[1] : (direction * para.docking_turn_right_speed[0]);
-                speed[2] = 0;
-            }
-        }
-        else
-        {
-            if( abs(temp) > 0.2 * temp_max )
-            {
-                std::cout << " Zone 1, adjusting pose " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-                    << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
                 speed[0] = 0;
                 speed[1] = 0;
-                speed[2] = 15 * sign(temp);
+                speed[2] = 20 * sign(temp);
             }
             else
             {
-                speed[0] = 20;
-                speed[1] = 20;
+                speed[0] = 25;
+                speed[1] = 25;
                 speed[2] = 0;
             }
         }
-       
+        //getting close to robots, but not too close
+        else if( (assembly_info.type1 == ROBOT_AW && (std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 500 || abs(temp2) > 250))
+                || (assembly_info.type1 != ROBOT_AW && std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 ))
+        {
+            if( abs(temp2) > 150)
+            {           
+                std::cout << " Zone 1, adjusting orientantion " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+                    << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+                if(temp2 > 0)
+                {
+                    speed[0] = direction > 0 ? para.docking_turn_left_speed[0] : (direction * para.docking_turn_left_speed[1]);
+                    speed[1] = direction > 0 ? para.docking_turn_left_speed[1] : (direction * para.docking_turn_left_speed[0]);
+                    speed[2] = 0;
+                }
+                else
+                {   
+                    speed[0] = direction > 0 ? para.docking_turn_right_speed[0] : (direction * para.docking_turn_right_speed[1]);
+                    speed[1] = direction > 0 ? para.docking_turn_right_speed[1] : (direction * para.docking_turn_right_speed[0]);
+                    speed[2] = 0;
+                }
+            }
+            else
+            {
+                if( abs(temp) > 0.2 * temp_max )
+                {
+                    std::cout << " Zone 1, adjusting pose " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+                        << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+                    speed[0] = 0;
+                    speed[1] = 0;
+                    speed[2] = 15 * sign(temp);
+                }
+                else
+                {
+                    speed[0] = 20;
+                    speed[1] = 20;
+                    speed[2] = 0;
+                }
+            }
+
+        }
+        // very close to another robots
+        else
+        {
+            std::cout << " Blocked or very close " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+                << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+            speed[0]=0;
+            speed[1]=0;
+            speed[2]=0;
+
+            {
+                SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+                docking_region_detected = false;
+                in_docking_region_hist.Reset();
+                docking_count = 0;
+                docking_failed_reverse_count = 0;
+
+
+                docking_blocked = false;
+
+                current_state = DOCKING;
+                last_state = ALIGNMENT;
+
+                SetRGBLED(0,0,0,0,0);
+            }
+        }
     }
-    // very close to another robots
     else
     {
-        std::cout << " Blocked or very close " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-            << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
-        speed[0]=0;
-        speed[1]=0;
-        speed[2]=0;
+        current_state = LOCATEBEACON;
+        last_state = ALIGNMENT;
 
-        {
-            SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-            docking_region_detected = false;
-            in_docking_region_hist.Reset();
-            docking_count = 0;
-            docking_failed_reverse_count = 0;
-
-
-            docking_blocked = false;
-
-            current_state = DOCKING;
-            last_state = ALIGNMENT;
-
-            SetRGBLED(0,0,0,0,0);
-        }
+        locatebeacon_count = 0;
     }
 }
 
@@ -1166,7 +1171,7 @@ void RobotKIT::Locking()
 
 
     //docking motor is done?
-    if(docking_motors_status[docking_side] == CLOSED)
+    if(locking_motors_status[docking_side] == CLOSED)
     {
         if(docked[docking_side]==0)
         {
@@ -1359,7 +1364,7 @@ void RobotKIT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE4)
         {
-            if(docking_motors_status[i] == CLOSED && docked[i]==0)
+            if(locking_motors_status[i] == CLOSED && docked[i]==0)
             {
                 unlocking_required[i] = true;
                 msg_subog_seq_expected |= 1<<i;
@@ -1585,7 +1590,7 @@ void RobotKIT::Disassembly()
                     unlocking_required[i]=false;
                 }
                 //TODO: how about two KIT robots docked to each other
-                else if(docking_motors_status[i]==OPENED)
+                else if(locking_motors_status[i]==OPENED)
                 {
                     Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
                     docked[i]=0;
@@ -1852,7 +1857,7 @@ void RobotKIT::Reshaping()
     		std::cout << "waiting for someone to undock" << std::endl;
     		for( int i=0; i<SIDE_COUNT; i++ )
     		{
-    			if( (waiting_for_undock & 1<<i) && docking_motors_status[i]==OPENED )
+    			if( (waiting_for_undock & 1<<i) && locking_motors_status[i]==OPENED )
     			{
     				std::cout << i << " docking motors open" << std::endl;
     				if( !(unlock_sent & 1<<i) )
@@ -2199,7 +2204,7 @@ void RobotKIT::Debugging()
                 ((KaBot*)irobot)->OpenDocking(KaBot::Side(para.debug.para[9]));
 
             }
-            else if( timestamp == para.docking_motor_opening_time + 2 || (timestamp > 12 && docking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
+            else if( timestamp == para.locking_motor_opening_time + 2 || (timestamp > 12 && locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
             {
                 ((KaBot*)irobot)->MoveDocking((KaBot::Side(para.debug.para[9])),0);
             }
@@ -2409,7 +2414,7 @@ void RobotKIT::Debugging()
                     ((KaBot*)irobot)->OpenDocking(KaBot::Side(para.debug.para[9]));
                     printf("open docking unit %d\n", para.debug.para[9]);
                 }
-                else if(timestamp ==70 || (timestamp > 40 &&docking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
+                else if(timestamp ==70 || (timestamp > 40 &&locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
                 {
                     ((KaBot*)irobot)->MoveDocking(KaBot::Side(para.debug.para[9]), 0);
                     printf("stop docking unit %d\n", para.debug.para[9]);
@@ -2432,7 +2437,7 @@ void RobotKIT::Debugging()
                     ((KaBot*)irobot)->CloseDocking(KaBot::Side(para.debug.para[9]));
                     printf("close docking unit %d\n", para.debug.para[9]);
                 }
-                else if(timestamp ==70 || (timestamp > 40 &&docking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
+                else if(timestamp ==70 || (timestamp > 40 &&locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
                 {
                     ((KaBot*)irobot)->MoveDocking(KaBot::Side(para.debug.para[9]), 0);
                     printf("stop docking unit %d\n", para.debug.para[9]);

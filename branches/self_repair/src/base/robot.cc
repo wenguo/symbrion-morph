@@ -89,8 +89,8 @@ Robot::Robot()
         IRLED_status[i] = 0;
         RGBLED_status[i] = 1;
         recruitment_stage[i] = STAGE0;
-        docking_motor_operating_count[i]=0;
-        docking_motors_status[i] = OPENED;
+        locking_motor_operating_count[i]=0;
+        locking_motors_status[i] = OPENED;
         neighbours_IP[i] = 0;
         new_id[i] = SIDE_COUNT;
         new_score[i] = 0;
@@ -179,7 +179,7 @@ Robot::Robot()
 
     robots_in_range_detected_hist.Resize(15);
     ethernet_status_hist.Resize(15);
-    docking_motor_isense_hist.Resize(8);
+    locking_motor_isense_hist.Resize(8);
 
     direction = FORWARD;
     memset(speed, 0, 3);
@@ -297,7 +297,7 @@ bool Robot::Init(const char * optionfile)
         SetRGBLED(i, 0, 0, 0, 0);
         SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1|IRPULSE2);
 
-        docking_motor_opening_threshold[i] = para.docking_motor_opening_time;
+        locking_motor_opening_threshold[i] = para.locking_motor_opening_time;
     }
     
     robots_in_range_detected_hist.Reset();
@@ -358,18 +358,19 @@ void Robot::Update(const uint32_t& ts)
 
     //update status variable
     beacon_signals_detected = 0;
+    robot_in_range_detected = 0;
     bumped = 0;
     for(int i=0;i<NUM_IRS;i++)
     {
         if(beacon[i] > BEACON_SIGNAL_DETECTED_THRESHOLD && beacon[i] > proximity[i])
             beacon_signals_detected |= 1<<i;
-        else
-            beacon_signals_detected &=~(1<<i);
+        //else
+        //    beacon_signals_detected &=~(1<<i);
 
         if(proximity[i]> PROXIMITY_SIGNAL_DETECTED_THRESHOLD  && proximity[i] > beacon[i])
             robot_in_range_detected |=1<<i;
-        else
-            robot_in_range_detected &=~(1<<i);
+        //else
+        //    robot_in_range_detected &=~(1<<i);
 
         if(reflective_hist[i].Avg() > BUMPED_THRESHOLD)// ||( proximity[i]>BUMPED_THRESHOLD && proximity[i] > beacon[i]))
             bumped |= 1<<i;
@@ -546,49 +547,49 @@ void Robot::CheckDockingMotor()
     for(int i=0;i<NUM_DOCKS;i++)
     {
         //closing
-        if(docking_motors_status[i] == CLOSING)
+        if(locking_motors_status[i] == CLOSING)
         {
-            docking_motor_isense_hist.Print2();
-            docking_motor_operating_count[i]++ ;   
-            if(docking_motor_operating_count[i] > 10 && docking_motor_isense_hist.Sum(i) >=2)
+            locking_motor_isense_hist.Print2();
+            locking_motor_operating_count[i]++ ;   
+            if(locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=2)
             {
                 SetDockingMotor(i, STOP);
-                CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", docking_motor_operating_count[i]);
+                CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", locking_motor_operating_count[i]);
 
                 // Add small amount to ensure that lock opens fully
-                docking_motor_opening_threshold[i] = docking_motor_operating_count[i]+5;
+                locking_motor_opening_threshold[i] = locking_motor_operating_count[i]+5;
             }
-            else if(docking_motor_operating_count[i] >= para.docking_motor_closing_time)
+            else if(locking_motor_operating_count[i] >= para.locking_motor_closing_time)
             {
                 SetDockingMotor(i, STOP);
-                CPrintf1(SCR_RED, "Stop docking motor, after closing -- %d", docking_motor_operating_count[i]);
+                CPrintf1(SCR_RED, "Stop docking motor, after closing -- %d", locking_motor_operating_count[i]);
 
                 // Add small amount to ensure that lock opens fully
-                docking_motor_opening_threshold[i] = docking_motor_operating_count[i]+5;
+                locking_motor_opening_threshold[i] = locking_motor_operating_count[i]+5;
             }
 
         }
         //opeing
-        else if(docking_motors_status[i] == OPENING)
+        else if(locking_motors_status[i] == OPENING)
         {
-            docking_motor_operating_count[i]++ ;   
-            docking_motor_isense_hist.Print2();
-            if(docking_motor_operating_count[i] > 10 && docking_motor_isense_hist.Sum(i) >=2)
+            locking_motor_operating_count[i]++ ;   
+            locking_motor_isense_hist.Print2();
+            if(locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=2)
             {
                 SetDockingMotor(i, STOP);
-                CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", docking_motor_operating_count[i]);
-                docking_motor_opening_threshold[i] = para.docking_motor_opening_time;
+                CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", locking_motor_operating_count[i]);
+                locking_motor_opening_threshold[i] = para.locking_motor_opening_time;
             }
-            else if(docking_motor_operating_count[i] >= docking_motor_opening_threshold[i] )
+            else if(locking_motor_operating_count[i] >= locking_motor_opening_threshold[i] )
             {
                 SetDockingMotor(i, STOP);
-                CPrintf1(SCR_RED,"Stop docking motor, after opening -- %d", docking_motor_operating_count[i]);
-                docking_motor_opening_threshold[i] = para.docking_motor_opening_time;
+                CPrintf1(SCR_RED,"Stop docking motor, after opening -- %d", locking_motor_operating_count[i]);
+                locking_motor_opening_threshold[i] = para.locking_motor_opening_time;
             }
         }
         else
         {
-            docking_motor_operating_count[i] = 0;
+            locking_motor_operating_count[i] = 0;
         }
     }
 }
