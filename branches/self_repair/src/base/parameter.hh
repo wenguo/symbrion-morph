@@ -41,6 +41,7 @@ class Parameter
         int recruiting_reflective_offset1;
         int recruiting_reflective_offset2;
         int recruiting_guiding_signals_time;
+        int recruiting_beacon_signals_time;
 
         int docking_trials;
         int docking_reflective_offset1;

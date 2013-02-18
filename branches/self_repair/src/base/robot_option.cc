@@ -117,6 +117,7 @@ bool Robot::LoadParameters(const char * filename)
             para.recruiting_reflective_offset1 = optionfile->ReadInt(entity, "recruiting_reflective_offset1", 20);
             para.recruiting_reflective_offset2 = optionfile->ReadInt(entity, "recruiting_reflective_offset2", 20);
             para.recruiting_guiding_signals_time = optionfile->ReadInt(entity, "recruiting_guiding_signals_time", 200);
+            para.recruiting_beacon_signals_time = optionfile->ReadInt(entity, "recruiting_beacon_signals_time", 500);
         }
         else if( strcmp( typestr, "Docking" ) == 0 )
         {

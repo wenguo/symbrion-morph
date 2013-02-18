@@ -596,16 +596,20 @@ void RobotKIT::LocateBeacon()
                 turning = -1;
             else 
                 turning = 0;
-            printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],
-                    beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
+            //printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3], beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
         }
 
-        //TODO rewrite this
         //printf("max_beacon: %d %d %d %d\tturning: %d\n", max_beacon[0], max_beacon[1], max_beacon[2], max_beacon[3], turning);
-        if(turning != 0)
+        if(turning == -1)
         {
-            speed[0] = -turning * 30;
-            speed[1] = turning * 30;
+            speed[0] = direction > 0 ? 10 : 40;
+            speed[1] = direction > 0 ? -40 : -10;
+            speed[2] = 0;
+        }
+        else if(turning == 1)
+        {
+            speed[0] = direction > 0 ? 40 : 10;
+            speed[1] = direction > 0 ? -10 : -40;
             speed[2] = 0;
         }
         else
@@ -618,10 +622,11 @@ void RobotKIT::LocateBeacon()
                 speed[1] = para.locatebeacon_forward_speed[1];
                 speed[2] = 20 * sign(temp);
             }
+            //no signals detected, keep moving forward
             else
             {
-                speed[0] = 0;
-                speed[1] = 0;
+                speed[0] = 20;
+                speed[1] = 20;
                 speed[2] = 0;
             }
         }
@@ -1200,21 +1205,23 @@ void RobotKIT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE1)
         {
-        	if( recruitment_count[i]++ > 500 )
-        	{
-        		recruitment_count[i]=0;
-        		recruitment_stage[i]=STAGE0;
-        		SetIRLED(i,IRLEDOFF,LED1,0);
+            if( recruitment_count[i]++ > para.recruiting_beacon_signals_time )
+            {
+                recruitment_count[i]=0;
+                recruitment_stage[i]=STAGE0;
+                SetIRLED(i,IRLEDOFF,LED1,0);
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
 
-        	}
-        	else if(msg_docking_signal_req_received & (1<<i))
+            }
+            else if(msg_docking_signal_req_received & (1<<i))
             {
+                recruitment_count[i]=0;
                 msg_docking_signal_req_received &= ~(1<<i);
                 SetIRLED(i, IRLEDDOCKING, LED1, 0); 
             }
             else if(msg_assembly_info_req_received & (1<<i))
             {
+                recruitment_count[i]=0;
                 if(it1->getSymbol(0).type2 != ROBOT_AW)
                     msg_locked_expected |= 1<<i;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
@@ -1230,6 +1237,7 @@ void RobotKIT::Recruitment()
             }
             else if(msg_guideme_received & (1<<i))
             {
+                recruitment_count[i]=0;
                 if(it1->getSymbol(0).type2 == ROBOT_SCOUT)
                     msg_locked_expected |= 1<<i;
                 else if(it1->getSymbol(0).type2 == ROBOT_AW)
@@ -1238,7 +1246,6 @@ void RobotKIT::Recruitment()
                 msg_guideme_received &= ~(1<<i);
                 guiding_signals_count[i]=0;
                 recruitment_stage[i]=STAGE2;
-                recruitment_count[i]=0;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
