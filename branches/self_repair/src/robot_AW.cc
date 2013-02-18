@@ -317,9 +317,9 @@ void RobotAW::Avoidance()
             speed[2] =-20;
     }
 
-    if(reflective_hist[1].Avg() > para.avoidance_threshold || reflective_hist[0].Avg()>para.avoidance_threshold)
+    if(reflective_hist[1].Avg() > para.avoid_threshold[1] || reflective_hist[0].Avg()>para.avoid_threshold[0])
         direction = BACKWARD;
-    else if(reflective_hist[4].Avg() > para.avoidance_threshold || reflective_hist[5].Avg()>para.avoidance_threshold)
+    else if(reflective_hist[4].Avg() > para.avoid_threshold[4] || reflective_hist[5].Avg()>para.avoid_threshold[5])
         direction = FORWARD;
 
     speed[0] = 0;
@@ -2093,42 +2093,6 @@ void RobotAW::Debugging()
 
 }
 
-int RobotAW::in_docking_region(int x[4])
-{
-    if(   x[0] > para.docking_reflective_offset1 
-            && x[1] > para.docking_reflective_offset2 
-            && abs(x[1]-x[0]) < para.docking_reflective_diff
-            && x[2] < para.docking_beacon_offset1 
-            && x[3] < para.docking_beacon_offset2 
-            && x[2] > 0
-            && x[3] > 0
-            && abs(x[2]-x[3]) < para.docking_beacon_diff )
-        return 1;
-    else 
-        return 0;
-}
-
-int RobotAW::in_locking_region(int x[4])
-{
-    if(    x[0] > para.locking_proximity_offset1
-            && x[1] > para.locking_proximity_offset2)
-        //      && x[2] > para.locking_reflective_offset1 
-        //      && x[3] > para.locking_reflective_offset2)
-        return 1;
-    else
-        return 0;
-    /*if( x[0] > para.locking_proximity_offset1 - para.locking_proximity_diff1 
-      && x[0] < para.locking_proximity_offset1 + para.locking_proximity_diff1
-      && x[1] > para.locking_proximity_offset2 - para.locking_proximity_diff2 
-      && x[1] < para.locking_proximity_offset2 + para.locking_proximity_diff2
-      && x[2] > para.locking_reflective_offset1 
-      && x[3] > para.locking_reflective_offset2)
-      return 1;
-      else 
-      return 0;
-      */
-
-}
 void RobotAW::Log()
 {
     int id0=para.debug.para[7];

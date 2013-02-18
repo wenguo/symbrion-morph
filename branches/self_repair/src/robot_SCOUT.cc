@@ -266,8 +266,6 @@ void RobotSCOUT::UpdateSensors()
     ethernet_status_hist.Push2(ethernet_status);
     docking_motor_isense_hist.Push2(isense);
 
-
-
     for(int i=0;i<NUM_IRS;i++)
     {
         reflective_hist[i].Push(reflective[i]-para.reflective_calibrated[i]);
@@ -327,9 +325,9 @@ void RobotSCOUT::Avoidance()
            speed[1] += (para.avoid_weightleft[i] * (reflective_hist[i]).Avg())>>3;
     }
 
-    if(reflective_hist[1].Avg() > para.avoidance_threshold || reflective_hist[0].Avg()>para.avoidance_threshold)
+    if(reflective_hist[1].Avg() > para.avoid_threshold[1] || reflective_hist[0].Avg()>para.avoid_threshold[0])
         direction = BACKWARD;
-    else if(reflective_hist[4].Avg() > para.avoidance_threshold || reflective_hist[5].Avg()>para.avoidance_threshold)
+    else if(reflective_hist[4].Avg() > para.avoid_threshold[4] || reflective_hist[5].Avg()>para.avoid_threshold[0])
         direction = FORWARD;
 
     speed[0] = 0;
@@ -2224,27 +2222,6 @@ void RobotSCOUT::Debugging()
             break;
     }
 
-}
-
-int RobotSCOUT::in_docking_region(int x[4])
-{
-    if(   x[0] > para.docking_reflective_offset1 
-            && x[1] > para.docking_reflective_offset2) 
-        return 1;
-    else
-        return 0;
-}
-
-int RobotSCOUT::in_locking_region(int x[4])
-{
-
-    if( x[0] > para.locking_proximity_offset1 
-            && x[0] < para.locking_proximity_offset1 + para.locking_proximity_diff1
-            && x[1] > para.locking_proximity_offset2 
-            && x[1] < para.locking_proximity_offset2 + para.locking_proximity_diff2)
-        return 1;
-    else 
-        return 0;
 }
 
 void RobotSCOUT::Log()
