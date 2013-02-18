@@ -230,7 +230,7 @@ class Robot
     int32_t beacon[NUM_IRS];
     rgb_t   color[NUM_DOCKS];
     float comm_status[NUM_IRCOMMS];
-    int32_t docking_motor_isense[NUM_DOCKS];
+    int32_t locking_motor_isense[NUM_DOCKS];
 
     //windowed sensor array
     Hist reflective_hist[NUM_IRS];
@@ -242,7 +242,7 @@ class Robot
     Hist ambient_avg_threshold_hist;
     Hist proximity_hist[NUM_IRS];
     Hist ethernet_status_hist;
-    Hist docking_motor_isense_hist;
+    Hist locking_motor_isense_hist;
 
     //status
     uint8_t bumped;
@@ -267,7 +267,7 @@ class Robot
     //IR_Pulse0, bits 9
     //IR_Pulse1, bits 10
     uint32_t RGBLED_status[NUM_DOCKS];
-    uint8_t docking_motors_status[NUM_DOCKS]; //each two bits, 0b00 -- open, 0b01 -- opening, 0b10 -- closed, 0b11 -- closing
+    uint8_t locking_motors_status[NUM_DOCKS]; //each two bits, 0b00 -- open, 0b01 -- opening, 0b10 -- closed, 0b11 -- closing
     uint8_t hinge_motor_status;
 
     bool organism_found;
@@ -302,8 +302,8 @@ class Robot
     uint32_t foraging_count;
     uint32_t seeding_count;
     uint32_t foraging_blind_count;
-    uint32_t docking_motor_operating_count[NUM_DOCKS];
-    uint32_t docking_motor_opening_threshold[NUM_DOCKS];
+    uint32_t locking_motor_operating_count[NUM_DOCKS];
+    uint32_t locking_motor_opening_threshold[NUM_DOCKS];
     uint32_t docking_failed_reverse_count;
     uint32_t hinge_motor_operating_count;
     uint32_t guiding_signals_count[NUM_DOCKS];

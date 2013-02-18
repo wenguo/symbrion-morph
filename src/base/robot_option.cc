@@ -120,8 +120,6 @@ bool Robot::LoadParameters(const char * filename)
         }
         else if( strcmp( typestr, "Docking" ) == 0 )
         {
-            para.docking_motor_opening_time = optionfile->ReadInt(entity, "docking_motor_opening_time", 30);
-            para.docking_motor_closing_time = optionfile->ReadInt(entity, "docking_motor_closing_time", 40);
             para.docking_trials = optionfile->ReadInt(entity, "docking_trials", 40);
             para.docking_failed_reverse_time = optionfile->ReadInt(entity, "docking_failed_reverse_time", 40);
             if( Morph::CProperty* prop = optionfile->GetProperty( entity, "turn_right_speed" ) )
@@ -159,6 +157,8 @@ bool Robot::LoadParameters(const char * filename)
         }
         else if( strcmp( typestr, "Locking" ) == 0 )
         {
+            para.locking_motor_opening_time = optionfile->ReadInt(entity, "locking_motor_opening_time", 30);
+            para.locking_motor_closing_time = optionfile->ReadInt(entity, "locking_motor_closing_time", 40);
             if( Morph::CProperty* prop = optionfile->GetProperty( entity, "locking_motor_enabled" ) )
             {
                 for(int i=0;i<4;i++)

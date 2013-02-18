@@ -108,24 +108,24 @@ void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t speed3)
 
 bool RobotSCOUT::SetDockingMotor(int channel, int status)
 {
-    CPrintf4(SCR_BLUE,"%d -- side %d set motor %#x, (status: %#x)", timestamp, channel, status, docking_motors_status[channel]);
+    CPrintf4(SCR_BLUE,"%d -- side %d set motor %#x, (status: %#x)", timestamp, channel, status, locking_motors_status[channel]);
 
     if(status != STOP)
     {
         //closed -> open?
-        if(docking_motors_status[channel] == CLOSED  && status == OPEN)
+        if(locking_motors_status[channel] == CLOSED  && status == OPEN)
         {
             //change status to be opening
-            docking_motors_status[channel] = OPENING; //clear first
+            locking_motors_status[channel] = OPENING; //clear first
             if(para.locking_motor_enabled[channel])
                 irobot->OpenDocking(ScoutBot::Side(board_dev_num[channel]));
             printf("open docking\n");
         }
         //or open -> close
-        else if(docking_motors_status[channel]== OPENED &&  status == CLOSE )
+        else if(locking_motors_status[channel]== OPENED &&  status == CLOSE )
         {
             //change status to be closing
-            docking_motors_status[channel] = CLOSING; //clear first
+            locking_motors_status[channel] = CLOSING; //clear first
             if(para.locking_motor_enabled[channel])
                 irobot->CloseDocking(ScoutBot::Side(board_dev_num[channel]));
             printf("close docking\n");
@@ -137,15 +137,15 @@ bool RobotSCOUT::SetDockingMotor(int channel, int status)
     else
     {
         // opeing/open -->stop
-        if(docking_motors_status[channel] == OPENED || 
-                docking_motors_status[channel] == OPENING )
+        if(locking_motors_status[channel] == OPENED || 
+                locking_motors_status[channel] == OPENING )
         {
-            docking_motors_status[channel]=OPENED;
+            locking_motors_status[channel]=OPENED;
         }
         // closing/closed -> stop ?
         else
         {
-            docking_motors_status[channel] = CLOSED;
+            locking_motors_status[channel] = CLOSED;
         }
         irobot->MoveDocking(ScoutBot::Side(board_dev_num[channel]), 0);
     }
@@ -264,7 +264,7 @@ void RobotSCOUT::UpdateSensors()
 //    printf("\n");
 
     ethernet_status_hist.Push2(ethernet_status);
-    docking_motor_isense_hist.Push2(isense);
+    locking_motor_isense_hist.Push2(isense);
 
     for(int i=0;i<NUM_IRS;i++)
     {
@@ -953,7 +953,7 @@ void RobotSCOUT::Locking()
     SetRGBLED(docking_side, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
 
     //docking motor is done?
-    if(docking_motors_status[docking_side] == CLOSED)
+    if(locking_motors_status[docking_side] == CLOSED)
     {
         if(docked[docking_side]==0)
         {
@@ -1145,7 +1145,7 @@ void RobotSCOUT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE4)
         {
-            if(docking_motors_status[i] == CLOSED && docked[i]==0)
+            if(locking_motors_status[i] == CLOSED && docked[i]==0)
             {
                 unlocking_required[i] = true;
                 msg_subog_seq_expected |= 1<<i;
@@ -1369,7 +1369,7 @@ void RobotSCOUT::Disassembly()
                     unlocking_required[i]=false;
                 }
                 //TODO: how about two Scout robots docked to each other
-                else if(docking_motors_status[i]==OPENED)
+                else if(locking_motors_status[i]==OPENED)
                 {
                     Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
                     docked[i]=0;
@@ -1636,7 +1636,7 @@ void RobotSCOUT::Reshaping()
     		std::cout << "waiting for someone to undock" << std::endl;
     		for( int i=0; i<SIDE_COUNT; i++ )
     		{
-    			if( (waiting_for_undock & 1<<i) && docking_motors_status[i]==OPENED )
+    			if( (waiting_for_undock & 1<<i) && locking_motors_status[i]==OPENED )
     			{
     				std::cout << i << " docking motors open" << std::endl;
     				if( !(unlock_sent & 1<<i) )
@@ -1983,7 +1983,7 @@ void RobotSCOUT::Debugging()
                 ((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[9]));
 
             }
-            else if( timestamp == para.docking_motor_opening_time + 2 || (timestamp > 12 && docking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
+            else if( timestamp == para.locking_motor_opening_time + 2 || (timestamp > 12 && locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
             {
                 ((ScoutBot*)irobot)->MoveDocking((ScoutBot::Side(para.debug.para[9])),0);
             }

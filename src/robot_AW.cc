@@ -686,79 +686,90 @@ void RobotAW::Alignment()
     int temp_max = std::max(beacon[id0], beacon[id1]);
     int temp2 = (reflective_hist[id0].Avg())-(reflective_hist[id1].Avg());
 
-    // Far away from recruiting robot - move sideways or forward
-    if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 20 )
+    if(beacon_signals_detected)
     {
- //       std::cout << "FAR " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
- //           << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
-        if( abs(temp) > 0.1 * temp_max )
+        // Far away from recruiting robot - move sideways or forward
+        if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 20 )
         {
-            speed[0] = 0;
-            speed[1] = 0;
-            speed[2] = -20 * sign(temp) * direction;
-        }
-        else
-        {
-            speed[0] = direction * 25;
-            speed[1] = direction * 25;
-            speed[2] = 0;
-        }
-    }
-    //getting close to robots, but not too close
-    else if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 )
-    {
-        if( abs(temp2) > 150)
-        {           
-      //      std::cout << " Zone 1, adjusting orientantion " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-      //          << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
-            speed[0] = 10 * sign(temp2); //No need to taken direction in to accout here, worked on robot.02
-            speed[1] = -25 * sign(temp2);
-            speed[2] = 0;
-        }
-        else
-        {
-            if( abs(temp) > 0.2 * temp_max )
+            //       std::cout << "FAR " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+            //           << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+            if( abs(temp) > 0.1 * temp_max )
             {
-      //          std::cout << " Zone 1, adjusting pose " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-      //              << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
                 speed[0] = 0;
                 speed[1] = 0;
-                speed[2] = -15 * sign(temp) * direction;
+                speed[2] = -20 * sign(temp) * direction;
             }
             else
             {
-                speed[0] = direction * 20;
-                speed[1] = direction * 20;
+                speed[0] = direction * 25;
+                speed[1] = direction * 25;
                 speed[2] = 0;
             }
         }
-       
-    }
-    // very close to another robots
-    else
-    {
- //       std::cout << " Blocked or very close " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-//            << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
-        speed[0]=0;
-        speed[1]=0;
-        speed[2]=0;
-
+        //getting close to robots, but not too close
+        else if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 )
         {
-            SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-            docking_region_detected = false;
-            in_docking_region_hist.Reset();
-            docking_count = 0;
-            docking_failed_reverse_count = 0;
+            if( abs(temp2) > 150)
+            {           
+                //      std::cout << " Zone 1, adjusting orientantion " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+                //          << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+                speed[0] = 10 * sign(temp2); //No need to taken direction in to accout here, worked on robot.02
+                speed[1] = -25 * sign(temp2);
+                speed[2] = 0;
+            }
+            else
+            {
+                if( abs(temp) > 0.2 * temp_max )
+                {
+                    //          std::cout << " Zone 1, adjusting pose " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+                    //              << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+                    speed[0] = 0;
+                    speed[1] = 0;
+                    speed[2] = -15 * sign(temp) * direction;
+                }
+                else
+                {
+                    speed[0] = direction * 20;
+                    speed[1] = direction * 20;
+                    speed[2] = 0;
+                }
+            }
+
+        }
+        // very close to another robots
+        else
+        {
+            //       std::cout << " Blocked or very close " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
+            //            << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
+            speed[0]=0;
+            speed[1]=0;
+            speed[2]=0;
+
+            {
+                SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+                docking_region_detected = false;
+                in_docking_region_hist.Reset();
+                docking_count = 0;
+                docking_failed_reverse_count = 0;
 
 
-            docking_blocked = false;
+                docking_blocked = false;
 
-            current_state = DOCKING;
-            last_state = ALIGNMENT;
+                current_state = DOCKING;
+                last_state = ALIGNMENT;
 
-            SetRGBLED(0,0,0,0,0);
+                SetRGBLED(0,0,0,0,0);
+            }
         }
     }
+    else
+    {
+        current_state = LOCATEBEACON;
+        last_state = ALIGNMENT;
+
+        locatebeacon_count = 0;
+    }
+
 }
 
 void RobotAW::Recover()
@@ -1088,7 +1099,8 @@ void RobotAW::Recruitment()
                 msg_assembly_info_req_expected |= 1<<i;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
-                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+                robots_in_range_detected_hist.Print();
+                printf("%d -- Recruitment: channel %d  switch to Stage%d %#x\n\n", timestamp,i, recruitment_stage[i], msg_docking_signal_req_received);
             }
             else
             {
@@ -1108,6 +1120,7 @@ void RobotAW::Recruitment()
                 recruitment_count[i]=0;
                 recruitment_stage[i]=STAGE0;
                 SetIRLED(i,IRLEDOFF,LED1,0);
+                printf("%d -- Recruitment: timeout! channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
             else if(msg_docking_signal_req_received & (1<<i))
             {

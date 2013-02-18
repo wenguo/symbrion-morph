@@ -686,7 +686,7 @@ void Robot::LeadRepair()
 							SetDockingMotor(i, OPEN);
 							unlocking_required[i]=false;
 						}
-						else if( docking_motors_status[i]==OPENED && !(unlock_sent & 1<<i) )
+						else if( locking_motors_status[i]==OPENED && !(unlock_sent & 1<<i) )
 						{
 							SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
 							unlock_sent |= 1<<i;
@@ -705,7 +705,7 @@ void Robot::LeadRepair()
 					SetDockingMotor(parent_side, OPEN);
 					unlocking_required[parent_side]=false;
 				}
-				else if( docking_motors_status[parent_side]==OPENED )
+				else if( locking_motors_status[parent_side]==OPENED )
 				{
 					BroadcastIRMessage(parent_side, IR_MSG_TYPE_UNLOCKED, 0);
 					unlock_sent |= 1<<parent_side;
@@ -976,7 +976,7 @@ void Robot::Repair()
 							SetDockingMotor(i, OPEN);
 							unlocking_required[i]=false;
 						}
-						else if( docking_motors_status[i]==OPENED && !(unlock_sent & 1<<i) )
+						else if( locking_motors_status[i]==OPENED && !(unlock_sent & 1<<i) )
 						{
 							SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
 							unlock_sent |= 1<<i;
@@ -1208,7 +1208,7 @@ void Robot::Failed()
 					SetDockingMotor(i, OPEN);
 					unlocking_required[i]=false;
 				}
-				else if(docking_motors_status[i]==OPENED)
+				else if(locking_motors_status[i]==OPENED)
 				{
 					if( !(unlock_sent & 1<<i) )
 					{

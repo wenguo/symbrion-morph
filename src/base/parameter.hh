@@ -38,12 +38,12 @@ class Parameter
         int recruiting_beacon_signals_time;
 
         int docking_trials;
-        int docking_motor_opening_time;
-        int docking_motor_closing_time;
         int docking_failed_reverse_time;
         int hinge_motor_lifting_time;
         int hinge_motor_lowing_time;
 
+        int locking_motor_opening_time;
+        int locking_motor_closing_time;
         bool locking_motor_enabled[NUM_DOCKS];
 
         int avoid_weightleft[NUM_IRS];
