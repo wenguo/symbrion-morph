@@ -557,42 +557,42 @@ void RobotAW::LocateBeacon()
 
     int turning;
     // If beacon detected on correct side - don't turn
-	if((beacon_signals_detected & (1<<id0 | 1<<id1))!=0)
-		turning = 0;
-	else
-		turning = 1;
+    if((beacon_signals_detected & (1<<id0 | 1<<id1))!=0)
+        turning = 0;
+    else
+        turning = 1;
 
-	if( turning == 0 )
-	{
-		//two beacon signals
-		if(beacon[id0]>5 && beacon[id1]>5)
-		{
-			//stay there and wait to transfer to state Alignment
-			speed[0] = direction * 15;
-			speed[1] = direction * 15;
-			speed[2] = 0;
-		}
-		else
-		{
-			printf("only one beacon detected, shift left and right a little bit\n");
-			int temp = beacon[id0]-beacon[id1];
+    if( turning == 0 )
+    {
+        //two beacon signals
+        if(beacon[id0]>5 && beacon[id1]>5)
+        {
+            //stay there and wait to transfer to state Alignment
+            speed[0] = direction * 15;
+            speed[1] = direction * 15;
+            speed[2] = 0;
+        }
+        else
+        {
+            printf("only one beacon detected, shift left and right a little bit\n");
+            int temp = beacon[id0]-beacon[id1];
 
-			speed[0] = 0;
-			speed[1] = 0;
-			speed[2] = -20 * sign(temp) * direction;
-		}
-	}
-	else
-	{
-		// Don't turn during first 5 seconds
-		// - this will need to be changed, occasionally
-		//	the robot turns when it doesn't need to.
-		if( locatebeacon_count > 50 )
-		{
-			speed[0] = -20;
-			speed[1] = 20;
-		}
-	}
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = -20 * sign(temp) * direction;
+        }
+    }
+    else
+    {
+        // Don't turn during first 5 seconds
+        // - this will need to be changed, occasionally
+        //	the robot turns when it doesn't need to.
+        if( locatebeacon_count > 50 )
+        {
+            speed[0] = -20;
+            speed[1] = 20;
+        }
+    }
 
     /*
     printf("beacon: ");
@@ -1103,7 +1103,7 @@ void RobotAW::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE1)
         {
-            if( recruitment_count[i]++ > 500 )
+            if( recruitment_count[i]++ > para.recruiting_beacon_signals_time )
             {
                 recruitment_count[i]=0;
                 recruitment_stage[i]=STAGE0;
@@ -1111,11 +1111,13 @@ void RobotAW::Recruitment()
             }
             else if(msg_docking_signal_req_received & (1<<i))
             {
+                recruitment_count[i]=0;
                 msg_docking_signal_req_received &= ~(1<<i);
                 SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
             }
             else if(msg_assembly_info_req_received & (1<<i))
             {
+                recruitment_count[i]=0;
                 msg_locked_expected |= 1<<i;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 //wait for ack
@@ -1129,6 +1131,7 @@ void RobotAW::Recruitment()
             }
             else if((msg_guideme_received & (1<<i)) )
             {
+                recruitment_count[i]=0;
                 msg_locked_expected |= 1<<i;
                 msg_guideme_received &= ~(1<<i);
                 recruitment_stage[i]=STAGE2;

@@ -1010,21 +1010,23 @@ void RobotSCOUT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE1)
         {
-        	if( recruitment_count[i]++ > 500 )
-        	{
-        		recruitment_count[i]=0;
-        		recruitment_stage[i]=STAGE0;
-        		SetIRLED(i,IRLEDOFF,LED1,0);
+            if( recruitment_count[i]++ > para.recruiting_beacon_signals_time )
+            {
+                recruitment_count[i]=0;
+                recruitment_stage[i]=STAGE0;
+                SetIRLED(i,IRLEDOFF,LED1,0);
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
 
-        	}
-        	else if(msg_docking_signal_req_received & (1<<i))
+            }
+            else if(msg_docking_signal_req_received & (1<<i))
             {
+                recruitment_count[i]=0;
                 msg_docking_signal_req_received &= ~(1<<i);
                 SetIRLED(i, IRLEDDOCKING, LED1, 0); 
             }
             else if(msg_assembly_info_req_received & (1<<i))
             {
+                recruitment_count[i]=0;
                 if(it1->getSymbol(0).type2 != ROBOT_AW)
                     msg_locked_expected |= 1<<i;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
@@ -1034,7 +1036,6 @@ void RobotSCOUT::Recruitment()
                     msg_assembly_info_req_received &= ~(1<<i);
                     guiding_signals_count[i]=0;
                     recruitment_stage[i]=STAGE2;
-            		recruitment_count[i]=0;
                     printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
                 }
             }

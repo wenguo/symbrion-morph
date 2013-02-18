@@ -21,6 +21,7 @@ Parameter::Parameter():
     recruiting_reflective_offset1(20),
     recruiting_reflective_offset2(20),
     recruiting_guiding_signals_time(200),
+    recruiting_beacon_signals_time(500),
     docking_trials(255),
     docking_reflective_offset1(300),
     docking_reflective_offset2(300),
