@@ -124,8 +124,8 @@ void RobotAW::SetSpeed(int left, int right, int side)
             rear = -right * para.aw_adjustment_ratio;
         }
     }
-    irobot->MoveWheelsFront(-frontright, frontleft);
-    irobot->MoveWheelsRear(rear,0);
+    irobot->MoveWheelsFront(-direction * frontright, direction * frontleft);
+    irobot->MoveWheelsRear(direction * rear,0);
 
 }
 
@@ -320,48 +320,40 @@ void RobotAW::Avoidance()
     else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
         triggered = false;
     if(!triggered)
+    {
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
         return;
+    }
 
-    speed[0] = 40;
-    speed[1] = 40;
+    speed[0] = 30;
+    speed[1] = 30;
     speed[2] = 0;
 
     if(org_bumped || aux_bumped)
     {
         //front and rear are bumped 
-        if(((org_bumped & (1<<0 | 1<<1)) !=0 ||(aux_bumped & (1<<0|1<<1|1<<6||1<<7))!=0) && ((org_bumped & (1<<4 | 1<< 5))!=0||(aux_bumped & (1<<2|1<<3|1<<4|1<<5))!=0))
+        if(((org_bumped & (1<<0 | 1<<1)) !=0 ||(aux_bumped & (1<<0|1<<6||1<<7))!=0) && ((org_bumped & (1<<4 | 1<< 5))!=0||(aux_bumped & (1<<3|1<<4))!=0))
         {
             speed[0] = 0;
             speed[1] = 0;
             direction = FORWARD;
-            printf("%d front and rear are bumped\n", timestamp);
         }
         //only front is bumped
-        else if((org_bumped & (1<<0 | 1<<1)) !=0 ||(aux_bumped & (1<<0|1<<1|1<<6||1<<7))!=0) 
-        {
-            printf("%d only front are bumped\n", timestamp);
+        else if((org_bumped & (1<<0 | 1<<1)) !=0 ||(aux_bumped & (1<<0|1<<6||1<<7))!=0) 
             direction  = BACKWARD;
-        }
         //only rear is bumped
-        else if((org_bumped & (1<<4 | 1<< 5)) !=0 ||(aux_bumped & (1<<2|1<<3|1<<4||1<<5))!=0) 
-        {
-            printf("%d only front are bumped\n", timestamp);
+        else if((org_bumped & (1<<4 | 1<< 5)) !=0 ||(aux_bumped & (1<<3|1<<4))!=0) 
             direction  = FORWARD;
-        }
 
         //move sideway if necessary
-        if(((org_bumped & (1<<2 | 1<<3)) !=0 || (aux_bumped & (1<<1 | 1<<2))!=0 )&& ((org_bumped & (1<<6 | 1<<7)) !=0) ||(aux_bumped & (1<<5 | 1<<6))!=0 )
+        if(((org_bumped & (1<<2 | 1<<3)) !=0 || (aux_bumped & (1<<1 | 1<<2))!=0 )&& ((org_bumped & (1<<6 | 1<<7)) !=0 ||(aux_bumped & (1<<5 | 1<<6))!=0 ))
             speed[2] = 0;
         else if((org_bumped & (1<<2 | 1<<3)) !=0 || (aux_bumped & (1<<1 | 1<<2))!=0)
-        {
-            printf("%d left side is bumped\n", timestamp);
             speed[2] = -direction * 30;
-        }
         else if((org_bumped & (1<<6 | 1<<7)) !=0 || (aux_bumped & (1<<5 | 1<<6))!=0)
-        {
-            printf("%d right side is bumped\n", timestamp);
             speed[2] = direction * 30;
-        }
     }
 }
 
@@ -605,8 +597,8 @@ void RobotAW::LocateBeacon()
         if(beacon[id0]>5 && beacon[id1]>5)
         {
             //stay there and wait to transfer to state Alignment
-            speed[0] = direction * 15;
-            speed[1] = direction * 15;
+            speed[0] = 20;
+            speed[1] = 20;
             speed[2] = 0;
         }
         else
@@ -616,7 +608,7 @@ void RobotAW::LocateBeacon()
 
             speed[0] = 0;
             speed[1] = 0;
-            speed[2] = -20 * sign(temp) * direction;
+            speed[2] = -20 * sign(temp);
         }
     }
     else
@@ -728,46 +720,43 @@ void RobotAW::Alignment()
         // Far away from recruiting robot - move sideways or forward
         if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 20 )
         {
-            //       std::cout << "FAR " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-            //           << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
             if( abs(temp) > 0.1 * temp_max )
             {
                 speed[0] = 0;
                 speed[1] = 0;
-                speed[2] = -20 * sign(temp) * direction;
+                speed[2] = -20 * sign(temp) ;
             }
             else
             {
-                speed[0] = direction * 25;
-                speed[1] = direction * 25;
+                speed[0] = 25;
+                speed[1] = 25;
                 speed[2] = 0;
             }
+            printf("FAR - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
         }
         //getting close to robots, but not too close
         else if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 )
         {
             if( abs(temp2) > 150)
             {           
-                //      std::cout << " Zone 1, adjusting orientantion " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-                //          << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
-                speed[0] = 10 * sign(temp2); //No need to taken direction in to accout here, worked on robot.02
-                speed[1] = -25 * sign(temp2);
+                speed[0] = 10 * sign(temp2) * direction; //No need to taken direction in to account here, worked on robot.02
+                speed[1] = -25 * sign(temp2) * direction;
                 speed[2] = 0;
+                printf("Zone 1, adjusting orientation - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
             }
             else
             {
                 if( abs(temp) > 0.2 * temp_max )
                 {
-                    //          std::cout << " Zone 1, adjusting pose " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-                    //              << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
                     speed[0] = 0;
                     speed[1] = 0;
-                    speed[2] = -15 * sign(temp) * direction;
+                    speed[2] = -20 * sign(temp);
+                    printf("Zone 1, adjusting pose - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
                 }
                 else
                 {
-                    speed[0] = direction * 20;
-                    speed[1] = direction * 20;
+                    speed[0] = 20;
+                    speed[1] = 20;
                     speed[2] = 0;
                 }
             }
@@ -776,11 +765,10 @@ void RobotAW::Alignment()
         // very close to another robots
         else
         {
-            //       std::cout << " Blocked or very close " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
-            //            << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
             speed[0]=0;
             speed[1]=0;
             speed[2]=0;
+            printf("Blocked or very close- beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
 
             {
                 SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
@@ -842,7 +830,7 @@ void RobotAW::Recover()
             {
                 //just reverse
                 if(reflective_hist[0].Avg() + reflective_hist[1].Avg() >
-                reflective_hist[3].Avg() + reflective_hist[4].Avg() )
+                        reflective_hist[3].Avg() + reflective_hist[4].Avg() )
                 {
                     speed[0] = para.aligning_reverse_speed[0];
                     speed[1] = para.aligning_reverse_speed[1];
@@ -860,8 +848,8 @@ void RobotAW::Recover()
                 if(timestamp % 5 ==0)
                     Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
 
-                speed[0] = direction * para.aligning_reverse_speed[0];
-                speed[1] = direction * para.aligning_reverse_speed[1];
+                speed[0] = para.aligning_reverse_speed[0];
+                speed[1] = para.aligning_reverse_speed[1];
             }
         }
         else
@@ -913,7 +901,7 @@ void RobotAW::Docking()
     static bool synchronised = false;
     static  int status = 0;
     docking_count++;
-        
+
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
@@ -1008,7 +996,7 @@ void RobotAW::Docking()
             current_state = RECOVER;
             last_state = ALIGNMENT;
             recover_count = 0;
-          //  printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
+            //  printf("reflective: %d %d\t beacon:%d %d\n",reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
         }
         else
         {
@@ -1054,24 +1042,24 @@ void RobotAW::Docking()
                 switch (status)
                 {
                     case TURN_RIGHT:
-                        speed[0] = direction * para.docking_turn_right_speed[0];
-                        speed[1] = direction * para.docking_turn_right_speed[1];
-                        speed[2] = direction * para.docking_turn_right_speed[2];
+                        speed[0] = para.docking_turn_right_speed[0];
+                        speed[1] = para.docking_turn_right_speed[1];
+                        speed[2] = para.docking_turn_right_speed[2];
                         break;
                     case TURN_LEFT:
-                        speed[0] = direction * para.docking_turn_left_speed[0];
-                        speed[1] = direction * para.docking_turn_left_speed[1];
-                        speed[2] = direction * para.docking_turn_left_speed[2];
+                        speed[0] = para.docking_turn_left_speed[0];
+                        speed[1] = para.docking_turn_left_speed[1];
+                        speed[2] = para.docking_turn_left_speed[2];
                         break;
                     case MOVE_FORWARD:
-                        speed[0] = direction * para.docking_forward_speed[0];
-                        speed[1] = direction * para.docking_forward_speed[1];
-                        speed[2] = direction * para.docking_forward_speed[2];
+                        speed[0] = para.docking_forward_speed[0];
+                        speed[1] = para.docking_forward_speed[1];
+                        speed[2] = para.docking_forward_speed[2];
                         break;
                     case MOVE_BACKWARD:
-                        speed[0] = direction * para.docking_backward_speed[0];
-                        speed[1] = direction * para.docking_backward_speed[1];
-                        speed[2] = direction * para.docking_backward_speed[2];
+                        speed[0] = para.docking_backward_speed[0];
+                        speed[1] = para.docking_backward_speed[1];
+                        speed[2] = para.docking_backward_speed[2];
                         break;
                     case CHECKING:
                         speed[0] = 0;
@@ -1128,8 +1116,8 @@ void RobotAW::Recruitment()
         if(recruitment_stage[i]==STAGE0)
         {
             if( robots_in_range_detected_hist.Sum(2*i) > 14 ||
-                robots_in_range_detected_hist.Sum(2*i+1) >14 ||
-                (msg_docking_signal_req_received & (1<<i)) )
+                    robots_in_range_detected_hist.Sum(2*i+1) >14 ||
+                    (msg_docking_signal_req_received & (1<<i)) )
             {
                 msg_docking_signal_req_received &= ~(1<<i);
 
@@ -1497,14 +1485,14 @@ void RobotAW::Undocking()
     if( undocking_count == 0 )
     {
         for(int i=0;i<NUM_DOCKS;i++)
-        	SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
     }
     else if(undocking_count < 100)
     {
-    	// Simply move forward
-//        speed[0] = 15;
-//        speed[1] = 15;
-//        speed[2] = 0;
+        // Simply move forward
+        //        speed[0] = 15;
+        //        speed[1] = 15;
+        //        speed[2] = 0;
     }
     else
     {
@@ -1512,9 +1500,9 @@ void RobotAW::Undocking()
         speed[1] = 0;
         speed[2] = 0;
 
-		// Turn off LEDs
-		for(int i=0;i<NUM_DOCKS;i++)
-			SetRGBLED(i, 0,0,0,0);
+        // Turn off LEDs
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetRGBLED(i, 0,0,0,0);
 
         last_state = UNDOCKING;
         current_state = FORAGING;
@@ -1530,46 +1518,46 @@ void RobotAW::Lowering()
 {
     lowering_count++;
 
-   // std::cout << "Lowering count: " << lowering_count << std::endl;
+    // std::cout << "Lowering count: " << lowering_count << std::endl;
 
     if( lowering_count == 10 )
     {
         //MoveHingeToAngle(hinge_start_pos, hinge_speed );
-//        SetHingeMotor(DOWN);
+        //        SetHingeMotor(DOWN);
     }
 
     // For testing - don't allow to enter disassembly
     return;
     /*else if(seed && lowering_count >= 150)
-    {
-        PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
+      {
+      PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
 
-        current_state = DISASSEMBLY;
-        last_state = LOWERING;
-        lowering_count = 0;
+      current_state = DISASSEMBLY;
+      last_state = LOWERING;
+      lowering_count = 0;
 
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            SetRGBLED(i, 0, 0, 0, 0);
-            if(docked[i])
-                msg_unlocked_expected |=1<<i;
-        }
-    }
-    else if(msg_disassembly_received)
-    {
-        current_state = DISASSEMBLY;
-        last_state = LOWERING;
-        lowering_count = 0;
+      for(int i=0;i<NUM_DOCKS;i++)
+      {
+      SetRGBLED(i, 0, 0, 0, 0);
+      if(docked[i])
+      msg_unlocked_expected |=1<<i;
+      }
+      }
+      else if(msg_disassembly_received)
+      {
+      current_state = DISASSEMBLY;
+      last_state = LOWERING;
+      lowering_count = 0;
 
-        msg_disassembly_received = 0;
+      msg_disassembly_received = 0;
 
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            SetRGBLED(i, 0, 0, 0, 0);
-            if(docked[i])
-                msg_unlocked_expected |=1<<i;
-        }
-    }*/
+      for(int i=0;i<NUM_DOCKS;i++)
+      {
+      SetRGBLED(i, 0, 0, 0, 0);
+      if(docked[i])
+      msg_unlocked_expected |=1<<i;
+      }
+      }*/
 }
 
 
@@ -1597,7 +1585,7 @@ void RobotAW::Raising()
             PropagateEthMessage(ETH_MSG_TYPE_RAISING_START);
             flash_leds = true;
 
-//            SetHingeMotor(UP);
+            //            SetHingeMotor(UP);
         }
         else if( raising_count >= raising_delay + 50 )
         {
@@ -1618,17 +1606,17 @@ void RobotAW::Raising()
     }
     else if( msg_raising_stop_received )
     {
-    	msg_raising_start_received = false;
-    	msg_raising_stop_received = false;
+        msg_raising_start_received = false;
+        msg_raising_stop_received = false;
         current_state = MACROLOCOMOTION;
         last_state = RAISING;
         raising_count = 0;
-    	flash_leds = false;
+        flash_leds = false;
     }
     else if( msg_raising_start_received )
     {
-    	flash_leds = true;
-//        SetHingeMotor(UP);
+        flash_leds = true;
+        //        SetHingeMotor(UP);
     }
 
     if(flash_leds)
@@ -1777,43 +1765,43 @@ void RobotAW::Reshaping()
 void RobotAW::MacroLocomotion()
 {
 
-//    speed[0] = 0;
-//    speed[1] = 0;
-//    speed[2] = 0;
-//    //speed[2] = -20; // don't move
-//
-//    macrolocomotion_count++;
-//
-//    return; // Do nothing for now
-//
-//    if(macrolocomotion_count < 50)
-//        speed[2] = para.debug.para[7];
-//    else if(macrolocomotion_count < 100)
-//        speed[2] = para.debug.para[8];
-//    //for testing, only for one AW + 2 Scouts
-//    else
-//    {
-//        // Stop moving
-//        speed[0] = 0;
-//        speed[1] = 0;
-//        speed[2] = 0;
-//
-//        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
-//
-//        last_state = MACROLOCOMOTION;
-//        current_state = LOWERING;
-//        lowering_count = 0;
-//        seed = false;
-//    }
+    //    speed[0] = 0;
+    //    speed[1] = 0;
+    //    speed[2] = 0;
+    //    //speed[2] = -20; // don't move
+    //
+    //    macrolocomotion_count++;
+    //
+    //    return; // Do nothing for now
+    //
+    //    if(macrolocomotion_count < 50)
+    //        speed[2] = para.debug.para[7];
+    //    else if(macrolocomotion_count < 100)
+    //        speed[2] = para.debug.para[8];
+    //    //for testing, only for one AW + 2 Scouts
+    //    else
+    //    {
+    //        // Stop moving
+    //        speed[0] = 0;
+    //        speed[1] = 0;
+    //        speed[2] = 0;
+    //
+    //        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+    //
+    //        last_state = MACROLOCOMOTION;
+    //        current_state = LOWERING;
+    //        lowering_count = 0;
+    //        seed = false;
+    //    }
 
-	// Stop moving
-	speed[0] = 0;
-	speed[1] = 0;
-	speed[2] = 0;
+    // Stop moving
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
-//	// Make robot wander a bit
-//	speed[0] = -20;
-//	speed[1] = -20;
+    //	// Make robot wander a bit
+    //	speed[0] = -20;
+    //	speed[1] = -20;
 
     macrolocomotion_count++;
     //flashing RGB leds
@@ -1859,8 +1847,8 @@ void RobotAW::Debugging()
     //speed[0] = 0;
     //speed[1] = 0;
     //speed[2] = 0;
-  //  printf("Debuging %d:\n", para.debug.mode);
-            
+    //  printf("Debuging %d:\n", para.debug.mode);
+
     static int clock=0;
     static bool log = false;
     Log();
@@ -1994,10 +1982,10 @@ void RobotAW::Debugging()
         case 13:
             if(timestamp==40)
             {
-            for(int i=0;i<NUM_DOCKS;i++)
-            {
-                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, irobot->isEthernetPortConnected(ActiveWheel::Side(board_dev_num[i])) ? "true":"false",irobot->isSwitchActivated()?"true":"false" );
-            }
+                for(int i=0;i<NUM_DOCKS;i++)
+                {
+                    printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, irobot->isEthernetPortConnected(ActiveWheel::Side(board_dev_num[i])) ? "true":"false",irobot->isSwitchActivated()?"true":"false" );
+                }
             }
 #define NEIGHBOUR_IP "192.168.0.7"
             if(timestamp % 10 ==0)
@@ -2056,9 +2044,9 @@ void RobotAW::Debugging()
                     SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0 | IRPULSE1);
 
                 SetRGBLED(2, RED,RED,RED,RED);
-//                SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
+                //                SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
             }
-           
+
             //send synchronisation signals, using ip_req
             if(msg_ip_addr_received==0)
             {
@@ -2073,7 +2061,7 @@ void RobotAW::Debugging()
             else
                 clock++;
 
-           if(clock == para.debug.para[5])
+            if(clock == para.debug.para[5])
             {
                 log = true;
                 speed[0] = -15;
@@ -2107,7 +2095,7 @@ void RobotAW::Debugging()
             if(timestamp ==2)
             {
                 for(int i=0;i<4;i++)
-                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false);
+                    irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false);
             }
             break;
         case 18://print out sensor data

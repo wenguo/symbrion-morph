@@ -331,7 +331,12 @@ void RobotKIT::Avoidance()
     else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
         triggered = false;
     if(!triggered)
+    {
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
         return;
+    }
 
     speed[0] = 30;
     speed[1] = 30;
