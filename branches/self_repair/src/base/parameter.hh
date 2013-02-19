@@ -71,6 +71,8 @@ class Parameter
 
         int ambient_calibrated[NUM_IRS];
         int reflective_calibrated[NUM_IRS];
+        int aux_ambient_calibrated[NUM_IRS];
+        int aux_reflective_calibrated[NUM_IRS];
 
         int fail_in_state;
         int fail_after_delay;

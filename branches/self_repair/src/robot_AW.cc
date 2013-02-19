@@ -244,14 +244,6 @@ void RobotAW::UpdateSensors()
     aux_beacon[6] = ret_D.sensor[4].docking;
     aux_beacon[7] = ret_D.sensor[5].docking;
 
-    /*
-    printf("aux_reflective:");
-    for(int i=0;i<8;i++)
-    {
-        printf("%d\t", aux_reflective[i]);
-    }
-    printf("\n");*/
-
     uint8_t ethernet_status=0;
     for(int i=0;i<NUM_DOCKS;i++)
     {
@@ -265,8 +257,19 @@ void RobotAW::UpdateSensors()
     {
         reflective_hist[i].Push(reflective[i]-para.reflective_calibrated[i]);
         ambient_hist[i].Push(para.ambient_calibrated[i] - ambient[i]);
+        aux_reflective_hist[i].Push(aux_reflective[i]-para.aux_reflective_calibrated[i]);
+        aux_ambient_hist[i].Push(para.aux_ambient_calibrated[i] - aux_ambient[i]);
     }
 
+    aux_bumped = 0;
+    org_bumped = 0;
+    for(int i=0;i<NUM_IRS;i++)
+    {
+        if(aux_reflective_hist[i].Avg() > 100)
+            aux_bumped |= 1<<i;
+        if(reflective_hist[i].Avg() > 200)
+            org_bumped |= 1<<i;
+    }
 }
 
 void RobotAW::UpdateActuators()
@@ -310,35 +313,56 @@ void RobotAW::UpdateFailures()
 
 void RobotAW::Avoidance()
 {
+    //for demo 
+    static bool triggered = false;
+    if(ambient_hist[0].Avg() > 1000 || ambient_hist[1].Avg() > 1000)
+        triggered = true;
+    else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
+        triggered = false;
+    if(!triggered)
+        return;
+
     speed[0] = 40;
     speed[1] = 40;
     speed[2] = 0;
 
-
-    for(int i=0;i<NUM_IRS;i++)
+    if(org_bumped || aux_bumped)
     {
-        //   speed[0] +=(direction * avoid_weightleft[i] * (reflective_avg[i]))>>3;
-        //   speed[1] += (direction * avoid_weightleft[i] * (reflective_avg[i]))>>3;
-        speed[2] += (para.avoid_weightside[i] * (reflective_hist[i].Avg()))>>3;
+        //front and rear are bumped 
+        if(((org_bumped & (1<<0 | 1<<1)) !=0 ||(aux_bumped & (1<<0|1<<1|1<<6||1<<7))!=0) && ((org_bumped & (1<<4 | 1<< 5))!=0||(aux_bumped & (1<<2|1<<3|1<<4|1<<5))!=0))
+        {
+            speed[0] = 0;
+            speed[1] = 0;
+            direction = FORWARD;
+            printf("%d front and rear are bumped\n", timestamp);
+        }
+        //only front is bumped
+        else if((org_bumped & (1<<0 | 1<<1)) !=0 ||(aux_bumped & (1<<0|1<<1|1<<6||1<<7))!=0) 
+        {
+            printf("%d only front are bumped\n", timestamp);
+            direction  = BACKWARD;
+        }
+        //only rear is bumped
+        else if((org_bumped & (1<<4 | 1<< 5)) !=0 ||(aux_bumped & (1<<2|1<<3|1<<4||1<<5))!=0) 
+        {
+            printf("%d only front are bumped\n", timestamp);
+            direction  = FORWARD;
+        }
+
+        //move sideway if necessary
+        if(((org_bumped & (1<<2 | 1<<3)) !=0 || (aux_bumped & (1<<1 | 1<<2))!=0 )&& ((org_bumped & (1<<6 | 1<<7)) !=0) ||(aux_bumped & (1<<5 | 1<<6))!=0 )
+            speed[2] = 0;
+        else if((org_bumped & (1<<2 | 1<<3)) !=0 || (aux_bumped & (1<<1 | 1<<2))!=0)
+        {
+            printf("%d left side is bumped\n", timestamp);
+            speed[2] = -direction * 30;
+        }
+        else if((org_bumped & (1<<6 | 1<<7)) !=0 || (aux_bumped & (1<<5 | 1<<6))!=0)
+        {
+            printf("%d right side is bumped\n", timestamp);
+            speed[2] = direction * 30;
+        }
     }
-
-    if(abs(speed[2]) < 20)
-    {
-        if((timestamp / 10 )%2 ==0)
-            speed[2] = 20;
-        else
-            speed[2] =-20;
-    }
-
-    if(reflective_hist[1].Avg() > para.avoid_threshold[1] || reflective_hist[0].Avg()>para.avoid_threshold[0])
-        direction = BACKWARD;
-    else if(reflective_hist[4].Avg() > para.avoid_threshold[4] || reflective_hist[5].Avg()>para.avoid_threshold[5])
-        direction = FORWARD;
-
-    speed[0] = 0;
-    speed[1] = 0;
-    speed[2] = 0;
-
 }
 
 
@@ -2118,6 +2142,100 @@ void RobotAW::Debugging()
     }
 
 }
+
+void RobotAW::Calibrating()
+{
+    memset(speed, 0, 3 * sizeof(int));
+
+    static int32_t temp1[8]={0,0,0,0,0,0,0,0};
+    static int32_t temp2[8]={0,0,0,0,0,0,0,0};
+    static int32_t temp3[8]={0,0,0,0,0,0,0,0};
+    static int32_t temp4[8]={0,0,0,0,0,0,0,0};
+    static int32_t count = 0;
+    count++;
+    for(int i=0;i<NUM_IRS;i++)
+    {
+        temp1[i] += reflective[i];
+        temp2[i] += ambient[i];
+        temp3[i] += aux_reflective[i];
+        temp4[i] += aux_ambient[i];
+    }
+
+    if (timestamp == 100)
+    {
+        printf("Calibrating done (%d): ", count);
+        printf("reflective: ");
+        for(int i=0;i<NUM_IRS;i++)
+        {
+            para.reflective_calibrated[i]=temp1[i]/count;
+            para.ambient_calibrated[i]=temp2[i]/count;
+            printf("%d\t", para.reflective_calibrated[i]);
+        }
+        printf("\n");
+        printf("aux_reflective: ");
+        for(int i=0;i<NUM_IRS;i++)
+        {
+            para.aux_reflective_calibrated[i]=temp3[i]/count;
+            para.aux_ambient_calibrated[i]=temp4[i]/count;
+            printf("%d\t", para.aux_reflective_calibrated[i]);
+        }
+        printf("\n");
+
+
+        if(optionfile)
+        {
+
+            for( int entity = 1; entity < optionfile->GetEntityCount(); ++entity )
+            {
+                const char *typestr = (char*)optionfile->GetEntityType(entity);          
+                if( strcmp( typestr, "Global" ) == 0 )
+                {
+                    char default_str[64];
+                    for(int i=0;i<NUM_IRS;i++)
+                    {
+                        snprintf(default_str, sizeof(default_str), "%d", para.reflective_calibrated[i]);
+                        optionfile->WriteTupleString(entity, "reflective_calibrated", i, default_str);
+                        snprintf(default_str, sizeof(default_str), "%d", para.ambient_calibrated[i]);
+                        optionfile->WriteTupleString(entity, "ambient_calibrated", i, default_str);
+                        snprintf(default_str, sizeof(default_str), "%d", para.aux_reflective_calibrated[i]);
+                        optionfile->WriteTupleString(entity, "aux_reflective_calibrated", i, default_str);
+                        snprintf(default_str, sizeof(default_str), "%d", para.aux_ambient_calibrated[i]);
+                        optionfile->WriteTupleString(entity, "aux_ambient_calibrated", i, default_str);
+                    }
+                }
+            }
+        }
+
+        optionfile->Save("/flash/morph/aw_option.cfg");
+
+
+    }
+
+}
+
+void RobotAW::PrintAuxReflective()
+{
+    if(!para.print_reflective)
+        return;
+
+    printf("%d: aux_reflec\t", timestamp);
+    for(uint8_t i=0;i<NUM_IRS;i++)
+        printf("%d\t", aux_reflective_hist[i].Avg());
+    printf("\n");
+}
+
+void RobotAW::PrintAuxAmbient()
+{
+    if(!para.print_ambient)
+        return;
+
+    printf("%d: aux_ambient\t", timestamp);
+    for(uint8_t i=0;i<NUM_IRS;i++)
+        printf("%d\t", aux_ambient_hist[i].Avg());
+    printf("\n");
+}
+
+
 
 void RobotAW::Log()
 {

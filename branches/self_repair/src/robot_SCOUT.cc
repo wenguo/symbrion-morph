@@ -315,6 +315,16 @@ void RobotSCOUT::UpdateFailures()
 
 void RobotSCOUT::Avoidance()
 {
+
+    //for demo 
+    static bool triggered = false;
+    if(ambient_hist[0].Avg() > 1000 || ambient_hist[1].Avg() > 1000)
+        triggered = true;
+    else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
+        triggered = false;
+    if(!triggered)
+        return;
+
     speed[0] = 30;
     speed[1] = 30;
 

@@ -25,15 +25,6 @@ bool Robot::LoadParameters(const char * filename)
         // don't load window entries here
         if( strcmp( typestr, "Seeding" ) == 0 )
         {
-            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "motion_PD_para" ) ) 
-            {
-                // para.Kp = atof( optionfile->GetPropertyValue( prop, 0 ));
-                // para.Kd = atof( optionfile->GetPropertyValue( prop, 1 ));
-                // para.Err = atoi( optionfile->GetPropertyValue( prop, 2 ));
-            }
-            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "waiting_time" ) )
-            {
-            }        
 
         }
         else if( strcmp( typestr, "Avoidance" ) == 0 )
@@ -222,8 +213,16 @@ bool Robot::LoadParameters(const char * filename)
                 for(int i=0;i<NUM_IRS;i++)
                     para.ambient_calibrated[i] = atoi(optionfile->GetPropertyValue(prop, i));
             }
-
-
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "aux_reflective_calibrated" ) ) 
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.aux_reflective_calibrated[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "aux_ambient_calibrated" ) ) 
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.aux_ambient_calibrated[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
         }
         else if( strcmp( typestr, "ShapeInfo" ) == 0 )
         {

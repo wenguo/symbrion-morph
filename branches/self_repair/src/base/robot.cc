@@ -182,7 +182,7 @@ Robot::Robot()
     locking_motor_isense_hist.Resize(8);
 
     direction = FORWARD;
-    memset(speed, 0, 3);
+    memset(speed, 0, 3 * sizeof(int));
 
     docking_approaching_sensor_id[0] = 0; 
     docking_approaching_sensor_id[1] = 1; 
@@ -364,13 +364,9 @@ void Robot::Update(const uint32_t& ts)
     {
         if(beacon[i] > BEACON_SIGNAL_DETECTED_THRESHOLD && beacon[i] > proximity[i])
             beacon_signals_detected |= 1<<i;
-        //else
-        //    beacon_signals_detected &=~(1<<i);
 
         if(proximity[i]> PROXIMITY_SIGNAL_DETECTED_THRESHOLD  && proximity[i] > beacon[i])
             robot_in_range_detected |=1<<i;
-        //else
-        //    robot_in_range_detected &=~(1<<i);
 
         if(reflective_hist[i].Avg() > BUMPED_THRESHOLD)// ||( proximity[i]>BUMPED_THRESHOLD && proximity[i] > beacon[i]))
             bumped |= 1<<i;
@@ -440,7 +436,7 @@ void Robot::Update(const uint32_t& ts)
 
 void Robot::Calibrating()
 {
-    memset(speed, 0, 3);
+    memset(speed, 0, 3 * sizeof(int));
 
     static int32_t temp1[8]={0,0,0,0,0,0,0,0};
     static int32_t temp2[8]={0,0,0,0,0,0,0,0};

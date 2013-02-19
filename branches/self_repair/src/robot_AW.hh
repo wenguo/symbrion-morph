@@ -11,6 +11,9 @@ class RobotAW:public Robot
         RobotAW(ActiveWheel * r);
         virtual ~RobotAW();
 
+        void PrintAuxReflective();
+        void PrintAuxAmbient();
+
     protected:
         virtual void InitHardware();
         virtual void SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led);
@@ -24,7 +27,8 @@ class RobotAW:public Robot
         virtual void UpdateActuators();
         // for self-repair
         virtual void UpdateFailures();
-
+        
+        virtual void Calibrating();
         virtual void Exploring();
         virtual void Resting();
         virtual void Seeding();
@@ -59,6 +63,12 @@ class RobotAW:public Robot
         int32_t aux_reflective[8];   //proximity sensors, using 350us pulse
         int32_t aux_proximity[8];   //proximity sensors, using 64Hz signals
         int32_t aux_beacon[8];
+
+        Hist aux_reflective_hist[NUM_IRS];
+        Hist aux_ambient_hist[NUM_IRS];
+
+        uint8_t aux_bumped;
+        uint8_t org_bumped;
         bool free_move;
 };
 
