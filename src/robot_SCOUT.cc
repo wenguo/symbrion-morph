@@ -339,9 +339,9 @@ void RobotSCOUT::Avoidance()
     {
         if(reflective_hist[i].Avg() > 0)
         {
-            temp = reflective_hist[i].Avg();
-            speed[0] +=(para.avoid_weightleft[i] * (temp>>5));
-            speed[1] += (para.avoid_weightright[i] * (temp >> 5));
+            temp =  reflective_hist[i].Avg();
+            speed[0] +=(para.avoid_weightleft[i] * (temp>>3));
+            speed[1] += (para.avoid_weightright[i] * (temp >> 3));
         }
     }
 
