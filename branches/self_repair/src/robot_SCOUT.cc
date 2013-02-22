@@ -950,7 +950,7 @@ void RobotSCOUT::Docking()
 
     docking_count++;
 
-    if(ethernet_status_hist.Sum(assembly_info.side2) > 8) 
+    if(ethernet_status_hist.Sum(assembly_info.side2) > 4) 
     {
         speed[0] = 0;
         speed[1]= 0;  
