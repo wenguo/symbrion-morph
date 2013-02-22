@@ -606,11 +606,14 @@ void RobotKIT::LocateBeacon()
     {
         if(id0==0)
         {
-           // if((beacon_signals_detected & 0x3) != 0)
-           //     turning = 0;
+            //no signals on other 3 side, except the docking side
+            if((beacon_signals_detected & 0xFC) == 0)
+            {
+                printf("forward or side way\n");
+                turning = 0;
+            }
             //no signals on side 1, turn left 
-           // else 
-                if((beacon_signals_detected & 0xC) ==0)
+            else if((beacon_signals_detected & 0xC) ==0)
                 turning = -1;
             //no signals on side 3, turn right 
             else if((beacon_signals_detected & 0xC0) ==0)
@@ -620,12 +623,14 @@ void RobotKIT::LocateBeacon()
         }
         else
         {
-
-           // if((beacon_signals_detected & 0x30) != 0)
-            //    turning = 0;
+            //no signals on other 3 side, except the docking side
+            if((beacon_signals_detected & 0xCF) == 0x0)
+            {
+                printf("forward or side way\n");
+                turning = 0;
+            }
             //no signals on side 1, turn right
-            //else 
-                if((beacon_signals_detected & 0xC) ==0)
+            else  if((beacon_signals_detected & 0xC) ==0)
                 turning = 1;
             //no signals on side 3, turn left
             else if((beacon_signals_detected & 0xC0) ==0)
@@ -638,12 +643,14 @@ void RobotKIT::LocateBeacon()
         //printf("max_beacon: %d %d %d %d\tturning: %d\n", max_beacon[0], max_beacon[1], max_beacon[2], max_beacon[3], turning);
         if(turning == -1)
         {
+            printf("turn %s\n", direction ? "left" :"right");
             speed[0] = direction > 0 ? 10 : 40;
             speed[1] = direction > 0 ? -40 : -10;
             speed[2] = 0;
         }
         else if(turning == 1)
         {
+            printf("turn %s\n", -direction ? "left" :"right");
             speed[0] = direction > 0 ? 40 : 10;
             speed[1] = direction > 0 ? -10 : -40;
             speed[2] = 0;
@@ -694,7 +701,7 @@ void RobotKIT::LocateBeacon()
             case 2:
             case 5:
                 {
-                    if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 30 && beacon[id1] >= 30)  
+                    if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 10 && beacon[id1] >= 10)  
                     {
                         current_state = ALIGNMENT;
                         last_state = LOCATEBEACON;
@@ -765,8 +772,8 @@ void RobotKIT::Alignment()
             }
             else
             {
-                speed[0] = 25;
-                speed[1] = 25;
+                speed[0] = 35;
+                speed[1] = 35;
                 speed[2] = 0;
             }
         }
@@ -774,7 +781,20 @@ void RobotKIT::Alignment()
         else if( (assembly_info.type1 == ROBOT_AW && (std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 500 || abs(temp2) > 250))
                 || (assembly_info.type1 != ROBOT_AW && std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 ))
         {
-            if( abs(temp2) > 150)
+            if(std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 0)
+            {
+                speed[0]=0;
+                speed[1]=0;
+                speed[2]=0;
+                for(int i=0;i<NUM_DOCKS;i++)
+                {
+                    if(timestamp % 2 ==0)
+                        SetRGBLED(i, RED,RED,RED,RED);
+                    else
+                        SetRGBLED(i, 0,0,0,0);
+                }
+            }
+            else if( abs(temp2) > 150)
             {           
                 std::cout << " Zone 1, adjusting orientantion " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
                     << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
@@ -803,8 +823,8 @@ void RobotKIT::Alignment()
                 }
                 else
                 {
-                    speed[0] = 20;
-                    speed[1] = 20;
+                    speed[0] = 35;
+                    speed[1] = 35;
                     speed[2] = 0;
                 }
             }
