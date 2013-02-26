@@ -59,6 +59,11 @@ void RobotAW::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_l
     irobot->SetIRPulse(ActiveWheel::Side(board), pulse_led |IRPULSE2|IRPULSE3|IRPULSE4|IRPULSE5);
     irobot->SetIRMode(ActiveWheel::Side(board), mode);
 
+    if(mode !=IRLEDOFF)
+        irobot->SetIRRX(ActiveWheel::Side(board), led & LED1 ? false : true);
+    else
+        irobot->SetIRRX(ActiveWheel::Side(board), led & LED1 ? true : false);
+
     uint8_t status = (uint8_t)mode | 0x4;
     for(int i=0;i<3;i++)
     {
@@ -800,18 +805,8 @@ void RobotAW::Recover()
             if(assembly_info == OrganismSequence::Symbol(0))
             {
                 //just reverse
-                if(reflective_hist[0].Avg() + reflective_hist[1].Avg() >
-                        reflective_hist[3].Avg() + reflective_hist[4].Avg() )
-                {
-                    speed[0] = para.aligning_reverse_speed[0];
-                    speed[1] = para.aligning_reverse_speed[1];
-                }
-                else
-                {
-                    speed[0] = -para.aligning_reverse_speed[0];
-                    speed[1] = -para.aligning_reverse_speed[1];
-                }
-
+                speed[0] = para.aligning_reverse_speed[0];
+                speed[1] = para.aligning_reverse_speed[1];
             }
             //failed
             else
@@ -1096,7 +1091,7 @@ void RobotAW::Recruitment()
 
                 msg_assembly_info_req_expected |= 1<<i;
                 recruitment_stage[i]=STAGE1;
-                SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDDOCKING, LED1, 0);
                 robots_in_range_detected_hist.Print();
                 printf("%d -- Recruitment: channel %d  switch to Stage%d %#x\n\n", timestamp,i, recruitment_stage[i], msg_docking_signal_req_received);
             }
@@ -1104,6 +1099,7 @@ void RobotAW::Recruitment()
             {
                 //or send recruitment message
                 SetIRLED(i, IRLEDOFF, LED1, 0);
+                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false); //using side receiver
                 SetRGBLED(i, 0,0,0,0);
                 if(timestamp % RECRUITMENT_SIGNAL_INTERVAL == i)
                 {
@@ -1130,13 +1126,13 @@ void RobotAW::Recruitment()
             {
                 recruitment_count[i]=0;
                 msg_docking_signal_req_received &= ~(1<<i);
-                SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1); //TODO: better to switch off ir pulse
+                SetIRLED(i, IRLEDDOCKING, LED1, IRPULSE0 | IRPULSE1);
             }
             else if(msg_assembly_info_req_received & (1<<i))
             {
                 recruitment_count[i]=0;
                 msg_locked_expected |= 1<<i;
-                SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
+                SetIRLED(i, IRLEDOFF, LED0|LED2, 0); 
                 //wait for ack
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_ASSEMBLY_INFO))
                 {
@@ -2072,10 +2068,7 @@ void RobotAW::Debugging()
             break;
         case 17://Test IRComm as listener
             if(timestamp ==2)
-            {
-                for(int i=0;i<4;i++)
-                    irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false);
-            }
+                irobot->SetIRRX(ActiveWheel::Side(board_dev_num[para.debug.para[0]]), para.debug.para[1]);
             break;
         case 18://print out sensor data
             if(timestamp ==2)

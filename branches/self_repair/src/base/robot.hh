@@ -243,6 +243,7 @@ class Robot
     Hist proximity_hist[NUM_IRS];
     Hist ethernet_status_hist;
     Hist locking_motor_isense_hist;
+    Hist docking_blocked_hist;
 
     //status
     uint8_t bumped;
