@@ -543,6 +543,7 @@ void RobotAW::Assembly()
 
     if(assembly_count >= para.assembly_time)
     {
+        printf("assembly_count %d, para.assembly_time %d\n", assembly_count, para.assembly_time);
         organism_found = false;
 
         assembly_count = 0;
@@ -668,7 +669,7 @@ void RobotAW::LocateBeacon()
             last_state = LOCATEBEACON;
 
             organism_found = false;
-            assembly_count = DEFAULT_ASSEMBLY_COUNT;
+            assembly_count = 0;
             assembly_info = OrganismSequence::Symbol(0);
 
             for(int i=0;i<NUM_DOCKS;i++)

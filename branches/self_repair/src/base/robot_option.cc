@@ -29,9 +29,9 @@ bool Robot::LoadParameters(const char * filename)
         }
         else if( strcmp( typestr, "Foraging" ) == 0 )
         {
-            para.foraging_time = optionfile->ReadInt(entity, "foraging_time", DEFAULT_FORAGING_COUNT);
-            para.waiting_time = optionfile->ReadInt(entity, "waiting_time", DEFAULT_WAITING_COUNT);
-            para.assembly_time = optionfile->ReadInt(entity, "assembly_time", DEFAULT_ASSEMBLY_COUNT);
+            para.foraging_time = optionfile->ReadInt(entity, "foraging_time", 80);
+            para.waiting_time = optionfile->ReadInt(entity, "waiting_time", 20);
+            para.assembly_time = optionfile->ReadInt(entity, "assembly_time", 1200);
         }
         else if( strcmp( typestr, "Avoidance" ) == 0 )
         {

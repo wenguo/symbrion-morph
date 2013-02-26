@@ -106,7 +106,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         if (!organism_found)
                         {
                             organism_found = true;
-                            assembly_count = DEFAULT_ASSEMBLY_COUNT;
+                            assembly_count = 0;
                         }
 
                         if(assembly_info!=0 && assembly_info!=sym)

@@ -471,7 +471,7 @@ void RobotSCOUT::Foraging()
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
 
-            assembly_count = 0;//DEFAULT_ASSEMBLY_COUNT;
+            assembly_count = 0;
             current_state = ASSEMBLY;
             last_state = WAITING;
         }
@@ -514,7 +514,7 @@ void RobotSCOUT::Waiting()
         current_state = ASSEMBLY;
         last_state = WAITING;
 
-        assembly_count = 0;//DEFAULT_ASSEMBLY_COUNT;
+        assembly_count = 0;
     }
 }
 
@@ -684,7 +684,7 @@ void RobotSCOUT::LocateBeacon()
             last_state = LOCATEBEACON;
 
             organism_found = false;
-            assembly_count = 0;// DEFAULT_ASSEMBLY_COUNT;
+            assembly_count = 0;
             assembly_info = OrganismSequence::Symbol(0);
 
             for(int i=0;i<NUM_DOCKS;i++)
