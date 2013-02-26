@@ -538,7 +538,7 @@ void RobotKIT::Waiting()
         current_state = ASSEMBLY;
         last_state = WAITING;
 
-        assembly_count = 0;//DEFAULT_ASSEMBLY_COUNT;
+        assembly_count = 0;
     }
 }
 

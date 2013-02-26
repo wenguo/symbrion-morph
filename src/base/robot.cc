@@ -101,8 +101,8 @@ Robot::Robot()
     hinge_motor_operating_count=0;
     seeding_count=0;
     foraging_blind_count=0;
-    waiting_count = DEFAULT_WAITING_COUNT;
-    foraging_count = DEFAULT_FORAGING_COUNT;
+    waiting_count = 0;
+    foraging_count =0;
     docking_count = 0;
     docking_failed_reverse_count = 0;
     recover_count = 0;

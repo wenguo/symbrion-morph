@@ -7,12 +7,12 @@
 #define NUM_DOCKS                      4
 #define NUM_IRS                        8        //number of ir proximity sensor
 
-#define DEFAULT_FORAGING_COUNT 80 //80 seconds
-#define DEFAULT_WAITING_COUNT 20 //20 seconds
+//#define DEFAULT_FORAGING_COUNT 80 //80 seconds
+//#define DEFAULT_WAITING_COUNT 20 //20 seconds
 #define DEFAULT_RECRUITMENT_COUNT       150
 #define DEFAULT_RECRUITMENT_WAIT_COUNT 2400 // 240 seconds, duration wating for robot to dock, no recruitment signals during this period
 #define RECRUITMENT_SIGNAL_INTERVAL 20 //2 seconds
-#define DEFAULT_ASSEMBLY_COUNT          1200 //120 seconds -- 2 minutes
+//#define DEFAULT_ASSEMBLY_COUNT          1200 //120 seconds -- 2 minutes
 
 #define INORGANISM_WAIT_COUNT 200 //one minutues delay after organism formed, then disassembly
 
