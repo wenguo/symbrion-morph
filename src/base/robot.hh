@@ -339,6 +339,7 @@ class Robot
     uint8_t msg_assembly_info_expected;
     uint8_t msg_assembly_info_req_received;
     uint8_t msg_assembly_info_req_expected;
+    uint8_t msg_recruiting_req_received;
     // for self-repair
     uint8_t msg_failed_received;
     uint8_t msg_subog_seq_received;
