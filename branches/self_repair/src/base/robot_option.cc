@@ -27,6 +27,12 @@ bool Robot::LoadParameters(const char * filename)
         {
 
         }
+        else if( strcmp( typestr, "Foraging" ) == 0 )
+        {
+            para.foraging_time = optionfile->ReadInt(entity, "foraging_time", DEFAULT_FORAGING_COUNT);
+            para.waiting_time = optionfile->ReadInt(entity, "waiting_time", DEFAULT_WAITING_COUNT);
+            para.assembly_time = optionfile->ReadInt(entity, "assembly_time", DEFAULT_ASSEMBLY_COUNT);
+        }
         else if( strcmp( typestr, "Avoidance" ) == 0 )
         {
             if( Morph::CProperty* prop = optionfile->GetProperty( entity, "weight_left" ) ) 
@@ -72,6 +78,8 @@ bool Robot::LoadParameters(const char * filename)
                 para.locatebeacon_forward_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
                 para.locatebeacon_forward_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
             }
+            
+            para.locatebeacon_time = optionfile->ReadInt(entity, "locatebeacon_time", 300);
 
         }
 
@@ -101,7 +109,7 @@ bool Robot::LoadParameters(const char * filename)
                 para.aligning_reverse_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
             }
 
-            para.aligning_reverse_count = optionfile->ReadInt(entity, "reverse_count", 50);
+            para.aligning_reverse_time = optionfile->ReadInt(entity, "reverse_time", 50);
 
         }
         else if( strcmp( typestr, "Recruitment" ) == 0 )
@@ -113,6 +121,7 @@ bool Robot::LoadParameters(const char * filename)
         {
             para.docking_trials = optionfile->ReadInt(entity, "docking_trials", 40);
             para.docking_failed_reverse_time = optionfile->ReadInt(entity, "docking_failed_reverse_time", 40);
+            para.docking_time = optionfile->ReadInt(entity, "docking_time", 300);
             if( Morph::CProperty* prop = optionfile->GetProperty( entity, "turn_right_speed" ) )
             {
                 para.docking_turn_right_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));

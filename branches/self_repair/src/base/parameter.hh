@@ -57,7 +57,7 @@ class Parameter
         int aligning_weightleft[NUM_IRS];
         int aligning_weightright[NUM_IRS];
 
-        uint32_t aligning_reverse_count;
+        int aligning_reverse_time;
         
         bool print_proximity;
         bool print_beacon;
@@ -73,6 +73,12 @@ class Parameter
         int reflective_calibrated[NUM_IRS];
         int aux_ambient_calibrated[NUM_IRS];
         int aux_reflective_calibrated[NUM_IRS];
+
+        int foraging_time;
+        int waiting_time;
+        int assembly_time;
+        int locatebeacon_time;
+        int docking_time;
 
         int fail_in_state;
         int fail_after_delay;

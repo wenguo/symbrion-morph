@@ -110,6 +110,7 @@ enum irmsg_type_t {
     //broadcast, no ack required
     IR_MSG_TYPE_UNKNOWN =0,
     IR_MSG_TYPE_RECRUITING, //followed by assembly_info
+    IR_MSG_TYPE_RECRUITING_REQ, //followed by mytype 
     IR_MSG_TYPE_EXPELLING,        //no data 
     IR_MSG_TYPE_POWERSOURCE_FOUND,//no data
     IR_MSG_TYPE_GUIDEME, //no data

@@ -437,12 +437,13 @@ void RobotSCOUT::Foraging()
 {
     speed[0]=0;
     speed[1]=0;
+    foraging_count++;
     /*
     //time up?
-    if(foraging_count--<=0)
+    if(foraging_count >= para.foraging_time)
     {
-        foraging_count = DEFAULT_FORAGING_COUNT;
-        waiting_count=DEFAULT_WAITING_COUNT;
+        foraging_count = 0;//DEFAULT_FORAGING_COUNT;
+        waiting_count = 0;//DEFAULT_WAITING_COUNT;
 
         //switch off all ir leds
         for(uint8_t i=0; i< NUM_DOCKS; i++)
@@ -465,12 +466,12 @@ void RobotSCOUT::Foraging()
             current_state = LOCATEENERGY;
             last_state = FORAGING;
         }
-        else if(organism_found)
+        else if(organism_found || beacon_signals_detected)
         {
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
 
-            assembly_count = DEFAULT_ASSEMBLY_COUNT;
+            assembly_count = 0;//DEFAULT_ASSEMBLY_COUNT;
             current_state = ASSEMBLY;
             last_state = WAITING;
         }
@@ -488,10 +489,12 @@ void RobotSCOUT::Waiting()
     msg_locked_received = 0;
     msg_lockme_received = 0;
 
-    if(waiting_count--<=0)
+    waiting_count++;
+
+    if(waiting_count >= para.waiting_time)
     {
-        waiting_count=DEFAULT_WAITING_COUNT;
-        foraging_count=DEFAULT_FORAGING_COUNT;
+        waiting_count = 0;//DEFAULT_WAITING_COUNT;
+        foraging_count = 0;//DEFAULT_FORAGING_COUNT;
 
         for(int i=0;i< NUM_IRS;i++)
             reflective_hist[i].Reset();
@@ -503,7 +506,7 @@ void RobotSCOUT::Waiting()
         current_state = FORAGING;
         last_state = WAITING;
     }
-    else if(organism_found)
+    else if(organism_found || beacon_signals_detected)
     {
         for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
@@ -511,7 +514,7 @@ void RobotSCOUT::Waiting()
         current_state = ASSEMBLY;
         last_state = WAITING;
 
-        assembly_count = DEFAULT_ASSEMBLY_COUNT;
+        assembly_count = 0;//DEFAULT_ASSEMBLY_COUNT;
     }
 }
 
@@ -520,9 +523,13 @@ void RobotSCOUT::Assembly()
     speed[0]=0;
     speed[1]=0;
 
-    if(assembly_count--<=0)
+    assembly_count++;
+
+    if(assembly_count >= para.assembly_time)
     {
         organism_found = false;
+
+        assembly_count = 0;
 
         current_state = FORAGING;
         last_state = ASSEMBLY;
@@ -549,6 +556,14 @@ void RobotSCOUT::Assembly()
         last_state = FORAGING;
 
         locatebeacon_count = 0;
+    }
+    else if(assembly_info == OrganismSequence::Symbol(0) )
+    {
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            if(timestamp % 12 == 3 * i && (beacon_signals_detected & (0x3 << (2*i)))!=0)
+                BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING_REQ,0); 
+        }
     }
     else
         Avoidance();
@@ -648,6 +663,39 @@ void RobotSCOUT::LocateBeacon()
         }
     }
 
+    //checking
+    if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 30 && beacon[id1] >= 30)  
+    {
+        current_state = ALIGNMENT;
+        last_state = LOCATEBEACON;
+
+        //using reflective signals if not set
+        for(int i=0; i< NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1);
+
+    } 
+    else if (beacon_signals_detected ==0 )
+    {
+        if(locatebeacon_count >= para.locatebeacon_time)
+        {
+            current_state = ASSEMBLY;
+            last_state = LOCATEBEACON;
+
+            organism_found = false;
+            assembly_count = 0;// DEFAULT_ASSEMBLY_COUNT;
+            assembly_info = OrganismSequence::Symbol(0);
+
+            for(int i=0;i<NUM_DOCKS;i++)
+            {
+                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1);
+                SetRGBLED(i, 0, 0, 0, 0);
+            }
+        }
+     }
+
+
+    return;
+    //skip the following code
     printf("beacon: (%d %d) -- speed: (%d %d %d %d)\n", beacon[id0], beacon[id1], speed[0], speed[1], para.locatebeacon_forward_speed[0], para.locatebeacon_forward_speed[1]);
     //switch on ir led at 64Hz so the recruitment robot can sensing it
     //and turn on its docking signals, the robot need to switch off ir 
@@ -686,13 +734,13 @@ void RobotSCOUT::LocateBeacon()
                     } 
                     else if (beacon_signals_detected ==0 )
                     {
-                        if(locatebeacon_count >=150)
+                        if(locatebeacon_count >= para.locatebeacon_time)
                         {
                             current_state = ASSEMBLY;
                             last_state = LOCATEBEACON;
 
                             organism_found = false;
-                            assembly_count = DEFAULT_ASSEMBLY_COUNT;
+                            assembly_count = 0;// DEFAULT_ASSEMBLY_COUNT;
                             assembly_info = OrganismSequence::Symbol(0);
                             
                             for(int i=0;i<NUM_DOCKS;i++)
@@ -701,12 +749,12 @@ void RobotSCOUT::LocateBeacon()
                                 SetRGBLED(i, 0, 0, 0, 0);
                             }
                         }
-                        else
-                        {
+     //                   else
+     //                   {
                             //then swith on all ir led at 64Hz frequency
-                            for(int i=0;i<NUM_DOCKS;i++)
-                                SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-                        }
+     //                       for(int i=0;i<NUM_DOCKS;i++)
+     //                           SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+     //                   }
                     }
                 }
                 break;
@@ -853,7 +901,7 @@ void RobotSCOUT::Recover()
     {
         //turn left/right according to reflective value;
         //robot will stop there for 1 seconds
-        if(recover_count < para.aligning_reverse_count)
+        if(recover_count < para.aligning_reverse_time)
         {
             //docked to the wrong robots
             if(assembly_info == OrganismSequence::Symbol(0))
@@ -892,7 +940,7 @@ void RobotSCOUT::Recover()
                 }
             }
         }
-        else if( recover_count == para.aligning_reverse_count )
+        else if( recover_count == para.aligning_reverse_time )
         {
             for(int i=0; i<SIDE_COUNT; i++)
             	SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,0);
@@ -917,6 +965,7 @@ void RobotSCOUT::Recover()
                 if(docking_trials >= para.docking_trials)
                 {
                     ResetAssembly();
+                    docking_trials = 0;
 
                     for(int i=0; i<SIDE_COUNT; i++)
                     	SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
@@ -1031,6 +1080,12 @@ void RobotSCOUT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE1)
         {
+            if(msg_recruiting_req_received & (1<<i))
+            {
+                msg_recruiting_req_received &= ~(1<<i);
+                Robot::BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data, 0);
+            }
+
             if( recruitment_count[i]++ > para.recruiting_beacon_signals_time )
             {
                 recruitment_count[i]=0;

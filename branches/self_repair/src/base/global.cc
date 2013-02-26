@@ -33,6 +33,7 @@ const char* state_names[STATE_COUNT]={
 const char * irmessage_names[IR_MSG_TYPE_COUNT]={
     "UnKnown",
     "Recruiting",
+    "Recruiting_REQ",
     "Expelling",
     "Powersource_Found",
     "GuideMe",

@@ -96,10 +96,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
         //broadcast, no ack required
         case IR_MSG_TYPE_RECRUITING:
             {
+                OrganismSequence::Symbol sym(data[2]);
                 if(current_state==FORAGING || current_state == WAITING || current_state == ASSEMBLY)
                 {
-                    OrganismSequence::Symbol sym(data[2]);
-
                     //if(sym.type2 == type)
                     {
                         comm_status[channel] = 1;
@@ -116,7 +115,14 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         assembly_info = sym;
                     }
                 }
+                else if(current_state == LOCATEBEACON && sym.type2 == type)
+                {
+                    BroadcastIRMessage(channel, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
+                }
             }
+            break;
+        case IR_MSG_TYPE_RECRUITING_REQ:
+            msg_recruiting_req_received |= 1<<channel;
             break;
         case IR_MSG_TYPE_EXPELLING:
             expelling_signals_detected |=1<<channel;

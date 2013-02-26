@@ -22,7 +22,7 @@ Parameter::Parameter():
     hinge_motor_lowing_time(40),
     locking_motor_opening_time(30),
     locking_motor_closing_time(40),
-    aligning_reverse_count(50),
+    aligning_reverse_time(50),
     print_proximity(false),
     print_beacon(false),
     print_reflective(false),
@@ -31,6 +31,11 @@ Parameter::Parameter():
     ir_msg_repeated_delay(30),
     ir_msg_repeated_num(10),
     ir_msg_ack_delay(10),
+    foraging_time(80), 
+    waiting_time(20),
+    assembly_time(1200),
+    docking_time(300),
+    locatebeacon_time(300),
     fail_in_state(-1),
     fail_after_delay(0)
 {
