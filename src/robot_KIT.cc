@@ -585,7 +585,6 @@ void RobotKIT::Assembly()
     {
         for(int i=0;i<NUM_DOCKS;i++)
         {
-            printf("beacon_signals_detected: %#x\n", beacon_signals_detected);
             if(timestamp % 12 == 3 * i && (beacon_signals_detected & (0x3 << (2*i)))!=0)
                 BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING_REQ,0); 
         }
@@ -723,78 +722,6 @@ void RobotKIT::LocateBeacon()
         }
     }
 
-    return;
-   
-    //skip the following code
-
-    printf("beacon: (%d %d) -- speed: (%d %d %d %d %d)\n", beacon[id0], beacon[id1], speed[0], speed[1], speed[2], para.locatebeacon_forward_speed[0], para.locatebeacon_forward_speed[1]);
-    //switch on ir led at 64Hz so the recruitment robot can sensing it
-    //and turn on its docking signals, the robot need to switch off ir 
-    //led for a while to check if it receives docking signals
-    static int flag=0;
-    if(timestamp % 5 ==0)
-    {
-        flag++;
-        switch (flag % 6)
-        {
-            case 3:
-            case 4:
-                {
-                    //switch off all ir led, 
-                    for(int i=0;i<NUM_DOCKS;i++)
-                    {
-                        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-                        SetRGBLED(i, 0,0,0,0);
-                    }
-                }
-                break;
-            case 0:
-            case 1:
-            case 2:
-            case 5:
-                {
-                    if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 10 && beacon[id1] >= 10)  
-                    {
-                        current_state = ALIGNMENT;
-                        last_state = LOCATEBEACON;
-
-                        //using reflective signals if not set
-                        for(int i=0; i< NUM_DOCKS;i++)
-                            SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1);
-
-                    } 
-                    else if (beacon_signals_detected ==0 )
-                    {
-                        if(locatebeacon_count >= para.locatebeacon_time)
-                        {
-                            current_state = ASSEMBLY;
-                            last_state = LOCATEBEACON;
-
-                            organism_found = false;
-                            assembly_count = 0;
-                            assembly_info = OrganismSequence::Symbol(0);
-                            locatebeacon_count = 0;
-                            
-                            for(int i=0;i<NUM_DOCKS;i++)
-                            {
-                                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1);
-                                SetRGBLED(i, 0, 0, 0, 0);
-                            }
-                        }
-                        else
-                        {
-                            //then swith on all ir led at 64Hz frequency
-                           // for(int i=0;i<NUM_DOCKS;i++)
-                           //     SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-//                            Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
-                        }
-                    }
-                }
-                break;
-            default:
-                break;
-        }
-    }
 }
 
 void RobotKIT::Alignment()
