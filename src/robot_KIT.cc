@@ -757,7 +757,7 @@ void RobotKIT::Alignment()
                 speed[2] = 0;
             }
         }
-        //getting close to robots, but not too close
+        //getting close to robot, but not too close
         else if( (assembly_info.type1 == ROBOT_AW && (std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 500 || abs(temp2) > 250))
                 || (assembly_info.type1 != ROBOT_AW && std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 ))
         {
@@ -810,7 +810,7 @@ void RobotKIT::Alignment()
             }
 
         }
-        // very close to another robots
+        // very close to another robot
         else
         {
             std::cout << " Blocked or very close " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
@@ -878,19 +878,8 @@ void RobotKIT::Recover()
             if(assembly_info == OrganismSequence::Symbol(0))
             {
                 //just reverse
-                if(reflective_hist[0].Avg() + reflective_hist[1].Avg() >
-                reflective_hist[3].Avg() + reflective_hist[4].Avg() )
-                {
-                    speed[0] = para.aligning_reverse_speed[0];
-                    speed[1] = para.aligning_reverse_speed[1];
-                }
-                else
-                {
-                    speed[0] = -para.aligning_reverse_speed[0];
-                    speed[1] = -para.aligning_reverse_speed[1];
-                }
-
-
+                speed[0] = para.aligning_reverse_speed[0];
+                speed[1] = para.aligning_reverse_speed[1];
             }
             //blocked
             else

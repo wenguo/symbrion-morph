@@ -237,6 +237,8 @@ void Robot::ResetAssembly()
 
     assembly_info = 0;
 
+    direction = FORWARD;
+
     ethernet_status_hist.Reset();
 }
 

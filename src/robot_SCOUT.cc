@@ -559,6 +559,7 @@ void RobotSCOUT::Assembly()
     }
     else if(assembly_info == OrganismSequence::Symbol(0) )
     {
+        printf("beacon_signals_detected: %d\n", beacon_signals_detected);
         for(int i=0;i<NUM_DOCKS;i++)
         {
             if(timestamp % 12 == 3 * i && (beacon_signals_detected & (0x3 << (2*i)))!=0)
@@ -669,6 +670,7 @@ void RobotSCOUT::LocateBeacon()
         current_state = ALIGNMENT;
         last_state = LOCATEBEACON;
 
+        docking_blocked_hist.Reset();
         //using reflective signals if not set
         for(int i=0; i< NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1);
@@ -707,6 +709,9 @@ void RobotSCOUT::Alignment()
     int reflective_diff = abs(reflective_hist[id0].Avg() - reflective_hist[id1].Avg());
     int reflective_max = std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
     int reflective_min = std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+    int beacon_diff = abs(beacon[id0] - beacon[id1]);
+    int beacon_max = std::max(beacon[id0], beacon[id1]);
+    int beacon_min = std::min(beacon[id0], beacon[id1]);
 
     if(docking_region_detected)
     {
@@ -724,6 +729,9 @@ void RobotSCOUT::Alignment()
 
             if(assembly_info == OrganismSequence::Symbol(0))
             {
+                printf("%d:Assembly_info doesn't match, move away! direction: %d\n", timestamp, direction);
+                for(int i=0;i<NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
                 current_state = RECOVER;
                 last_state = ALIGNMENT;
                 recover_count = 0;
@@ -756,7 +764,7 @@ void RobotSCOUT::Alignment()
             docking_region_detected = true;
             in_docking_region_hist.Reset();
             for(int i=0;i<NUM_DOCKS;i++)
-                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
             SetRGBLED(assembly_info.side2, WHITE,WHITE,WHITE,WHITE);
 
             msg_assembly_info_expected |= 1 << assembly_info.side2;
@@ -768,17 +776,38 @@ void RobotSCOUT::Alignment()
             // define the bad case
             // case 1: difference between two front reflective_calibrated reading is significant 
             // case 2: some reflective_calibrated readings but two beacon readings are diff
-            if(reflective_hist[id0].Avg() > 300 && reflective_hist[id1].Avg() > 300)
+            if(reflective_min > 100)
                 blocking_count++;
 
             //3 second is allowed until fully docked, otherwise, treated as blocked.
-            if((reflective_diff > 300 && reflective_diff > reflective_max * 0.5 && reflective_min > 0) || blocking_count > 30)
-                //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
+            if(blocking_count > 100)
+            {
+                printf("blocked for 3 seconds, treated as blocked\n");
                 docking_blocked = true;
+            }
+            else if(reflective_diff > 300 && reflective_diff > reflective_max * 0.7 && reflective_min > 200)
+            {
+                //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
+                printf("reflective is significant different, %d %d, blocked\n", reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+                docking_blocked = true;
+            }
+            else if(reflective_min > 300 && beacon_diff > beacon_max * 0.7)
+            {
+                printf("robot is close, but beacon signals is significant different, %d %d, blocked\n", beacon[id0], beacon[id1]);
+                docking_blocked = true;
+            }
 
-            if(docking_blocked || beacon_signals_detected == 0)
+            if(docking_blocked)
+                docking_blocked_hist.Push(1);
+            else
+                docking_blocked_hist.Push(0);
+
+
+
+            if(docking_blocked_hist.Sum() > 5 || beacon_signals_detected == 0)
             {
                 docking_blocked = false;
+                docking_blocked_hist.Reset();
                 blocking_count=0;
                 speed[0] = 0;
                 speed[1] = 0;
@@ -795,8 +824,8 @@ void RobotSCOUT::Alignment()
             {
                 for(int i=id0;i<=id1;i++)
                 {
-                    speed[0] += (beacon[i] * para.aligning_weightleft[i]) >>4;
-                    speed[1] += (beacon[i] * para.aligning_weightright[i]) >>4;
+                    speed[0] += (beacon[i] * para.aligning_weightleft[i]) >> 4;
+                    speed[1] += (beacon[i] * para.aligning_weightright[i]) >> 4;
                 }
             }
         }
@@ -836,19 +865,8 @@ void RobotSCOUT::Recover()
             if(assembly_info == OrganismSequence::Symbol(0))
             {
                 //just reverse
-                if(reflective_hist[0].Avg() + reflective_hist[1].Avg() >
-                reflective_hist[3].Avg() + reflective_hist[4].Avg() )
-                {
-                    speed[0] = para.aligning_reverse_speed[0];
-                    speed[1] = para.aligning_reverse_speed[1];
-                }
-                else
-                {
-                    speed[0] = -para.aligning_reverse_speed[0];
-                    speed[1] = -para.aligning_reverse_speed[1];
-                }
-
-
+                speed[0] = para.aligning_reverse_speed[0];
+                speed[1] = para.aligning_reverse_speed[1];
             }
             //blocked
             else
