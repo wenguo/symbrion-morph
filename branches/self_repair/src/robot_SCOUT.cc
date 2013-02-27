@@ -612,6 +612,7 @@ void RobotSCOUT::LocateBeacon()
                 turning = 1;
             else 
                 turning = 0;
+            printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
         }
         else
         {
@@ -626,8 +627,7 @@ void RobotSCOUT::LocateBeacon()
                 turning = -1;
             else 
                 turning = 0;
-            printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],
-                    beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
+            printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
         }
 
         //printf("max_beacon: %d %d %d %d\tturning: %d\n", max_beacon[0], max_beacon[1], max_beacon[2], max_beacon[3], turning);
@@ -648,7 +648,8 @@ void RobotSCOUT::LocateBeacon()
         }
         else
         {
-            if((beacon_signals_detected & (1<<id0 | 1<<id1)) != 0)
+            //using hist will filter out the noise from IRComm
+            if(beacon_signals_detected_hist.Sum(id0) > 3 || beacon_signals_detected_hist.Sum(id1) > 3)
             {
                 for(int i=0;i<NUM_IRS;i++)
                 {
@@ -776,13 +777,16 @@ void RobotSCOUT::Alignment()
             // define the bad case
             // case 1: difference between two front reflective_calibrated reading is significant 
             // case 2: some reflective_calibrated readings but two beacon readings are diff
-            if(reflective_min > 100)
+            if(reflective_max > 150 && reflective_min > 0)
+            {
                 blocking_count++;
+                printf("%d ticking: %d %d %d\n", timestamp, blocking_count, reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+            }
 
             //3 second is allowed until fully docked, otherwise, treated as blocked.
-            if(blocking_count > 100)
+            if(blocking_count > 25)
             {
-                printf("blocked for 3 seconds, treated as blocked\n");
+                printf("blocked for 5 seconds, treated as blocked\n");
                 docking_blocked = true;
             }
             else if(reflective_diff > 300 && reflective_diff > reflective_max * 0.7 && reflective_min > 200)
@@ -796,12 +800,13 @@ void RobotSCOUT::Alignment()
                 printf("robot is close, but beacon signals is significant different, %d %d, blocked\n", beacon[id0], beacon[id1]);
                 docking_blocked = true;
             }
+            else
+                docking_blocked = false;
 
             if(docking_blocked)
                 docking_blocked_hist.Push(1);
             else
                 docking_blocked_hist.Push(0);
-
 
 
             if(docking_blocked_hist.Sum() > 5 || beacon_signals_detected == 0)
@@ -826,6 +831,14 @@ void RobotSCOUT::Alignment()
                 {
                     speed[0] += (beacon[i] * para.aligning_weightleft[i]) >> 4;
                     speed[1] += (beacon[i] * para.aligning_weightright[i]) >> 4;
+                }
+
+                //move less agressively when bumping to something;
+                if(reflective_max > 0)
+                {
+                    speed[0] -= 6 * (reflective_max / 200);
+                    speed[1] -= 6 * (reflective_max / 200);
+                    printf("%d: reflective %d %d, speed %d %d\n", timestamp, reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1]);
                 }
             }
         }
@@ -880,10 +893,13 @@ void RobotSCOUT::Recover()
                 //TODO: test reverse behaviour with new robots
                 const int weight_left[8] = {-3,3, 0,0,-3,3,0,0};
                 const int weight_right[8] = {3,-3,0,0,3,-3,0,0};
-                for(int i=id0;i<=id1;i++)
+                if(recover_count < 10) //only do a small turn if necessary
                 {
-                    speed[0] += reflective_hist[i].Avg() * weight_left[i]>>8;
-                    speed[1] += reflective_hist[i].Avg() * weight_right[i]>>8;
+                    for(int i=id0;i<=id1;i++)
+                    {
+                        speed[0] += reflective_hist[i].Avg() * weight_left[i]>>8;
+                        speed[1] += reflective_hist[i].Avg() * weight_right[i]>>8;
+                    }
                 }
             }
         }

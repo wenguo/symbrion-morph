@@ -668,8 +668,8 @@ void RobotKIT::LocateBeacon()
         }
         else
         {
-
-            if((beacon_signals_detected & (1<<id0 | 1<<id1)) != 0)
+            //using hist will filter out the noise from IRComm
+            if(beacon_signals_detected_hist.Sum(id0) > 3 || beacon_signals_detected_hist.Sum(id1) > 3)
             {
                 int temp = beacon[id1] - beacon[id0];
                 speed[0] = para.locatebeacon_forward_speed[0];
