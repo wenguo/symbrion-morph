@@ -647,8 +647,11 @@ void RobotAW::LocateBeacon()
     }
     else
     {
-        speed[0] = -35;
-        speed[1] = 35;
+        if(locatebeacon_count >=50)
+        {
+            speed[0] = -35;
+            speed[1] = 35;
+        }
     }
 
     //overwrite speed if bumped to anything
@@ -742,7 +745,7 @@ void RobotAW::Alignment()
                 {
                     speed[0] = 0;
                     speed[1] = 0;
-                    speed[2] = -30 * sign(temp);
+                    speed[2] = -20 * sign(temp);
                     printf("Zone 1, adjusting pose - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
                 }
                 else
@@ -893,6 +896,7 @@ void RobotAW::Docking()
     //TODO, remove this two static variables as they may cause problems
     static bool synchronised = false;
     static  int status = 0;
+    static int status_count=0;
     docking_count++;
 
     speed[0] = 0;
@@ -944,7 +948,7 @@ void RobotAW::Docking()
             }
         }
     }
-    else if(ethernet_status_hist.Sum(assembly_info.side2) > 8) 
+    else if(ethernet_status_hist.Sum(assembly_info.side2) > 4) 
     {
         docking_region_detected = true;
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, 0);
@@ -976,6 +980,8 @@ void RobotAW::Docking()
 
         int reflective_diff = reflective_hist[id1].Avg() - reflective_hist[id0].Avg();
         int proximity_diff = proximity[id1] - proximity[id0];
+        int proximity_max = std::max(proximity[id1],proximity[id0]);
+        int proximity_min = std::min(proximity[id1],proximity[id0]);
         //if no signals detected, marked as failure
         //TODO, more failure case
 
@@ -1003,7 +1009,7 @@ void RobotAW::Docking()
                 printf("No proximity signals detected\n");
                 docking_blocked = true;
             }
-            else if(abs(proximity_diff) > 0.5 * std::max(proximity[id0], proximity[id1]) )
+            else if(abs(proximity_diff) > 0.8 * std::max(proximity[id0], proximity[id1]) )
             {
                 printf("proximity signals are significant different %d %d\n", proximity[id0], proximity[id1]);
                 docking_blocked = true;
@@ -1024,10 +1030,20 @@ void RobotAW::Docking()
                 {
                     if(abs(reflective_diff) > 1200 ) 
                         status = MOVE_BACKWARD;
-                    else if(std::max(proximity[id0], proximity[id1]) > 500 && proximity_diff > 100) // was 300
+                    else if((proximity_max > 500 && proximity_diff > 250) || (proximity_max > 1400 && proximity_diff > 100) ) // was 300
                         status = TURN_LEFT;
-                    else if(std::max(proximity[id0], proximity[id1]) > 500 && proximity_diff < -100) // was 300
+                    else if((proximity_max > 500 && proximity_diff < -250) || (proximity_max > 1400 && proximity_diff < -100) ) // was 300
                         status = TURN_RIGHT;
+                    else if(proximity_min > 1450 && abs(proximity_diff < 50))
+                    {
+                        status_count++;
+                        if(status_count % 3 ==0)
+                            status = TURN_LEFT;
+                        else if(status_count % 3 ==1)
+                            status = MOVE_FORWARD;
+                        else if(status_count % 3 ==2)
+                            status = TURN_RIGHT;
+                    }
                     else
                         status = MOVE_FORWARD;
                 }
@@ -1062,7 +1078,7 @@ void RobotAW::Docking()
                     default:
                         break;
                 }
-                printf("%d Docking routine %#x (%s) speed (%d %d %d)\n", timestamp, status, docking_status_name[status], speed[0], speed[1], speed[2]);
+                printf("%d Docking routine %#x (%s) speed (%d %d %d) proximity (%d %d) reflective (%d %d)\n", timestamp, status, docking_status_name[status], speed[0], speed[1], speed[2], proximity[id0], proximity[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
             }
         }
     }

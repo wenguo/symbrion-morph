@@ -779,25 +779,32 @@ void RobotSCOUT::Alignment()
             // define the bad case
             // case 1: difference between two front reflective_calibrated reading is significant 
             // case 2: some reflective_calibrated readings but two beacon readings are diff
-            if(reflective_max > 150 && reflective_min > 0)
+                int blocked_threshold = 200;
+                if(assembly_info.type1 == ROBOT_SCOUT)
+                    blocked_threshold = 600;
+                else if(assembly_info.type1 == ROBOT_AW)
+                    blocked_threshold = 150;
+                else
+                    blocked_threshold = 400;
+            if(reflective_max > blocked_threshold && reflective_min > 0)
             {
                 blocking_count++;
                 printf("%d ticking: %d %d %d\n", timestamp, blocking_count, reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
             }
 
             //3 second is allowed until fully docked, otherwise, treated as blocked.
-            if(blocking_count > 25)
+            if(blocking_count > 45)
             {
                 printf("blocked for 5 seconds, treated as blocked\n");
                 docking_blocked = true;
             }
-            else if(reflective_diff > 300 && reflective_diff > reflective_max * 0.7 && reflective_min > 200)
+            else if(reflective_diff > 300 && reflective_diff > reflective_max * 0.7 && reflective_min > 20)
             {
                 //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
                 printf("reflective is significant different, %d %d, blocked\n", reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
                 docking_blocked = true;
             }
-            else if(reflective_min > 300 && beacon_diff > beacon_max * 0.7)
+            else if(reflective_min > 300 && beacon_diff > beacon_max * 0.7 && beacon_min > 20)
             {
                 printf("robot is close, but beacon signals is significant different, %d %d, blocked\n", beacon[id0], beacon[id1]);
                 docking_blocked = true;
@@ -811,7 +818,7 @@ void RobotSCOUT::Alignment()
                 docking_blocked_hist.Push(0);
 
 
-            if(docking_blocked_hist.Sum() > 5 || beacon_signals_detected == 0)
+            if(docking_blocked_hist.Sum() > 3 || beacon_signals_detected == 0)
             {
                 docking_blocked = false;
                 docking_blocked_hist.Reset();
@@ -836,10 +843,17 @@ void RobotSCOUT::Alignment()
                 }
 
                 //move less agressively when bumping to something;
+                int divisor = 200;
+                if(assembly_info.type1 == ROBOT_SCOUT)
+                    divisor = 1000;
+                else if(assembly_info.type1 == ROBOT_AW)
+                    divisor = 200;
+                else
+                    divisor = 400;
                 if(reflective_max > 0)
                 {
-                    speed[0] -= 6 * (reflective_max / 200);
-                    speed[1] -= 6 * (reflective_max / 200);
+                    speed[0] -= 6 * (reflective_max / divisor);
+                    speed[1] -= 6 * (reflective_max / divisor);
                     printf("%d: reflective %d %d, speed %d %d\n", timestamp, reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1]);
                 }
             }
