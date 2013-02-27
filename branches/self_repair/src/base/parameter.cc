@@ -74,8 +74,8 @@ std::ostream& operator<<(std::ostream& os, const Parameter& para)
         << "logtofile: "<< para.logtofile<<std::endl
         << "speed_forward: "<< para.speed_forward<<std::endl
         << "speed_sideward: "<< para.speed_sideward<<std::endl
-    	<< "fail_in_state: " << para.fail_in_state << std::endl
-    	<< "fail_after_delay: " << para.fail_after_delay << std::endl;
+        << "fail_in_state: " << para.fail_in_state << std::endl
+        << "fail_after_delay: " << para.fail_after_delay << std::endl;
     os  << "avoidance_weight_left: [";
     for(int i=0;i<NUM_IRS;i++)
     {

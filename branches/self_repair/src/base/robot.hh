@@ -60,7 +60,7 @@ class Robot
     uint32_t CheckIRLEDStatus(int channel, int led);
     void CheckDockingMotor();
     void CheckHingeMotor();
-    
+
     void SendEthMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
     void PropagateEthMessage(uint8_t type, uint8_t *data = NULL, uint32_t size = 0, Ethernet::IP = 0);
 
@@ -129,9 +129,9 @@ class Robot
     uint8_t getNeighbourHeading( int8_t );
     bool isNeighbourConnected(int i);
     void changeState(fsm_state_t);
-	void moveTowardsHeading(int);
-	uint8_t recruitmentProgress();
-	uint8_t getEthChannel(Ethernet::IP);
+    void moveTowardsHeading(int);
+    uint8_t recruitmentProgress();
+    uint8_t getEthChannel(Ethernet::IP);
 
     void RemoveFromQueue(int channel, uint8_t type);
     void RemoveFromQueue(uint8_t type);
@@ -409,7 +409,7 @@ class Robot
 
     Ethernet::IP my_IP;
     Ethernet::IP neighbours_IP[SIDE_COUNT];
-    
+
 
     uint8_t LED0;
     uint8_t LED1;

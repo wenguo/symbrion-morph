@@ -252,7 +252,7 @@ void RobotAW::UpdateSensors()
     uint8_t ethernet_status=0;
     for(int i=0;i<NUM_DOCKS;i++)
     {
-    //    color[i] = GetRGB(ScoutBot::Side(i));
+        //    color[i] = GetRGB(ScoutBot::Side(i));
         if(irobot->isEthernetPortConnected(ActiveWheel::Side(board_dev_num[i])))
             ethernet_status |= 1<<i;
     }
@@ -287,33 +287,33 @@ void RobotAW::UpdateActuators()
 void RobotAW::UpdateFailures()
 {
 
-	static int failure_delay = 0;
-	if( !module_failed )
-	{
-		if( current_state == para.fail_in_state  )
-		{
-			if( failure_delay++ > para.fail_after_delay )
-			{
-				// For testing - send spoof IR message to self
-//                msg_failed_received |= 1<<para.debug.para[0]; // side received on
-//                subog_id = para.debug.para[1];				  // side sent from
-//                parent_side = para.debug.para[0];
-//                heading = (parent_side + 2) % 4;
-//
-//                // Propagate lowering messages
-//                PropagateIRMessage(IR_MSG_TYPE_LOWERING);
-//
-//                last_state = MACROLOCOMOTION;
-//                current_state = LOWERING;
-//                lowering_count = 0;
-//
-//                msg_unlocked_received |= 1<<para.debug.para[0];
-				/////////////////////////////////////////////
+    static int failure_delay = 0;
+    if( !module_failed )
+    {
+        if( current_state == para.fail_in_state  )
+        {
+            if( failure_delay++ > para.fail_after_delay )
+            {
+                // For testing - send spoof IR message to self
+                //                msg_failed_received |= 1<<para.debug.para[0]; // side received on
+                //                subog_id = para.debug.para[1];				  // side sent from
+                //                parent_side = para.debug.para[0];
+                //                heading = (parent_side + 2) % 4;
+                //
+                //                // Propagate lowering messages
+                //                PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+                //
+                //                last_state = MACROLOCOMOTION;
+                //                current_state = LOWERING;
+                //                lowering_count = 0;
+                //
+                //                msg_unlocked_received |= 1<<para.debug.para[0];
+                /////////////////////////////////////////////
 
-				module_failed = true;
-			}
-		}
-	}
+                module_failed = true;
+            }
+        }
+    }
 }
 
 void RobotAW::Avoidance()
@@ -370,25 +370,25 @@ void RobotAW::Exploring()
 void RobotAW::Resting()
 {
     /*
-    if(timestamp == 40)
+       if(timestamp == 40)
+       {
+       mytree.Clear();
+       if(og)
+       delete og;
+    //select predefined organism
+    og = new Organism;
+    RealDemoOrganism_AKAK(og);
+    og->GraphToSequence(mytree);
+    std::cout<<*og<<std::endl;
+    std::cout<<mytree<<std::endl;
+    //prepare branches sequence
+    rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
+    if(ret.status >= RT_ERROR)
     {
-        mytree.Clear();
-        if(og)
-            delete og;
-        //select predefined organism
-        og = new Organism;
-        RealDemoOrganism_AKAK(og);
-        og->GraphToSequence(mytree);
-        std::cout<<*og<<std::endl;
-        std::cout<<mytree<<std::endl;
-        //prepare branches sequence
-        rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
-        if(ret.status >= RT_ERROR)
-        {
-            std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
-        }
+    std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
+    }
 
-        SendBranchTree(2, mytree);
+    SendBranchTree(2, mytree);
     }*/
 }
 void RobotAW::Seeding() //the same as in RobotKIT
@@ -396,11 +396,11 @@ void RobotAW::Seeding() //the same as in RobotKIT
     mytree.Clear();
     //select predefined organism
     /*
-    og = new Organism;
-    RealDemoOrganism_AKAK(og);
-    og->GraphToSequence(mytree);
-    std::cout<<*og<<std::endl;
-    std::cout<<mytree<<std::endl;*/
+       og = new Organism;
+       RealDemoOrganism_AKAK(og);
+       og->GraphToSequence(mytree);
+       std::cout<<*og<<std::endl;
+       std::cout<<mytree<<std::endl;*/
 
     if(!para.og_seq_list.empty())
     {
@@ -456,26 +456,26 @@ void RobotAW::Foraging() //the same as RobotKIT
     //time up?
     //
     /*
-    if(foraging_count >= para.foraging_time)
+       if(foraging_count >= para.foraging_time)
+       {
+       foraging_count = 0;//DEFAULT_FORAGING_COUNT;
+       waiting_count=0;//DEFAULT_WAITING_COUNT;
+
+    //switch off all ir leds
+    for(uint8_t i=0; i< NUM_DOCKS; i++)
     {
-        foraging_count = 0;//DEFAULT_FORAGING_COUNT;
-        waiting_count=0;//DEFAULT_WAITING_COUNT;
+    SetIRLED(i, IRLEDOFF, LED1, 0x0);
+    SetRGBLED(i, 0,0,0,0);
+    }
+    current_state = WAITING;
+    last_state = FORAGING;
 
-        //switch off all ir leds
-        for(uint8_t i=0; i< NUM_DOCKS; i++)
-        {
-            SetIRLED(i, IRLEDOFF, LED1, 0x0);
-            SetRGBLED(i, 0,0,0,0);
-        }
-        current_state = WAITING;
-        last_state = FORAGING;
-
-        speed[0] = 0;
-        speed[1] = 0;
-        speed[2] = 0;
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
     }
     else
-        */
+    */
     {
         Avoidance();
 
