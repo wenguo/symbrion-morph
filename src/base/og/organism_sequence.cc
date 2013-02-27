@@ -266,29 +266,29 @@ rt_status OrganismSequence::Scan(const OrganismSequence& og_seq, std::vector<Org
  */
 OrganismSequence OrganismSequence::getNextSeedSeq( OrganismSequence &seq )
 {
-	std::vector<Element> eList;
-	std::vector<unsigned int> edges;
-	Scan(seq, eList, edges);
+    std::vector<Element> eList;
+    std::vector<unsigned int> edges;
+    Scan(seq, eList, edges);
 
-	// get previous first element
-	Element first = eList.front();
+    // get previous first element
+    Element first = eList.front();
 
-	// swap sides and types
-	uint8_t temp_type = first.symbol.type1;
-	uint8_t temp_side = first.symbol.side1;
-	first.symbol.type1 = first.symbol.type2;
-	first.symbol.side1 = first.symbol.side2;
-	first.symbol.type2 = temp_type;
-	first.symbol.side2 = temp_side;
+    // swap sides and types
+    uint8_t temp_type = first.symbol.type1;
+    uint8_t temp_side = first.symbol.side1;
+    first.symbol.type1 = first.symbol.type2;
+    first.symbol.side1 = first.symbol.side2;
+    first.symbol.type2 = temp_type;
+    first.symbol.side2 = temp_side;
 
-	// move symbol to position before its '0000' pair
-	eList[first.pair_pos] = first;
-	eList.erase( eList.begin() );
+    // move symbol to position before its '0000' pair
+    eList[first.pair_pos] = first;
+    eList.erase( eList.begin() );
 
-	// move '0000' to end
-	eList.push_back( Element( Symbol(0) ) ) ;
+    // move '0000' to end
+    eList.push_back( Element( Symbol(0) ) ) ;
 
-	return OrganismSequence(eList);
+    return OrganismSequence(eList);
 
 }
 
@@ -412,33 +412,33 @@ rt_status OrganismSequence::getBranch(OrganismSequence& branch, const robot_side
 rt_status OrganismSequence::getBranch(OrganismSequence &branch, const robot_side& side, bool inclusive )
 {
 
-	std::vector<Element> eList;
-	std::vector<unsigned int> edges;
-	rt_status ret = Scan(eList, edges);
+    std::vector<Element> eList;
+    std::vector<unsigned int> edges;
+    rt_status ret = Scan(eList, edges);
 
-	std::vector<Element>::iterator start, end;
-	start = eList.begin();
+    std::vector<Element>::iterator start, end;
+    start = eList.begin();
 
-	ret.status = RT_OK_EMPTY_BRANCH;
-	ret.data = 0;
-	while(start!=eList.end())
-	{
-		end = eList.begin() + start->pair_pos + 1;
-		if(end > eList.end())
-			break;
+    ret.status = RT_OK_EMPTY_BRANCH;
+    ret.data = 0;
+    while(start!=eList.end())
+    {
+        end = eList.begin() + start->pair_pos + 1;
+        if(end > eList.end())
+            break;
 
-		if( start->symbol.side1 ==side)
-		{
-			std::vector<Element> e;
-			inclusive ? e.assign(start, end) : e.assign(start+1,end-1);
-			branch = OrganismSequence(e);
-			ret.status = RT_OK;
-			ret.data = e.size();
-		}
-		start = end;
-	}
+        if( start->symbol.side1 ==side)
+        {
+            std::vector<Element> e;
+            inclusive ? e.assign(start, end) : e.assign(start+1,end-1);
+            branch = OrganismSequence(e);
+            ret.status = RT_OK;
+            ret.data = e.size();
+        }
+        start = end;
+    }
 
-	return ret;
+    return ret;
 }
 
 
@@ -449,7 +449,7 @@ rt_status OrganismSequence::parentEdge(std::vector<Element>& eList, const std::v
     std::vector<Element>::iterator start, end;
     start = eList.begin() + pos;
     end = eList.begin() + start->pair_pos;
-   
+
     //search forward
     bool found=false;
     while(end < eList.end() - 1)
@@ -461,7 +461,7 @@ rt_status OrganismSequence::parentEdge(std::vector<Element>& eList, const std::v
             found = true;
             break;
         }
-        
+
         end = eList.begin() +  start->pair_pos;
     }
 
@@ -493,7 +493,7 @@ rt_status OrganismSequence::checkNodeConnection(const OrganismSequence& og_seq, 
     else
         extract_status = extractChildSequence(og_seq, sub_seq, edge_pos, true);
 
-   // std::cout<<"checking "<<sub_seq<<std::endl;
+    // std::cout<<"checking "<<sub_seq<<std::endl;
 
     //error to get sub sequence
     if(extract_status.status >= RT_ERROR)
@@ -551,24 +551,24 @@ bool OrganismSequence::SingleNodeSequence(const OrganismSequence& og_seq)
 uint8_t OrganismSequence::maxCommonTreeSize( OrganismSequence& seq1, OrganismSequence& seq2 )
 {
 
-	uint8_t s = 0;
-	for( int i=0; i<SIDE_COUNT; i++ )
-	{
-		OrganismSequence b1,b2;
-		seq1.getBranch(b1, (robot_side) i, true);
-		seq2.getBranch(b2, (robot_side) i, true);
+    uint8_t s = 0;
+    for( int i=0; i<SIDE_COUNT; i++ )
+    {
+        OrganismSequence b1,b2;
+        seq1.getBranch(b1, (robot_side) i, true);
+        seq2.getBranch(b2, (robot_side) i, true);
 
-		if( b1.Encoded_Seq().size() > 0 && b2.Encoded_Seq().size() > 0 &&
-		    b1.Encoded_Seq().front() == b2.Encoded_Seq().front() )
-		{
-			OrganismSequence b3,b4;
-			seq1.getBranch(b3, (robot_side) i, false);
-			seq2.getBranch(b4, (robot_side) i, false);
+        if( b1.Encoded_Seq().size() > 0 && b2.Encoded_Seq().size() > 0 &&
+                b1.Encoded_Seq().front() == b2.Encoded_Seq().front() )
+        {
+            OrganismSequence b3,b4;
+            seq1.getBranch(b3, (robot_side) i, false);
+            seq2.getBranch(b4, (robot_side) i, false);
 
-			s += 1+maxCommonTreeSize( b3, b4 );
-		}
-	}
-	return s;
+            s += 1+maxCommonTreeSize( b3, b4 );
+        }
+    }
+    return s;
 
 }
 
@@ -727,7 +727,7 @@ rt_status OrganismSequence::extractParentSequence(const OrganismSequence& orig_s
         std::cout<<"Error in parsing encoded sequence: extract ParentSequence"<<std::endl;
         return ret;
     }
-    
+
     if(edges.size() ==0)
     {
         ret.status = RT_OK_EXTRACT_SINGLENODE;
@@ -800,7 +800,7 @@ rt_status OrganismSequence::mergeSequences(const OrganismSequence& og_seq1, cons
     //check if positions are valid
     if(((ret1.data & 0xFF) & (1<<side1)) || ((ret2.data & 0xFF) & (1<<side2)))
     {
-  //      std::cout<<"connection sides have already been occupied"<<std::endl;
+        //      std::cout<<"connection sides have already been occupied"<<std::endl;
         ret.status = RT_ERROR_POS_INUSE;
         ret.data=0;
         return ret;
@@ -922,17 +922,17 @@ rt_status OrganismSequence::splitSequence(const OrganismSequence& og_seq, const 
 
     unsigned int pos = edges[edge_pos];
 
- //   std::cout<<"splitting: "<<og_seq<<std::endl;
+    //   std::cout<<"splitting: "<<og_seq<<std::endl;
     std::vector<Element> e;
     std::vector<Element>::iterator start, end;
     start = eList.begin() + pos;
     end = eList.begin() + start->pair_pos;
 
- //   std::cout<<"pos: "<<pos<<" pair_pos: "<<start->pair_pos<<std::endl;
+    //   std::cout<<"pos: "<<pos<<" pair_pos: "<<start->pair_pos<<std::endl;
 
     if(start > end)
         std::swap(start, end);
-    
+
     e.assign(start + 1, end);
 
     if(!e.empty())
@@ -958,9 +958,9 @@ rt_status OrganismSequence::splitSequence(const OrganismSequence& og_seq, const 
         og_seq1 = OrganismSequence(eList);
     else
         og_seq1 = OrganismSequence((robot_type)symbol.type1);
- //   std::cout<<"og_seq1 "<<og_seq1<<std::endl;
- //   std::cout<<"og_seq2 "<<og_seq2<<std::endl;
- //   std::cout<<"splitting done"<<std::endl;
+    //   std::cout<<"og_seq1 "<<og_seq1<<std::endl;
+    //   std::cout<<"og_seq2 "<<og_seq2<<std::endl;
+    //   std::cout<<"splitting done"<<std::endl;
 
     return ret;
 }
@@ -1005,7 +1005,7 @@ rt_status OrganismSequence::changeNodeType(OrganismSequence& og_seq, const robot
         return ret;
     }
 
-   // std::cout<<"change node type on: "<<og_seq<<std::endl;
+    // std::cout<<"change node type on: "<<og_seq<<std::endl;
 
     unsigned int pos1 = edges[edge_pos];
 
@@ -1070,7 +1070,7 @@ rt_status OrganismSequence::changeNodeType(OrganismSequence& og_seq, const robot
     }
 
     og_seq = OrganismSequence(eList);
-   // std::cout<<"after change: "<<og_seq<<std::endl;
+    // std::cout<<"after change: "<<og_seq<<std::endl;
 
     ret.status = RT_OK;
 
@@ -1082,7 +1082,7 @@ rt_status OrganismSequence::addNode(OrganismSequence& og_seq, const unsigned int
     OrganismSequence single_node_seq(type);
     OrganismSequence og_seq_new;
     rt_status ret = mergeSequences(og_seq, single_node_seq, og_seq_new, edge_pos, parentNode, parentSide, childSide);
-    
+
     if( ret.status < RT_ERROR)
     {
         og_seq = og_seq_new;
@@ -1259,14 +1259,14 @@ rt_status OrganismSequence::Mutation(const OrganismSequence& og_seq, OrganismSeq
             {
                 //bool parentNode = false;     //TODO: random
                 robot_type type = (robot_type) IRandom(1,2);
-      //          std::cout<<"Mutation 1, change node type to "<<robottype_names[type]<<" at edge pos "<< edge_pos << (parentNode? "'s parent node" : "'s child node")<<std::endl;
+                //          std::cout<<"Mutation 1, change node type to "<<robottype_names[type]<<" at edge pos "<< edge_pos << (parentNode? "'s parent node" : "'s child node")<<std::endl;
                 ret = changeNodeType(og_seq_new, type, edge_pos, false);
                 break;
             }
         case 2:
             {
                 bool parent = false;
-        //        std::cout<<"Mutation 2, remove a sequence at edge pos "<< edge_pos<<std::endl;
+                //        std::cout<<"Mutation 2, remove a sequence at edge pos "<< edge_pos<<std::endl;
                 ret = removeSequence(og_seq_new, edge_pos, parent);
                 break;
             }
@@ -1276,19 +1276,19 @@ rt_status OrganismSequence::Mutation(const OrganismSequence& og_seq, OrganismSeq
                 robot_type type = (robot_type) IRandom(1,2);
                 robot_side parentSide = (robot_side) IRandom(0, 3);
                 robot_side childSide = (robot_side) IRandom(0, 3);
-          //      std::cout<<"Mutation 3, add a new node (type "<<robottype_names[type]<<") at edge pos "<< edge_pos<<std::endl;
+                //      std::cout<<"Mutation 3, add a new node (type "<<robottype_names[type]<<") at edge pos "<< edge_pos<<std::endl;
                 ret = addNode(og_seq_new, edge_pos, parentNode, type, parentSide, childSide);
                 break;
             }
         case 4:
             {
-           //     std::cout<<"Mutation 4, change a connection at edge pos "<< edge_pos<<std::endl;
+                //     std::cout<<"Mutation 4, change a connection at edge pos "<< edge_pos<<std::endl;
                 ret = changeConnection(og_seq_new, edge_pos);
                 break;
             }
         case 5:
             {
-         //       std::cout<<"Mutation 5, rotate a node at edge pos "<< edge_pos<<std::endl;
+                //       std::cout<<"Mutation 5, rotate a node at edge pos "<< edge_pos<<std::endl;
                 break;
             }
         default:
@@ -1304,7 +1304,7 @@ rt_status OrganismSequence::RandomInit(OrganismSequence& og_seq, const unsigned 
     robot_type type = (robot_type) IRandom(ROBOT_KIT, ROBOT_SCOUT);
     robot_side parentSide = (robot_side) IRandom(FRONT, LEFT);
     robot_side childSide = (robot_side) IRandom(FRONT, LEFT);
-    
+
     //insert the first ever node
     og_seq = OrganismSequence(type);
     rt_status ret;
@@ -1319,9 +1319,9 @@ rt_status OrganismSequence::RandomInit(OrganismSequence& og_seq, const unsigned 
             parentSide = (robot_side) IRandom(FRONT, LEFT);
             childSide = (robot_side) IRandom(FRONT, RIGHT); //only docks to organism from FRONT and RIGHT side
             unsigned int edge_pos = IRandom(0, og_seq.Edges()-1);
-          //  std::cout<<"og_seq: "<<og_seq<<std::endl;
-          //  std::cout<<"add new node (type "<<robottype_names[type]<<") at edge pos "<<edge_pos<<" parentSide:"
-          //      <<side_names[parentSide]<<" childSide:"<<side_names[childSide]<<std::endl;
+            //  std::cout<<"og_seq: "<<og_seq<<std::endl;
+            //  std::cout<<"add new node (type "<<robottype_names[type]<<") at edge pos "<<edge_pos<<" parentSide:"
+            //      <<side_names[parentSide]<<" childSide:"<<side_names[childSide]<<std::endl;
 
             ret = mergeSequences(og_seq, OrganismSequence(type), og_seq_new, edge_pos, false, parentSide, childSide );
         }

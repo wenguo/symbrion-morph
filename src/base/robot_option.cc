@@ -78,7 +78,7 @@ bool Robot::LoadParameters(const char * filename)
                 para.locatebeacon_forward_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
                 para.locatebeacon_forward_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
             }
-            
+
             para.locatebeacon_time = optionfile->ReadInt(entity, "locatebeacon_time", 300);
 
         }

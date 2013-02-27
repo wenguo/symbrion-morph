@@ -27,7 +27,7 @@ class RobotAW:public Robot
         virtual void UpdateActuators();
         // for self-repair
         virtual void UpdateFailures();
-        
+
         virtual void Calibrating();
         virtual void Exploring();
         virtual void Resting();

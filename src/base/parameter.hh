@@ -58,7 +58,7 @@ class Parameter
         int aligning_weightright[NUM_IRS];
 
         int aligning_reverse_time;
-        
+
         bool print_proximity;
         bool print_beacon;
         bool print_reflective;

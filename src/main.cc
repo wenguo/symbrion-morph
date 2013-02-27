@@ -77,7 +77,7 @@ int main(int argc, char * argv[])
         printf("unknow robot type, quit\n");
         return -1;
     }
-    
+
     if(!robot->Init(cf_name))
         return -1;
 

@@ -111,7 +111,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
                         if(assembly_info!=0 && assembly_info!=sym)
                             printf("Received conflicting assembly info, may need to check !!!\n");
-                
+
                         assembly_info = sym;
                     }
                 }
@@ -138,7 +138,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
         case IR_MSG_TYPE_OBJECTTYPE: 
             break;
 
-        //broadcast, ack required
+            //broadcast, ack required
         case IR_MSG_TYPE_LOCKED:
             if(msg_locked_expected & 1<<channel)
             {
@@ -263,8 +263,8 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 {
                     IRMessage& msg = *it;
                     if(msg.ack_required && msg.type == data[2]
-                       && (msg.type != IR_MSG_TYPE_PROPAGATED ||
-                       msg.data[0] == data[3]))
+                            && (msg.type != IR_MSG_TYPE_PROPAGATED ||
+                                msg.data[0] == data[3]))
                         it = IR_TXMsgQueue[channel].erase(it);
                     else
                         ++it;
@@ -299,9 +299,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         subog_str[subog_str[0]] |= channel<<6;  // 5:6
                     }
 
-        			int ind = (int)(((uint8_t*)data)[2])+3;	 // get heading index
-        			heading = ((uint8_t*)data)[ind];	 	// get heading
-        			printf("%d My heading is: %d @ %d\n",timestamp,(int)heading,ind);
+                    int ind = (int)(((uint8_t*)data)[2])+3;	 // get heading index
+                    heading = ((uint8_t*)data)[ind];	 	// get heading
+                    printf("%d My heading is: %d @ %d\n",timestamp,(int)heading,ind);
 
                     printf("%d Sub-organism string received\n",timestamp);
                     PrintSubOGString(subog_str);
@@ -335,7 +335,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
                 new_id[channel] = data[2];
                 new_score[channel] = data[3];
-                
+
                 printf("%d Received id score %d %d\n",timestamp,new_id[channel],new_score[channel]);
 
                 // only acknowledge messages sent by
@@ -377,7 +377,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 //data[3 - 6] timestamp
                 //data[7] data size
                 //data[8-x] data
-               // if(docked[channel])
+                // if(docked[channel])
                 {
                     ack_required = true;
                     uint32_t ts = data[2] | data[3] << 8 | data[4] << 16 | data[5] << 24; //using 24bits for timestamp, 8bits for message type, so different message can be queued at the same time TODO: msg1, msg2, msg1 in queue with the same timestamp(real) will cause problems
@@ -412,18 +412,18 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                                     CPrintf1(SCR_GREEN,"%d -- start to raise !", timestamp);
                                 }
                                 break;
-                        	case IR_MSG_TYPE_RAISING_START:
-                        		{
+                            case IR_MSG_TYPE_RAISING_START:
+                                {
                                     msg_raising_start_received = true;
                                     CPrintf1(SCR_GREEN,"%d -- start to raise !", timestamp);
-                        		}
-                        		break;
-                        	case IR_MSG_TYPE_RAISING_STOP:
-                        		{
+                                }
+                                break;
+                            case IR_MSG_TYPE_RAISING_STOP:
+                                {
                                     msg_raising_stop_received = true;;
                                     CPrintf1(SCR_RED,"%d -- stopping raise !", timestamp);
-                        		}
-                        		break;
+                                }
+                                break;
                             case IR_MSG_TYPE_LOWERING:
                                 {
                                     msg_lowering_received |= 1<<channel;
@@ -437,17 +437,17 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                                 }
                                 break;
                             case IR_MSG_TYPE_RETREAT:
-                            	{
-                            		msg_retreat_received = true;
+                                {
+                                    msg_retreat_received = true;
                                     CPrintf1(SCR_BLUE,"%d -- retreating !", timestamp);
-                            	}
-                            	break;
+                                }
+                                break;
                             case IR_MSG_TYPE_STOP:
-								{
-									msg_stop_received = true;
+                                {
+                                    msg_stop_received = true;
                                     CPrintf1(SCR_RED,"%d -- stopping !", timestamp);
-								}
-								break;
+                                }
+                                break;
                             default:
                                 valid = false;
                                 CPrintf1(SCR_GREEN, "%d -- received unknow message", timestamp);
@@ -518,7 +518,7 @@ void Robot::SendIRMessage(const IRMessage& msg)
         SetRGBLED(msg.channel, GREEN, GREEN, 0, 0);
         RGBLED_flashing |=1<<msg.channel;
     }
-    
+
     if(msg.type == IR_MSG_TYPE_PROPAGATED)
         printf("%d: %s send message %s (%s) via channel %d (%#x)\n",msg.timestamp, name, irmessage_names[msg.type],irmessage_names[msg.data[0]],msg.channel, board_dev_num[msg.channel]);
     else
@@ -657,14 +657,14 @@ void Robot::PropagateReshapeScore( uint8_t score, int ignore_side )
     printf("%d Propagating reshaping score: %d\n",timestamp, score);
     PropagateIRMessage(IR_MSG_TYPE_RESHAPING,buf,1,ignore_side);
 
-//    for( int i=0; i<SIDE_COUNT; i++ )
-//    {
-//        if( docked[i] && i != ignore_side )
-//        {
-//            Pro(i, IR_MSG_TYPE_RESHAPING, buf, 1, true);
-//            printf("%d Propagating reshaping score: %d on side %d\n",timestamp, score,i);
-//        }
-//    }
+    //    for( int i=0; i<SIDE_COUNT; i++ )
+    //    {
+    //        if( docked[i] && i != ignore_side )
+    //        {
+    //            Pro(i, IR_MSG_TYPE_RESHAPING, buf, 1, true);
+    //            printf("%d Propagating reshaping score: %d on side %d\n",timestamp, score,i);
+    //        }
+    //    }
 
 
 }
@@ -680,14 +680,14 @@ void Robot::PropagateSubOrgScore( uint8_t id, uint8_t score, int ignore_side )
     PropagateIRMessage(IR_MSG_TYPE_SCORE, buf, 2, ignore_side);
     printf("%d Propagating id score: %d %d\n",timestamp,id,score);
 
-//    for( int i=0; i<SIDE_COUNT; i++ )
-//    {
-//        if( docked[i] && i != ignore_side )
-//        {
-//            SendIRMessage(i, IR_MSG_TYPE_SCORE, buf, 2, true);
-//            printf("%d Propagating id score: %d %d on side %d\n",timestamp,id,score,i);
-//        }
-//    }
+    //    for( int i=0; i<SIDE_COUNT; i++ )
+    //    {
+    //        if( docked[i] && i != ignore_side )
+    //        {
+    //            SendIRMessage(i, IR_MSG_TYPE_SCORE, buf, 2, true);
+    //            printf("%d Propagating id score: %d %d on side %d\n",timestamp,id,score,i);
+    //        }
+    //    }
 
 }
 void Robot::BroadcastScore( int i, uint8_t score, uint8_t id )
@@ -743,8 +743,8 @@ void Robot::RemoveFromQueue(int channel, uint8_t type)
     {
         if((*it).type == type)
         {
-        	printf("%d Ack no longer needed for message %s, removing it from queue.\n", timestamp, irmessage_names[(*it).type]);
-        	it = IR_TXMsgQueue[channel].erase(it);
+            printf("%d Ack no longer needed for message %s, removing it from queue.\n", timestamp, irmessage_names[(*it).type]);
+            it = IR_TXMsgQueue[channel].erase(it);
         }
         else
         {
@@ -758,7 +758,7 @@ void Robot::RemoveFromQueue( uint8_t type )
 {
     for(int i=0;i<NUM_DOCKS;i++)
     {
-    	RemoveFromQueue(i,type);
+        RemoveFromQueue(i,type);
     }
 }
 

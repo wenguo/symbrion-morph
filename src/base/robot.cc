@@ -71,8 +71,8 @@ Robot::Robot()
     {
         reflective[i]=0;
         proximity[i]=0;
-       // reflective_calibrated[i]=0;
-       // ambient_calibrated[i]=4000;
+        // reflective_calibrated[i]=0;
+        // ambient_calibrated[i]=4000;
         // reflective_avg[i]=0;
         beacon[i]=0;
     }
@@ -117,7 +117,7 @@ Robot::Robot()
     robot_in_range_replied=0;
     robot_in_range_detected=0;
     expelling_signals_detected=0;
-    
+
     msg_locked_received = 0;
     msg_locked_expected = 0;
     msg_unlocked_received = 0;
@@ -208,16 +208,16 @@ void Robot::ResetAssembly()
     msg_raising_received = 0;
     msg_lowering_received = 0;
     msg_score_received = 0;
-	msg_stop_received = false;
-	msg_retreat_received = false;
+    msg_stop_received = false;
+    msg_retreat_received = false;
     //msg_unlocked_received = 0;
     msg_assembly_info_received = 0;
     msg_assembly_info_expected = 0;
     msg_assembly_info_req_received = 0;
     msg_assembly_info_req_expected = 0;
     num_robots_inorganism=1;
-	msg_raising_start_received = false;
-	msg_raising_stop_received = false;
+    msg_raising_start_received = false;
+    msg_raising_stop_received = false;
     seed = false;
 
     for(int i=0; i<SIDE_COUNT; i++)
@@ -301,7 +301,7 @@ bool Robot::Init(const char * optionfile)
 
         locking_motor_opening_threshold[i] = para.locking_motor_opening_time;
     }
-    
+
     robots_in_range_detected_hist.Reset();
     beacon_signals_detected_hist.Reset();
 
@@ -329,7 +329,7 @@ bool Robot::InitLog()
         mkdir(oss.str().c_str(), 0777);
         oss1 << (char *)name <<"_"<< time_string<< ".state";
         logstateFile.open(oss1.str().c_str());
- 
+
     }    
 
     return true;
@@ -430,8 +430,8 @@ void Robot::Update(const uint32_t& ts)
 
     timestamp = ts;
 
-   // if(para.logtofile)
-   //     Log();
+    // if(para.logtofile)
+    //     Log();
     LogState();
 
 }
@@ -461,8 +461,8 @@ void Robot::Calibrating()
         }
 
         printf("\n");
-    //    current_state = (fsm_state_t) para.init_state;
-    //    last_state = CALIBRATING;
+        //    current_state = (fsm_state_t) para.init_state;
+        //    last_state = CALIBRATING;
 
         if(optionfile)
         {
@@ -755,27 +755,27 @@ void Robot::LogState()
 
 void Robot::PrintSubOGString( uint8_t *seq)
 {
-	printf("%d length of sequence: %d\n",timestamp, (int)seq[0]);
+    printf("%d length of sequence: %d\n",timestamp, (int)seq[0]);
 
-	// Print bitstring
-	printf("%d bitstring: ",timestamp);
-	for( int i=0; i<(int)seq[0]+1; i++ )
-	{
-		for( int j=7; j>=0; j-- )
-		{
-			if( (seq[i] & 1<<j) != 0 )
-				printf("1");
-			else
-				printf("0");
-		}
-		printf(" ");
-	}
-	printf("\n");
+    // Print bitstring
+    printf("%d bitstring: ",timestamp);
+    for( int i=0; i<(int)seq[0]+1; i++ )
+    {
+        for( int j=7; j>=0; j-- )
+        {
+            if( (seq[i] & 1<<j) != 0 )
+                printf("1");
+            else
+                printf("0");
+        }
+        printf(" ");
+    }
+    printf("\n");
 
-	printf("%d Sequence: ",timestamp);
-	for( int i=1; i<(int)seq[0]+1; i++ )
-		std::cout << OrganismSequence::Symbol(seq[i]) << " ";
-        std::cout << std::endl;
+    printf("%d Sequence: ",timestamp);
+    for( int i=1; i<(int)seq[0]+1; i++ )
+        std::cout << OrganismSequence::Symbol(seq[i]) << " ";
+    std::cout << std::endl;
 
 }
 
