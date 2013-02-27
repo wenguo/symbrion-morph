@@ -270,11 +270,13 @@ void RobotAW::UpdateSensors()
     org_bumped = 0;
     for(int i=0;i<NUM_IRS;i++)
     {
-        if(aux_reflective_hist[i].Avg() > 100)
+        if(aux_reflective_hist[i].Avg() > para.avoid_threshold_aux[i])
             aux_bumped |= 1<<i;
-        if(reflective_hist[i].Avg() > 200)
+        if(reflective_hist[i].Avg() > para.avoid_threshold[i])
             org_bumped |= 1<<i;
     }
+
+    PrintAuxReflective();
 }
 
 void RobotAW::UpdateActuators()
@@ -572,6 +574,8 @@ void RobotAW::Assembly()
 
         current_state = LOCATEBEACON;
         last_state = FORAGING;
+
+        locatebeacon_count = 0;
     }
     else if(assembly_info == OrganismSequence::Symbol(0) )
     {
@@ -610,7 +614,7 @@ void RobotAW::LocateBeacon()
 
     int turning;
     // If beacon detected on correct side - don't turn
-    if((beacon_signals_detected & (1<<id0 | 1<<id1))!=0)
+    if((beacon_signals_detected & (1<<id0 | 1<<id1)) !=0)
         turning = 0;
     else
         turning = 1;
@@ -618,38 +622,48 @@ void RobotAW::LocateBeacon()
     if( turning == 0 )
     {
         //two beacon signals
-        if(beacon[id0]>5 && beacon[id1]>5)
+        if(beacon_signals_detected_hist.Sum(id0) > 2 && beacon_signals_detected_hist.Sum(id1) > 2)
         {
             //stay there and wait to transfer to state Alignment
-            speed[0] = 20;
-            speed[1] = 20;
+            speed[0] = 35;
+            speed[1] = 35;
             speed[2] = 0;
         }
-        else
+        else if(beacon_signals_detected_hist.Sum(id0) > 2 || beacon_signals_detected_hist.Sum(id1) > 2)
         {
             printf("only one beacon detected, shift left and right a little bit\n");
             int temp = beacon[id0]-beacon[id1];
 
             speed[0] = 0;
             speed[1] = 0;
-            speed[2] = -20 * sign(temp);
+            speed[2] = -30 * sign(temp);
+        }
+        else
+        {
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 0;
         }
     }
     else
     {
-        // Don't turn during first 5 seconds
-        // - this will need to be changed, occasionally
-        //	the robot turns when it doesn't need to.
-        if( locatebeacon_count > 50 )
-        {
-            speed[0] = -20;
-            speed[1] = 20;
-        }
+        speed[0] = -35;
+        speed[1] = 35;
+    }
+
+    //overwrite speed if bumped to anything
+    if(org_bumped || aux_bumped)
+    {
+        printf("%d bumped (%#x %#x) while try to detect beacon, zero speed\n", timestamp, org_bumped, aux_bumped);
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
     }
 
 
+
     //checking
-    if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)
+    if(beacon_signals_detected_hist.Sum(id0) >= 6 && beacon_signals_detected_hist.Sum(id1) >= 6)
     {
         current_state = ALIGNMENT;
         last_state = LOCATEBEACON;
@@ -667,6 +681,7 @@ void RobotAW::LocateBeacon()
         {
             current_state = ASSEMBLY;
             last_state = LOCATEBEACON;
+            locatebeacon_count = 0;
 
             organism_found = false;
             assembly_count = 0;
@@ -695,18 +710,18 @@ void RobotAW::Alignment()
     if(beacon_signals_detected)
     {
         // Far away from recruiting robot - move sideways or forward
-        if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 20 )
+        if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 30 )
         {
             if( abs(temp) > 0.1 * temp_max )
             {
                 speed[0] = 0;
                 speed[1] = 0;
-                speed[2] = -20 * sign(temp) ;
+                speed[2] = -30 * sign(temp) ;
             }
             else
             {
-                speed[0] = 25;
-                speed[1] = 25;
+                speed[0] = 35;
+                speed[1] = 35;
                 speed[2] = 0;
             }
             printf("FAR - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
@@ -716,7 +731,7 @@ void RobotAW::Alignment()
         {
             if( abs(temp2) > 150)
             {           
-                speed[0] = 10 * sign(temp2) * direction; //No need to taken direction in to account here, worked on robot.02
+                speed[0] = 10 * sign(temp2) * direction;
                 speed[1] = -25 * sign(temp2) * direction;
                 speed[2] = 0;
                 printf("Zone 1, adjusting orientation - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
@@ -727,13 +742,13 @@ void RobotAW::Alignment()
                 {
                     speed[0] = 0;
                     speed[1] = 0;
-                    speed[2] = -20 * sign(temp);
+                    speed[2] = -30 * sign(temp);
                     printf("Zone 1, adjusting pose - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
                 }
                 else
                 {
-                    speed[0] = 20;
-                    speed[1] = 20;
+                    speed[0] = 30;
+                    speed[1] = 30;
                     speed[2] = 0;
                 }
             }
@@ -762,6 +777,15 @@ void RobotAW::Alignment()
 
                 SetRGBLED(0,0,0,0,0);
             }
+        }
+
+        //bumped on left and right, better to stop
+        if((org_bumped & 0xCC) !=0 || (aux_bumped & 0xCC)!=0)
+        {
+            printf("%d something on my left or right, better to stop\n", timestamp);
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 0;
         }
     }
     else
@@ -1038,7 +1062,7 @@ void RobotAW::Docking()
                     default:
                         break;
                 }
-                // printf("Docking routine %#x (%s) speed (%d %d %d)\n", status, docking_status_name[status], speed[0], speed[1], speed[2]);
+                printf("%d Docking routine %#x (%s) speed (%d %d %d)\n", timestamp, status, docking_status_name[status], speed[0], speed[1], speed[2]);
             }
         }
     }

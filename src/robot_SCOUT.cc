@@ -684,6 +684,8 @@ void RobotSCOUT::LocateBeacon()
             current_state = ASSEMBLY;
             last_state = LOCATEBEACON;
 
+            locatebeacon_count = 0;
+
             organism_found = false;
             assembly_count = 0;
             assembly_info = OrganismSequence::Symbol(0);
