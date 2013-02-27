@@ -779,3 +779,13 @@ void Robot::PrintSubOGString( uint8_t *seq)
 
 }
 
+const char * Robot::IPToString(Ethernet::IP ip)
+{
+    struct in_addr addr = { ip.i32 };
+    return inet_ntoa(addr);
+
+}
+Ethernet::IP Robot::StringToIP(const char *str)
+{
+    return Ethernet::ip_t::parse(str);
+}

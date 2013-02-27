@@ -541,12 +541,12 @@ bool Robot::isNeighbourConnected(int i)
 	int r = 0;
 
 	// If Ethernet enabled
-	if( Ethernet::isSwitchActive() )
+	if( EthSwitch::isSwitchActive() )
 	{
-//		return Ethernet::switchIsPortConnected(i+1);
+//		return EthSwitch::switchIsPortConnected(i+1);
 
 		// TODO: choose appropriate threshold values
-		return ( Ethernet::switchIsPortConnected(i+1) ||
+		return ( EthSwitch::switchIsPortConnected(i+1) ||
 			   ( reflective_hist[2*i].Avg() > 100 && reflective_hist[2*i+1].Avg() > 100 ));
 	}
 	// If Ethernet not enabled - fall back to ir sensors
@@ -1196,7 +1196,7 @@ void Robot::Failed()
 						BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
 						unlock_sent |= 1<<i;
 					}
-					else if ((msg_unlocked_received & 1<<i) || !Ethernet::switchIsPortConnected(i/2) )
+					else if ((msg_unlocked_received & 1<<i) || !EthSwitch::switchIsPortConnected(i/2) )
 					{
 						docked[i]=0;
 						num_docked--;
@@ -1215,7 +1215,7 @@ void Robot::Failed()
 						BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
 						unlock_sent |= 1<<i;
 					}
-					else if ((msg_unlocked_received & 1<<i) || !Ethernet::switchIsPortConnected(i+1) )
+					else if ((msg_unlocked_received & 1<<i) || !EthSwitch::switchIsPortConnected(i+1) )
 					{
 						docked[i]=0;
 						num_docked--;

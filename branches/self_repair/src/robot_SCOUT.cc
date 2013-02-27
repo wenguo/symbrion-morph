@@ -1214,7 +1214,7 @@ void RobotSCOUT::Recruitment()
                 //request IP addr
                 uint8_t data[5];
                 data[0] = it1->getSymbol(0).data; //TODO: remove this as it is already included when using SendIRMessage
-                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP.i32, 4);
                 Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, 0);
             }
             //get new ip address?
@@ -1249,18 +1249,10 @@ void RobotSCOUT::Recruitment()
         memset(docking_done, 0, NUM_DOCKS);
         robot_in_range_replied = 0;
 
-        printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-                my_IP & 0xFF,
-                (my_IP >> 8) & 0xFF,
-                (my_IP >> 16) & 0xFF,
-                (my_IP >> 24) & 0xFF);
+        printf("my IP is %s\n", IPToString(my_IP));
         for(int i=0;i<NUM_DOCKS;i++)
         {
-            printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-                    neighbours_IP[i] & 0xFF,
-                    (neighbours_IP[i] >> 8) & 0xFF,
-                    (neighbours_IP[i] >> 16) & 0xFF,
-                    (neighbours_IP[i] >> 24) & 0xFF);
+            printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
             SetRGBLED(i, 0, 0, 0, 0);
         }
     }
@@ -1293,20 +1285,11 @@ void RobotSCOUT::InOrganism()
             current_state = RAISING;
             last_state = INORGANISM;
 
-            printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-                    my_IP & 0xFF,
-                    (my_IP >> 8) & 0xFF,
-                    (my_IP >> 16) & 0xFF,
-                    (my_IP >> 24) & 0xFF);
+            printf("my IP is %s\n", IPToString(my_IP));
             for(int i=0;i<NUM_DOCKS;i++)
             {
-                printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-                        neighbours_IP[i] & 0xFF,
-                        (neighbours_IP[i] >> 8) & 0xFF,
-                        (neighbours_IP[i] >> 16) & 0xFF,
-                        (neighbours_IP[i] >> 24) & 0xFF);
+                printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
             }
-
         }
     }
     //otherwise check if new info received
@@ -1355,20 +1338,11 @@ void RobotSCOUT::InOrganism()
             current_state = RAISING;
             last_state = INORGANISM;
 
-            printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-                    my_IP & 0xFF,
-                    (my_IP >> 8) & 0xFF,
-                    (my_IP >> 16) & 0xFF,
-                    (my_IP >> 24) & 0xFF);
+            printf("my IP is %s\n", IPToString(my_IP));
             for(int i=0;i<NUM_DOCKS;i++)
             {
-                printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-                        neighbours_IP[i] & 0xFF,
-                        (neighbours_IP[i] >> 8) & 0xFF,
-                        (neighbours_IP[i] >> 16) & 0xFF,
-                        (neighbours_IP[i] >> 24) & 0xFF);
+                printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
             }
-
         }
     }
 
@@ -1669,7 +1643,7 @@ void RobotSCOUT::Reshaping()
 						BroadcastIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
 						unlock_sent |= 1<<i;
 					}
-					else if( (msg_unlocked_received & 1<<i) || !Ethernet::switchIsPortConnected(i+1) )
+					else if( (msg_unlocked_received & 1<<i) || !EthSwitch::switchIsPortConnected(i+1) )
 					{
 	    				std::cout << i << " unlock sent" << std::endl;
 						docked[i]=0;
@@ -1930,11 +1904,7 @@ void RobotSCOUT::Debugging()
                     irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), false);
                 }
         
-                printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-                my_IP & 0xFF,
-                (my_IP >> 8) & 0xFF,
-                (my_IP >> 16) & 0xFF,
-                (my_IP >> 24) & 0xFF);
+                printf("my IP is %s\n", IPToString(my_IP));
 
                 OrganismSequence::Symbol sym;
                 sym.type1 = ROBOT_SCOUT;
@@ -1944,7 +1914,7 @@ void RobotSCOUT::Debugging()
                 uint8_t data[5];
                 data[0] = sym.data;
                 docked[0]=sym.data;
-                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP.i32, 4);
                 Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, para.ir_msg_repeated_num);
             }
 
@@ -2060,7 +2030,7 @@ void RobotSCOUT::Debugging()
             if(timestamp % 10 ==0)
             {
                 uint8_t data[10]={'h','e','l','l','o','-','K','I','T',0};
-                irobot->SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
+                irobot->SendEthMessage(StringToIP(NEIGHBOUR_IP), data, sizeof(data));
             }
             while (irobot->HasEthMessage() > 0)
             {
@@ -2091,7 +2061,7 @@ void RobotSCOUT::Debugging()
                 {
                     uint8_t data[5];
                     data[0] = docked[0]; //TODO: remove this as it is already included when using SendIRMessage
-                    memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                    memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP.i32, 4);
                     Robot::SendIRMessage(0, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, 0);
                 }
             }
