@@ -56,6 +56,11 @@ bool Robot::LoadParameters(const char * filename)
                 for(int i=0;i<NUM_IRS;i++)
                     para.avoid_threshold[i] = atoi(optionfile->GetPropertyValue(prop, i));
             }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "threshold_aux" ) )
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.avoid_threshold_aux[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
 
         }
         else if( strcmp( typestr, "LocateBeacon" ) == 0 )
