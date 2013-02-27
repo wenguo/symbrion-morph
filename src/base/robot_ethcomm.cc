@@ -182,14 +182,14 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
     if( data[0] == ETH_MSG_TYPE_PROPAGATED )
     	printf("(%s)",ethmessage_names[(int)data[1]]);
 
-    printf(" from %s\n",Ethernet::IPToString(sender));
+    printf(" from %s\n",IPToString(sender));
 
 }
 
 void Robot::SendEthMessage(const EthMessage& msg)
 {
     //IP not set, return directly
-    if(neighbours_IP[msg.channel] == 0)
+    if(neighbours_IP[msg.channel].i32 == 0)
         return;
 
     uint8_t buf[msg.data_len+1];
@@ -206,9 +206,9 @@ void Robot::SendEthMessage(const EthMessage& msg)
     }
 
     if(msg.type == ETH_MSG_TYPE_PROPAGATED)
-    	printf("%d: %s send ETH message %s (%s) via channel %d (%s)\n",timestamp, name, ethmessage_names[msg.type],ethmessage_names[msg.data[0]],msg.channel,Ethernet::IPToString(neighbours_IP[msg.channel]));
+    	printf("%d: %s send ETH message %s (%s) via channel %d (%s)\n",timestamp, name, ethmessage_names[msg.type],ethmessage_names[msg.data[0]],msg.channel,IPToString(neighbours_IP[msg.channel]));
     else
-    	printf("%d: %s send ETH message %s via channel %d (%s) len: %d\n",timestamp, name, ethmessage_names[msg.type],msg.channel, Ethernet::IPToString(neighbours_IP[msg.channel]),msg.data_len);
+    	printf("%d: %s send ETH message %s via channel %d (%s) len: %d\n",timestamp, name, ethmessage_names[msg.type],msg.channel, IPToString(neighbours_IP[msg.channel]),msg.data_len);
  }
 
 void Robot::SendEthMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)

@@ -14,9 +14,13 @@
 
 //#include <IRobot.h>
 #include <pthread.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <comm/IRComm.h>
 #include <comm/Ethernet.h>
+#include <comm/switch.h>
 #include "parameter.hh"
 #include "global.hh"
 #include "og/organism.hh"
@@ -133,6 +137,8 @@ class Robot
     void RemoveFromQueue(uint8_t type);
 
     std::string ClockString();
+    const char * IPToString(Ethernet::IP ip);
+    Ethernet::IP StringToIP(const char *);
 
     //  void BroadcastMessage(Message); //broadcast message via wired communication bus
     //  void SendMessage(int i, Message*);
