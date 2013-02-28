@@ -364,7 +364,7 @@ void Robot::Update(const uint32_t& ts)
     bumped = 0;
     for(int i=0;i<NUM_IRS;i++)
     {
-        if(beacon[i] > BEACON_SIGNAL_DETECTED_THRESHOLD && beacon[i] > proximity[i])
+        if(beacon[i] > para.beacon_threshold[i] && beacon[i] > proximity[i])
             beacon_signals_detected |= 1<<i;
 
         if(proximity[i]> PROXIMITY_SIGNAL_DETECTED_THRESHOLD  && proximity[i] > beacon[i])

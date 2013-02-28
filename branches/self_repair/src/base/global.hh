@@ -175,6 +175,7 @@ enum ethmsg_type_t{
     ETH_MSG_TYPE_RETREAT,
     ETH_MSG_TYPE_STOP,
 
+    ETH_MSG_TYPE_ACK,              //followed by acknowledged message type
     ETH_MSG_TYPE_COUNT
 };
 

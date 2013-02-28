@@ -36,7 +36,6 @@ void * Robot::IRCommTxThread(void * para)
 
                 if(msg.ack_required==0)
                 {
-                    //delay a second for acknowledgement
                     if(msg.type != IR_MSG_TYPE_ACK || robot->timestamp - msg.timestamp > robot->para.ir_msg_ack_delay)
                     {
                         robot->SendIRMessage(msg);
@@ -45,6 +44,7 @@ void * Robot::IRCommTxThread(void * para)
                 }
                 else if(msg.repeated < msg.ack_required)//robot->para.ir_msg_repeated_num)
                 {
+                    //delay a second for acknowledgement
                     if(robot->timestamp - msg.timestamp > robot->para.ir_msg_repeated_delay)
                     {
                         msg.repeated++;

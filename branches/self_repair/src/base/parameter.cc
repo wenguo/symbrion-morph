@@ -44,6 +44,7 @@ Parameter::Parameter():
     memset(avoid_weightside, 0, NUM_IRS * sizeof(int));
     memset(avoid_threshold, 0, NUM_IRS * sizeof(int));
     memset(avoid_threshold_aux, 0, NUM_IRS * sizeof(int));
+    memset(beacon_threshold, 0, NUM_IRS * sizeof(int));
     memset(locatebeacon_weightleft, 0, NUM_IRS * sizeof(int));
     memset(locatebeacon_weightright, 0, NUM_IRS * sizeof(int));
     memset(aligning_weightleft, 0, NUM_IRS * sizeof(int));

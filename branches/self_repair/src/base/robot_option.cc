@@ -32,6 +32,11 @@ bool Robot::LoadParameters(const char * filename)
             para.foraging_time = optionfile->ReadInt(entity, "foraging_time", 80);
             para.waiting_time = optionfile->ReadInt(entity, "waiting_time", 20);
             para.assembly_time = optionfile->ReadInt(entity, "assembly_time", 1200);
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "beacon_threshold" ) )
+            {
+                for(int i=0;i<NUM_IRS;i++)
+                    para.beacon_threshold[i] = atoi(optionfile->GetPropertyValue(prop, i));
+            }
         }
         else if( strcmp( typestr, "Avoidance" ) == 0 )
         {
