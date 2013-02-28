@@ -52,6 +52,8 @@ class Parameter
         int avoid_threshold[NUM_IRS];
         int avoid_threshold_aux[NUM_IRS];
 
+        int beacon_threshold[NUM_IRS];
+
         int locatebeacon_weightleft[NUM_IRS];
         int locatebeacon_weightright[NUM_IRS];
 

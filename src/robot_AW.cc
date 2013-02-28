@@ -708,12 +708,32 @@ void RobotAW::Alignment()
 
     int temp = beacon[id0]-beacon[id1];
     int temp_max = std::max(beacon[id0], beacon[id1]);
-    int temp2 = (reflective_hist[id0].Avg())-(reflective_hist[id1].Avg());
+    int reflective_diff = (reflective_hist[id0].Avg())-(reflective_hist[id1].Avg());
+    int reflective_min = std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+    int reflective_max = std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
 
     if(beacon_signals_detected)
     {
+        //signal interference, moving with caution
+        if(reflective_min < -30)
+        {
+            if( abs(temp) > 0.25 * temp_max )
+            {
+                speed[0] = 0;
+                speed[1] = 0;
+                speed[2] = -20 * sign(temp);
+            }
+            else
+            {
+                speed[0] = 20;
+                speed[1] = 20;
+                speed[2] = 0;
+            }
+            printf("Reflective signal interference - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
+
+        }
         // Far away from recruiting robot - move sideways or forward
-        if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 30 )
+        else if( reflective_max < 30 )
         {
             if( abs(temp) > 0.1 * temp_max )
             {
@@ -730,18 +750,18 @@ void RobotAW::Alignment()
             printf("FAR - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
         }
         //getting close to robots, but not too close
-        else if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 )
+        else if( reflective_max < 800 )
         {
-            if( abs(temp2) > 150)
+            if( abs(reflective_diff) > 150)
             {           
-                speed[0] = 10 * sign(temp2) * direction;
-                speed[1] = -25 * sign(temp2) * direction;
+                speed[0] = 10 * sign(reflective_diff) * direction;
+                speed[1] = -25 * sign(reflective_diff) * direction;
                 speed[2] = 0;
                 printf("Zone 1, adjusting orientation - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
             }
             else
             {
-                if( abs(temp) > 0.2 * temp_max )
+                if( abs(temp) > 0.25 * temp_max )
                 {
                     speed[0] = 0;
                     speed[1] = 0;
@@ -805,6 +825,8 @@ void RobotAW::Recover()
 {
     recover_count++;
 
+    int id0 = docking_approaching_sensor_id[0];
+    int id1 = docking_approaching_sensor_id[1];
     //flasing RGB LEDs
     if(timestamp % 4 ==0)
     {
@@ -844,7 +866,8 @@ void RobotAW::Recover()
 
                 speed[0] = para.aligning_reverse_speed[0];
                 speed[1] = para.aligning_reverse_speed[1];
-            }
+
+             }
         }
         else
         {
@@ -886,6 +909,8 @@ void RobotAW::Recover()
 
 }
 
+#define MOVE_LEFT 5
+#define MOVE_RIGHT 6
 void RobotAW::Docking()
 {
     const char *docking_status_name[] ={"turn left", "turn right", "move forward", "move backward", "check" };
@@ -1030,18 +1055,16 @@ void RobotAW::Docking()
                 {
                     if(abs(reflective_diff) > 1200 ) 
                         status = MOVE_BACKWARD;
-                    else if((proximity_max > 500 && proximity_diff > 250) || (proximity_max > 1400 && proximity_diff > 100) ) // was 300
-                        status = TURN_LEFT;
-                    else if((proximity_max > 500 && proximity_diff < -250) || (proximity_max > 1400 && proximity_diff < -100) ) // was 300
-                        status = TURN_RIGHT;
                     else if(proximity_min > 1450 && abs(proximity_diff < 50))
                     {
                         status_count++;
-                        if(status_count % 3 ==0)
-                            status = TURN_LEFT;
-                        else if(status_count % 3 ==1)
+                        if(status_count % 4 ==0)
                             status = MOVE_FORWARD;
-                        else if(status_count % 3 ==2)
+                        else if(status_count % 4 ==1)
+                            status = TURN_LEFT;
+                        else if(status_count % 4 ==2)
+                            status = MOVE_FORWARD;
+                        else if(status_count % 4 ==3)
                             status = TURN_RIGHT;
                     }
                     else
@@ -1297,7 +1320,10 @@ void RobotAW::Recruitment()
             {
                 //prepare the newrobot_joined messages
                 if(!seed)
+                {
                     PropagateIRMessage(IR_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+                    PropagateEthMessage(ETH_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+                }
 
                 //                msg_ip_addr_received &= ~(1<<i);
 
@@ -1354,6 +1380,7 @@ void RobotAW::InOrganism()
 
             //prepare organism_formed_messages
             PropagateIRMessage(IR_MSG_TYPE_ORGANISM_FORMED);
+            PropagateEthMessage(ETH_MSG_TYPE_ORGANISM_FORMED);
 
             macrolocomotion_count = 0;
             raising_count = 0;

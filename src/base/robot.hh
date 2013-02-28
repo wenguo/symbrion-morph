@@ -62,6 +62,8 @@ class Robot
     void CheckHingeMotor();
 
     void SendEthMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
+    void SendEthAckMessage(int channel, uint8_t type);
+    void SendEthAckMessage(int channel, uint8_t type, uint8_t *data, int size=1);
     void PropagateEthMessage(uint8_t type, uint8_t *data = NULL, uint32_t size = 0, Ethernet::IP = 0);
 
     //send to specified receiver (defined in docked[i]), ack may be required

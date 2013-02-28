@@ -562,6 +562,7 @@ void RobotSCOUT::Assembly()
         printf("beacon_signals_detected: %d\n", beacon_signals_detected);
         for(int i=0;i<NUM_DOCKS;i++)
         {
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
             if(timestamp % 12 == 3 * i && (beacon_signals_detected & (0x3 << (2*i)))!=0)
                 BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING_REQ,0); 
         }
@@ -913,8 +914,8 @@ void RobotSCOUT::Recover()
                 {
                     for(int i=id0;i<=id1;i++)
                     {
-                        speed[0] += reflective_hist[i].Avg() * weight_left[i]>>8;
-                        speed[1] += reflective_hist[i].Avg() * weight_right[i]>>8;
+                        speed[0] += (reflective_hist[i].Avg() * weight_left[i])>>8;
+                        speed[1] += (reflective_hist[i].Avg() * weight_right[i])>>8;
                     }
                 }
             }
@@ -1045,6 +1046,7 @@ void RobotSCOUT::Recruitment()
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDDOCKING, LED1, 0); 
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+                printf("robots_in_range %d %d, msg_docking_signals_req %#x\n", robots_in_range_detected_hist.Sum(2*i), robots_in_range_detected_hist.Sum(2*i+1), msg_docking_signal_req_received);
             }
             else
             {
@@ -1254,7 +1256,10 @@ void RobotSCOUT::Recruitment()
             {
                 //prepare the newrobot_joined messages
                 if(!seed)
+                {
                     PropagateIRMessage(IR_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+                    PropagateEthMessage(ETH_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+                }
 
                 //    msg_ip_addr_received &= ~(1<<i);
 
@@ -1311,6 +1316,7 @@ void RobotSCOUT::InOrganism()
 
             //prepare organism_formed_messages
             PropagateIRMessage(IR_MSG_TYPE_ORGANISM_FORMED);
+            PropagateEthMessage(ETH_MSG_TYPE_ORGANISM_FORMED);
 
             macrolocomotion_count = 0;
             raising_count = 0;
@@ -1531,6 +1537,7 @@ void RobotSCOUT::Lowering()
     if(seed && lowering_count >= 150)
     {
         PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
+        PropagateEthMessage(ETH_MSG_TYPE_DISASSEMBLY);
 
         current_state = DISASSEMBLY;
         last_state = LOWERING;

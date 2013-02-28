@@ -1439,7 +1439,10 @@ void RobotKIT::Recruitment()
             {
                 //prepare the newrobot_joined messages
                 if(!seed)
+                {
                     PropagateIRMessage(IR_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+                    PropagateEthMessage(ETH_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+                }
 
                 //    msg_ip_addr_received &= ~(1<<i);
 
@@ -1497,6 +1500,7 @@ void RobotKIT::InOrganism()
 
             //prepare organism_formed_messages
             PropagateIRMessage(IR_MSG_TYPE_ORGANISM_FORMED);
+            PropagateEthMessage(IR_MSG_TYPE_ORGANISM_FORMED);
 
             macrolocomotion_count = 0;
             raising_count = 0;
@@ -1721,6 +1725,7 @@ void RobotKIT::Lowering()
     if(seed && lowering_count >= 150)
     {
         PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
+        PropagateEthMessage(ETH_MSG_TYPE_DISASSEMBLY);
 
         current_state = DISASSEMBLY;
         last_state = LOWERING;

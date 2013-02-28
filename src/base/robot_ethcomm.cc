@@ -163,14 +163,66 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
                             CPrintf1(SCR_RED,"%d -- stopping raise !", timestamp);
                         }
                         break;
+                    case ETH_MSG_TYPE_DISASSEMBLY:
+                        {
+                            msg_disassembly_received |= 1<<channel;
+                            CPrintf1(SCR_GREEN,"%d -- organism starts to disassemble !", timestamp);
+                        }
+                        break;
+                    case ETH_MSG_TYPE_NEWROBOT_JOINED:
+                        {
+                            num_robots_inorganism++;
+                            CPrintf1(SCR_BLUE,"%d -- new robot joined !", timestamp);
+                        }
+                        break;
+                    case ETH_MSG_TYPE_ORGANISM_FORMED:
+                        {
+                            organism_formed = true;
+                            CPrintf1(SCR_BLUE,"%d -- organism formed !", timestamp);
+                        }
+                        break;
+
                     default:
                         valid = false;
-                        CPrintf1(SCR_GREEN, "%d -- received unknown ETH message", timestamp);
+                        CPrintf1(SCR_BLUE, "%d -- received unknown ETH message", timestamp);
                         break;
                 }
 
                 if( valid )
+                {
                     PropagateEthMessage(data[1], (uint8_t*)&data[2], size-2, sender);
+                    SendEthAckMessage(channel, data[1]);
+                }
+            }
+            break;
+        case ETH_MSG_TYPE_ACK:
+            {
+                switch( data[1] )
+                {
+                    case ETH_MSG_TYPE_RETREAT:
+                        break;
+                    case ETH_MSG_TYPE_STOP:
+                        break;
+                    case ETH_MSG_TYPE_RAISING:
+                        break;
+                    case ETH_MSG_TYPE_RAISING_START:
+                        break;
+                    case ETH_MSG_TYPE_RAISING_STOP:
+                        break;
+                    case ETH_MSG_TYPE_DISASSEMBLY:
+                        break;
+                    case ETH_MSG_TYPE_NEWROBOT_JOINED:
+                        RemoveFromQueue(channel,IR_MSG_TYPE_NEWROBOT_JOINED);
+                        CPrintf1(SCR_GREEN, "%d -- Removed IR_MSG_TYPE_NEWROBOT_JOINED", timestamp);
+                        break;
+                    case ETH_MSG_TYPE_ORGANISM_FORMED:
+                        RemoveFromQueue(channel,IR_MSG_TYPE_ORGANISM_FORMED);
+                        CPrintf1(SCR_GREEN, "%d -- Removed IR_MSG_TYPE_ORGANISM_FORMED ", timestamp);
+                        break;
+                    default:
+                        break;
+                }
+
             }
             break;
         default:
@@ -228,4 +280,17 @@ void Robot::PropagateEthMessage(uint8_t type, uint8_t *data, uint32_t size, Ethe
         if(docked[i] && neighbours_IP[i] != sender)
             SendEthMessage(i, ETH_MSG_TYPE_PROPAGATED, buf, size+1, false);
     }
+}
+
+void Robot::SendEthAckMessage(int channel, uint8_t type)
+{
+    SendEthMessage(channel, ETH_MSG_TYPE_ACK, (const uint8_t*)&type, 1, false);
+}
+
+void Robot::SendEthAckMessage(int channel, uint8_t type, uint8_t *data, int size)
+{
+    uint8_t dst_data[size+1];
+    dst_data[0] = type;
+    memcpy(dst_data+1, data, size);
+    SendEthMessage(channel, ETH_MSG_TYPE_ACK, dst_data, size+1, false);
 }

@@ -86,7 +86,8 @@ const char * ethmessage_names[ETH_MSG_TYPE_COUNT]={
     "Sub_OG_Score_String",
     "Sub_OG_Score",
     "Retreat",
-    "Stop"
+    "Stop",
+    "ACK"
 };
 
 
