@@ -30,7 +30,7 @@ const char* state_names[STATE_COUNT]={
     "Debugging"
 };
 
-const char * irmessage_names[IR_MSG_TYPE_COUNT]={
+const char * message_names[IR_MSG_TYPE_COUNT]={
     "UnKnown",
     "Propagated",
     "Disassembling",
@@ -66,30 +66,3 @@ const char * irmessage_names[IR_MSG_TYPE_COUNT]={
     "IP_Addr_REQ"
 
 };
-
-
-const char * ethmessage_names[ETH_MSG_TYPE_COUNT]={
-    "Unknown",
-
-    "Propagated",
-    "Disassembly",
-    "NewRobot_Joined",
-    "Organism_Formed",
-    "Raising",
-    "Raising Start",
-    "Raising Stop",
-    "Lowering",
-    "Reshaping",
-
-    // for self-repair
-    "Failed",
-    "Sub_OG_String",
-    "Sub_OG_Score_String",
-    "Sub_OG_Score",
-    "Retreat",
-    "Stop",
-    "ACK"
-};
-
-
-

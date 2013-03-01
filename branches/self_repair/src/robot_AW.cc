@@ -647,7 +647,7 @@ void RobotAW::LocateBeacon()
     }
     else
     {
-        if(locatebeacon_count >=50)
+        if(locatebeacon_count >=100)
         {
             speed[0] = -35;
             speed[1] = 35;
@@ -1321,8 +1321,8 @@ void RobotAW::Recruitment()
                 //prepare the newrobot_joined messages
                 if(!seed)
                 {
-                    PropagateIRMessage(IR_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
-                    PropagateEthMessage(ETH_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+                    PropagateIRMessage(MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+                    PropagateEthMessage(MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
                 }
 
                 //                msg_ip_addr_received &= ~(1<<i);
@@ -1379,8 +1379,8 @@ void RobotAW::InOrganism()
                 SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
 
             //prepare organism_formed_messages
-            PropagateIRMessage(IR_MSG_TYPE_ORGANISM_FORMED);
-            PropagateEthMessage(ETH_MSG_TYPE_ORGANISM_FORMED);
+            PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED);
+            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED);
 
             macrolocomotion_count = 0;
             raising_count = 0;
@@ -1457,7 +1457,7 @@ void RobotAW::Disassembly()
     speed[2] = 0;
 
     //no need to propagate disassembling messages?
-    if(!MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
+    if(!MessageWaitingAck(MSG_TYPE_PROPAGATED))
     {
         int num_docked = 0;
         for(int i=0;i<NUM_DOCKS;i++)
@@ -1544,37 +1544,37 @@ void RobotAW::Lowering()
     }
 
     // For testing - don't allow to enter disassembly
-    return;
-    /*else if(seed && lowering_count >= 150)
-      {
-      PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
+    else if(seed && lowering_count >= 150)
+    {
+        PropagateIRMessage(MSG_TYPE_DISASSEMBLY);
+        PropagateEthMessage(MSG_TYPE_DISASSEMBLY);
 
-      current_state = DISASSEMBLY;
-      last_state = LOWERING;
-      lowering_count = 0;
+        current_state = DISASSEMBLY;
+        last_state = LOWERING;
+        lowering_count = 0;
 
-      for(int i=0;i<NUM_DOCKS;i++)
-      {
-      SetRGBLED(i, 0, 0, 0, 0);
-      if(docked[i])
-      msg_unlocked_expected |=1<<i;
-      }
-      }
-      else if(msg_disassembly_received)
-      {
-      current_state = DISASSEMBLY;
-      last_state = LOWERING;
-      lowering_count = 0;
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            SetRGBLED(i, 0, 0, 0, 0);
+            if(docked[i])
+                msg_unlocked_expected |=1<<i;
+        }
+    }
+    else if(msg_disassembly_received)
+    {
+        current_state = DISASSEMBLY;
+        last_state = LOWERING;
+        lowering_count = 0;
 
-      msg_disassembly_received = 0;
+        msg_disassembly_received = 0;
 
-      for(int i=0;i<NUM_DOCKS;i++)
-      {
-      SetRGBLED(i, 0, 0, 0, 0);
-      if(docked[i])
-      msg_unlocked_expected |=1<<i;
-      }
-      }*/
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            SetRGBLED(i, 0, 0, 0, 0);
+            if(docked[i])
+                msg_unlocked_expected |=1<<i;
+        }
+    }
 }
 
 
@@ -1598,8 +1598,8 @@ void RobotAW::Raising()
         {
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-            PropagateIRMessage(IR_MSG_TYPE_RAISING_START);
-            PropagateEthMessage(ETH_MSG_TYPE_RAISING_START);
+            PropagateIRMessage(MSG_TYPE_RAISING_START);
+            PropagateEthMessage(MSG_TYPE_RAISING_START);
             flash_leds = true;
 
             //            SetHingeMotor(UP);
@@ -1608,8 +1608,8 @@ void RobotAW::Raising()
         {
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-            PropagateIRMessage(IR_MSG_TYPE_RAISING_STOP);
-            PropagateEthMessage(ETH_MSG_TYPE_RAISING_STOP);
+            PropagateIRMessage(MSG_TYPE_RAISING_STOP);
+            PropagateEthMessage(MSG_TYPE_RAISING_STOP);
 
             current_state = MACROLOCOMOTION;
             last_state = RAISING;
@@ -1730,7 +1730,7 @@ void RobotAW::Reshaping()
             else if( docked[i] && branch_side == SIDE_COUNT )
             {
                 // send disassembly
-                PropagateSingleIRMessage(IR_MSG_TYPE_DISASSEMBLY,i);
+                PropagateSingleIRMessage(MSG_TYPE_DISASSEMBLY,i);
                 printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
             }
             // if there isn't a neighbour but there should be
@@ -2146,8 +2146,8 @@ void RobotAW::Debugging()
                 sym.reBuild("ABSF");
                 docked[2] = sym.data;
                 neighbours_IP[2]=StringToIP("192.168.2.224");
-                PropagateEthMessage(ETH_MSG_TYPE_ORGANISM_FORMED);
-                PropagateIRMessage(IR_MSG_TYPE_ORGANISM_FORMED);
+                PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED);
+                PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED);
             }
             break;
         case 23:
