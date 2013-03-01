@@ -135,8 +135,8 @@ class Robot
     uint8_t recruitmentProgress();
     uint8_t getEthChannel(Ethernet::IP);
 
-    void RemoveFromQueue(int channel, uint8_t type);
-    void RemoveFromQueue(uint8_t type);
+    void RemoveFromQueue(int channel, uint8_t type, uint8_t subtype = 0);
+    void RemoveFromQueue(uint8_t type, uint8_t subtype = 0);
 
     std::string ClockString();
     const char * IPToString(Ethernet::IP ip);

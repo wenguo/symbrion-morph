@@ -380,7 +380,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 // if(docked[channel])
                 {
                     ack_required = true;
-                    uint32_t ts = data[2] | data[3] << 8 | data[4] << 16 | data[5] << 24; //using 24bits for timestamp, 8bits for message type, so different message can be queued at the same time TODO: msg1, msg2, msg1 in queue with the same timestamp(real) will cause problems
+                    uint32_t ts = data[3] | data[4] << 8 | data[5] << 16 | data[6] << 24; //using 24bits for timestamp, 8bits for message type, so different message can be queued at the same time TODO: msg1, msg2, msg1 in queue with the same timestamp(real) will cause problems
                     //check if the same message received, using timestamp
                     if(ts != timestamp_propagated_msg_received)
                     {
@@ -455,7 +455,10 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         }
 
                         if(valid)
+                        {
                             PropagateIRMessage(data[2], NULL, 0, channel);
+                            PropagateEthMessage(data[2], (uint8_t*)&data[7], size-7, neighbours_IP[channel]);
+                        }
                     }
                 }
             }
@@ -520,9 +523,9 @@ void Robot::SendIRMessage(const IRMessage& msg)
     }
 
     if(msg.type == IR_MSG_TYPE_PROPAGATED)
-        printf("%d: %s send message %s (%s) via channel %d (%#x)\n",msg.timestamp, name, irmessage_names[msg.type],irmessage_names[msg.data[0]],msg.channel, board_dev_num[msg.channel]);
+        printf("%d-%d: %s send message %s (%s) via channel %d (%#x)\n",timestamp, msg.timestamp, name, irmessage_names[msg.type],irmessage_names[msg.data[0]],msg.channel, board_dev_num[msg.channel]);
     else
-        printf("%d: %s send message %s via channel %d (%#x)\n",msg.timestamp, name, irmessage_names[msg.type],msg.channel, board_dev_num[msg.channel]);
+        printf("%d-%d: %s send message %s via channel %d (%#x)\n",timestamp, msg.timestamp, name, irmessage_names[msg.type],msg.channel, board_dev_num[msg.channel]);
 }
 
 void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int size, uint8_t ack_required)
@@ -735,13 +738,13 @@ void Robot::SendBranchTree(int channel, const OrganismSequence& seq)
 // Messages that have not been acknowledged can sometimes
 // block the queue - if a message no longer requires ack-
 // nowledgement, this method can remove it from the queue
-void Robot::RemoveFromQueue(int channel, uint8_t type)
+void Robot::RemoveFromQueue(int channel, uint8_t type, uint8_t subtype)
 {
     std::vector<IRMessage>::iterator it = IR_TXMsgQueue[channel].begin();
     pthread_mutex_lock(&ir_txqueue_mutex);
     while(it!=IR_TXMsgQueue[channel].end())
     {
-        if((*it).type == type)
+        if((*it).type == type && (subtype == IR_MSG_TYPE_UNKNOWN || subtype == (*it).data[0]))
         {
             printf("%d Ack no longer needed for message %s, removing it from queue.\n", timestamp, irmessage_names[(*it).type]);
             it = IR_TXMsgQueue[channel].erase(it);
@@ -754,11 +757,11 @@ void Robot::RemoveFromQueue(int channel, uint8_t type)
     pthread_mutex_unlock(&ir_txqueue_mutex);
 }
 
-void Robot::RemoveFromQueue( uint8_t type )
+void Robot::RemoveFromQueue( uint8_t type, uint8_t subtype)
 {
     for(int i=0;i<NUM_DOCKS;i++)
     {
-        RemoveFromQueue(i,type);
+        RemoveFromQueue(i,type, subtype);
     }
 }
 

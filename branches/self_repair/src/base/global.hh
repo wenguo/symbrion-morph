@@ -109,6 +109,29 @@ enum ir_pos_t {
 enum irmsg_type_t {
     //broadcast, no ack required
     IR_MSG_TYPE_UNKNOWN =0,
+ 
+    IR_MSG_TYPE_PROPAGATED,
+    IR_MSG_TYPE_DISASSEMBLY,
+    IR_MSG_TYPE_NEWROBOT_JOINED,
+    IR_MSG_TYPE_ORGANISM_FORMED,
+    IR_MSG_TYPE_RAISING,
+    IR_MSG_TYPE_RAISING_START,
+    IR_MSG_TYPE_RAISING_STOP,
+    IR_MSG_TYPE_LOWERING,
+    IR_MSG_TYPE_RESHAPING,
+
+    // for self-repair
+    IR_MSG_TYPE_FAILED,
+    IR_MSG_TYPE_SUB_OG_STRING,
+    IR_MSG_TYPE_SCORE_STRING,
+    IR_MSG_TYPE_SCORE,
+
+    IR_MSG_TYPE_RETREAT,
+    IR_MSG_TYPE_STOP,
+
+    IR_MSG_TYPE_ACK,              //followed by acknowledged message type
+
+
     IR_MSG_TYPE_RECRUITING, //followed by assembly_info
     IR_MSG_TYPE_RECRUITING_REQ, //followed by mytype 
     IR_MSG_TYPE_EXPELLING,        //no data 
@@ -130,31 +153,12 @@ enum irmsg_type_t {
     IR_MSG_TYPE_IP_ADDR,
     IR_MSG_TYPE_IP_ADDR_REQ,
 
-    IR_MSG_TYPE_PROPAGATED,
-    IR_MSG_TYPE_DISASSEMBLY,
-    IR_MSG_TYPE_NEWROBOT_JOINED,
-    IR_MSG_TYPE_ORGANISM_FORMED,
-    IR_MSG_TYPE_RAISING,
-    IR_MSG_TYPE_RAISING_START,
-    IR_MSG_TYPE_RAISING_STOP,
-    IR_MSG_TYPE_LOWERING,
-    IR_MSG_TYPE_RESHAPING,
 
-    // for self-repair
-    IR_MSG_TYPE_FAILED,
-    IR_MSG_TYPE_SUB_OG_STRING,
-    IR_MSG_TYPE_SCORE_STRING,
-    IR_MSG_TYPE_SCORE,
-
-    IR_MSG_TYPE_RETREAT,
-    IR_MSG_TYPE_STOP,
-
-    IR_MSG_TYPE_ACK,              //followed by acknowledged message type
     IR_MSG_TYPE_COUNT
 };
 
 enum ethmsg_type_t{
-    ETH_MSG_TYPE_UNKNOWN,
+    ETH_MSG_TYPE_UNKNOWN=0,
     
     ETH_MSG_TYPE_PROPAGATED,
     ETH_MSG_TYPE_DISASSEMBLY,
