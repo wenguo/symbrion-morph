@@ -2251,6 +2251,20 @@ void RobotSCOUT::Debugging()
                 printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
             }
             break;
+        case 25:
+            if(timestamp == 2)
+            {
+                OrganismSequence::Symbol sym;
+                sym.reBuild("SFAB");
+                docked[0] = sym.data;
+                sym.reBuild("SBAF");
+                docked[2] = sym.data;
+                neighbours_IP[0]=StringToIP("192.168.2.56");
+                neighbours_IP[1]=StringToIP("0.0.0.0");
+                neighbours_IP[2]=StringToIP("192.168.2.52");
+                neighbours_IP[3]=StringToIP("0.0.0.0");
+            }
+            break;
 
         default:
             break;

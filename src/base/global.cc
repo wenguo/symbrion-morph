@@ -32,22 +32,6 @@ const char* state_names[STATE_COUNT]={
 
 const char * irmessage_names[IR_MSG_TYPE_COUNT]={
     "UnKnown",
-    "Recruiting",
-    "Recruiting_REQ",
-    "Expelling",
-    "Powersource_Found",
-    "GuideMe",
-    "DockingSignal_REQ",
-    "ObjectType",
-    "Locked",
-    "UnLocked",
-    "LockMe",
-    "UnLockMe",
-    "Organism_Sequence",
-    "Assembly_Info",
-    "Assembly_Info_REQ",
-    "IP_Addr",
-    "IP_Addr_REQ",
     "Propagated",
     "Disassembling",
     "NewRobot_Joined",
@@ -63,7 +47,24 @@ const char * irmessage_names[IR_MSG_TYPE_COUNT]={
     "Sub_OG_Score",
     "Retreat",
     "Stop",
-    "ACK"
+    "ACK",
+    "Recruiting",
+    "Recruiting_REQ",
+    "Expelling",
+    "Powersource_Found",
+    "GuideMe",
+    "DockingSignal_REQ",
+    "ObjectType",
+    "Locked",
+    "UnLocked",
+    "LockMe",
+    "UnLockMe",
+    "Organism_Sequence",
+    "Assembly_Info",
+    "Assembly_Info_REQ",
+    "IP_Addr",
+    "IP_Addr_REQ"
+
 };
 
 

@@ -2139,6 +2139,26 @@ void RobotAW::Debugging()
             if(timestamp==2)
                 SetRGBLED(para.debug.para[4], para.debug.para[0] * BLUE, para.debug.para[1]*BLUE, para.debug.para[2]*BLUE, para.debug.para[3]*BLUE);
             break;
+        case 22:
+            if(timestamp == 2)
+            {
+                OrganismSequence::Symbol sym;
+                sym.reBuild("ABSF");
+                docked[2] = sym.data;
+                neighbours_IP[2]=StringToIP("192.168.2.224");
+                PropagateEthMessage(ETH_MSG_TYPE_ORGANISM_FORMED);
+                PropagateIRMessage(IR_MSG_TYPE_ORGANISM_FORMED);
+            }
+            break;
+        case 23:
+            if(timestamp == 2)
+            {
+                OrganismSequence::Symbol sym;
+                sym.reBuild("AFSB");
+                docked[0] = sym.data;
+                neighbours_IP[0]=StringToIP("192.168.2.224");
+            }
+            break;
         default:
             break;
     }
