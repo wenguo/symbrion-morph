@@ -106,30 +106,30 @@ enum ir_pos_t {
     FL
 }; //F -- FRONT, R -- RIGHT, B-- BACK, L--LEFT
 
-enum irmsg_type_t {
+enum msg_type_t {
     //broadcast, no ack required
-    IR_MSG_TYPE_UNKNOWN =0,
+    MSG_TYPE_UNKNOWN =0,
  
-    IR_MSG_TYPE_PROPAGATED,
-    IR_MSG_TYPE_DISASSEMBLY,
-    IR_MSG_TYPE_NEWROBOT_JOINED,
-    IR_MSG_TYPE_ORGANISM_FORMED,
-    IR_MSG_TYPE_RAISING,
-    IR_MSG_TYPE_RAISING_START,
-    IR_MSG_TYPE_RAISING_STOP,
-    IR_MSG_TYPE_LOWERING,
-    IR_MSG_TYPE_RESHAPING,
+    MSG_TYPE_PROPAGATED,
+    MSG_TYPE_DISASSEMBLY,
+    MSG_TYPE_NEWROBOT_JOINED,
+    MSG_TYPE_ORGANISM_FORMED,
+    MSG_TYPE_RAISING,
+    MSG_TYPE_RAISING_START,
+    MSG_TYPE_RAISING_STOP,
+    MSG_TYPE_LOWERING,
+    MSG_TYPE_RESHAPING,
 
     // for self-repair
-    IR_MSG_TYPE_FAILED,
-    IR_MSG_TYPE_SUB_OG_STRING,
-    IR_MSG_TYPE_SCORE_STRING,
-    IR_MSG_TYPE_SCORE,
+    MSG_TYPE_FAILED,
+    MSG_TYPE_SUB_OG_STRING,
+    MSG_TYPE_SCORE_STRING,
+    MSG_TYPE_SCORE,
 
-    IR_MSG_TYPE_RETREAT,
-    IR_MSG_TYPE_STOP,
+    MSG_TYPE_RETREAT,
+    MSG_TYPE_STOP,
 
-    IR_MSG_TYPE_ACK,              //followed by acknowledged message type
+    MSG_TYPE_ACK,              //followed by acknowledged message type
 
 
     IR_MSG_TYPE_RECRUITING, //followed by assembly_info
@@ -157,32 +157,6 @@ enum irmsg_type_t {
     IR_MSG_TYPE_COUNT
 };
 
-enum ethmsg_type_t{
-    ETH_MSG_TYPE_UNKNOWN=0,
-    
-    ETH_MSG_TYPE_PROPAGATED,
-    ETH_MSG_TYPE_DISASSEMBLY,
-    ETH_MSG_TYPE_NEWROBOT_JOINED,
-    ETH_MSG_TYPE_ORGANISM_FORMED,
-    ETH_MSG_TYPE_RAISING,
-    ETH_MSG_TYPE_RAISING_START,
-    ETH_MSG_TYPE_RAISING_STOP,
-    ETH_MSG_TYPE_LOWERING,
-    ETH_MSG_TYPE_RESHAPING,
-    
-    // for self-repair
-    ETH_MSG_TYPE_FAILED,
-    ETH_MSG_TYPE_SUB_OG_STRING,
-    ETH_MSG_TYPE_SCORE_STRING,
-    ETH_MSG_TYPE_SCORE,
-
-    ETH_MSG_TYPE_RETREAT,
-    ETH_MSG_TYPE_STOP,
-
-    ETH_MSG_TYPE_ACK,              //followed by acknowledged message type
-    ETH_MSG_TYPE_COUNT
-};
-
 enum docking_motor_status_t{
     OPENED = 0x0,
     OPENING = 0x1,
@@ -201,8 +175,7 @@ enum hinge_motor_status_t{
 
 
 extern const char* state_names[STATE_COUNT];
-extern const char* irmessage_names[IR_MSG_TYPE_COUNT];
-extern const char* ethmessage_names[ETH_MSG_TYPE_COUNT];
+extern const char* message_names[IR_MSG_TYPE_COUNT];
 //enum led_t {LED0=0x1,LED1=0x2,LED2=0x4, IR_PULSE0=0x1, IR_PULSE1=0x2, IR_PULSE2=0x4}; //TODO: ActiveWheel has different no
 
 

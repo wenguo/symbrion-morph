@@ -1440,8 +1440,8 @@ void RobotKIT::Recruitment()
                 //prepare the newrobot_joined messages
                 if(!seed)
                 {
-                    PropagateIRMessage(IR_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
-                    PropagateEthMessage(ETH_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+                    PropagateIRMessage(MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+                    PropagateEthMessage(MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
                 }
 
                 //    msg_ip_addr_received &= ~(1<<i);
@@ -1499,8 +1499,8 @@ void RobotKIT::InOrganism()
                 SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
 
             //prepare organism_formed_messages
-            PropagateIRMessage(IR_MSG_TYPE_ORGANISM_FORMED);
-            PropagateEthMessage(IR_MSG_TYPE_ORGANISM_FORMED);
+            PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED);
+            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED);
 
             macrolocomotion_count = 0;
             raising_count = 0;
@@ -1579,7 +1579,7 @@ void RobotKIT::Disassembly()
     speed[1] = 0;
     speed[2] = 0;
 
-    if(!MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
+    if(!MessageWaitingAck(MSG_TYPE_PROPAGATED))
     {
         //check if need to unlocking docking faces which is connected to Activewheel
         int num_docked = 0;
@@ -1724,8 +1724,8 @@ void RobotKIT::Lowering()
     //else if(seed && lowering_count >= 150)
     if(seed && lowering_count >= 150)
     {
-        PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
-        PropagateEthMessage(ETH_MSG_TYPE_DISASSEMBLY);
+        PropagateIRMessage(MSG_TYPE_DISASSEMBLY);
+        PropagateEthMessage(MSG_TYPE_DISASSEMBLY);
 
         current_state = DISASSEMBLY;
         last_state = LOWERING;
@@ -1776,16 +1776,16 @@ void RobotKIT::Raising()
         {
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-            PropagateIRMessage(IR_MSG_TYPE_RAISING_START);
-            PropagateEthMessage(ETH_MSG_TYPE_RAISING_START);
+            PropagateIRMessage(MSG_TYPE_RAISING_START);
+            PropagateEthMessage(MSG_TYPE_RAISING_START);
             flash_leds = true;
         }
         else if( raising_count >= raising_delay + 30 )
         {
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-            PropagateIRMessage(IR_MSG_TYPE_RAISING_STOP);
-            PropagateEthMessage(ETH_MSG_TYPE_RAISING_STOP);
+            PropagateIRMessage(MSG_TYPE_RAISING_STOP);
+            PropagateEthMessage(MSG_TYPE_RAISING_STOP);
 
             current_state = MACROLOCOMOTION;
             last_state = RAISING;
@@ -1949,7 +1949,7 @@ void RobotKIT::Reshaping()
                     {
                         // if there is a neighbour but there shouldn't be
                         // send disassembly
-                        PropagateSingleIRMessage(IR_MSG_TYPE_DISASSEMBLY,i);
+                        PropagateSingleIRMessage(MSG_TYPE_DISASSEMBLY,i);
                         printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
 
                         if( unlocking_required[i] )
@@ -2189,7 +2189,7 @@ void RobotKIT::Debugging()
         case 9:
             if(timestamp > 40)
             {
-                Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_SCORE, para.ir_msg_repeated_num);
+                Robot::SendIRMessage(::FRONT, MSG_TYPE_SCORE, para.ir_msg_repeated_num);
             }
             break;
         case 10:

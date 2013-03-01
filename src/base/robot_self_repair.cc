@@ -79,7 +79,7 @@ void Robot::CheckForFailures()
                     speed[2] = 0;
 
                     // Propagate lowering messages
-                    PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+                    PropagateIRMessage(MSG_TYPE_LOWERING);
 
                     last_state = current_state;
                     current_state = LOWERING;
@@ -596,8 +596,8 @@ bool Robot::StartRepair()
             // Send the direction that the neighbour should move in
             buf[buf[0]+1] = getNeighbourHeading( docked[channel] );
 
-            SendIRMessage(channel, IR_MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, para.ir_msg_repeated_num);
-            SendEthMessage(channel, ETH_MSG_TYPE_SUB_OG_STRING, buf, ((int)buf[0])+2, false);
+            SendIRMessage(channel, MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, para.ir_msg_repeated_num);
+            SendEthMessage(channel, MSG_TYPE_SUB_OG_STRING, buf, ((int)buf[0])+2, false);
 
             printf("%d Sending sub-og string, size: %d\n",timestamp,((int)buf[0])+2);
             PrintSubOGString(buf);
@@ -626,8 +626,8 @@ bool Robot::StartRepair()
 
             //        std::cout << "sending score: " << (int) score << " and seq: " << seq
             //        		  << " size: " <<  ((int)buf[0])+2 << std::endl;
-            SendIRMessage(channel, IR_MSG_TYPE_SCORE_STRING, buf, buf[0]+2, para.ir_msg_repeated_num);
-            SendEthMessage(channel, ETH_MSG_TYPE_SCORE_STRING, buf, ((int)buf[0])+2, false);
+            SendIRMessage(channel, MSG_TYPE_SCORE_STRING, buf, buf[0]+2, para.ir_msg_repeated_num);
+            SendEthMessage(channel, MSG_TYPE_SCORE_STRING, buf, ((int)buf[0])+2, false);
 
 
         }
@@ -648,7 +648,7 @@ bool Robot::StartRepair()
                 if( wait_side < SIDE_COUNT )
                 {
                     // not waiting for Ack from the previous message
-                    if( !MessageWaitingAck(wait_side, IR_MSG_TYPE_SUB_OG_STRING) )
+                    if( !MessageWaitingAck(wait_side, MSG_TYPE_SUB_OG_STRING) )
                     {
                         if( msg_subog_seq_received & 1<<wait_side )
                         {
@@ -669,7 +669,7 @@ bool Robot::StartRepair()
                 {
                     for(int i=0;i<NUM_DOCKS;i++)
                     {
-                        if(!MessageWaitingAck(i,IR_MSG_TYPE_FAILED))
+                        if(!MessageWaitingAck(i,MSG_TYPE_FAILED))
                         {
                             if( pruning_required & 1<<i )
                             {
@@ -721,8 +721,8 @@ bool Robot::StartRepair()
                     msg_unlocked_received = 0;
                     msg_unlocked_expected = 0;
 
-                    PropagateEthMessage(ETH_MSG_TYPE_RETREAT);
-                    PropagateIRMessage(IR_MSG_TYPE_RETREAT);
+                    PropagateEthMessage(MSG_TYPE_RETREAT);
+                    PropagateIRMessage(MSG_TYPE_RETREAT);
 
                     move_start = timestamp;
 
@@ -765,8 +765,8 @@ bool Robot::StartRepair()
                     speed[1] = 0;
                     speed[2] = 0;
 
-                    PropagateEthMessage(ETH_MSG_TYPE_STOP);
-                    PropagateIRMessage(IR_MSG_TYPE_STOP);
+                    PropagateEthMessage(MSG_TYPE_STOP);
+                    PropagateIRMessage(MSG_TYPE_STOP);
 
                     // Set LEDs
                     for( int i=0; i<NUM_DOCKS; i++ )
@@ -799,7 +799,7 @@ bool Robot::StartRepair()
                 if( wait_side < SIDE_COUNT )
                 {
                     // not waiting for Ack from the previous message
-                    if( !MessageWaitingAck(wait_side, IR_MSG_TYPE_SCORE_STRING) )
+                    if( !MessageWaitingAck(wait_side, MSG_TYPE_SCORE_STRING) )
                     {
                         if( msg_score_seq_received & 1<<wait_side )
                         {
@@ -941,7 +941,7 @@ bool Robot::StartRepair()
                 if( wait_side < SIDE_COUNT )
                 {
                     // not waiting for Ack from the previous message
-                    if( !MessageWaitingAck(wait_side,IR_MSG_TYPE_SUB_OG_STRING) )
+                    if( !MessageWaitingAck(wait_side,MSG_TYPE_SUB_OG_STRING) )
                     {
                         if( msg_subog_seq_received & 1<<wait_side )
                         {
@@ -962,7 +962,7 @@ bool Robot::StartRepair()
                 {
                     for(int i=0;i<NUM_DOCKS;i++)
                     {
-                        if(!MessageWaitingAck(i,IR_MSG_TYPE_FAILED))
+                        if(!MessageWaitingAck(i,MSG_TYPE_FAILED))
                         {
                             if( pruning_required & 1<<i )
                             {
@@ -1074,7 +1074,7 @@ bool Robot::StartRepair()
                 if( wait_side < SIDE_COUNT )
                 {
                     // not waiting for acknowldgement from the previous message
-                    if( !MessageWaitingAck(wait_side, IR_MSG_TYPE_SCORE_STRING) )
+                    if( !MessageWaitingAck(wait_side, MSG_TYPE_SCORE_STRING) )
                     {
                         if(  msg_score_seq_received & 1<<wait_side )
                         {
@@ -1178,7 +1178,7 @@ bool Robot::StartRepair()
 
         static uint8_t unlock_sent = 0;
 
-        if(!MessageWaitingAck(IR_MSG_TYPE_FAILED))
+        if(!MessageWaitingAck(MSG_TYPE_FAILED))
         {
             //check if need to unlocking docking faces which is connected to Activewheel
             int num_docked = 0;
