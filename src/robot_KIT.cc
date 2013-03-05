@@ -2066,7 +2066,6 @@ void RobotKIT::Debugging()
     //printf("%d Debuging %d:\t", timestamp,para.debug.mode);
     static int clock=0;
     static bool log=false;
-    Log();
 
     switch (para.debug.mode)
     {
@@ -2146,10 +2145,14 @@ void RobotKIT::Debugging()
 
             break;
         case 7: // measuring beacon signals
-            if(timestamp ==40)
+            //skip the fist few seconds
+            if(timestamp <40)
+                return;
+
+            if(timestamp == 40)
             {
                 for(int i=0;i<NUM_IRS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
                 speed[0] = para.debug.para[3];
                 speed[1] = para.debug.para[4];
                 printf("set speed %d %d\n", speed[0], speed[1]);
@@ -2161,6 +2164,8 @@ void RobotKIT::Debugging()
                 current_state = RESTING;
                 last_state = DEBUGGING;
             }
+            if(timestamp>40)
+                Log();
             printf("%d\t%d\t%d\t%d\t%d\t%d\n", reflective[0]-para.reflective_calibrated[0], reflective[1] - para.reflective_calibrated[1], beacon[0], beacon[1], proximity[0], proximity[1]);
             if(beacon[0] > para.debug.para[0])
                 SetRGBLED(3, GREEN, GREEN,0,0);
@@ -2170,7 +2175,6 @@ void RobotKIT::Debugging()
                 SetRGBLED(1, GREEN, GREEN,0,0);
             else
                 SetRGBLED(1, 0, 0, 0, 0);
-            break;
             break;
         case 8: 
             printf("\n");
@@ -2461,16 +2465,20 @@ void RobotKIT::Log()
     int id1=para.debug.para[8];
     if (logFile.is_open())
     {
-        logFile << timestamp << "\t" << state_names[current_state] <<"\t";
-        logFile << reflective_hist[id0].Avg()<<"\t";
-        logFile << reflective_hist[id1].Avg()<<"\t";
-        logFile << beacon[id0]<<"\t";
-        logFile << beacon[id1]<<"\t";
-        logFile << ambient_hist[id0].Avg()<<"\t";
-        logFile << ambient_hist[id1].Avg()<<"\t";
-        logFile << proximity[id0]<<"\t";
-        logFile << proximity[id1]<<"\t";
-        logFile << std::endl;
+        //logFile << timestamp << "\t" << state_names[current_state] <<"\t";
+        //logFile << reflective_hist[id0].Avg()<<"\t";
+        //logFile << reflective_hist[id1].Avg()<<"\t";
+        //logFile << beacon[id0]<<"\t";
+        //logFile << beacon[id1]<<"\t";
+        //logFile << ambient_hist[id0].Avg()<<"\t";
+        //logFile << ambient_hist[id1].Avg()<<"\t";
+        //logFile << proximity[id0]<<"\t";
+        //logFile << proximity[id1]<<"\t";
+        //logFile << std::endl;
+        logFile << timestamp << "\t";
+        for(int i=0;i<NUM_IRS;i++)
+            logFile << beacon[i]<<"\t";
+        logFile<<std::endl;
     }
 
 }

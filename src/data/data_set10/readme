@@ -1,0 +1,5 @@
+1. Scout front side as recruiting side
+2. KIT_59 move backwards at speed (-35 -35) for 160 timesteps (16 seconds)
+3. Each log file corresponds to one measure, each measure is 1cm apart in x axis
+4. KIT starts from (-25cm, 1.5cm), stops at (-25cm, 102.5cm)
+5. Note that the beacon[2] has noise signals, so ignore this one
