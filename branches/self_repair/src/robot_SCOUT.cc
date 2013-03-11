@@ -663,6 +663,8 @@ void RobotSCOUT::LocateBeacon()
                 speed[0] = 0;
                 speed[1] = 0;
             }
+
+            printf("speed %d %d\n", speed[0], speed[1]);
         }
     }
 
@@ -819,7 +821,7 @@ void RobotSCOUT::Alignment()
                 docking_blocked_hist.Push(0);
 
 
-            if(docking_blocked_hist.Sum() > 3 || beacon_signals_detected == 0)
+            if(docking_blocked_hist.Sum() > 0 || beacon_signals_detected == 0)
             {
                 docking_blocked = false;
                 docking_blocked_hist.Reset();
@@ -846,17 +848,20 @@ void RobotSCOUT::Alignment()
                 //move less agressively when bumping to something;
                 int divisor = 200;
                 if(assembly_info.type1 == ROBOT_SCOUT)
-                    divisor = 1000;
+                    divisor = 3000;
                 else if(assembly_info.type1 == ROBOT_AW)
                     divisor = 200;
                 else
-                    divisor = 400;
+                    divisor = 1000;
+                
                 if(reflective_max > 0)
                 {
                     speed[0] -= 6 * (reflective_max / divisor);
                     speed[1] -= 6 * (reflective_max / divisor);
                     printf("%d: reflective %d %d, speed %d %d\n", timestamp, reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1]);
                 }
+
+                printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0);
             }
         }
     }

@@ -64,7 +64,7 @@ real startx = -25;
 real x_interval = 1;
 real starty = 1.5;
 real y_interval = 0.63125;
-real threshold = 6;
+real threshold = 7;
 
 real []value;
 pair []pos = new pair[MAX_REC_PER_FILE*MAX_NUM_FILES];
@@ -109,9 +109,11 @@ for(int i = 0; i < MAX_NUM_FILES; ++i)
                 ++sum;
             }
 
-            if(sum >=2)
+            //if(sum >=2)
+            if(data[k][j]>2*threshold && k!=3)
                 y2[i] = max(starty+j*y_interval, y2[i]);
-            if(sum >=3)
+            //if(sum >=3)
+            if(data[k][j]>3*threshold && k!=3)
                 y3[i] = max(starty+j*y_interval, y3[i]);
         }
     }
@@ -143,8 +145,8 @@ add(bar.fit(),(30,5),UnFill);
 
 draw(graph(x,y), red+1pt+dashed);
 draw(graph(x,y1), white+1pt+dashed);
-//draw(graph(x,y2), green+1pt+dashed);
-//draw(graph(x,y3), white+1pt+dashed);
+draw(graph(x,y2), green+1pt+dashed);
+draw(graph(x,y3), blue+1pt+dashed);
 xlimits(-26, 26);
 ylimits(0, 105);
 yaxis(scale(1.5)*"y(cm)",LeftRight,RightTicks(Label(fontsize(14)),new real[]{0,10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110}));
