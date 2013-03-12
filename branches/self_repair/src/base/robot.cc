@@ -316,7 +316,7 @@ bool Robot::InitLog()
     struct tm * timeinfo;
     timeinfo = localtime (&time_now);
     time_string = datetime_to_string(*timeinfo, "%Y%m%d%H%M%S");
-    if(para.logtofile)
+    if(para.logtofile > 1)
     {
         std::ostringstream oss;
         oss << "./log/";
@@ -326,11 +326,19 @@ bool Robot::InitLog()
 
         std::ostringstream oss1;
         oss1 << "./log/";
-        mkdir(oss.str().c_str(), 0777);
         oss1 << (char *)name <<"_"<< time_string<< ".state";
         logstateFile.open(oss1.str().c_str());
 
     }    
+    else if(para.logtofile == 1)
+    {
+        std::ostringstream oss1;
+        oss1 << "./log/";
+        mkdir(oss1.str().c_str(), 0777);
+        oss1 << (char *)name <<"_"<< time_string<< ".state";
+        logstateFile.open(oss1.str().c_str());
+    }
+
 
     return true;
 }
@@ -744,6 +752,8 @@ void Robot::LogState()
     if (logstateFile.is_open())
     {
         logstateFile << timestamp << "\t" << current_state << "\t"<< last_state<<"\t" ;
+        logstateFile << "("<<speed[0] <<"\t" << speed[1] <<"\t" << speed[2]<<")\t";
+        logstateFile << beacon[docking_approaching_sensor_id[0]] <<"\t" << beacon[docking_approaching_sensor_id[1]]<<"\t";
         logstateFile <<"[";
         logstateFile << (int)(recruitment_stage[0])<<"\t";
         logstateFile << (int)(recruitment_stage[1])<<"\t";
