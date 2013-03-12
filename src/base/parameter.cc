@@ -9,7 +9,7 @@
 
 
 Parameter::Parameter():
-    logtofile(false),
+    logtofile(-1),
     init_state(0),
     speed_forward(30),
     speed_sideward(2),

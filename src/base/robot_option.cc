@@ -206,7 +206,7 @@ bool Robot::LoadParameters(const char * filename)
         }
         else if( strcmp( typestr, "Global" ) == 0 )
         {        
-            para.logtofile = optionfile->ReadInt(entity, "logtofile", 1);
+            para.logtofile = optionfile->ReadInt(entity, "logtofile", -1);
             para.init_state = optionfile->ReadInt(entity, "init_state", 0);
             para.print_proximity = optionfile->ReadInt(entity, "print_proximity", 0);
             para.print_beacon = optionfile->ReadInt(entity, "print_beacon", 0);

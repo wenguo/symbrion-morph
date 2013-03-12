@@ -19,7 +19,7 @@ class Parameter
 
         friend std::ostream& operator<<(std::ostream&, const Parameter&);
 
-        bool logtofile;
+        int logtofile;
 
         int init_state;
         int speed_forward;
