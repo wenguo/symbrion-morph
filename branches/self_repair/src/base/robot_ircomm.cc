@@ -36,7 +36,15 @@ void * Robot::IRCommTxThread(void * para)
 
                 if(msg.ack_required==0)
                 {
-                    if(msg.type != MSG_TYPE_ACK || robot->timestamp - msg.timestamp > robot->para.ir_msg_ack_delay)
+                    if(msg.type == IR_MSG_TYPE_DOCKING_SIGNALS_REQ)
+                    {
+                        if(((robot->timestamp - msg.timestamp) % 10) == 2 * i)
+                        {
+                            robot->SendIRMessage(msg);
+                            robot->IR_TXMsgQueue[i].erase(robot->IR_TXMsgQueue[i].begin());
+                        }
+                    }
+                    else if(msg.type != MSG_TYPE_ACK || robot->timestamp - msg.timestamp > robot->para.ir_msg_ack_delay)
                     {
                         robot->SendIRMessage(msg);
                         robot->IR_TXMsgQueue[i].erase(robot->IR_TXMsgQueue[i].begin());
