@@ -782,18 +782,41 @@ void RobotSCOUT::Alignment()
             // define the bad case
             // case 1: difference between two front reflective_calibrated reading is significant 
             // case 2: some reflective_calibrated readings but two beacon readings are diff
-                int blocked_threshold = 200;
-                if(assembly_info.type1 == ROBOT_SCOUT)
-                    blocked_threshold = 600;
-                else if(assembly_info.type1 == ROBOT_AW)
-                    blocked_threshold = 150;
-                else
-                    blocked_threshold = 400;
+            int blocked_threshold = 200;
+            if(assembly_info.type1 == ROBOT_SCOUT)
+                blocked_threshold = 600;
+            else if(assembly_info.type1 == ROBOT_AW)
+                blocked_threshold = 150;
+            else
+                blocked_threshold = 400;
+
+            //keep ticking if getting very close to something
             if(reflective_max > blocked_threshold && reflective_min > 0)
             {
                 blocking_count++;
                 printf("%d ticking: %d %d %d\n", timestamp, blocking_count, reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
             }
+
+            //added for scout --> aw docking 
+            if((reflective_hist[id0].Avg() > 100 | reflective_hist[id1].Avg() > 100 ) && (reflective_hist[id1 + 1].Avg()  > 100 | reflective_hist[id1+2].Avg() > 100))
+            {
+                blocking_count += 4 * reflective_hist[id1 + 1].Avg() / 60;
+                blocking_count += 4 * reflective_hist[id1 + 2].Avg() / 60;
+                printf("my left side is bumping to something, %d %d\n", reflective_hist[id1 + 1].Avg(), reflective_hist[id1 + 2].Avg());
+            }
+
+            if(reflective_diff > 300 && reflective_diff > reflective_max * 0.7 && reflective_min > 20)
+            {
+                //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
+                printf("reflective is significant different, %d %d, blocked\n", reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+                blocking_count += 4;
+            }
+            else if(reflective_min > 300 && beacon_diff > beacon_max * 0.7 && beacon_min > 20)
+            {
+                printf("robot is close, but beacon signals is significant different, %d %d, blocked\n", beacon[id0], beacon[id1]);
+                blocking_count += 4;
+            }
+
 
             //3 second is allowed until fully docked, otherwise, treated as blocked.
             if(blocking_count > 45)
@@ -801,27 +824,9 @@ void RobotSCOUT::Alignment()
                 printf("blocked for 5 seconds, treated as blocked\n");
                 docking_blocked = true;
             }
-            else if(reflective_diff > 300 && reflective_diff > reflective_max * 0.7 && reflective_min > 20)
-            {
-                //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
-                printf("reflective is significant different, %d %d, blocked\n", reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
-                docking_blocked = true;
-            }
-            else if(reflective_min > 300 && beacon_diff > beacon_max * 0.7 && beacon_min > 20)
-            {
-                printf("robot is close, but beacon signals is significant different, %d %d, blocked\n", beacon[id0], beacon[id1]);
-                docking_blocked = true;
-            }
-            else
-                docking_blocked = false;
-
-            if(docking_blocked)
-                docking_blocked_hist.Push(1);
-            else
-                docking_blocked_hist.Push(0);
 
 
-            if(docking_blocked_hist.Sum() > 0 || beacon_signals_detected == 0)
+            if(docking_blocked || beacon_signals_detected == 0)
             {
                 docking_blocked = false;
                 docking_blocked_hist.Reset();
@@ -839,10 +844,13 @@ void RobotSCOUT::Alignment()
             }
             else
             {
-                for(int i=id0;i<=id1;i++)
+                int shift_factor = 4;
+                if(abs(beacon[id0] - beacon[id1]) < 50)
+                    shift_factor = 3;
+                for(int i=0;i<NUM_IRS;i++)
                 {
-                    speed[0] += (beacon[i] * para.aligning_weightleft[i]) >> 4;
-                    speed[1] += (beacon[i] * para.aligning_weightright[i]) >> 4;
+                    speed[0] += (beacon[i] * para.aligning_weightleft[i]) >> shift_factor;
+                    speed[1] += (beacon[i] * para.aligning_weightright[i]) >> shift_factor;
                 }
 
                 //move less agressively when bumping to something;
@@ -854,13 +862,20 @@ void RobotSCOUT::Alignment()
                 else
                     divisor = 1000;
                 
-                if(reflective_max > 0)
+                if(reflective_min > 0)
                 {
-                    speed[0] -= 6 * (reflective_max / divisor);
-                    speed[1] -= 6 * (reflective_max / divisor);
-                    printf("%d: reflective %d %d, speed %d %d\n", timestamp, reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1]);
+                 //   speed[0] -= 6 * (reflective_max / divisor);
+                 //   speed[1] -= 6 * (reflective_max / divisor);
                 }
 
+                //added
+                if(reflective_hist[id1 + 1].Avg()  > 100 | reflective_hist[id1+2].Avg() > 100)
+                {
+                   // speed[0] -= 0;
+                   // speed[1] -= 0;
+                }
+
+                printf("%d: reflective %d %d %d %d %d %d %d %d, speed %d %d\n", timestamp, reflective_hist[0].Avg(), reflective_hist[1].Avg(), reflective_hist[2].Avg(),reflective_hist[3].Avg(),reflective_hist[4].Avg(),reflective_hist[5].Avg(),reflective_hist[6].Avg(),reflective_hist[7].Avg(),speed[0], speed[1]);
                 printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0);
             }
         }
@@ -894,7 +909,7 @@ void RobotSCOUT::Recover()
     {
         //turn left/right according to reflective value;
         //robot will stop there for 1 seconds
-        if(recover_count < para.aligning_reverse_time)
+        if(recover_count < para.aligning_reverse_time + docking_trials * 3)
         {
             //docked to the wrong robots
             if(assembly_info == OrganismSequence::Symbol(0))
@@ -913,19 +928,22 @@ void RobotSCOUT::Recover()
                     Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
 
                 //TODO: test reverse behaviour with new robots
-                const int weight_left[8] = {-3,3, 0,0,-3,3,0,0};
-                const int weight_right[8] = {3,-3,0,0,3,-3,0,0};
-                if(recover_count < 10) //only do a small turn if necessary
+                const int weight_left[8] = {-3,3, 5,3,-3,3,5,3};
+                const int weight_right[8] = {3,-3,-5,-3,3,-3,-5,-3};
+                if(recover_count < 15) //only do a small turn if necessary
                 {
-                    for(int i=id0;i<=id1;i++)
+                    printf("ir: ");
+                    for(int i=id0;i<=id1+2;i++)
                     {
-                        speed[0] += (reflective_hist[i].Avg() * weight_left[i])>>8;
-                        speed[1] += (reflective_hist[i].Avg() * weight_right[i])>>8;
+                        speed[0] += weight_left[i] * reflective_hist[i].Avg() >> 6;
+                        speed[1] += weight_right[i] * reflective_hist[i].Avg() >> 6;
+                        printf("%d\t", reflective_hist[i].Avg());
                     }
                 }
+                printf("(%d %d)\n", speed[0], speed[1]);
             }
         }
-        else if( recover_count == para.aligning_reverse_time )
+        else if( recover_count == para.aligning_reverse_time + docking_trials * 5 )
         {
             for(int i=0; i<SIDE_COUNT; i++)
                 SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,0);
