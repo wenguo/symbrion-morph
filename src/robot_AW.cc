@@ -654,6 +654,7 @@ void RobotAW::LocateBeacon()
         }
     }
 
+    printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
     //overwrite speed if bumped to anything
     if(org_bumped || aux_bumped)
     {
@@ -805,11 +806,15 @@ void RobotAW::Alignment()
         //bumped on left and right, better to stop
         if((org_bumped & 0xCC) !=0 || (aux_bumped & 0xCC)!=0)
         {
+            para.print_reflective = true;
             printf("%d something on my left or right, better to stop\n", timestamp);
             speed[0] = 0;
             speed[1] = 0;
             speed[2] = 0;
         }
+        else
+            para.print_reflective = false;
+
     }
     else
     {
