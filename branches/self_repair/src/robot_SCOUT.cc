@@ -45,6 +45,7 @@ void RobotSCOUT::InitHardware()
     }
 
     irobot->EnableMotors(true);
+    irobot->EnableHallSensors(true);
 
     //   Ethernet::disableSwitch();
 }
@@ -93,6 +94,7 @@ void RobotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint
 
 void RobotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
 {
+    //note that the leftspeed is in fact set to the right motor of scouts, rightspeed is on the left motor
     if(leftspeed > 100)
         leftspeed = 100;
     else if(leftspeed < -100)
@@ -101,7 +103,7 @@ void RobotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
         rightspeed = 100;
     else if(rightspeed < -100)
         rightspeed = -100;
-    irobot->Move(direction * para.scout_wheels_direction[0] * leftspeed, direction * para.scout_wheels_direction[1] * rightspeed);
+    irobot->Move(direction * para.scout_wheels_direction[0] * leftspeed, direction * para.scout_wheels_direction[1] * rightspeed * para.aw_adjustment_ratio);
 }
 
 
@@ -271,6 +273,18 @@ void RobotSCOUT::UpdateSensors()
         reflective_hist[i].Push(reflective[i]-para.reflective_calibrated[i]);
         ambient_hist[i].Push(para.ambient_calibrated[i] - ambient[i]);
     }
+
+    last_encoders = encoders;
+    encoders = irobot->GetHallSensorValues2D();
+
+    uint8_t stalled = 0;
+    if(speed[0] !=0 && abs(encoders.right - last_encoders.right) < 3)
+        stalled |= 0x1;
+
+    if(speed[1] !=0 && abs(encoders.left - last_encoders.left) < 3)
+        stalled |= 0x2;
+
+    stalled_hist.Push2(stalled);
 }
 
 void RobotSCOUT::UpdateActuators()
@@ -603,22 +617,22 @@ void RobotSCOUT::LocateBeacon()
 
         if(id0==0)
         {
-            if((beacon_signals_detected & 0x3) != 0)
+            if((beacon_signals_detected & 0x3) != 0 && (beacon_signals_detected & 0xCC)==0)
                 turning = 0;
-            //no signals on side 1, turn left 
+            //no signals on side 1, turn right 
             else if((beacon_signals_detected & 0xC) ==0)
                 turning = -1;
-            //no signals on side 3, turn right 
+            //no signals on side 3, turn left 
             else if((beacon_signals_detected & 0xC0) ==0)
                 turning = 1;
             else 
                 turning = 0;
-            printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
+                printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
         }
         else
         {
 
-            if((beacon_signals_detected & 0x30) != 0)
+            if((beacon_signals_detected & 0x30) != 0 && (beacon_signals_detected & 0xCC)==0)
                 turning = 0;
             //no signals on side 1, turn right
             else if((beacon_signals_detected & 0xC) ==0)
@@ -631,12 +645,6 @@ void RobotSCOUT::LocateBeacon()
             printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
         }
 
-        //printf("max_beacon: %d %d %d %d\tturning: %d\n", max_beacon[0], max_beacon[1], max_beacon[2], max_beacon[3], turning);
-        /* if(turning != 0)
-           {
-           speed[0] = direction * turning * 30;
-           speed[1] = -direction * turning * 30;
-           }*/
         if(turning ==-1)
         {
             speed[0] = -direction * 30;
@@ -650,21 +658,22 @@ void RobotSCOUT::LocateBeacon()
         else
         {
             //using hist will filter out the noise from IRComm
-            if(beacon_signals_detected_hist.Sum(id0) > 3 || beacon_signals_detected_hist.Sum(id1) > 3)
+            if(beacon_signals_detected_hist.Sum(id0) > 2 || beacon_signals_detected_hist.Sum(id1) > 2)
             {
+                int shift_factor = 1;
                 for(int i=0;i<NUM_IRS;i++)
                 {
-                    speed[0] += (beacon[i] * para.locatebeacon_weightleft[i]) >>1;
-                    speed[1] += (beacon[i] * para.locatebeacon_weightright[i]) >>1;
+                    speed[0] += (beacon[i] * para.locatebeacon_weightleft[i]) >>shift_factor;
+                    speed[1] += (beacon[i] * para.locatebeacon_weightright[i]) >>shift_factor;
                 }
             }
             else
             {
-                speed[0] = 0;
-                speed[1] = 0;
+                speed[0] = 20;
+                speed[1] = 20;
             }
 
-            printf("speed %d %d\n", speed[0], speed[1]);
+            printf("%d: speed %d %d\n", timestamp, speed[0], speed[1]);
         }
     }
 
@@ -699,6 +708,9 @@ void RobotSCOUT::LocateBeacon()
                 SetRGBLED(i, 0, 0, 0, 0);
             }
         }
+        else
+            printf("%d: no signals\n", timestamp);
+
     }
 
 }
@@ -784,7 +796,7 @@ void RobotSCOUT::Alignment()
             // case 2: some reflective_calibrated readings but two beacon readings are diff
             int blocked_threshold = 200;
             if(assembly_info.type1 == ROBOT_SCOUT)
-                blocked_threshold = 600;
+                blocked_threshold = 400;
             else if(assembly_info.type1 == ROBOT_AW)
                 blocked_threshold = 150;
             else
@@ -818,6 +830,14 @@ void RobotSCOUT::Alignment()
             }
 
 
+            //stalled
+            if(reflective_max > 100 && reflective_max < 1000&& (stalled_hist.Sum(0) > 2 || stalled_hist.Sum(1) > 2))
+            {
+                printf("robot get stalled\n");
+                blocking_count +=10;
+            }
+
+
             //3 second is allowed until fully docked, otherwise, treated as blocked.
             if(blocking_count > 45)
             {
@@ -845,8 +865,22 @@ void RobotSCOUT::Alignment()
             else
             {
                 int shift_factor = 4;
-                if(abs(beacon[id0] - beacon[id1]) < 50)
-                    shift_factor = 3;
+                int start = 0;
+                int end = NUM_IRS-1;    
+
+
+                if(assembly_info.type1 == ROBOT_SCOUT)
+                {
+                    shift_factor = 5;
+                    start = id0;
+                    end = id1;
+                }
+                else if(assembly_info.type1 == ROBOT_AW)
+                {
+                    if(abs(beacon[id0] - beacon[id1]) < 50)
+                        shift_factor = 3;
+                }
+
                 for(int i=0;i<NUM_IRS;i++)
                 {
                     speed[0] += (beacon[i] * para.aligning_weightleft[i]) >> shift_factor;
@@ -861,7 +895,31 @@ void RobotSCOUT::Alignment()
                     divisor = 200;
                 else
                     divisor = 1000;
-                
+
+                printf("%d: reflective %d %d %d %d %d %d %d %d, speed %d %d\n", timestamp, reflective_hist[0].Avg(), reflective_hist[1].Avg(), reflective_hist[2].Avg(),reflective_hist[3].Avg(),reflective_hist[4].Avg(),reflective_hist[5].Avg(),reflective_hist[6].Avg(),reflective_hist[7].Avg(),speed[0], speed[1]);
+                //take the reflect into accout
+                if(assembly_info.type1 == ROBOT_SCOUT)
+                {
+                    if(reflective_max > 30 && beacon_max > 30)
+                    {
+                        speed[0] += -1 * (reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
+                        speed[1] += 1 *(reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
+
+                        //cap
+                        if(speed[0] < 20)
+                            speed[0]=20;
+                        if(speed[0] > 50)
+                            speed[0]=50;
+                        if(speed[1] < 20)
+                            speed[1]=20;
+                        if(speed[1] > 50)
+                            speed[1]=50;
+                    }
+                    printf("new speed: %d %d\n", speed[0], speed[1]);
+
+                }
+
+
                 if(reflective_min > 0)
                 {
                  //   speed[0] -= 6 * (reflective_max / divisor);
@@ -875,7 +933,6 @@ void RobotSCOUT::Alignment()
                    // speed[1] -= 0;
                 }
 
-                printf("%d: reflective %d %d %d %d %d %d %d %d, speed %d %d\n", timestamp, reflective_hist[0].Avg(), reflective_hist[1].Avg(), reflective_hist[2].Avg(),reflective_hist[3].Avg(),reflective_hist[4].Avg(),reflective_hist[5].Avg(),reflective_hist[6].Avg(),reflective_hist[7].Avg(),speed[0], speed[1]);
                 printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0);
             }
         }
@@ -930,13 +987,18 @@ void RobotSCOUT::Recover()
                 //TODO: test reverse behaviour with new robots
                 const int weight_left[8] = {-3,3, 5,3,-3,3,5,3};
                 const int weight_right[8] = {3,-3,-5,-3,3,-3,-5,-3};
+
+                int shift_factor = 6;
+                if(assembly_info.type1 == ROBOT_SCOUT)
+                    shift_factor = 8;
+
                 if(recover_count < 15) //only do a small turn if necessary
                 {
                     printf("ir: ");
                     for(int i=id0;i<=id1+2;i++)
                     {
-                        speed[0] += weight_left[i] * reflective_hist[i].Avg() >> 6;
-                        speed[1] += weight_right[i] * reflective_hist[i].Avg() >> 6;
+                        speed[0] += weight_left[i] * reflective_hist[i].Avg() >> shift_factor;
+                        speed[1] += weight_right[i] * reflective_hist[i].Avg() >> shift_factor;
                         printf("%d\t", reflective_hist[i].Avg());
                     }
                 }

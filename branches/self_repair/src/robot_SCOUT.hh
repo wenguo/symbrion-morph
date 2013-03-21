@@ -52,5 +52,8 @@ class RobotSCOUT:public Robot
         void Avoidance();
         ScoutBot * irobot;
 
+        hallSensorScout encoders, last_encoders;
+        Hist stalled_hist;
+
 };
 #endif
