@@ -278,10 +278,10 @@ void RobotSCOUT::UpdateSensors()
     encoders = irobot->GetHallSensorValues2D();
 
     uint8_t stalled = 0;
-    if(speed[0] !=0 && abs(encoders.right - last_encoders.right) < 3)
+    if(speed[0] !=0 && abs(encoders.right - last_encoders.right) < 2)
         stalled |= 0x1;
 
-    if(speed[1] !=0 && abs(encoders.left - last_encoders.left) < 3)
+    if(speed[1] !=0 && abs(encoders.left - last_encoders.left) < 2)
         stalled |= 0x2;
 
     stalled_hist.Push2(stalled);
@@ -829,19 +829,37 @@ void RobotSCOUT::Alignment()
                 blocking_count += 4;
             }
 
+            //sometimes, both reflective give negative values
+            if(reflective_diff > 700 && reflective_max < 0)
+            {
+                printf("something unusal happens, give up and retry\n");
+                blocking_count +=10;
+            }
 
+            //sometimes, scout blocked to the corner of another one
+            if((beacon_signals_detected == (1<<id0) || beacon_signals_detected == (1<<id1)) && beacon_diff > 40)
+            {
+                printf("blocked to one corner of another robot, give up and retry\n");
+                blocking_count +=10;
+            }
+
+
+            /*
+            //TODO: the readings from hall sensor seems not reliable, sometime it fail to update
             //stalled
+            printf("encoders: %d %d\n", encoders.left, encoders.right);
             if(reflective_max > 100 && reflective_max < 1000&& (stalled_hist.Sum(0) > 2 || stalled_hist.Sum(1) > 2))
             {
                 printf("robot get stalled\n");
                 blocking_count +=10;
             }
+            */
 
 
             //3 second is allowed until fully docked, otherwise, treated as blocked.
-            if(blocking_count > 45)
+            if(blocking_count > 40)
             {
-                printf("blocked for 5 seconds, treated as blocked\n");
+                printf("blocked for 4 seconds, treated as blocked\n");
                 docking_blocked = true;
             }
 
@@ -872,10 +890,9 @@ void RobotSCOUT::Alignment()
                 if(assembly_info.type1 == ROBOT_SCOUT)
                 {
                     shift_factor = 5;
-                    start = id0;
-                    end = id1;
                 }
-                else if(assembly_info.type1 == ROBOT_AW)
+                else
+                //else if(assembly_info.type1 == ROBOT_AW)
                 {
                     if(abs(beacon[id0] - beacon[id1]) < 50)
                         shift_factor = 3;
@@ -904,6 +921,26 @@ void RobotSCOUT::Alignment()
                     {
                         speed[0] += -1 * (reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
                         speed[1] += 1 *(reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
+
+                        //cap
+                        if(speed[0] < 20)
+                            speed[0]=20;
+                        if(speed[0] > 50)
+                            speed[0]=50;
+                        if(speed[1] < 20)
+                            speed[1]=20;
+                        if(speed[1] > 50)
+                            speed[1]=50;
+                    }
+                    printf("new speed: %d %d\n", speed[0], speed[1]);
+
+                }
+                else if(assembly_info.type1 == ROBOT_KIT)
+                {
+                    if(reflective_max > 30 && beacon_max > 30)
+                    {
+                        speed[0] += -2 * (reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
+                        speed[1] += 2 *(reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
 
                         //cap
                         if(speed[0] < 20)
@@ -989,20 +1026,31 @@ void RobotSCOUT::Recover()
                 const int weight_right[8] = {3,-3,-5,-3,3,-3,-5,-3};
 
                 int shift_factor = 6;
-                if(assembly_info.type1 == ROBOT_SCOUT)
-                    shift_factor = 8;
 
                 if(recover_count < 15) //only do a small turn if necessary
                 {
-                    printf("ir: ");
+                    if(assembly_info.type1 != ROBOT_AW)
+                        shift_factor = 8;
+                    printf("reflective: (");
                     for(int i=id0;i<=id1+2;i++)
                     {
-                        speed[0] += weight_left[i] * reflective_hist[i].Avg() >> shift_factor;
-                        speed[1] += weight_right[i] * reflective_hist[i].Avg() >> shift_factor;
-                        printf("%d\t", reflective_hist[i].Avg());
+                        speed[0] += weight_left[i] * (reflective_hist[i].Avg() >> shift_factor);
+                        speed[1] += weight_right[i] * (reflective_hist[i].Avg() >> shift_factor);
+                        printf("%d ", reflective_hist[i].Avg());
                     }
+                    printf(") speed: (%d %d)\n", speed[0], speed[1]);
                 }
-                printf("(%d %d)\n", speed[0], speed[1]);
+                else
+                {
+                    shift_factor = std::max(beacon[id0], beacon[id1]) / 10;
+                    if(shift_factor >5)
+                        shift_factor = 5;
+                    //try not straight them, need more test
+                    speed[0] += -1 * (beacon[id0] - beacon[id1]) >> shift_factor;
+                    speed[1] += 1 * (beacon[id0] - beacon[id1]) >> shift_factor;
+                    printf("beacon: (%d %d) speed: (%d %d)\n", beacon[id0], beacon[id1],speed[0], speed[1]);
+
+                }
             }
         }
         else if( recover_count == para.aligning_reverse_time + docking_trials * 5 )
