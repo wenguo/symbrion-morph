@@ -891,8 +891,13 @@ void RobotSCOUT::Alignment()
                 {
                     shift_factor = 5;
                 }
-                else
-                //else if(assembly_info.type1 == ROBOT_AW)
+                else if(assembly_info.type1 == ROBOT_KIT)
+                {
+                    shift_factor = 4;
+                    if(beacon_max < 30 && reflective_max < 200)
+                        shift_factor = 3;
+                }
+                else if(assembly_info.type1 == ROBOT_AW)
                 {
                     if(abs(beacon[id0] - beacon[id1]) < 50)
                         shift_factor = 3;
@@ -937,7 +942,7 @@ void RobotSCOUT::Alignment()
                 }
                 else if(assembly_info.type1 == ROBOT_KIT)
                 {
-                    if(reflective_max > 30 && beacon_max > 30)
+                    if(reflective_max > 30 && reflective_min < 1000 && beacon_max > 30)
                     {
                         speed[0] += -2 * (reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
                         speed[1] += 2 *(reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
