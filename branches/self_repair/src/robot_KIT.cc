@@ -1072,17 +1072,20 @@ void RobotKIT::Docking()
             else if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5)
             {
                 printf("No proximity signals detected\n");
-                docking_blocked = true;
+                docking_count +=36; // 18x2
+                //docking_blocked = true;
             }
             else if(abs(proximity_diff) > 0.5 * std::max(proximity[id0], proximity[id1]) )
             {
                 printf("proximity signals are significant different %d %d\n", proximity[id0], proximity[id1]);
-                docking_blocked = true;
+                docking_count +=36;
+                //docking_blocked = true;
             }
             else if(std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg())<0)
             {
                 printf("signal interference, reflective gives negative values %d %d\n", reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
-                docking_blocked = true;
+                docking_count +=36;
+                //docking_blocked = true;
             }
             else if(docking_count >=36) 
             {
