@@ -543,7 +543,10 @@ void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int si
     //docked[channel] stores the encoded sequence information such as "KFSF", 'KF' is my type and my docking side
     //'SF' is the connected robot's type and side
     pthread_mutex_lock(&ir_txqueue_mutex);
-    IR_TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, docked[channel], type, data, size, ack_required));
+    if(type == MSG_TYPE_ACK)
+        IR_TXMsgQueue[channel].insert(IR_TXMsgQueue[channel].begin(),IRMessage(channel, timestamp, docked[channel], type, data, size, ack_required));
+    else    
+        IR_TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, docked[channel], type, data, size, ack_required));
     pthread_mutex_unlock(&ir_txqueue_mutex);
 }
 
