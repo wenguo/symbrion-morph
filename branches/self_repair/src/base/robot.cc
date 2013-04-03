@@ -161,6 +161,7 @@ Robot::Robot()
     docking_blocked = false;
 
     //clear just in case 
+    target.Clear();
     mytree.Clear();
     subog.Clear();
     og = NULL;
@@ -240,6 +241,8 @@ void Robot::ResetAssembly()
     direction = FORWARD;
 
     ethernet_status_hist.Reset();
+
+    target.Clear();
 }
 
 Robot::~Robot()
