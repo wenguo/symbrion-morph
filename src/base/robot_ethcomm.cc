@@ -194,6 +194,8 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
                         case MSG_TYPE_ORGANISM_FORMED:
                             {
                                 organism_formed = true;
+                                rt_status ret = target.reBuild((uint8_t*)&(data[6]), size-6);
+                                std::cout<<timestamp<<": "<<name<<" receive the whole tree:("<<size-6<<") "<<target<<std::endl;
                                 CPrintf1(SCR_BLUE,"%d -- organism formed !", timestamp);
                             }
                             break;

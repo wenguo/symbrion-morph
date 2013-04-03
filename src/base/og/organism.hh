@@ -161,6 +161,7 @@ class OrganismSequence
     rt_status reBuild(const uint8_t *data, const int size);
     rt_status reBuild(const char *str);
     inline const std::vector<Symbol>& Encoded_Seq() const{return encoded_seq;}
+    inline const std::vector<uint32_t>& IP_list() const{return ip_list;}
 
     friend std::ostream& operator<<(std::ostream&, const Symbol&);
     friend std::ostream& operator<<(std::ostream&, const Element&);
@@ -173,6 +174,7 @@ class OrganismSequence
 
     protected:
     std::vector<Symbol> encoded_seq;
+    std::vector<uint32_t> ip_list;
 };
 
 //node class in graph

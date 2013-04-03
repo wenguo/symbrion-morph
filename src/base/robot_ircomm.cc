@@ -82,11 +82,10 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     int size = msg.get()->GetDataLength();
     uint8_t channel = robot_side_dev_num[msg.get()->GetSender()];
     char * data = (char *)msg.get()->GetData();
-    /* printf("%d received message %d: ", channel, size);
-       for(int i=0;i<size;i++)
-       printf("%#x\t",data[i]);
-       printf("\n");
-       */
+    // printf("%d received message %d: ", channel, size);
+    //   for(int i=0;i<size;i++)
+    //   printf("%#x\t",data[i]);
+    //   printf("\n");
     bool ack_required = false;
     bool valid_message = true;
 
@@ -411,6 +410,8 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                             case MSG_TYPE_ORGANISM_FORMED:
                                 {
                                     organism_formed = true;
+                                    rt_status ret = target.reBuild((uint8_t*)&(data[8]), data[7]);
+                                    std::cout<<timestamp<<": "<<name<<" receive the whole tree: ("<<int(data[7])<<")"<<target<<std::endl;
                                     CPrintf1(SCR_GREEN,"%d -- organism formed !", timestamp);
                                 }
                                 break;
@@ -464,8 +465,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
                         if(valid)
                         {
-                            PropagateIRMessage(data[2], NULL, 0, channel);
-                            PropagateEthMessage(data[2], (uint8_t*)&data[7], size-7, neighbours_IP[channel]);
+                            printf("propagated message size: %d\n", size);
+                            PropagateIRMessage(data[2], (uint8_t*)&data[8], data[7], channel);
+                            PropagateEthMessage(data[2], (uint8_t*)&data[8], data[7], neighbours_IP[channel]);
                         }
                     }
                 }
@@ -603,13 +605,14 @@ void Robot::PropagateSingleIRMessage(uint8_t type, int channel, uint8_t *data, u
         buf[3] = (timestamp >>16) & 0xFF;
         buf[4] = (timestamp >>24) & 0xFF; //not used at moment
         int data_size = len;
-        if(data_size > MAX_IR_MESSAGE_SIZE - 6 )
+        buf[5] = data_size;
+        if(data_size > MAX_IR_MESSAGE_SIZE - 7 )
         {
-            printf("Warning: only %d of %d bytes will be sent\n", MAX_IR_MESSAGE_SIZE - 5, data_size);
-            data_size = MAX_IR_MESSAGE_SIZE - 6;
+            printf("Warning: only %d of %d bytes will be sent\n", MAX_IR_MESSAGE_SIZE - 6, data_size);
+            data_size = MAX_IR_MESSAGE_SIZE - 7;
         }
-        memcpy(buf + 5, data, data_size);
-        SendIRMessage(channel, MSG_TYPE_PROPAGATED, buf, data_size + 5, para.ir_msg_repeated_num);
+        memcpy(buf + 6, data, data_size);
+        SendIRMessage(channel, MSG_TYPE_PROPAGATED, buf, data_size + 6, para.ir_msg_repeated_num);
     }
 }
 

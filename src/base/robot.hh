@@ -382,7 +382,7 @@ class Robot
     //organism related
     OrganismSequence mytree;
     OrganismSequence subog;
-    OrganismSequence target;
+    OrganismSequence target; //the complete organism
     std::vector<OrganismSequence> mybranches;
     Organism * og;
     OrganismSequence::Symbol assembly_info; //information for which types of robot and which side is required by recruiting robots

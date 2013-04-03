@@ -1384,8 +1384,11 @@ void RobotAW::InOrganism()
                 SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
 
             //prepare organism_formed_messages
-            PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED);
-            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED);
+            uint8_t buf[target.Encoded_Seq().size()];
+            for(int i = 0; i< target.Encoded_Seq().size(); i++)
+                buf[i] = target.Encoded_Seq()[i].data;
+            PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size());
+            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size());
 
             macrolocomotion_count = 0;
             raising_count = 0;
@@ -2151,8 +2154,6 @@ void RobotAW::Debugging()
                 sym.reBuild("ABSF");
                 docked[2] = sym.data;
                 neighbours_IP[2]=StringToIP("192.168.2.224");
-                PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED);
-                PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED);
             }
             break;
         case 23:

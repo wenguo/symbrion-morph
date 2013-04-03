@@ -143,7 +143,8 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
         }
         else
             return false;
-
+        
+        SetRGBLED((channel+1)%4, GREEN, GREEN, RED, RED);
     }
     else
     {
@@ -159,9 +160,9 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
             locking_motors_status[channel] = CLOSED;
         }
         irobot->MoveDocking(KaBot::Side(board_dev_num[channel]), 0);        
+        SetRGBLED((channel+1)%4, 0, 0, 0, 0);
     }
 
-    SetRGBLED(1, GREEN, GREEN, RED, RED);
     printf("\n------ moving docking motor ----\n");
     return true;
 }
@@ -1502,8 +1503,11 @@ void RobotKIT::InOrganism()
                 SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
 
             //prepare organism_formed_messages
-            PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED);
-            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED);
+            uint8_t buf[target.Encoded_Seq().size()];
+            for(int i = 0; i< target.Encoded_Seq().size(); i++)
+                buf[i] = target.Encoded_Seq()[i].data;
+            PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size());
+            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size());
 
             macrolocomotion_count = 0;
             raising_count = 0;
