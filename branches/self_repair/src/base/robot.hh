@@ -411,6 +411,7 @@ class Robot
 
     Ethernet::IP my_IP;
     Ethernet::IP neighbours_IP[SIDE_COUNT];
+    bool IP_collection_done;
 
 
     uint8_t LED0;

@@ -47,6 +47,7 @@ const char * message_names[IR_MSG_TYPE_COUNT]={
     "Sub_OG_Score",
     "Retreat",
     "Stop",
+    "IP_Addr_Collection",
     "ACK",
     "Recruiting",
     "Recruiting_REQ",

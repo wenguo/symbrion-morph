@@ -195,6 +195,9 @@ Robot::Robot()
 
     assembly_info = 0;
 
+
+    IP_collection_done = false;
+
     LED0 = 0x1;
     LED1 = 0x2;
     LED2 = 0x4;
@@ -242,7 +245,10 @@ void Robot::ResetAssembly()
 
     ethernet_status_hist.Reset();
 
+    parent_side = SIDE_COUNT;
+
     target.Clear();
+    IP_collection_done = false;
 }
 
 Robot::~Robot()

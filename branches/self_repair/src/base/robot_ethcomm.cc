@@ -125,6 +125,45 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
                 }
             }
             break;
+        case MSG_TYPE_IP_ADDR_COLLECTION:
+            {
+                if(channel == parent_side)
+                {
+                    printf("%d: I shouldn't receive this message from my parent %d\n", timestamp, channel);
+                }
+                else
+                {
+                    //first fill in the ip_list in the right position of 'mytree' using received data
+                    std::vector<uint8_t> branch_IPs;
+                    printf("Eth received IPs: ");
+                    for(int i=0;i<data[1];i++)
+                    {
+                        printf("%d ", data[i+2]);
+                        branch_IPs.push_back(data[i+2]);
+                    }
+                    printf("\n");
+                    mytree.setBranchIPs(robot_side(channel), branch_IPs);
+                    
+                    SendEthAckMessage(channel, data[0]);
+
+                    //check if all IPs are set in 'mytree' 
+                    if(mytree.isAllIPSet() && !IP_collection_done)
+                    {
+                        IP_collection_done = true;
+                        //send the IPs to its parent
+                        std::vector<uint8_t> IPs;
+                        mytree.getAllIPs(IPs);
+                        uint8_t data[IPs.size()+1];
+                        data[0]=IPs.size();
+                        for(int i=0;i<IPs.size();i++)
+                            data[i+1]=IPs[i];
+                        SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
+                        SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1,para.ir_msg_repeated_num);
+                    }
+
+                }
+            }
+            break;
         case MSG_TYPE_PROPAGATED:
             {
                 uint32_t ts = data[2] | data[3] << 8 | data[4] << 16 | data[5] << 24; 
@@ -236,10 +275,14 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
                     case MSG_TYPE_DISASSEMBLY:
                         break;
                     case MSG_TYPE_NEWROBOT_JOINED:
-                        CPrintf2(SCR_GREEN, "%d -- Removed IR_MSG_TYPE_NEWROBOT_JOINED from channel %d", timestamp, channel);
+                        CPrintf2(SCR_GREEN, "%d -- Removed MSG_TYPE_NEWROBOT_JOINED from channel %d", timestamp, channel);
                         break;
                     case MSG_TYPE_ORGANISM_FORMED:
-                        CPrintf2(SCR_GREEN, "%d -- Removed IR_MSG_TYPE_ORGANISM_FORMED from channel %d", timestamp, channel);
+                        CPrintf2(SCR_GREEN, "%d -- Removed MSG_TYPE_ORGANISM_FORMED from channel %d", timestamp, channel);
+                        break;
+                    case MSG_TYPE_IP_ADDR_COLLECTION:
+                        CPrintf2(SCR_GREEN, "%d -- Removed MSG_TYPE_IP_ADDR_COLLECTION from channel %d", timestamp, channel);
+                        RemoveFromQueue(channel,MSG_TYPE_IP_ADDR_COLLECTION);
                         break;
                     default:
                         break;
@@ -290,6 +333,9 @@ void Robot::SendEthMessage(const EthMessage& msg)
 
 void Robot::SendEthMessage(int channel, uint8_t type, const uint8_t *data, int size, bool ack_required)
 {
+    if(channel >= NUM_DOCKS || channel <0)
+        return;
+
     pthread_mutex_lock(&eth_txqueue_mutex);
     Eth_TXMsgQueue[channel].push_back(EthMessage(channel, type, data, size, ack_required));
     pthread_mutex_unlock(&eth_txqueue_mutex);

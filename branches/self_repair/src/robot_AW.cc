@@ -1332,6 +1332,12 @@ void RobotAW::Recruitment()
 
                 //                msg_ip_addr_received &= ~(1<<i);
 
+                std::vector<uint8_t> root_IPs;
+                root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
+                root_IPs.push_back(uint8_t((neighbours_IP[i].i32>>24) & 0xFF));
+                mytree.setBranchRootIPs(robot_side(i),root_IPs);
+                printf("%d: set root IPs %d %d\n", timestamp,root_IPs[0], root_IPs[1]);
+
                 //remove branches since it has been sent to newly joined robot
                 erase_required = true;
 
@@ -1600,7 +1606,9 @@ void RobotAW::Raising()
 
     if(seed)
     {
-        raising_count++;
+        //wait until received all IPs
+        if(mytree.isAllIPSet())
+            raising_count++;
 
         if(raising_count == raising_delay )
         {
@@ -1629,19 +1637,35 @@ void RobotAW::Raising()
             flash_leds = true;
         }
     }
-    else if( msg_raising_stop_received )
+    else
     {
-        msg_raising_start_received = false;
-        msg_raising_stop_received = false;
-        current_state = MACROLOCOMOTION;
-        last_state = RAISING;
-        raising_count = 0;
-        flash_leds = false;
-    }
-    else if( msg_raising_start_received )
-    {
-        flash_leds = true;
-        //        SetHingeMotor(UP);
+        if(mytree.Size() ==0 && !IP_collection_done)
+        {
+            IP_collection_done = true;
+            //send the IPs to its parent
+            std::vector<uint8_t> IPs;
+            mytree.getAllIPs(IPs);
+            uint8_t data[IPs.size()+1];
+            data[0]=IPs.size();
+            for(int i=0;i<IPs.size();i++)
+                data[i+1]=IPs[i];
+            SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1,para.ir_msg_repeated_num);
+            SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
+        }
+        else if( msg_raising_stop_received )
+        {
+            msg_raising_start_received = false;
+            msg_raising_stop_received = false;
+            current_state = MACROLOCOMOTION;
+            last_state = RAISING;
+            raising_count = 0;
+            flash_leds = false;
+        }
+        else if( msg_raising_start_received )
+        {
+            flash_leds = true;
+            //        SetHingeMotor(UP);
+        }
     }
 
     if(flash_leds)

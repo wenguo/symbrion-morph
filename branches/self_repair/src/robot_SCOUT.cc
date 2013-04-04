@@ -1400,6 +1400,11 @@ void RobotSCOUT::Recruitment()
                 }
 
                 //    msg_ip_addr_received &= ~(1<<i);
+                std::vector<uint8_t> root_IPs;
+                root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
+                root_IPs.push_back(uint8_t((neighbours_IP[i].i32>>24) & 0xFF));
+                mytree.setBranchRootIPs(robot_side(i),root_IPs);
+                printf("%d: set root IPs %d %d\n", timestamp,root_IPs[0], root_IPs[1]);
 
                 //remove branches since it has been sent to newly joined robot
                 erase_required = true;
@@ -1721,7 +1726,9 @@ void RobotSCOUT::Raising()
 
     if(seed)
     {
-        raising_count++;
+        //wait until received all IPs
+        if(mytree.isAllIPSet())
+            raising_count++;
 
         if(raising_count == raising_delay )
         {
@@ -1748,18 +1755,34 @@ void RobotSCOUT::Raising()
             flash_leds = true;
         }
     }
-    else if( msg_raising_stop_received )
+    else
     {
-        msg_raising_start_received = false;
-        msg_raising_stop_received = false;
-        current_state = MACROLOCOMOTION;
-        last_state = RAISING;
-        raising_count = 0;
-        flash_leds = false;
-    }
-    else if( msg_raising_start_received )
-    {
-        flash_leds = true;
+        if(mytree.Size() ==0 && !IP_collection_done)
+        {
+            IP_collection_done = true;
+            //send the IPs to its parent
+            std::vector<uint8_t> IPs;
+            mytree.getAllIPs(IPs);
+            uint8_t data[IPs.size()+1];
+            data[0]=IPs.size();
+            for(int i=0;i<IPs.size();i++)
+                data[i+1]=IPs[i];
+            SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, para.ir_msg_repeated_num);
+            SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
+        }
+        else if( msg_raising_stop_received )
+        {
+            msg_raising_start_received = false;
+            msg_raising_stop_received = false;
+            current_state = MACROLOCOMOTION;
+            last_state = RAISING;
+            raising_count = 0;
+            flash_leds = false;
+        }
+        else if( msg_raising_start_received )
+        {
+            flash_leds = true;
+        }
     }
 
     if(flash_leds)
@@ -2414,6 +2437,51 @@ void RobotSCOUT::Debugging()
                 neighbours_IP[3]=StringToIP("0.0.0.0");
             }
             break;
+        case 26:
+            if(timestamp ==2)
+            {
+                OrganismSequence tree_a, tree_b;
+                tree_a.reBuild("KFKBKFAF0000KBAB00000000KBKF0000KRKF0000");
+                tree_b.reBuild("KFAF0000KBAB0000");
+                std::vector<uint8_t> IPs;
+                std::vector<uint8_t> root_IPs;
+                std::vector<uint8_t> IPs2;
+                IPs.push_back(11);
+                IPs.push_back(12);
+                IPs.push_back(11);
+                IPs.push_back(13);
+                root_IPs.push_back(10);
+                root_IPs.push_back(11);
+                tree_a.setBranchIPs(FRONT, IPs);
+                std::cout<<tree_a<<std::endl;
+
+                tree_a.setBranchIPs(BACK, IPs);
+                std::cout<<tree_a<<std::endl;
+                
+                tree_a.setBranchIPs(RIGHT, IPs);
+                std::cout<<tree_a<<std::endl;
+
+                tree_a.setBranchIPs(LEFT, IPs);
+                std::cout<<tree_a<<std::endl;
+
+                tree_a.setBranchRootIPs(FRONT, IPs);
+                std::cout<<tree_a<<std::endl;
+                tree_a.setBranchRootIPs(BACK, IPs);
+                std::cout<<tree_a<<std::endl;
+                tree_a.setBranchRootIPs(RIGHT, IPs);
+                std::cout<<tree_a<<std::endl;
+                tree_a.setBranchRootIPs(LEFT, IPs);
+                std::cout<<tree_a<<std::endl;
+                tree_b.setBranchRootIPs(FRONT, root_IPs);
+                std::cout<<tree_b<<std::endl;
+                tree_b.setBranchRootIPs(BACK, root_IPs);
+                std::cout<<tree_b<<std::endl;
+                tree_b.getAllIPs(IPs2);
+                std::cout<<tree_b<<std::endl;
+                tree_a.setBranchIPs(FRONT, IPs2);
+                std::cout<<tree_a<<std::endl;
+
+            }
 
         default:
             break;

@@ -461,6 +461,12 @@ std::ostream& operator<<(std::ostream& os, const OrganismSequence& seq)
     {
         for(unsigned int i=0;i<seq.encoded_seq.size();i++)
             os<<seq.encoded_seq[i];
+        os<<std::endl;
+        for(unsigned int i=0;i<seq.encoded_seq.size();i++)
+        {
+            if(seq.encoded_seq[i].parent_IP != 0)
+                os<<int(seq.encoded_seq[i].parent_IP)<<":"<<int(seq.encoded_seq[i].child_IP)<<"-";
+        }
     }
     return os;
 }

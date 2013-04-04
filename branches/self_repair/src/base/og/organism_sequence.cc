@@ -18,6 +18,8 @@
 OrganismSequence::Symbol::Symbol(uint8_t sym)
 {
     data = sym;
+    parent_IP = 0;
+    child_IP = 0;
 }
 
 void OrganismSequence::Symbol::reBuild(const char str[4])
@@ -26,12 +28,16 @@ void OrganismSequence::Symbol::reBuild(const char str[4])
     side1 = getSide(str[1]);
     type2 = getType(str[2]);
     side2 = getSide(str[3]);
+    parent_IP = 0;
+    child_IP = 0;
 }
 
 
 OrganismSequence::Symbol::Symbol(const OrganismSequence::Symbol& s)
 {
     data = s.data;
+    parent_IP = 0;
+    child_IP = 0;
 }
 
 OrganismSequence::Symbol::Symbol(const robot_type& t1, const robot_side& s1, const robot_type&t2, const robot_side &s2)
@@ -40,6 +46,8 @@ OrganismSequence::Symbol::Symbol(const robot_type& t1, const robot_side& s1, con
     side1 = s1;
     type2 = t2;
     side2 = s2;
+    parent_IP = 0;
+    child_IP = 0;
 }
 
 OrganismSequence::Symbol& OrganismSequence::Symbol::operator=(const OrganismSequence::Symbol& rhs)
@@ -78,6 +86,12 @@ uint8_t OrganismSequence::Symbol::getSide(const char side)
             return i;
     }
     return 0;
+}
+
+void OrganismSequence::Symbol::setIP(const uint8_t ip[2])
+{
+    parent_IP = ip[0];
+    child_IP = ip[1];
 }
 
 OrganismSequence::Element::Element()
@@ -1307,7 +1321,7 @@ rt_status OrganismSequence::RandomInit(OrganismSequence& og_seq, const unsigned 
 
     //insert the first ever node
     og_seq = OrganismSequence(type);
-    rt_status ret;
+    rt_status ret={RT_OK,{0}};
     OrganismSequence og_seq_new;
 
     for(unsigned int i=1; i<size; i++)
@@ -1335,4 +1349,160 @@ rt_status OrganismSequence::RandomInit(OrganismSequence& og_seq, const unsigned 
 
 }
 
+bool OrganismSequence::isAllIPSet()
+{
+    bool ret = true;
+    for(unsigned int i=0; i< encoded_seq.size();i++)
+    {
+        //if encoded_seq is not an tail symbol (symbol(0)), then the ip should be set
+        if(encoded_seq[i] != Symbol(0) && (encoded_seq[i].parent_IP == 0 || encoded_seq[i].child_IP ==0))
+            ret = false;
+    }
 
+    return ret;
+}
+
+/*
+ * Set Branch's IP addresses, excluding the root 
+ */
+bool OrganismSequence::setBranchIPs(const robot_side& side, std::vector<uint8_t> IPs)
+{
+    if(IPs.size() == 0 )
+    {
+        printf("No IP addresses are supplied with %d\n", IPs.size());
+        return false;
+    }
+
+    bool ret = true;
+
+    //find the position of branch
+    std::vector<Element> eList;
+    std::vector<unsigned int> edges;
+    rt_status rt = Scan(eList, edges);
+    if(rt.status >= RT_ERROR)
+        return false;
+
+    std::vector<Element>::iterator start, end;
+    start = eList.begin();
+
+    rt.status = RT_OK_EMPTY_BRANCH;
+    rt.data = 0;
+
+    while(start!=eList.end())
+    {
+        end = eList.begin() + start->pair_pos + 1; 
+        if(end > eList.end())
+            break;
+
+        if( start->symbol.side1 ==side)
+        {
+            rt.status = RT_OK;
+            rt.data = start->pair_pos - (end-1)->pair_pos - 1;
+            printf("find the match side %c\n", side_names[side]);
+            break;
+        }
+        start = end;
+    }
+
+    
+    if(rt.status == RT_OK)
+    {
+        printf("processing ...\n");
+        //check if the size of IPs match with the branch size
+        if( rt.data != IPs.size())
+        {
+            printf("IPs size doens't match with the branch size (%d vs %d)\n", rt.data, IPs.size());
+            ret = false;
+        }
+        else
+        {
+            int index = 0;
+            int branch_start_pos = (end-1)->pair_pos + 1;
+            for(unsigned int i=0;i<rt.data;i++)
+            {
+                if(encoded_seq [ i + branch_start_pos] != Symbol(0))
+                {
+                    encoded_seq[ i + branch_start_pos].parent_IP = IPs[index++];
+                    encoded_seq[ i + branch_start_pos].child_IP = IPs[index++];
+                }
+            }
+        }
+    }
+    else
+    {
+        printf("can not find the branch [%c]\n", side_names[side]);
+        ret = false;
+    }
+
+    return ret;
+}
+
+/*
+ * Set Branch's root IP addresses 
+ */
+bool OrganismSequence::setBranchRootIPs(const robot_side& side, std::vector<uint8_t> IPs)
+{
+    if(IPs.size() !=2)
+    {
+        printf("Requires two IP addresses, but was supplied with %d\n", IPs.size());
+        return false;
+    }
+
+    bool ret = true;
+
+    //find the position of branch
+    std::vector<Element> eList;
+    std::vector<unsigned int> edges;
+    rt_status rt = Scan(eList, edges);
+    if(rt.status >= RT_ERROR)
+        return false;
+
+    std::vector<Element>::iterator start, end;
+    start = eList.begin();
+
+    rt.status = RT_OK_EMPTY_BRANCH;
+    rt.data = 0;
+
+    while(start!=eList.end())
+    {
+        end = eList.begin() + start->pair_pos + 1; 
+        if(end > eList.end())
+            break;
+
+        if( start->symbol.side1 ==side)
+        {
+            rt.status = RT_OK;
+            rt.data = 2;
+            break;
+        }
+        start = end;
+    }
+
+    if(rt.status == RT_OK)
+    {
+        int branch_start_pos = (end-1)->pair_pos;
+        encoded_seq[ branch_start_pos].parent_IP = IPs[0];
+        encoded_seq[ branch_start_pos].child_IP = IPs[1];
+    }
+    else
+    {
+        printf("can not find the branch [%c]\n", side_names[side]);
+        ret = false;
+    }
+
+    return ret;
+}
+
+bool OrganismSequence::getAllIPs(std::vector<uint8_t>& IPs)
+{
+    for(unsigned int i=0; i< encoded_seq.size(); i++)
+    {
+        if(encoded_seq[i] != Symbol(0))
+        {
+            IPs.push_back(encoded_seq[i].parent_IP);
+            IPs.push_back(encoded_seq[i].child_IP);
+        }
+    }
+
+    return true;
+}
