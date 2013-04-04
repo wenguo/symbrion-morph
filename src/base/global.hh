@@ -107,7 +107,6 @@ enum ir_pos_t {
 }; //F -- FRONT, R -- RIGHT, B-- BACK, L--LEFT
 
 enum msg_type_t {
-    //broadcast, no ack required
     MSG_TYPE_UNKNOWN =0,
  
     MSG_TYPE_PROPAGATED,
@@ -129,9 +128,12 @@ enum msg_type_t {
     MSG_TYPE_RETREAT,
     MSG_TYPE_STOP,
 
+    MSG_TYPE_IP_ADDR_COLLECTION, //issued by the leaf node robot
+
     MSG_TYPE_ACK,              //followed by acknowledged message type
 
 
+    //broadcast, no ack required
     IR_MSG_TYPE_RECRUITING, //followed by assembly_info
     IR_MSG_TYPE_RECRUITING_REQ, //followed by mytype 
     IR_MSG_TYPE_EXPELLING,        //no data 

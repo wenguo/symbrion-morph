@@ -84,6 +84,8 @@ class OrganismSequence
             bool operator==(const Symbol&) const;
             bool operator!=(const Symbol&) const;
 
+            void setIP(const uint8_t ip[2]);
+
             union
             {
                 uint8_t data;
@@ -94,6 +96,10 @@ class OrganismSequence
                     uint8_t side2:2; //bits: 6 - 7 child_side
                 };
             };
+    
+            //assume all robots are in the same subnet, thus store only the last 8 bits
+            uint8_t parent_IP;
+            uint8_t child_IP;
         private:
             uint8_t getType(const char type);
             uint8_t getSide(const char side);
@@ -148,6 +154,7 @@ class OrganismSequence
     static rt_status changeConnection(OrganismSequence&, const unsigned int& edge_pos);
     static rt_status removeSequence(OrganismSequence&, const unsigned int& edge_pos, const bool&);
 
+
     // for self-repair
     static OrganismSequence getNextSeedSeq(OrganismSequence&);
 
@@ -161,7 +168,12 @@ class OrganismSequence
     rt_status reBuild(const uint8_t *data, const int size);
     rt_status reBuild(const char *str);
     inline const std::vector<Symbol>& Encoded_Seq() const{return encoded_seq;}
-    inline const std::vector<uint32_t>& IP_list() const{return ip_list;}
+
+    //for IP collection
+    bool isAllIPSet();
+    bool setBranchIPs(const robot_side&, std::vector<uint8_t> IPs);
+    bool setBranchRootIPs(const robot_side&, std::vector<uint8_t> IPs);
+    bool getAllIPs(std::vector<uint8_t>& IPs);
 
     friend std::ostream& operator<<(std::ostream&, const Symbol&);
     friend std::ostream& operator<<(std::ostream&, const Element&);
@@ -174,7 +186,6 @@ class OrganismSequence
 
     protected:
     std::vector<Symbol> encoded_seq;
-    std::vector<uint32_t> ip_list;
 };
 
 //node class in graph

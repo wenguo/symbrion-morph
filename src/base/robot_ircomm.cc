@@ -27,7 +27,7 @@ void * Robot::IRCommTxThread(void * para)
     Robot * robot = (Robot*) para;
     while(1)
     {
-        for(int i=0;i<NUM_DOCKS;i++)
+        for(unsigned int i=0;i<NUM_DOCKS;i++)
         {
             pthread_mutex_lock(&robot->ir_txqueue_mutex);
             if(robot->IR_TXMsgQueue[i].size()>0)
@@ -377,6 +377,49 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
             }
             break;
+        case MSG_TYPE_IP_ADDR_COLLECTION:
+            {
+                if(docked[channel])
+                {
+                    if(channel == parent_side)
+                    {
+                        printf("%d: I shouldn't receive this message from my parent %d\n", timestamp, channel);
+                    }
+                    else
+                    {
+                        //first fill in the ip_list in the right position of 'mytree' using received data
+                        std::vector<uint8_t> branch_IPs;
+                        printf("IR received IPs (%d):", data[2]);
+                        for(int i=0;i<data[2];i++)
+                        {
+                            printf("%d ", data[i+3]);
+                            branch_IPs.push_back(data[i+3]);
+                        }
+                        printf("\n");
+                        if(branch_IPs.size() > 0)
+                            mytree.setBranchIPs(robot_side(channel), branch_IPs);
+
+
+                        //check if all IPs are set in 'mytree' 
+                        if(mytree.isAllIPSet() && !IP_collection_done)
+                        {
+                            IP_collection_done = true;
+                            //send the IPs to its parent
+                            std::vector<uint8_t> IPs;
+                            mytree.getAllIPs(IPs);
+                            uint8_t data[IPs.size()+1];
+                            data[0]=IPs.size();
+                            for(int i=0;i<IPs.size();i++)
+                                data[i+1]=IPs[i];
+                            SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1,para.ir_msg_repeated_num);
+                            SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
+                        }
+
+                        ack_required = true;
+                    }
+                }
+            }
+            break;
         case MSG_TYPE_PROPAGATED:
             {
                 //data[1] IR_MSG_TYPE_PROPAGATED
@@ -544,6 +587,9 @@ void Robot::SendIRMessage(int channel, uint8_t type, const uint8_t *data, int si
     //This function should be called only when robots are docked, so docked[channel]!=0 TODO: check this
     //docked[channel] stores the encoded sequence information such as "KFSF", 'KF' is my type and my docking side
     //'SF' is the connected robot's type and side
+    if(channel >= NUM_DOCKS || channel <0)
+        return;
+
     pthread_mutex_lock(&ir_txqueue_mutex);
     if(type == MSG_TYPE_ACK)
         IR_TXMsgQueue[channel].insert(IR_TXMsgQueue[channel].begin(),IRMessage(channel, timestamp, docked[channel], type, data, size, ack_required));
@@ -587,6 +633,9 @@ void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t data, ui
 
 void Robot::BroadcastIRMessage(int channel, uint8_t type, const uint8_t *data, int size, uint8_t ack_required)
 {
+    if(channel >= NUM_DOCKS || channel <0)
+        return;
+
     //push broadcast message into a queue, the receiver is set to 0 to be distinguished from SendIRMessages
     pthread_mutex_lock(&ir_txqueue_mutex);
     IR_TXMsgQueue[channel].push_back(IRMessage(channel, timestamp, 0, type, data, size, ack_required));
