@@ -1441,15 +1441,6 @@ void RobotKIT::Recruitment()
             //get new ip address?
             else if(msg_ip_addr_received & (1<<i))
             {
-                //prepare the newrobot_joined messages
-                if(!seed)
-                {
-                    PropagateIRMessage(MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
-                    PropagateEthMessage(MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
-                }
-
-                //    msg_ip_addr_received &= ~(1<<i);
-
                 std::vector<uint8_t> root_IPs;
                 root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
                 root_IPs.push_back(uint8_t((neighbours_IP[i].i32>>24) & 0xFF));
@@ -1499,8 +1490,12 @@ void RobotKIT::InOrganism()
     if(seed)
     {
         if( mytree.Edges() + 1 == (unsigned int)num_robots_inorganism)
+            printf("%d total number of robots in organism is %d\n", timestamp, mytree.Edges() + 1);
+
+        if(mytree.isAllIPSet() && !IP_collection_done)
         {
             organism_formed = true;
+            IP_collection_done = true;
 
             textcolor(BRIGHT, SCR_RED, SCR_BLACK);  
             printf("%d -- organism formed !!\n", timestamp);
@@ -1534,7 +1529,6 @@ void RobotKIT::InOrganism()
     {
         if(msg_organism_seq_expected && msg_organism_seq_received)
         {
-            msg_organism_seq_received = 0;
             msg_organism_seq_expected = false;
 
             for(int i=0;i<NUM_DOCKS;i++)
@@ -1562,8 +1556,24 @@ void RobotKIT::InOrganism()
                 last_state = INORGANISM;
             }
         }
+        else if(msg_organism_seq_received && (mytree.isAllIPSet() || mytree.Size() ==0) && !IP_collection_done)
+        {
+            IP_collection_done = true;
+            //send the IPs to its parent
+            std::vector<uint8_t> IPs;
+            mytree.getAllIPs(IPs);
+            uint8_t data[IPs.size()+1];
+            data[0]=IPs.size();
+            for(int i=0;i<IPs.size();i++)
+                data[i+1]=IPs[i];
+            SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, para.ir_msg_repeated_num);
+            SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
+
+        }
         else if(organism_formed)
         {
+            msg_organism_seq_received  = 0;
+
             textcolor(BRIGHT, SCR_RED, SCR_BLACK);  
             printf("%d -- organism formed !!\n", timestamp);
             textcolor(RESET, SCR_WHITE, SCR_BLACK); 
@@ -1784,8 +1794,7 @@ void RobotKIT::Raising()
     if(seed)
     {
         //wait until received all IPs
-        if(mytree.isAllIPSet())
-            raising_count++;
+        raising_count++;
 
         if(raising_count == raising_delay )
         {
@@ -1814,20 +1823,7 @@ void RobotKIT::Raising()
     }
     else
     {
-        if(mytree.Size() ==0 && !IP_collection_done)
-        {
-            IP_collection_done = true;
-            //send the IPs to its parent
-            std::vector<uint8_t> IPs;
-            mytree.getAllIPs(IPs);
-            uint8_t data[IPs.size()+1];
-            data[0]=IPs.size();
-            for(int i=0;i<IPs.size();i++)
-                data[i+1]=IPs[i];
-            SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1,para.ir_msg_repeated_num);
-            SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
-        }
-        else if( msg_raising_stop_received )
+       if( msg_raising_stop_received )
         {
             msg_raising_start_received = false;
             msg_raising_stop_received = false;
