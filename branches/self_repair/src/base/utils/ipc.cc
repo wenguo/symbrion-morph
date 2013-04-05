@@ -1,3 +1,8 @@
+/*
+ *      Created on: 01/2012
+ *          Author: Wenguo Liu (wenguo.liu@brl.ac.uk)
+ *
+*/
 #include <pthread.h>
 #include <string.h>
 #include <sys/types.h>
@@ -21,6 +26,7 @@ bool IPC::Start(const char* h, int p, bool s)
     else
         host=NULL;
 
+    mutex_txq=PTHREAD_MUTEX_INITIALIZER; 
     //create monitoring thread
     pthread_create(&monitor_thread, 0, Monitoring, this);
 
@@ -71,6 +77,7 @@ void * IPC::Receiving(void * ptr)
         }
         else
         {
+            
             int parsed = 0;
             while (parsed < received)
             {
@@ -89,7 +96,7 @@ void * IPC::Receiving(void * ptr)
 
 void * IPC::Transmiting(void *ptr)
 {
-    printf("create transmiting thread");
+    printf("create transmiting thread\n");
     IPC * ipc = (IPC*) ptr;
     uint8_t txBuf[IPCBLOCKSIZE];
 
@@ -113,7 +120,7 @@ void * IPC::Transmiting(void *ptr)
 
 bool IPC::StartServer(int port)
 {
-    printf("Start Server\n");
+    printf("Start Server @ port: %d\n", port);
     struct sockaddr_in serv_addr;
 
     bool binded = false;
@@ -175,6 +182,8 @@ bool IPC::ConnectToServer(const char * host, int port)
     struct sockaddr_in serv_addr;
     struct hostent *server;
     server = gethostbyname(host);
+    
+    printf("Trying to connect to Server [%s:%d]\n", host, port);
 
     clientsockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (clientsockfd < 0) 
@@ -191,13 +200,14 @@ bool IPC::ConnectToServer(const char * host, int port)
         printf("ERROR connecting, exit monitor thread\n");
         return false;
     }
-    printf("Connect to Server [%s:%d]\n", host, port);
+    printf("Success to connect to Server [%s:%d]\n", host, port);
 
     return true;
 }
 
 bool IPC::SendData(const uint8_t type, uint8_t *data, int data_size)
 {
+	printf("send data\n");
     LolMessage msg;
     lolmsgInit(&msg, 0, type, data, data_size);
     int len = lolmsgSerializedSize(&msg);

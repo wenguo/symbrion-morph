@@ -392,28 +392,12 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         printf("IR received IPs (%d):", data[2]);
                         for(int i=0;i<data[2];i++)
                         {
-                            printf("%d ", data[i+3]);
+                            printf("%#x ", data[i+3]);
                             branch_IPs.push_back(data[i+3]);
                         }
                         printf("\n");
                         if(branch_IPs.size() > 0)
                             mytree.setBranchIPs(robot_side(channel), branch_IPs);
-
-
-                        //check if all IPs are set in 'mytree' 
-                        if(mytree.isAllIPSet() && !IP_collection_done)
-                        {
-                            IP_collection_done = true;
-                            //send the IPs to its parent
-                            std::vector<uint8_t> IPs;
-                            mytree.getAllIPs(IPs);
-                            uint8_t data[IPs.size()+1];
-                            data[0]=IPs.size();
-                            for(int i=0;i<IPs.size();i++)
-                                data[i+1]=IPs[i];
-                            SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1,para.ir_msg_repeated_num);
-                            SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
-                        }
 
                         ack_required = true;
                     }

@@ -1,3 +1,8 @@
+/*
+ *      Created on: 01/2012
+ *          Author: Wenguo Liu (wenguo.liu@brl.ac.uk)
+ *
+*/
 #ifndef IPC_HH
 #define IPC_HH
 #include "lolmsg.h"

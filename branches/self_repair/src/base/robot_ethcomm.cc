@@ -145,22 +145,6 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
                     mytree.setBranchIPs(robot_side(channel), branch_IPs);
                     
                     SendEthAckMessage(channel, data[0]);
-
-                    //check if all IPs are set in 'mytree' 
-                    if(mytree.isAllIPSet() && !IP_collection_done)
-                    {
-                        IP_collection_done = true;
-                        //send the IPs to its parent
-                        std::vector<uint8_t> IPs;
-                        mytree.getAllIPs(IPs);
-                        uint8_t data[IPs.size()+1];
-                        data[0]=IPs.size();
-                        for(int i=0;i<IPs.size();i++)
-                            data[i+1]=IPs[i];
-                        SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
-                        SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1,para.ir_msg_repeated_num);
-                    }
-
                 }
             }
             break;
