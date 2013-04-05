@@ -437,8 +437,11 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                             case MSG_TYPE_ORGANISM_FORMED:
                                 {
                                     organism_formed = true;
-                                    rt_status ret = target.reBuild((uint8_t*)&(data[8]), data[7]);
+                                    rt_status ret = target.reBuild((uint8_t*)&(data[8]), data[7]-2);
+                                    commander_IP = getFullIP(data[data[7] + 6]);
+                                    subscription_port = COMMANDER_PORT_BASE + (uint8_t)data[data[7] + 7];
                                     std::cout<<timestamp<<": "<<name<<" receive the whole tree: ("<<int(data[7])<<")"<<target<<std::endl;
+                                    std::cout<<"commander_IP: "<<IPToString(commander_IP)<<" port: "<<subscription_port<<std::endl;
                                     CPrintf1(SCR_GREEN,"%d -- organism formed !", timestamp);
                                 }
                                 break;

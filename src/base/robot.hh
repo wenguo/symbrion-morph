@@ -27,6 +27,7 @@
 #include "og/organism_sample.hh"
 #include "utils/worldfile.hh"
 #include "utils/hist.hh"
+#include "utils/ipc.hh"
 #include "utils/support.hh"
 #include "IRMessage.hh"
 
@@ -141,6 +142,7 @@ class Robot
     std::string ClockString();
     const char * IPToString(Ethernet::IP ip);
     Ethernet::IP StringToIP(const char *);
+    Ethernet::IP getFullIP(const uint8_t addr);
 
     //  void BroadcastMessage(Message); //broadcast message via wired communication bus
     //  void SendMessage(int i, Message*);
@@ -412,6 +414,14 @@ class Robot
     Ethernet::IP my_IP;
     Ethernet::IP neighbours_IP[SIDE_COUNT];
     bool IP_collection_done;
+
+    IPC::IPC subscription_IPC;
+    std::vector<IPC::IPC *> commands_IPC;
+    static void Process_Og_command(const LolMessage*msg, void *ptr);
+    static void Process_Og_subscription(const LolMessage*msg, void *ptr);
+    Ethernet::IP commander_IP;
+    int          commander_port;
+    int          subscription_port;
 
 
     uint8_t LED0;

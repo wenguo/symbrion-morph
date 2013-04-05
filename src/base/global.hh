@@ -2,6 +2,9 @@
 #define GLOBAL_HH
 #include <IRobot.h>
 
+#define SUBSCRIPTION_PORT 254    //the actual port will be 10254
+#define COMMANDER_PORT_BASE 10000   
+
 #define NUM_LEDS                       4        //number of blinkenlight
 #define NUM_IRCOMMS                    4        //number of IR Communication channels
 #define NUM_DOCKS                      4
@@ -157,6 +160,18 @@ enum msg_type_t {
 
 
     IR_MSG_TYPE_COUNT
+};
+
+enum ipc_msg_type_t
+{
+    REQ_SUBSCRIPTION = 0X10,
+    REQ_SUBSCRIPTION_ACK = 0X11,
+    REQ_UNSUBSCRIPTION = 0X12,
+    REQ_UNSUBSCRIPTION_ACK = 0X13,
+    REQ_ID = 0X1C,
+    REQ_ID_ACK = 0X1D,
+    UNKNOWN = 0XEF
+
 };
 
 enum docking_motor_status_t{
