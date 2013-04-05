@@ -1,6 +1,6 @@
-SRC = robot.cc robot_ircomm.cc robot_ethcomm.cc robot_option.cc robot_self_repair.cc parameter.cc global.cc IRMessage.cc
+SRC = robot.cc robot_ircomm.cc robot_ethcomm.cc robot_option.cc robot_self_repair.cc parameter.cc global.cc IRMessage.cc robot_IPC.cc
 SRC+= organism.cc organism_sequence.cc organism_sample.cc
-SRC+= support.cc worldfile.cc hist.cc
+SRC+= support.cc worldfile.cc hist.cc ipc.cc
 
 CC = bfin-linux-uclibc-gcc
 CXX = bfin-linux-uclibc-g++ 

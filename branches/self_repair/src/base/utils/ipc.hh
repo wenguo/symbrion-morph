@@ -29,7 +29,7 @@ class IPC
 
         bool Start(const char *host,int port, bool server);
         bool SendData(const uint8_t type, uint8_t *data, int len);
-        inline bool SetCallback(Callback c, void * u) {callback = c; user_data = u;}
+        inline void SetCallback(Callback c, void * u) {callback = c; user_data = u;}
 
     private:
         static void * Monitoring(void *ptr);

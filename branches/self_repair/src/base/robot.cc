@@ -808,3 +808,7 @@ Ethernet::IP Robot::StringToIP(const char *str)
 {
     return Ethernet::ip_t::parse(str);
 }
+Ethernet::IP Robot::getFullIP(const uint8_t addr)
+{
+    return Ethernet::ip_t(uint32_t(addr)<<24 | 2 << 16 | 168 <<8 | 192);
+}

@@ -24,6 +24,7 @@ set imsearch=0
 set nomodeline
 set mouse=a
 set printoptions=paper:a4
+set report=10000
 set ruler
 set runtimepath=~/.vim,/var/lib/vim/addons,/usr/share/vim/vimfiles,/usr/share/vim/vim73,/usr/share/vim/vimfiles/after,/var/lib/vim/addons/after,~/.vim/after
 set shiftwidth=4
@@ -34,64 +35,73 @@ set window=45
 let s:so_save = &so | let s:siso_save = &siso | set so=0 siso=0
 let v:this_session=expand("<sfile>:p")
 silent only
+cd ~/workspace/symbrion-morph/branches/self_repair/src
 if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
   let s:wipebuf = bufnr('%')
 endif
 set shortmess=aoO
-badd +1 ./base/og/organism.cc
-badd +1 ./base/og/organism_sequence.cc
-badd +1 ./base/og/organism.hh
+badd +462 ./base/og/organism.cc
+badd +1484 ./base/og/organism_sequence.cc
+badd +23 ./base/og/organism.hh
 badd +1 ./base/og/organism_sample.cc
 badd +1 ./base/og/organism_sample.hh
-badd +237 ./base/robot.hh
+badd +417 ./base/robot.hh
 badd +1 ./base/utils/support.cc
 badd +1 ./base/utils/worldfile.cc
 badd +1 ./base/utils/worldfile.hh
 badd +1 ./base/utils/support.hh
 badd +1 ./base/utils/hist.cc
 badd +1 ./base/utils/hist.hh
-badd +122 ./base/robot.cc
+badd +251 ./base/robot.cc
 badd +1 ./base/parameter.cc
 badd +1 ./base/parameter.hh
-badd +82 ./base/global.hh
-badd +1 ./base/global.cc
+badd +122 ./base/global.hh
+badd +50 ./base/global.cc
 badd +45 ./base/robot_debug.cc
 badd +40 ./base/robot_option.cc
 badd +22 ./robot_KIT.hh
 badd +23 ./robot_AW.hh
 badd +1 ./main.cc
-badd +9 ./robot_KIT.cc
-badd +227 ./robot_AW.cc
+badd +1889 ./robot_KIT.cc
+badd +1669 ./robot_AW.cc
 badd +12 base/IRMessage.hh
 badd +4 base/IRMessage.cc
 badd +15 base/Makefile
-badd +5 base/robot_ircomm.cc
-badd +5 base/robot_ethcomm.cc
-badd +1 base/robot_self_repair.cc
+badd +402 base/robot_ircomm.cc
+badd +161 base/robot_ethcomm.cc
+badd +696 base/robot_self_repair.cc
 badd +1 robot_SCOUT.hh
-badd +1 robot_SCOUT.cc
+badd +1742 robot_SCOUT.cc
+badd +0 robot_IPC.cc
 args \[BufExplorer]
-edit robot_SCOUT.cc
 set splitbelow splitright
 set nosplitbelow
 set nosplitright
 wincmd t
 set winheight=1 winwidth=1
 argglobal
+enew
+file \[BufExplorer]
+nnoremap <buffer> <silent> G :keepjumps normal! G
+nnoremap <buffer> <silent> H :keepjumps normal! H
+nnoremap <buffer> <silent> L :keepjumps normal! L
+nnoremap <buffer> <silent> M :keepjumps normal! M
+nnoremap <buffer> <silent> N :keepjumps normal! N
+nnoremap <buffer> <silent> n :keepjumps normal! n
 setlocal keymap=
 setlocal noarabic
 setlocal noautoindent
 setlocal balloonexpr=
 setlocal nobinary
 setlocal bufhidden=
-setlocal buflisted
-setlocal buftype=
+setlocal nobuflisted
+setlocal buftype=nofile
 setlocal cindent
 setlocal cinkeys=0{,0},0),:,0#,!^F,o,O,e
 setlocal cinoptions=
 setlocal cinwords=if,else,while,do,for,switch
 setlocal colorcolumn=
-setlocal comments=sO:*\ -,mO:*\ \ ,exO:*/,s1:/*,mb:*,ex:*/,://
+setlocal comments=s1:/*,mb:*,ex:*/,://,b:#,:%,:XCOMM,n:>,fb:-
 setlocal commentstring=/*%s*/
 setlocal complete=.,w,b,u,t,i
 setlocal concealcursor=
@@ -101,18 +111,18 @@ setlocal nocopyindent
 setlocal cryptmethod=
 setlocal nocursorbind
 setlocal nocursorcolumn
-setlocal nocursorline
+setlocal cursorline
 setlocal define=
 setlocal dictionary=
 setlocal nodiff
 setlocal equalprg=
 setlocal errorformat=
 setlocal expandtab
-if &filetype != 'cpp'
-setlocal filetype=cpp
+if &filetype != ''
+setlocal filetype=
 endif
 setlocal foldcolumn=0
-setlocal foldenable
+setlocal nofoldenable
 setlocal foldexpr=0
 setlocal foldignore=#
 setlocal foldlevel=0
@@ -122,7 +132,7 @@ setlocal foldminlines=1
 setlocal foldnestmax=20
 setlocal foldtext=foldtext()
 setlocal formatexpr=
-setlocal formatoptions=croql
+setlocal formatoptions=tcq
 setlocal formatlistpat=^\\s*\\d\\+[\\]:.)}\\t\ ]\\s*
 setlocal grepprg=
 setlocal iminsert=0
@@ -140,12 +150,12 @@ setlocal nolist
 setlocal makeprg=
 setlocal matchpairs=(:),{:},[:]
 setlocal nomodeline
-setlocal modifiable
+setlocal nomodifiable
 setlocal nrformats=octal,hex
 set number
-setlocal number
+setlocal nonumber
 setlocal numberwidth=4
-setlocal omnifunc=ccomplete#Complete
+setlocal omnifunc=
 setlocal path=
 setlocal nopreserveindent
 setlocal nopreviewwindow
@@ -165,10 +175,10 @@ setlocal spellfile=
 setlocal spelllang=en
 setlocal statusline=
 setlocal suffixesadd=
-setlocal swapfile
+setlocal noswapfile
 setlocal synmaxcol=3000
-if &syntax != 'cpp'
-setlocal syntax=cpp
+if &syntax != ''
+setlocal syntax=
 endif
 setlocal tabstop=8
 setlocal tags=
@@ -177,15 +187,8 @@ setlocal thesaurus=
 setlocal noundofile
 setlocal nowinfixheight
 setlocal nowinfixwidth
-setlocal wrap
+setlocal nowrap
 setlocal wrapmargin=0
-silent! normal! zE
-let s:l = 1 - ((0 * winheight(0) + 23) / 46)
-if s:l < 1 | let s:l = 1 | endif
-exe s:l
-normal! zt
-1
-normal! 0
 tabnext 1
 if exists('s:wipebuf')
   silent exe 'bwipe ' . s:wipebuf
