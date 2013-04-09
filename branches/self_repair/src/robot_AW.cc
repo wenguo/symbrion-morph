@@ -2,6 +2,7 @@
 
 RobotAW::RobotAW(ActiveWheel *robot):Robot()
 {
+    printf("Init RobotAW()\n");
     if(name)
         free(name);
     name = strdup("RobotAW");
@@ -1389,13 +1390,12 @@ void RobotAW::InOrganism()
             for(int i = 0; i< target.Encoded_Seq().size(); i++)
                 buf[i] = target.Encoded_Seq()[i].data;
             buf[target.Encoded_Seq().size()] = (my_IP.i32>>24)& 0xFF; //IP
-            buf[target.Encoded_Seq().size() + 1] = SUBSCRIPTION_PORT;//subscription port
+            buf[target.Encoded_Seq().size() + 1] = COMMANDER_PORT;//commander port
             PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size() + 2);
             PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size() + 2);
 
-            //start subscription thread, as a server
-            subscription_IPC.SetCallback(Process_Og_subscription, this);
-            subscription_IPC.Start("localhost", COMMANDER_PORT_BASE + SUBSCRIPTION_PORT, true);
+            //start IPC thread, as a server
+            commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
 
             macrolocomotion_count = 0;
             raising_count = 0;
@@ -1478,9 +1478,8 @@ void RobotAW::InOrganism()
                 printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
             }
 
-            //start subscription thread, as a client 
-            subscription_IPC.SetCallback(Process_Og_subscription, this);
-            subscription_IPC.Start(IPToString(commander_IP), subscription_port, false);
+            //start IPC thread, as a client 
+            commander_IPC.Start(IPToString(commander_IP), commander_port, false);
         }
     }
 }

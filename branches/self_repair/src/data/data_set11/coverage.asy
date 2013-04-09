@@ -107,9 +107,20 @@ for(int i = 0; i < MAX_NUM_FILES; ++i)
         pos[i*MAX_REC_PER_FILE + j] = (x[i] - 3, starty + j * y_interval);
 
         if(i<MAX_NUM_FILES/2)
-            value[i*MAX_REC_PER_FILE + j]= data[2][j];//max(data[1][j], data[2][j]);
+        {
+            if(data[2][j]<100)
+                value[i*MAX_REC_PER_FILE + j]= data[2][j];//max(data[1][j], data[2][j]);
+            else
+                value[i*MAX_REC_PER_FILE + j]= 100;//max(data[1][j], data[2][j]);
+        }
         else
-            value[i*MAX_REC_PER_FILE + j]= data[1][j];//max(data[1][j], data[2][j]);
+        {
+            if(data[1][j]<100)
+                value[i*MAX_REC_PER_FILE + j]= data[1][j];//max(data[1][j], data[2][j]);
+            else
+                value[i*MAX_REC_PER_FILE + j]= 100;//max(data[1][j], data[2][j]);
+        }
+
         if(data[1][j]>threshold && data[2][j]>threshold)
             y[i] = max(starty+j*y_interval, y[i]);
         int sum = 0;

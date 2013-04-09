@@ -2,7 +2,7 @@
 #define GLOBAL_HH
 #include <IRobot.h>
 
-#define SUBSCRIPTION_PORT 254    //the actual port will be 10254
+#define COMMANDER_PORT 254    //the actual port will be 10254
 #define COMMANDER_PORT_BASE 10000   
 
 #define NUM_LEDS                       4        //number of blinkenlight

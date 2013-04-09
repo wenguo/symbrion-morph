@@ -219,9 +219,9 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
                                 organism_formed = true;
                                 rt_status ret = target.reBuild((uint8_t*)&(data[6]), size-8);
                                 commander_IP = getFullIP(data[size - 2]);
-                                subscription_port = COMMANDER_PORT_BASE + (uint8_t)data[size - 1];
+                                commander_port = COMMANDER_PORT_BASE + (uint8_t)data[size - 1];
                                 std::cout<<timestamp<<": "<<name<<" receive the whole tree:("<<size-6<<") "<<target<<std::endl;
-                                std::cout<<"commander_IP: "<<IPToString(commander_IP)<<" port: "<<subscription_port<<std::endl;
+                                std::cout<<"commander_IP: "<<IPToString(commander_IP)<<" port: "<<commander_port<<std::endl;
                                 CPrintf1(SCR_BLUE,"%d -- organism formed !", timestamp);
                             }
                             break;
