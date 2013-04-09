@@ -11,11 +11,13 @@
 
 Robot::Robot()
 {
+    printf("Init Robot(1)\n");
     name = strdup("Robot");
     timestamp = 0;
     timestamp_propagated_msg_received=0;
     type = ROBOT_KIT;
 
+    printf("Init Robot(2)\n");
     bumped=0;
     assembly_info_checked=false;
     num_robots_inorganism=1;
@@ -67,6 +69,7 @@ Robot::Robot()
     RegisterBehaviour(&Robot::LeadRepair, LEADREPAIR);
     RegisterBehaviour(&Robot::Repair, REPAIR);
 
+    printf("Init Robot(3)\n");
     for (int i = 0; i < NUM_IRS; i++)
     {
         reflective[i]=0;
@@ -261,6 +264,7 @@ Robot::~Robot()
 bool Robot::Init(const char * optionfile)
 {
 
+    printf("Robot::Init\n");
     if(!LoadParameters(optionfile))
     {
         return false;
@@ -281,6 +285,7 @@ bool Robot::Init(const char * optionfile)
 
     my_IP = Ethernet::GetLocalIP();
 
+    printf("Create threads\n");
     pthread_attr_t attributes;
     pthread_attr_init(&attributes);
     int ret_tx = pthread_create(&ircomm_tx_thread, NULL, IRCommTxThread, this);
@@ -313,6 +318,8 @@ bool Robot::Init(const char * optionfile)
 
     robots_in_range_detected_hist.Reset();
     beacon_signals_detected_hist.Reset();
+
+    commander_IPC.SetCallback(Process_Organism_command, this);
 
     return true;
 }

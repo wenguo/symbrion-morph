@@ -2,6 +2,7 @@
 
 bool Robot::LoadParameters(const char * filename)
 {
+    printf("Load option file");
     if(!filename)
         return false;
 

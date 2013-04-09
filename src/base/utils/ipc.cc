@@ -5,10 +5,12 @@
 */
 #include <pthread.h>
 #include <string.h>
+#include <stdio.h>
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <stdio.h>
 #include <netinet/in.h>
+#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
 #include <netdb.h>
 #include <unistd.h>
 #include <sstream>
@@ -16,6 +18,42 @@
 #include "ipc.hh"
 
 namespace IPC{
+
+Connection::Connection()
+{
+    ipc = NULL;
+    callback = NULL;
+    connected = true;
+    BQInit(&txq, txbuffer, IPCTXBUFFERSIZE);
+    pthread_mutex_init(&mutex_txq, NULL);
+    user_data = NULL;
+}
+Connection::~Connection()
+{
+    //clean up
+}
+
+bool Connection::Start()
+{
+    pthread_create(&receiving_thread, 0, Receiving, this);
+    pthread_create(&transmiting_thread, 0, Transmiting, this);
+    return true;
+}
+
+IPC::IPC()
+{
+    sockfd = -1;
+    port = 10000;
+    host = NULL;
+    server = true;
+    callback = NULL;
+    user_data = NULL;
+}
+
+IPC::~IPC()
+{
+    //cleanup
+}
 
 bool IPC::Start(const char* h, int p, bool s)
 {
@@ -26,10 +64,8 @@ bool IPC::Start(const char* h, int p, bool s)
     else
         host=NULL;
 
-    pthread_mutex_init(&mutex_txq, NULL);
     //create monitoring thread
     pthread_create(&monitor_thread, 0, Monitoring, this);
-
     return true;
 }
 
@@ -43,48 +79,43 @@ void * IPC::Monitoring(void * ptr)
     else
         ret = ipc->ConnectToServer(ipc->host, ipc->port);
 
-    if(ret)
-    {
-        pthread_create(&ipc->receiving_thread, 0, Receiving, ptr);
-        pthread_create(&ipc->transmiting_thread, 0, Transmiting, ptr);
-    }
-
-
-
+    return NULL;
 }
 
-void * IPC::Receiving(void * ptr)
+void * Connection::Receiving(void * p)
 {
-    IPC* ipc = (IPC*)ptr;
 
-    printf("create receiving thread\n");
+    Connection * ptr = (Connection*)p;
+    printf("create receiving thread %d\n", ptr->sockfds);
 
     //main loop, keep reading
     unsigned char rx_buffer[IPCBLOCKSIZE];
 
-    lolmsgParseInit(&ipc->parseContext, new uint8_t[IPCLOLBUFFERSIZE], IPCLOLBUFFERSIZE);
+    lolmsgParseInit(&ptr->parseContext, new uint8_t[IPCLOLBUFFERSIZE], IPCLOLBUFFERSIZE);
 
-    while(1)
+    while(ptr->connected)
     {
         //reading
         memset(rx_buffer, 0, IPCBLOCKSIZE);
-        int received = read(ipc->clientsockfd,rx_buffer, IPCBLOCKSIZE);
+        int received = read(ptr->sockfds,rx_buffer, IPCBLOCKSIZE);
         if (received <= 0) 
         {
             printf("ERROR read to socket : %d -- it seems connection lost\n", received);
-            ipc->connected = false;
+            ptr->connected = false;
             break;
         }
         else
         {
-            
             int parsed = 0;
             while (parsed < received)
             {
-                parsed += lolmsgParse(&ipc->parseContext, rx_buffer + parsed, received - parsed);
-                LolMessage* msg = lolmsgParseDone(&ipc->parseContext);
-                if(msg!=NULL && ipc->callback)
-                    ipc->callback(msg, ipc->user_data);
+                parsed += lolmsgParse(&ptr->parseContext, rx_buffer + parsed, received - parsed);
+                LolMessage* msg = lolmsgParseDone(&ptr->parseContext);
+                if(msg!=NULL && ptr->callback)
+                {
+                    printf("received data from %s : %d\n",inet_ntoa(ptr->addr.sin_addr),ntohs(ptr->addr.sin_port));
+                    ptr->callback(msg, ptr, ptr->user_data);
+                }
             }
         }
     }
@@ -94,24 +125,28 @@ void * IPC::Receiving(void * ptr)
     pthread_exit(NULL);
 }
 
-void * IPC::Transmiting(void *ptr)
+void * Connection::Transmiting(void *p)
 {
-    printf("create transmiting thread\n");
-    IPC * ipc = (IPC*) ptr;
+    Connection * ptr = (Connection*)p;
+    printf("create transmiting thread %d\n", ptr->sockfds);
     uint8_t txBuf[IPCBLOCKSIZE];
 
-    while(1)
+    while(ptr->connected)
     {
-        if(BQCount(&ipc->txq) > 0 )
+        pthread_mutex_lock(&ptr->mutex_txq);
+        if(BQCount(&ptr->txq) > 0 )
         {
-            pthread_mutex_lock(&ipc->mutex_txq);
-            register int byteCount = BQPopBytes(&ipc->txq, txBuf, IPCBLOCKSIZE);
-            pthread_mutex_unlock(&ipc->mutex_txq);
+            register int byteCount = BQPopBytes(&ptr->txq, txBuf, IPCBLOCKSIZE);
 
-            int n = write(ipc->clientsockfd, txBuf, byteCount);
+            int n = write(ptr->sockfds, txBuf, byteCount);
             if(n<0)
+            {
+                ptr->connected = false;
                 printf("write error %d\n", n);
+                break;
+            }
         }
+        pthread_mutex_unlock(&ptr->mutex_txq);
 
         usleep(100000);
     }
@@ -149,11 +184,6 @@ bool IPC::StartServer(int port)
             binded  = true;
     }
 
-    return ListenForConnection(sockfd);
-}
-
-bool IPC::ListenForConnection(int sockfd)
-{
     if(sockfd<0)
         return false;
 
@@ -163,18 +193,29 @@ bool IPC::ListenForConnection(int sockfd)
     //listening for connection
     listen(sockfd,5);
 
-    struct sockaddr_in cli_addr;
-    clilen = sizeof(cli_addr);
-    clientsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-    printf("accept\n");
-    if (clientsockfd < 0) 
+    while(1)
     {
-        printf("ERROR on accept\n");
-        return false;
-    }
-    else
-        return true;
+        struct sockaddr_in client;
+        clilen = sizeof(client);
+        int clientsockfd = accept(sockfd, (struct sockaddr *) &client, &clilen);
 
+        printf("accept\n");
+        if (clientsockfd < 0) 
+        {
+            printf("ERROR on accept\n");
+        }
+        else
+        {
+            Connection *conn = new Connection;
+            conn->sockfds = clientsockfd;
+            conn->addr = client;
+            conn->connected = true;
+            conn->SetCallback(callback, user_data);
+            connections.push_back(conn);
+            conn->Start();
+        }
+
+    }
 }
 
 bool IPC::ConnectToServer(const char * host, int port)
@@ -182,10 +223,10 @@ bool IPC::ConnectToServer(const char * host, int port)
     struct sockaddr_in serv_addr;
     struct hostent *server;
     server = gethostbyname(host);
-    
+
     printf("Trying to connect to Server [%s:%d]\n", host, port);
 
-    clientsockfd = socket(AF_INET, SOCK_STREAM, 0);
+    int clientsockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (clientsockfd < 0) 
     {
         printf("ERROR opening socket, exit monitor thread\n");
@@ -200,16 +241,24 @@ bool IPC::ConnectToServer(const char * host, int port)
         printf("ERROR connecting, exit monitor thread\n");
         return false;
     }
-    printf("Success to connect to Server [%s:%d]\n", host, port);
+    printf("Success to connect to Server [%s:%d] @ %d\n", host, port, clientsockfd);
 
+    Connection *conn = new Connection;
+    conn->sockfds = clientsockfd;
+    conn->addr = serv_addr;
+    conn->connected = true;
+    conn->SetCallback(callback, user_data);
+    connections.push_back(conn);
+
+    conn->Start();
     return true;
 }
 
-bool IPC::SendData(const uint8_t type, uint8_t *data, int data_size)
+bool Connection::SendData(const uint8_t type, uint8_t *data, int data_size)
 {
-	printf("send data\n");
+    printf("send data\n");
     LolMessage msg;
-    lolmsgInit(&msg, 0, type, data, data_size);
+    lolmsgInit(&msg, type, data, data_size);
     int len = lolmsgSerializedSize(&msg);
     uint8_t buf[len];
     lolmsgSerialize(&msg, buf);
@@ -223,6 +272,17 @@ bool IPC::SendData(const uint8_t type, uint8_t *data, int data_size)
     pthread_mutex_unlock(&mutex_txq);
     return write == len;
 
+}
+
+bool IPC::SendData(const uint8_t type, uint8_t *data, int data_size)
+{
+    for(unsigned int i=0; i< connections.size(); i++)
+    {
+        if(connections[i]->connected)
+            connections[i]->SendData(type, data, data_size);
+    }
+
+    return true;
 }
 
 }//end of namespace

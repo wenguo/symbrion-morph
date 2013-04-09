@@ -415,13 +415,10 @@ class Robot
     Ethernet::IP neighbours_IP[SIDE_COUNT];
     bool IP_collection_done;
 
-    IPC::IPC subscription_IPC;
-    std::vector<IPC::IPC *> commands_IPC;
-    static void Process_Og_command(const LolMessage*msg, void *ptr);
-    static void Process_Og_subscription(const LolMessage*msg, void *ptr);
+    IPC::IPC  commander_IPC;
+    static void Process_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
     Ethernet::IP commander_IP;
     int          commander_port;
-    int          subscription_port;
 
 
     uint8_t LED0;
