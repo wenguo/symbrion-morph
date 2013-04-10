@@ -164,14 +164,23 @@ enum msg_type_t {
 
 enum ipc_msg_type_t
 {
-    REQ_SUBSCRIPTION = 0X10,
-    REQ_SUBSCRIPTION_ACK = 0X11,
-    REQ_UNSUBSCRIPTION = 0X12,
-    REQ_UNSUBSCRIPTION_ACK = 0X13,
-    REQ_ID = 0X1C,
-    REQ_ID_ACK = 0X1D,
-    UNKNOWN = 0XEF
+    IPC_MSG_UNKNOW = 0,
 
+    IPC_MSG_HINGE_3D_MOTION_REQ,
+    IPC_MSG_LOCOMOTION_2D_REQ,
+
+    IPC_MSG_PROXIMITY_DATA_REQ,
+    IPC_MSG_BEACON_DATA_REQ,
+    IPC_MSG_REFLECTIVE_DATA_REQ,
+
+    IPC_MSG_RAISING_START,
+    IPC_MSG_RAISING_STOP,
+    IPC_MSG_LOWERING_START,
+    IPC_MSG_LOWERING_STOP,
+
+    IPC_MSG_ACK,
+
+    IPC_MSG_COUNT
 };
 
 enum docking_motor_status_t{
@@ -193,6 +202,7 @@ enum hinge_motor_status_t{
 
 extern const char* state_names[STATE_COUNT];
 extern const char* message_names[IR_MSG_TYPE_COUNT];
+extern const char* ipc_message_names[IPC_MSG_COUNT];
 //enum led_t {LED0=0x1,LED1=0x2,LED2=0x4, IR_PULSE0=0x1, IR_PULSE1=0x2, IR_PULSE2=0x4}; //TODO: ActiveWheel has different no
 
 

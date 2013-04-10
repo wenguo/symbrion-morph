@@ -2,7 +2,6 @@
 
 RobotAW::RobotAW(ActiveWheel *robot):Robot()
 {
-    printf("Init RobotAW()\n");
     if(name)
         free(name);
     name = strdup("RobotAW");
@@ -43,6 +42,7 @@ void RobotAW::InitHardware()
     }
 
     irobot->EnableMotors(true);
+
     //RobotBase::SetIRRX(board_dev_num[2], false);
 
 }
@@ -178,6 +178,12 @@ bool RobotAW::SetHingeMotor(int status)
     return true;
 }
 
+bool RobotAW::MoveHingeMotor(int command[4])
+{
+    irobot->MoveHinge(command[0]);
+    printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
+}
+
 void RobotAW::UpdateSensors()
 {
     IRValues ret_A = irobot->GetIRValues(ActiveWheel::RIGHT);
@@ -282,7 +288,7 @@ void RobotAW::UpdateSensors()
 
 void RobotAW::UpdateActuators()
 {
-    CheckHingeMotor();
+    //CheckHingeMotor();
     SetSpeed(speed[0], speed[1], speed[2]); 
 }
 
@@ -1397,6 +1403,15 @@ void RobotAW::InOrganism()
             //start IPC thread, as a server
             commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
 
+            //init the client list and the acks
+            pthread_mutex_lock(&commander_acks_mutex);
+            for(unsigned int i=0;i<mytree.Encoded_Seq().size();i++)
+            {
+                if(mytree.Encoded_Seq()[i] != OrganismSequence::Symbol(0))
+                    commander_acks[getFullIP(mytree.Encoded_Seq()[i].child_IP).i32] = 0;
+            }
+            pthread_mutex_unlock(&commander_acks_mutex);
+
             macrolocomotion_count = 0;
             raising_count = 0;
             current_state = RAISING;
@@ -1613,6 +1628,10 @@ void RobotAW::Lowering()
 
 void RobotAW::Raising()
 {
+    //wait until all propapagated messages are gone
+    if(MessageWaitingAck(MSG_TYPE_PROPAGATED))
+        return;
+
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
@@ -1622,40 +1641,84 @@ void RobotAW::Raising()
 
     // Wait longer with larger structures
     int raising_delay = (mytree.Size()/2+1)*30;
+    static bool IPC_health = true;
 
     if(seed)
     {
+
         raising_count++;
 
-        if(raising_count == raising_delay )
+        //wait for a while until the propagated messages are done within the organism
+        if(raising_count < raising_delay)
         {
-            for(int i=0;i<NUM_DOCKS;i++)
-                SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-            PropagateIRMessage(MSG_TYPE_RAISING_START);
-            PropagateEthMessage(MSG_TYPE_RAISING_START);
-            flash_leds = true;
+            //waiting;
+            if(broken_eth_connections > 0)
+                IPC_health = false;
 
-            //            SetHingeMotor(UP);
+            memset(hinge_command, 0, sizeof(hinge_command));
         }
-        else if( raising_count >= raising_delay + 50 )
+        else if(IPC_health)
         {
-            for(int i=0;i<NUM_DOCKS;i++)
-                SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-            PropagateIRMessage(MSG_TYPE_RAISING_STOP);
-            PropagateEthMessage(MSG_TYPE_RAISING_STOP);
+            hinge_motor_operating_count++;
 
-            current_state = MACROLOCOMOTION;
-            last_state = RAISING;
-            raising_count = 0;
-            flash_leds = false;
+            if(hinge_motor_operating_count < para.hinge_motor_lifting_time)
+            {
+                int hinge_motor_speed = 30;
+                hinge_command[0] = hinge_motor_speed;
+                hinge_command[1] = hinge_motor_operating_count;
+                hinge_command[2] = 10;
+                hinge_command[3] = 0;
+                commander_IPC.SendData(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)&hinge_command, sizeof(hinge_command));
+            }
+            else
+            {
+                //transfer to state Macrolocomotion
+                for(int i=0;i<NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                
+                commander_IPC.SendData(IPC_MSG_RAISING_STOP,NULL, 0);
+                
+                current_state = MACROLOCOMOTION;
+                last_state = RAISING;
+                raising_count = 0;
+                flash_leds = false;
+            }
+
+            //check if all robot 
+            if(raising_count % 5 == 4)
+            {
+                std::map<uint32_t, int>::iterator it;
+                for(it = commander_acks.begin(); it != commander_acks.end(); it++)
+                {
+                    //check if lost received some messages
+                    if(it->second < 3) //2 out of 5
+                    {
+                        IPC_health = false;
+                        printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
+                    }
+                    //reset the count
+                    it->second = 0;
+                }
+            }
+
         }
-        else if( raising_count >= raising_delay )
+        else
         {
+            printf("%d: not all robots are reachable through ethernet, something is wrong, stop moving\n", timestamp);
             flash_leds = true;
+            memset(hinge_command, 0, sizeof(hinge_command));
         }
     }
     else
     {
+        //lost connection to the commander?
+        if(broken_eth_connections >0)
+        {
+            //memset(hinge_command, 0, sizeof(hinge_command));
+            //MoveHingeMotor(hinge_command);
+            memset(hinge_command, 0, sizeof(hinge_command));
+        }
+
         if( msg_raising_stop_received )
         {
             msg_raising_start_received = false;
@@ -1663,14 +1726,22 @@ void RobotAW::Raising()
             current_state = MACROLOCOMOTION;
             last_state = RAISING;
             raising_count = 0;
+            hinge_motor_operating_count=0;
+
+            memset(hinge_command, 0, sizeof(hinge_command));
+
             flash_leds = false;
         }
         else if( msg_raising_start_received )
         {
             flash_leds = true;
-            //        SetHingeMotor(UP);
         }
+
     }
+    
+    MoveHingeMotor(hinge_command);
+    //reset, to be used next time
+    memset(hinge_command, 0, sizeof(hinge_command));
 
     if(flash_leds)
     {
@@ -2191,6 +2262,15 @@ void RobotAW::Debugging()
                 sym.reBuild("AFSB");
                 docked[0] = sym.data;
                 neighbours_IP[0]=StringToIP("192.168.2.224");
+            }
+            break;
+        case 24:
+            if(timestamp >=10)
+            {
+                if(timestamp <=60)
+                    irobot->MoveHinge(para.debug.para[0]);
+                else
+                    irobot->MoveHinge(0);
             }
             break;
         default:

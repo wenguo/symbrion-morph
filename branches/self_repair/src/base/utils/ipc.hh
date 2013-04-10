@@ -19,6 +19,7 @@
 #include <vector>
 #include "lolmsg.h"
 #include "bytequeue.h"
+#include "global.hh"
 
 #define IPCLOLBUFFERSIZE 264 //=256 + 8 
 #define IPCTXBUFFERSIZE 2048 
@@ -66,6 +67,8 @@ class IPC
 
         bool Start(const char *host,int port, bool server);
         bool SendData(const uint8_t type, uint8_t *data, int len);
+        bool SendData(const uint32_t dest, const uint8_t type, uint8_t * data, int len);
+        int RemoveBrokenConnections();
         inline void SetCallback(Callback c, void * u) {callback = c; user_data = u;}
 
     private:

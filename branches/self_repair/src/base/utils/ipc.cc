@@ -256,7 +256,7 @@ bool IPC::ConnectToServer(const char * host, int port)
 
 bool Connection::SendData(const uint8_t type, uint8_t *data, int data_size)
 {
-    printf("send data\n");
+    printf("Send data [%s] to %s:%d\n", ipc_message_names[type], inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
     LolMessage msg;
     lolmsgInit(&msg, type, data, data_size);
     int len = lolmsgSerializedSize(&msg);
@@ -279,10 +279,44 @@ bool IPC::SendData(const uint8_t type, uint8_t *data, int data_size)
     for(unsigned int i=0; i< connections.size(); i++)
     {
         if(connections[i]->connected)
-            connections[i]->SendData(type, data, data_size);
+           connections[i]->SendData(type, data, data_size);
     }
 
     return true;
+}
+
+
+bool IPC::SendData(const uint32_t dest, const uint8_t type, uint8_t * data, int data_size)
+{
+    bool ret = false;
+    for(unsigned int i=0; i< connections.size(); i++)
+    {
+        if(connections[i]->addr.sin_addr.s_addr == dest && connections[i]->connected)
+        {
+            ret = connections[i]->SendData(type, data, data_size);
+            break; // assumed only one connection from one address
+        }
+    }
+    return ret;
+}
+
+int IPC::RemoveBrokenConnections()
+{
+    int count = 0;
+    std::vector<Connection*>::iterator it = connections.begin();
+    while(it != connections.end())
+    {
+        //remove broken connection
+        if(!(*it)->connected)
+        { 
+            delete *it;
+            it = connections.erase(it);
+            count++;
+        }
+        else
+            it++;
+    }
+    return count;
 }
 
 }//end of namespace

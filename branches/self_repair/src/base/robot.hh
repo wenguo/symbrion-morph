@@ -11,6 +11,7 @@
 #include <locale>
 #include <stdexcept>
 #include <sys/stat.h>
+#include <map>
 
 //#include <IRobot.h>
 #include <pthread.h>
@@ -166,6 +167,7 @@ class Robot
 
     virtual bool SetDockingMotor(int channel, int status)=0;
     virtual bool SetHingeMotor(int status)=0;
+    virtual bool MoveHingeMotor(int command[4])=0;
 
     private:
     static void Calibrating(Robot *robot){robot->Calibrating();}
@@ -415,10 +417,15 @@ class Robot
     Ethernet::IP neighbours_IP[SIDE_COUNT];
     bool IP_collection_done;
 
+    //for macrolomotion control
     IPC::IPC  commander_IPC;
     static void Process_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
     Ethernet::IP commander_IP;
     int          commander_port;
+    std::map<uint32_t, int> commander_acks; //store all ips in the organism, except itself, and the acks from them.
+    pthread_mutex_t commander_acks_mutex;
+    int broken_eth_connections;
+    int hinge_command[4];
 
 
     uint8_t LED0;
