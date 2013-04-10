@@ -200,7 +200,10 @@ bool RobotSCOUT::SetHingeMotor(int status)
     return true;
 }
 
-
+bool RobotSCOUT::MoveHingeMotor(int command[4])
+{
+    printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
+}
 
 void RobotSCOUT::UpdateSensors()
 {
@@ -290,7 +293,7 @@ void RobotSCOUT::UpdateSensors()
 void RobotSCOUT::UpdateActuators()
 {
     CheckDockingMotor();
-    CheckHingeMotor();
+    //CheckHingeMotor();
     SetSpeed(speed[0], speed[1],speed[2]); 
 }
 
@@ -1464,6 +1467,15 @@ void RobotSCOUT::InOrganism()
 
             //start IPC thread, as a server
             commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+            
+            //init the client list and the acks
+            pthread_mutex_lock(&commander_acks_mutex);
+            for(unsigned int i=0;i<mytree.Encoded_Seq().size();i++)
+            {
+                if(mytree.Encoded_Seq()[i] != OrganismSequence::Symbol(0))
+                    commander_acks[getFullIP(mytree.Encoded_Seq()[i].child_IP).i32] = 0;
+            }
+            pthread_mutex_unlock(&commander_acks_mutex);
 
             macrolocomotion_count = 0;
             raising_count = 0;
@@ -1733,6 +1745,10 @@ void RobotSCOUT::Lowering()
 
 void RobotSCOUT::Raising()
 {
+    //wait until all propapagated messages are gone
+    if(MessageWaitingAck(MSG_TYPE_PROPAGATED))
+        return;
+
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
@@ -1742,38 +1758,84 @@ void RobotSCOUT::Raising()
 
     // Wait longer with larger structures
     int raising_delay = (mytree.Size()/2+1)*30;
+    static bool IPC_health = true;
 
     if(seed)
     {
+
         raising_count++;
 
-        if(raising_count == raising_delay )
+        //wait for a while until the propagated messages are done within the organism
+        if(raising_count < raising_delay)
         {
-            for(int i=0;i<NUM_DOCKS;i++)
-                SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-            PropagateIRMessage(MSG_TYPE_RAISING_START);
-            PropagateEthMessage(MSG_TYPE_RAISING_START);
-            flash_leds = true;
-        }
-        else if( raising_count >= raising_delay + 30 )
-        {
-            for(int i=0;i<NUM_DOCKS;i++)
-                SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-            PropagateIRMessage(MSG_TYPE_RAISING_STOP);
-            PropagateEthMessage(MSG_TYPE_RAISING_STOP);
+            //waiting;
+            if(broken_eth_connections > 0)
+                IPC_health = false;
 
-            current_state = MACROLOCOMOTION;
-            last_state = RAISING;
-            raising_count = 0;
-            flash_leds = false;
+            memset(hinge_command, 0, sizeof(hinge_command));
         }
-        else if( raising_count >= raising_delay )
+        else if(IPC_health)
         {
+            hinge_motor_operating_count++;
+
+            if(hinge_motor_operating_count < para.hinge_motor_lifting_time)
+            {
+                int hinge_motor_speed = 30;
+                hinge_command[0] = hinge_motor_speed;
+                hinge_command[1] = hinge_motor_operating_count;
+                hinge_command[2] = 10;
+                hinge_command[3] = 0;
+                commander_IPC.SendData(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)&hinge_command, sizeof(hinge_command));
+            }
+            else
+            {
+                //transfer to state Macrolocomotion
+                for(int i=0;i<NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                
+                commander_IPC.SendData(IPC_MSG_RAISING_STOP,NULL, 0);
+                
+                current_state = MACROLOCOMOTION;
+                last_state = RAISING;
+                raising_count = 0;
+                flash_leds = false;
+            }
+
+            //check if all robot 
+            if(raising_count % 5 == 4)
+            {
+                std::map<uint32_t, int>::iterator it;
+                for(it = commander_acks.begin(); it != commander_acks.end(); it++)
+                {
+                    //check if lost received some messages
+                    if(it->second < 3) //2 out of 5
+                    {
+                        IPC_health = false;
+                        printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
+                    }
+                    //reset the count
+                    it->second = 0;
+                }
+            }
+
+        }
+        else
+        {
+            printf("%d: not all robots are reachable through ethernet, something is wrong, stop moving\n", timestamp);
             flash_leds = true;
+            memset(hinge_command, 0, sizeof(hinge_command));
         }
     }
     else
     {
+        //lost connection to the commander?
+        if(broken_eth_connections >0)
+        {
+            //memset(hinge_command, 0, sizeof(hinge_command));
+            //MoveHingeMotor(hinge_command);
+            memset(hinge_command, 0, sizeof(hinge_command));
+        }
+
         if( msg_raising_stop_received )
         {
             msg_raising_start_received = false;
@@ -1781,13 +1843,22 @@ void RobotSCOUT::Raising()
             current_state = MACROLOCOMOTION;
             last_state = RAISING;
             raising_count = 0;
+            hinge_motor_operating_count=0;
+
+            memset(hinge_command, 0, sizeof(hinge_command));
+
             flash_leds = false;
         }
         else if( msg_raising_start_received )
         {
             flash_leds = true;
         }
+
     }
+    
+    MoveHingeMotor(hinge_command);
+    //reset, to be used next time
+    memset(hinge_command, 0, sizeof(hinge_command));
 
     if(flash_leds)
     {
@@ -1817,7 +1888,6 @@ void RobotSCOUT::Raising()
             }
         }
     }
-
 }
 
 /*

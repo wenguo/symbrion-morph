@@ -11,13 +11,11 @@
 
 Robot::Robot()
 {
-    printf("Init Robot(1)\n");
     name = strdup("Robot");
     timestamp = 0;
     timestamp_propagated_msg_received=0;
     type = ROBOT_KIT;
 
-    printf("Init Robot(2)\n");
     bumped=0;
     assembly_info_checked=false;
     num_robots_inorganism=1;
@@ -69,7 +67,6 @@ Robot::Robot()
     RegisterBehaviour(&Robot::LeadRepair, LEADREPAIR);
     RegisterBehaviour(&Robot::Repair, REPAIR);
 
-    printf("Init Robot(3)\n");
     for (int i = 0; i < NUM_IRS; i++)
     {
         reflective[i]=0;
@@ -198,8 +195,13 @@ Robot::Robot()
 
     assembly_info = 0;
 
-
     IP_collection_done = false;
+
+    commander_acks.clear();
+    pthread_mutex_init(&commander_acks_mutex, NULL);
+    broken_eth_connections = 0;
+
+    memset(hinge_command, 0, sizeof(hinge_command));
 
     LED0 = 0x1;
     LED1 = 0x2;
@@ -252,6 +254,9 @@ void Robot::ResetAssembly()
 
     target.Clear();
     IP_collection_done = false;
+
+    commander_acks.clear();
+    broken_eth_connections = 0;
 }
 
 Robot::~Robot()
@@ -457,6 +462,10 @@ void Robot::Update(const uint32_t& ts)
     // if(para.logtofile)
     //     Log();
     LogState();
+
+    //remove any broken ethernet communication connections
+    broken_eth_connections = commander_IPC.RemoveBrokenConnections();
+
 
 }
 

@@ -54,6 +54,8 @@ badd +1 ./base/global.hh
 badd +1 ./base/og/organism.cc
 badd +1 ./base/og/organism.hh
 badd +1 ./base/og/organism_sequence.cc
+badd +1 ./base/utils/ipc.cc
+badd +1 ./base/utils/ipc.hh
 badd +1 ./base/parameter.cc
 badd +1 ./base/parameter.hh
 badd +1 ./base/robot.cc

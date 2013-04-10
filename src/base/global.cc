@@ -67,3 +67,18 @@ const char * message_names[IR_MSG_TYPE_COUNT]={
     "IP_Addr_REQ"
 
 };
+
+const char * ipc_message_names[IPC_MSG_COUNT]=
+{
+    "Unknown",
+    "Hinge_3D_Motion_REQ",
+    "Locomotion_2D_REQ",
+    "Proximity_data_REQ",
+    "Beacon_data_REQ",
+    "Reflective_data_REQ",
+    "Raising_start",
+    "Raising_stop",
+    "Lowering_start",
+    "Lowering_stop",
+    "ACK"
+};

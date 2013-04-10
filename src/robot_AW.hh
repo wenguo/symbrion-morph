@@ -20,6 +20,7 @@ class RobotAW:public Robot
         virtual void SetRGBLED(int channel, uint8_t tl=LED_BLUE, uint8_t tr=0, uint8_t bl=0, uint8_t br=0); 
         virtual bool SetDockingMotor(int channel, int status);
         virtual bool SetHingeMotor(int status);
+        virtual bool MoveHingeMotor(int command[4]);
         virtual void SetSpeed(int leftspeed, int rightspeed, int sidespeed);
         virtual void Reset();
 
