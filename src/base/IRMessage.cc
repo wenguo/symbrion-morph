@@ -32,4 +32,5 @@ std::ostream& operator<<(std::ostream& os, const EthMessage& msg)
         os <<(int)msg.data[i]<<" ";
     os<<std::endl;
 
+    return os;
 }

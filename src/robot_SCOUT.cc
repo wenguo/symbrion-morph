@@ -203,6 +203,7 @@ bool RobotSCOUT::SetHingeMotor(int status)
 bool RobotSCOUT::MoveHingeMotor(int command[4])
 {
     printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
+    return true;
 }
 
 void RobotSCOUT::UpdateSensors()
@@ -1469,13 +1470,13 @@ void RobotSCOUT::InOrganism()
             commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
             
             //init the client list and the acks
-            pthread_mutex_lock(&commander_acks_mutex);
+            pthread_mutex_lock(&IPC_data_mutex);
             for(unsigned int i=0;i<mytree.Encoded_Seq().size();i++)
             {
                 if(mytree.Encoded_Seq()[i] != OrganismSequence::Symbol(0))
                     commander_acks[getFullIP(mytree.Encoded_Seq()[i].child_IP).i32] = 0;
             }
-            pthread_mutex_unlock(&commander_acks_mutex);
+            pthread_mutex_unlock(&IPC_data_mutex);
 
             macrolocomotion_count = 0;
             raising_count = 0;
@@ -1795,6 +1796,8 @@ void RobotSCOUT::Raising()
                 
                 commander_IPC.SendData(IPC_MSG_RAISING_STOP,NULL, 0);
                 
+                InitRobotPoseInOrganism();
+                
                 current_state = MACROLOCOMOTION;
                 last_state = RAISING;
                 raising_count = 0;
@@ -2064,10 +2067,48 @@ void RobotSCOUT::Reshaping()
 
 void RobotSCOUT::MacroLocomotion()
 {
+    // Stop moving
     speed[0] = 0;
     speed[1] = 0;
+    speed[2] = 0;
 
     macrolocomotion_count++;
+
+    if(seed)
+    {
+        //request IRSensors
+        RequestOGIRSensors(0);
+
+        //make a decision for the speed of organism
+        direction = FORWARD;
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
+
+        //set the speed of all other AW robot in the organism
+        std::map<uint32_t, robot_pose_t>::iterator it;
+        for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
+        {
+            locomotion_command[0] = it->second.pose[1];
+            locomotion_command[1] = speed[1];
+            locomotion_command[2] = speed[2];
+            locomotion_command[3] = speed[3];
+            commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
+        }
+    }
+    else
+    {
+        direction = locomotion_command[0];
+        speed[0] = locomotion_command[1];
+        speed[1] = locomotion_command[2];
+        speed[2] = locomotion_command[3];
+    }
+
+    printf("%d: direction - %d, speed - [%d %d %d]\n", timestamp, direction, speed[0], speed[1], speed[2]);
+    
+    memset(locomotion_command, 0, sizeof(locomotion_command));
+
+
     //flashing RGB leds
     static int index = 0;
     index = (timestamp / 2) % 4;
@@ -2115,6 +2156,11 @@ void RobotSCOUT::MacroLocomotion()
         seed = false;
     }
 
+}
+
+void RobotSCOUT::Climbing()
+{
+    climbing_count++;
 }
 
 void RobotSCOUT::Debugging()

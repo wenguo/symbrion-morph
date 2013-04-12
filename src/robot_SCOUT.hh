@@ -46,6 +46,7 @@ class RobotSCOUT:public Robot
         virtual void Lowering();
         virtual void Reshaping();
         virtual void MacroLocomotion();
+        virtual void Climbing();
         virtual void Debugging();
 
         virtual void Log();

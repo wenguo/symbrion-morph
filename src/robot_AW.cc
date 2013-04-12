@@ -182,6 +182,8 @@ bool RobotAW::MoveHingeMotor(int command[4])
 {
     irobot->MoveHinge(command[0]);
     printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
+
+    return true;
 }
 
 void RobotAW::UpdateSensors()
@@ -516,7 +518,7 @@ void RobotAW::Waiting()//same as RobotKIT
 
     waiting_count++;
 
-    if(waiting_count >= para.waiting_time)
+    if(waiting_count >= (uint32_t)para.waiting_time)
     {
         waiting_count = 0;//DEFAULT_WAITING_COUNT;
         foraging_count = 0;//DEFAULT_FORAGING_COUNT;
@@ -550,7 +552,7 @@ void RobotAW::Assembly()
 
     assembly_count++;
 
-    if(assembly_count >= para.assembly_time)
+    if(assembly_count >= (uint32_t)para.assembly_time)
     {
         printf("assembly_count %d, para.assembly_time %d\n", assembly_count, para.assembly_time);
         organism_found = false;
@@ -1404,13 +1406,13 @@ void RobotAW::InOrganism()
             commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
 
             //init the client list and the acks
-            pthread_mutex_lock(&commander_acks_mutex);
+            pthread_mutex_lock(&IPC_data_mutex);
             for(unsigned int i=0;i<mytree.Encoded_Seq().size();i++)
             {
                 if(mytree.Encoded_Seq()[i] != OrganismSequence::Symbol(0))
                     commander_acks[getFullIP(mytree.Encoded_Seq()[i].child_IP).i32] = 0;
             }
-            pthread_mutex_unlock(&commander_acks_mutex);
+            pthread_mutex_unlock(&IPC_data_mutex);
 
             macrolocomotion_count = 0;
             raising_count = 0;
@@ -1661,14 +1663,14 @@ void RobotAW::Raising()
         {
             hinge_motor_operating_count++;
 
-            if(hinge_motor_operating_count < para.hinge_motor_lifting_time)
+            if(hinge_motor_operating_count < (uint32_t)para.hinge_motor_lifting_time)
             {
                 int hinge_motor_speed = 30;
                 hinge_command[0] = hinge_motor_speed;
                 hinge_command[1] = hinge_motor_operating_count;
                 hinge_command[2] = 10;
                 hinge_command[3] = 0;
-                commander_IPC.SendData(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)&hinge_command, sizeof(hinge_command));
+                commander_IPC.SendData(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)hinge_command, sizeof(hinge_command));
             }
             else
             {
@@ -1677,6 +1679,8 @@ void RobotAW::Raising()
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
                 
                 commander_IPC.SendData(IPC_MSG_RAISING_STOP,NULL, 0);
+
+                InitRobotPoseInOrganism();
                 
                 current_state = MACROLOCOMOTION;
                 last_state = RAISING;
@@ -1731,6 +1735,7 @@ void RobotAW::Raising()
             memset(hinge_command, 0, sizeof(hinge_command));
 
             flash_leds = false;
+
         }
         else if( msg_raising_start_received )
         {
@@ -1888,46 +1893,63 @@ void RobotAW::Reshaping()
 
 void RobotAW::MacroLocomotion()
 {
-
-    //    speed[0] = 0;
-    //    speed[1] = 0;
-    //    speed[2] = 0;
-    //    //speed[2] = -20; // don't move
-    //
-    //    macrolocomotion_count++;
-    //
-    //    return; // Do nothing for now
-    //
-    //    if(macrolocomotion_count < 50)
-    //        speed[2] = para.debug.para[7];
-    //    else if(macrolocomotion_count < 100)
-    //        speed[2] = para.debug.para[8];
-    //    //for testing, only for one AW + 2 Scouts
-    //    else
-    //    {
-    //        // Stop moving
-    //        speed[0] = 0;
-    //        speed[1] = 0;
-    //        speed[2] = 0;
-    //
-    //        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
-    //
-    //        last_state = MACROLOCOMOTION;
-    //        current_state = LOWERING;
-    //        lowering_count = 0;
-    //        seed = false;
-    //    }
-
     // Stop moving
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
 
-    //	// Make robot wander a bit
-    //	speed[0] = -20;
-    //	speed[1] = -20;
-
     macrolocomotion_count++;
+
+    if(seed)
+    {
+        //request IRSensors
+        RequestOGIRSensors(0);
+
+        //make a decision for the speed of organism
+        direction = FORWARD;
+        if(macrolocomotion_count < 100)
+        {
+            speed[0] = 30;
+            speed[1] = 30;
+            speed[2] = 0;
+        }
+        else if(macrolocomotion_count < 200)
+        {
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 30;
+        }
+        else
+        {
+            speed[0] = 0;
+            speed[0] = 0;
+            speed[0] = 0;
+        }
+
+
+        //set the speed of all other AW robot in the organism
+        std::map<uint32_t, robot_pose_t>::iterator it;
+        for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
+        {
+            locomotion_command[0] = it->second.pose[1];
+            locomotion_command[1] = speed[0];
+            locomotion_command[2] = speed[1];
+            locomotion_command[3] = speed[2];
+            commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
+        }
+    }
+    else
+    {
+        direction = locomotion_command[0];
+        speed[0] = locomotion_command[1];
+        speed[1] = locomotion_command[2];
+        speed[2] = locomotion_command[3];
+    }
+
+    printf("%d: direction - %d, speed - [%d %d %d]\n", timestamp, direction, speed[0], speed[1], speed[2]);
+    
+    memset(locomotion_command, 0, sizeof(locomotion_command));
+
     //flashing RGB leds
     static int index = 0;
     index = (timestamp / 2) % 4;
@@ -1964,6 +1986,11 @@ void RobotAW::MacroLocomotion()
         lowering_count = 0;
         seed = false;
     }
+}
+
+void RobotAW::Climbing()
+{
+    climbing_count++;
 }
 
 void RobotAW::Debugging()
@@ -2273,6 +2300,84 @@ void RobotAW::Debugging()
                     irobot->MoveHinge(0);
             }
             break;
+        case 25:
+            if(timestamp == 2)
+            {
+                printf("1\n");
+                mytree.reBuild("SFAFABSFSBABAFSFSBAFABSF000000000000000000000000");
+                std::cout<<mytree<<std::endl;
+                printf("2\n");
+                
+                std::vector<uint8_t>IPs;
+                std::vector<uint8_t>rootIPs;
+                rootIPs.push_back(10);
+                rootIPs.push_back(11);
+                IPs.push_back(11);
+                IPs.push_back(12);
+                IPs.push_back(12);
+                IPs.push_back(13);
+                IPs.push_back(13);
+                IPs.push_back(14);
+                IPs.push_back(14);
+                IPs.push_back(15);
+                IPs.push_back(15);
+                IPs.push_back(16);
+                mytree.setBranchIPs(FRONT, IPs);
+                mytree.setBranchRootIPs(FRONT, rootIPs);
+
+                std::cout<<mytree<<std::endl;
+
+                InitRobotPoseInOrganism();
+
+                std::map<uint32_t, robot_pose_t>::iterator it;
+                for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
+                {
+                    printf("%s's index: %d pose: %d\n", IPToString(it->first), it->second.pose[0],
+                                it->second.pose[1]);
+                }
+
+            }
+            else if(timestamp == 3)
+            {
+                printf("1\n");
+                mytree.reBuild("ABSBSFABAFSB000000000000AFSFSBAFABSF000000000000");
+                std::cout<<mytree<<std::endl;
+                printf("2\n");
+                
+                std::vector<uint8_t>IPs;
+                std::vector<uint8_t>rootIPs;
+                rootIPs.push_back(13);
+                rootIPs.push_back(12);
+                IPs.push_back(12);
+                IPs.push_back(11);
+                IPs.push_back(11);
+                IPs.push_back(10);
+                mytree.setBranchIPs(BACK, IPs);
+                mytree.setBranchRootIPs(BACK, rootIPs);
+                IPs.clear();
+                rootIPs.clear();
+                rootIPs.push_back(13);
+                rootIPs.push_back(14);
+                IPs.push_back(14);
+                IPs.push_back(15);
+                IPs.push_back(15);
+                IPs.push_back(16);
+                mytree.setBranchIPs(FRONT, IPs);
+                mytree.setBranchRootIPs(FRONT, rootIPs);
+
+                std::cout<<mytree<<std::endl;
+
+                InitRobotPoseInOrganism();
+
+                std::map<uint32_t, robot_pose_t>::iterator it;
+                for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
+                {
+                    printf("%s's index: %d pose: %d\n", IPToString(it->first), it->second.pose[0],
+                                it->second.pose[1]);
+                }
+
+            }
+
         default:
             break;
     }

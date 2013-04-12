@@ -117,6 +117,7 @@ class Robot
     virtual void Lowering()=0;
     virtual void Reshaping()=0;
     virtual void MacroLocomotion()=0;
+    virtual void Climbing()=0;
     virtual void Debugging()=0;
     virtual void Log()=0;
 
@@ -168,6 +169,11 @@ class Robot
     virtual bool SetDockingMotor(int channel, int status)=0;
     virtual bool SetHingeMotor(int status)=0;
     virtual bool MoveHingeMotor(int command[4])=0;
+    
+    //for organism control
+    void RequestOGIRSensors(int sensor_type);
+    void RequestOGIRSensors(uint32_t addr, int sensor_type);
+    void InitRobotPoseInOrganism();
 
     private:
     static void Calibrating(Robot *robot){robot->Calibrating();}
@@ -191,6 +197,7 @@ class Robot
     static void Lowering(Robot * robot){robot->Lowering();}
     static void Reshaping(Robot * robot){robot->Reshaping();}
     static void MacroLocomotion(Robot * robot){robot->MacroLocomotion();}
+    static void Climbing(Robot * robot){robot->Climbing();}
     static void Debugging(Robot * robot){robot->Debugging();}
 
     // for self-repair
@@ -211,6 +218,10 @@ class Robot
     void SendEthMessage(const EthMessage& msg);
     void ProcessIRMessage(std::auto_ptr<Message>);
     void ProcessEthMessage(std::auto_ptr<Message>);
+
+    //for organism control
+    static void Process_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
+    void UpdateOGIRSensors(uint8_t config[2], int data[NUM_IRS], int sensor_type);//config: 0 -- position in og, 1-- orientation related to seed
 
     protected:
 
@@ -322,6 +333,7 @@ class Robot
     uint32_t guiding_signals_count[NUM_DOCKS];
     uint32_t blocking_count;
     uint32_t locatebeacon_count;
+    uint32_t climbing_count;
 
     uint8_t docking_trials;
 
@@ -419,14 +431,32 @@ class Robot
 
     //for macrolomotion control
     IPC::IPC  commander_IPC;
-    static void Process_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
     Ethernet::IP commander_IP;
     int          commander_port;
     std::map<uint32_t, int> commander_acks; //store all ips in the organism, except itself, and the acks from them.
-    pthread_mutex_t commander_acks_mutex;
+    pthread_mutex_t IPC_data_mutex;
     int broken_eth_connections;
-    int hinge_command[4];
 
+    struct robot_pose_t{int pose[2];};
+    std::map<uint32_t, robot_pose_t> robot_pose_in_organism;
+
+    int hinge_command[4];
+    int locomotion_command[4];//direction, speed[0], speed[1], speed[2]
+
+    //sensors 
+    typedef struct
+    {
+        int front[2];
+        int back[2];
+        std::vector<int> left;
+        std::vector<int> right;
+    } OG_IRsensor;
+
+
+    OG_IRsensor og_reflective_sensors;
+    OG_IRsensor og_ambient_sensors;
+    OG_IRsensor og_proximity_sensors;
+    OG_IRsensor og_beacon_sensors;
 
     uint8_t LED0;
     uint8_t LED1;

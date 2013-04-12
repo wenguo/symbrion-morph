@@ -85,6 +85,7 @@ class OrganismSequence
             bool operator!=(const Symbol&) const;
 
             void setIP(const uint8_t ip[2]);
+            void setIP(const uint8_t ip0, const uint8_t ip1);
 
             union
             {
@@ -167,7 +168,7 @@ class OrganismSequence
     inline void Clear() {encoded_seq.clear();}
     rt_status reBuild(const uint8_t *data, const int size);
     rt_status reBuild(const char *str);
-    inline const std::vector<Symbol>& Encoded_Seq() const{return encoded_seq;}
+    inline const std::vector<Symbol>& Encoded_Seq() const {return encoded_seq;}
 
     //for IP collection
     bool isAllIPSet();
