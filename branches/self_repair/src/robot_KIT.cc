@@ -1853,7 +1853,7 @@ void RobotKIT::Raising()
                 commander_IPC.SendData(IPC_MSG_RAISING_STOP,NULL, 0);
                 
                 InitRobotPoseInOrganism();
-
+                
                 current_state = MACROLOCOMOTION;
                 last_state = RAISING;
                 raising_count = 0;
@@ -2123,10 +2123,48 @@ void RobotKIT::Reshaping()
 
 void RobotKIT::MacroLocomotion()
 {
+    // Stop moving
     speed[0] = 0;
     speed[1] = 0;
+    speed[2] = 0;
 
     macrolocomotion_count++;
+
+    if(seed)
+    {
+        //request IRSensors
+        RequestOGIRSensors(0);
+
+        //make a decision for the speed of organism
+        direction = FORWARD;
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
+
+        //set the speed of all other AW robot in the organism
+        std::map<uint32_t, robot_pose_t>::iterator it;
+        for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
+        {
+            locomotion_command[0] = it->second.pose[1];
+            locomotion_command[1] = speed[1];
+            locomotion_command[2] = speed[2];
+            locomotion_command[3] = speed[3];
+            commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
+        }
+    }
+    else
+    {
+        direction = locomotion_command[0];
+        speed[0] = locomotion_command[1];
+        speed[1] = locomotion_command[2];
+        speed[2] = locomotion_command[3];
+    }
+
+    printf("%d: direction - %d, speed - [%d %d %d]\n", timestamp, direction, speed[0], speed[1], speed[2]);
+    
+    memset(locomotion_command, 0, sizeof(locomotion_command));
+
+
     //flashing RGB leds
     static int index = 0;
     index = (timestamp / 2) % 4;
@@ -2151,6 +2189,16 @@ void RobotKIT::MacroLocomotion()
         }
     }
 
+    if(seed && macrolocomotion_count >300)
+    {
+        macrolocomotion_count = 0;
+        PropagateIRMessage(MSG_TYPE_LOWERING);
+        PropagateEthMessage(MSG_TYPE_LOWERING);
+        last_state = MACROLOCOMOTION;
+        current_state = LOWERING;
+        lowering_count = 0;
+    }
+
     if( msg_lowering_received )
     {
         // Stop moving
@@ -2165,6 +2213,7 @@ void RobotKIT::MacroLocomotion()
     }
 
 }
+
 
 void RobotKIT::Climbing()
 {
