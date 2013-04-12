@@ -27,7 +27,8 @@ const char* state_names[STATE_COUNT]={
     "LeadRepair",
     "Repair",
     "BroadcastScore",
-    "Debugging"
+    "Debugging",
+    "Climbing",
 };
 
 const char * message_names[IR_MSG_TYPE_COUNT]={

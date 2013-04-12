@@ -212,6 +212,7 @@ bool RobotKIT::SetHingeMotor(int status)
 bool RobotKIT::MoveHingeMotor(int command[4])
 {
     printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
+    return true;
 }
 
 void RobotKIT::UpdateSensors()
@@ -1520,13 +1521,13 @@ void RobotKIT::InOrganism()
             commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
 
             //init the client list and the acks
-            pthread_mutex_lock(&commander_acks_mutex);
+            pthread_mutex_lock(&IPC_data_mutex);
             for(unsigned int i=0;i<mytree.Encoded_Seq().size();i++)
             {
                 if(mytree.Encoded_Seq()[i] != OrganismSequence::Symbol(0))
                     commander_acks[getFullIP(mytree.Encoded_Seq()[i].child_IP).i32] = 0;
             }
-            pthread_mutex_unlock(&commander_acks_mutex);
+            pthread_mutex_unlock(&IPC_data_mutex);
 
             macrolocomotion_count = 0;
             raising_count = 0;
@@ -1851,6 +1852,8 @@ void RobotKIT::Raising()
                 
                 commander_IPC.SendData(IPC_MSG_RAISING_STOP,NULL, 0);
                 
+                InitRobotPoseInOrganism();
+
                 current_state = MACROLOCOMOTION;
                 last_state = RAISING;
                 raising_count = 0;
@@ -2162,6 +2165,12 @@ void RobotKIT::MacroLocomotion()
     }
 
 }
+
+void RobotKIT::Climbing()
+{
+    climbing_count++;
+}
+
 void RobotKIT::Debugging()
 {
     // speed[0] = 0;

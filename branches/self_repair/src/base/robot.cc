@@ -60,6 +60,7 @@ Robot::Robot()
     RegisterBehaviour(&Robot::Lowering, LOWERING);
     RegisterBehaviour(&Robot::Reshaping, RESHAPING);
     RegisterBehaviour(&Robot::MacroLocomotion, MACROLOCOMOTION);
+    RegisterBehaviour(&Robot::Climbing, CLIMBING);
     RegisterBehaviour(&Robot::Debugging, DEBUGGING);
     // for self-repair
     RegisterBehaviour(&Robot::Failed, FAILED);
@@ -112,6 +113,7 @@ Robot::Robot()
     raising_count = 0;
     lowering_count = 0;
     locatebeacon_count = 0;
+    climbing_count = 0;
 
     beacon_signals_detected=0;
     robot_in_range_replied=0;
@@ -198,10 +200,11 @@ Robot::Robot()
     IP_collection_done = false;
 
     commander_acks.clear();
-    pthread_mutex_init(&commander_acks_mutex, NULL);
+    pthread_mutex_init(&IPC_data_mutex, NULL);
     broken_eth_connections = 0;
 
     memset(hinge_command, 0, sizeof(hinge_command));
+    memset(locomotion_command, 0, sizeof(locomotion_command));
 
     LED0 = 0x1;
     LED1 = 0x2;
@@ -827,4 +830,77 @@ Ethernet::IP Robot::StringToIP(const char *str)
 Ethernet::IP Robot::getFullIP(const uint8_t addr)
 {
     return Ethernet::ip_t(uint32_t(addr)<<24 | 2 << 16 | 168 <<8 | 192);
+}
+
+void Robot::UpdateOGIRSensors(uint8_t config[2], int data[8], int sensor_type)
+{
+    OG_IRsensor * ir_sensors;
+    if(sensor_type == 0)
+        ir_sensors = &og_reflective_sensors;
+    else if(sensor_type == 1)
+        ir_sensors= &og_ambient_sensors;
+    else if(sensor_type == 2)
+        ir_sensors = &og_proximity_sensors;
+    else if(sensor_type == 3)
+        ir_sensors = &og_beacon_sensors;
+    else
+        return;
+
+}
+
+void Robot::RequestOGIRSensors(int sensor_type)
+{
+    //check mytree to find out 
+    //1. the front robot
+    //2. the rear robot
+    //3. all activewheels
+
+    //I am in the middle
+
+    //I am a header
+
+    //I am a tail
+}
+
+void Robot::RequestOGIRSensors(uint32_t addr, int sensor_type)
+{
+    printf("%d: request OGIRSensors[%d] from %s\n", timestamp, sensor_type, IPToString(addr));
+
+}
+
+//only works for the snake like organism, connected using only front and back sides
+void Robot::InitRobotPoseInOrganism()
+{
+    //init the client list and the acks
+    int pos_index = 0;
+    int dir = 1;
+    bool new_branch = true;
+    robot_pose_t pose;
+    pthread_mutex_lock(&IPC_data_mutex);
+    for(unsigned int i=0;i<mytree.Encoded_Seq().size();i++)
+    {
+        if(mytree.Encoded_Seq()[i] != OrganismSequence::Symbol(0))
+        {
+            if(new_branch)
+            {
+                new_branch = false;
+                if(mytree.Encoded_Seq()[i].side1 == BACK)
+                    dir = 1;
+                else
+                    dir = -1;
+            }
+
+            pos_index += dir;
+            pose.pose[0] = pos_index;
+            pose.pose[1] = (mytree.Encoded_Seq()[i].side2 == FRONT ? 1 : -1) * dir;
+            robot_pose_in_organism[getFullIP(mytree.Encoded_Seq()[i].child_IP).i32] = pose;
+            printf("%d : %s direction %d\n", mytree.Encoded_Seq()[i].child_IP, IPToString(getFullIP(mytree.Encoded_Seq()[i].child_IP).i32), pose.pose[1]);
+        }
+        else
+        {
+            pos_index = 0;
+            new_branch = true;
+        }
+    }
+    pthread_mutex_unlock(&IPC_data_mutex);
 }

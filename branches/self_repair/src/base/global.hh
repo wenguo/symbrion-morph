@@ -92,6 +92,7 @@ enum fsm_state_t {
     REPAIR,
     BROADCASTSCORE,
     DEBUGGING, //26
+    CLIMBING,
     STATE_COUNT
 };
 enum robot_mode_t {

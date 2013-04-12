@@ -93,6 +93,11 @@ void OrganismSequence::Symbol::setIP(const uint8_t ip[2])
     parent_IP = ip[0];
     child_IP = ip[1];
 }
+void OrganismSequence::Symbol::setIP(const uint8_t ip0, const uint8_t ip1)
+{
+    parent_IP = ip0;
+    child_IP = ip1;
+}
 
 OrganismSequence::Element::Element()
 {
