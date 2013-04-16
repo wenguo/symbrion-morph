@@ -1509,13 +1509,18 @@ void RobotKIT::InOrganism()
                 SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
 
             //prepare organism_formed_messages
-            uint8_t buf[target.Encoded_Seq().size() + 2];
+            /*uint8_t buf[target.Encoded_Seq().size() + 2];
             for(int i = 0; i< target.Encoded_Seq().size(); i++)
                 buf[i] = target.Encoded_Seq()[i].data;
             buf[target.Encoded_Seq().size()] = (my_IP.i32>>24)& 0xFF; //IP
             buf[target.Encoded_Seq().size() + 1] = COMMANDER_PORT;//commander port
             PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size() + 2);
-            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size() + 2);
+            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size() + 2);*/
+            uint8_t data[2];
+            data[0] = (my_IP.i32>>24) & 0xFF;
+            data[1] =COMMANDER_PORT;
+            PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED, data, 2);
+            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, data, 2);
 
             //start IPC thread, as a server
             commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);

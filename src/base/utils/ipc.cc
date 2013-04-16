@@ -191,7 +191,7 @@ bool IPC::StartServer(int port)
 
     socklen_t clilen;
     //listening for connection
-    listen(sockfd,5);
+    listen(sockfd,10);
 
     while(1)
     {
