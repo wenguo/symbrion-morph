@@ -13,8 +13,10 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <algorithm>    // std::sort
 
 #include "global.hh"
+
 
 
 typedef struct {
@@ -32,20 +34,30 @@ typedef struct {
 
 }record_t;
 
+bool comp(record_file_t a, record_file_t b)
+{
+    return a.dir_name.compare(b.dir_name) > 0 ? false : true;
+}
+bool comp_string(std::string a, std::string b)
+{
+    return a.compare(b) > 0 ? false : true;
+}
+
 int GetRecord(std::vector<record_file_t> &record_files, const char * parent_dir);
-int ProcessRecord(std::string filename);
+int ProcessRecord(std::string filename, std::string path);
 
 int main(int argc, char ** agrv)
 {
     std::vector<record_file_t> record_files;
     GetRecord(record_files, "..");
+    std::sort(record_files.begin(),record_files.end(), comp);
     for (unsigned int i = 0;i < record_files.size();i++) 
     {
         std::cout << record_files[i].dir_name << std::endl;
         for (unsigned int j = 0;j < record_files[i].files.size();j++) 
         {
             //std::cout << record_files[i].files[j] << std::endl;
-            ProcessRecord(record_files[i].dir_name + std::string("/") + record_files[i].files[j]);
+            ProcessRecord(record_files[i].files[j], record_files[i].dir_name);
         }
     }
 
@@ -66,7 +78,7 @@ int GetRecord(std::vector<record_file_t> &record_files, const char * parent_dir)
     while ((dirp = readdir(dp)) != NULL) 
     {
         std::string str(dirp->d_name);
-        if(str.compare(0,1,"p") ==0 && str.length() ==3)
+        if(str.compare(0,2,"p1") ==0 && str.length() ==3)
         {
             if((sub_dp  = opendir(std::string(std::string(parent_dir) + std::string("/") + std::string(dirp->d_name)).c_str())) != NULL) 
             {
@@ -78,6 +90,7 @@ int GetRecord(std::vector<record_file_t> &record_files, const char * parent_dir)
                     if(str.compare(0,5,"Robot") ==0)
                         rec.files.push_back(std::string(sub_dirp->d_name));
                 }
+                std::sort(rec.files.begin(), rec.files.end(), comp_string);
                 record_files.push_back(rec);
                 closedir(sub_dp);
             }
@@ -87,11 +100,11 @@ int GetRecord(std::vector<record_file_t> &record_files, const char * parent_dir)
     return 0;
 }
 
-int ProcessRecord(std::string filename)
+int ProcessRecord(std::string filename, std::string path)
 {
     std::ifstream logfile;
     char c;
-    logfile.open(filename.c_str(), std::ios::in);
+    logfile.open((path + std::string("/") +filename).c_str(), std::ios::in);
     int trials = 0;
     if(logfile.is_open())
     {
@@ -125,7 +138,7 @@ int ProcessRecord(std::string filename)
             }
 
         }
-        std::cout<<filename<<" : "<<trials<<std::endl;
+        std::cout<<filename<<"\t"<<trials<<std::endl;
         logfile.close();
     }
 
