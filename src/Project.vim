@@ -72,7 +72,7 @@ badd +161 base/robot_ethcomm.cc
 badd +696 base/robot_self_repair.cc
 badd +1 robot_SCOUT.hh
 badd +1742 robot_SCOUT.cc
-badd +0 robot_IPC.cc
+badd +0 base/robot_IPC.cc
 args \[BufExplorer]
 set splitbelow splitright
 set nosplitbelow

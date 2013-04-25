@@ -11,6 +11,9 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
 
     switch(msg->command)
     {       
+        case MSG_TYPE_ORGANISM_FORMED:
+            robot->organism_formed = true;
+            break;
         case IPC_MSG_HINGE_3D_MOTION_REQ:
             {
                 //followed by speed, count, rotation, angle, [int, int, int, int]
@@ -25,7 +28,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 memcpy((uint8_t*)robot->locomotion_command, msg->data, sizeof(robot->locomotion_command));
                 uint8_t command = msg->command; 
                 conn->SendData(IPC_MSG_ACK, &command, 1);
-                printf("%d: received [%s] %d %d %d %d\n", robot->timestamp, ipc_message_names[msg->command],
+                printf("%d: received [%s] %d %d %d %d\n", robot->timestamp, message_names[msg->command],
                         robot->locomotion_command[0],
                         robot->locomotion_command[1],
                         robot->locomotion_command[2],
@@ -104,10 +107,10 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
     }
 
     if(msg->command == IPC_MSG_ACK)
-        printf("%d: received [%s - %s]\n", robot->timestamp, ipc_message_names[msg->command], ipc_message_names[msg->data[0]] );
+        printf("%d: received [%s - %s]\n", robot->timestamp, message_names[msg->command], message_names[msg->data[0]] );
     else
     {
-        printf("%d: received [%s]\n", robot->timestamp, ipc_message_names[msg->command]);
+        printf("%d: received [%s]\n", robot->timestamp, message_names[msg->command]);
     }
 
 }

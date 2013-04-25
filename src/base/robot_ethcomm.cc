@@ -217,9 +217,9 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
                         case MSG_TYPE_ORGANISM_FORMED:
                             {
                                 organism_formed = true;
-                                commander_IP = getFullIP(data[6]);
-                                commander_port = COMMANDER_PORT_BASE + (uint8_t)data[7];
-                                std::cout<<"commander_IP: "<<IPToString(commander_IP)<<" port: "<<commander_port<<std::endl;
+                                //commander_IP = getFullIP(data[6]);
+                                //commander_port = COMMANDER_PORT_BASE + (uint8_t)data[7];
+                                //std::cout<<"commander_IP: "<<IPToString(commander_IP)<<" port: "<<commander_port<<std::endl;
                                 CPrintf1(SCR_BLUE,"%d -- organism formed !", timestamp);
                             }
                             break;

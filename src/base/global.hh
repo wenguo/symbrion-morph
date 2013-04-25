@@ -159,14 +159,6 @@ enum msg_type_t {
     IR_MSG_TYPE_IP_ADDR,
     IR_MSG_TYPE_IP_ADDR_REQ,
 
-
-    IR_MSG_TYPE_COUNT
-};
-
-enum ipc_msg_type_t
-{
-    IPC_MSG_UNKNOW = 0,
-
     IPC_MSG_HINGE_3D_MOTION_REQ,
     IPC_MSG_LOCOMOTION_2D_REQ,
 
@@ -181,8 +173,9 @@ enum ipc_msg_type_t
 
     IPC_MSG_ACK,
 
-    IPC_MSG_COUNT
+    MSG_TYPE_COUNT
 };
+
 
 enum docking_motor_status_t{
     OPENED = 0x0,
@@ -202,8 +195,7 @@ enum hinge_motor_status_t{
 
 
 extern const char* state_names[STATE_COUNT];
-extern const char* message_names[IR_MSG_TYPE_COUNT];
-extern const char* ipc_message_names[IPC_MSG_COUNT];
+extern const char* message_names[MSG_TYPE_COUNT];
 //enum led_t {LED0=0x1,LED1=0x2,LED2=0x4, IR_PULSE0=0x1, IR_PULSE1=0x2, IR_PULSE2=0x4}; //TODO: ActiveWheel has different no
 
 

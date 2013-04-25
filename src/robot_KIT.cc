@@ -432,6 +432,9 @@ void RobotKIT::Seeding()
         recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
     }
 
+    //start IPC thread, as a server
+    commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+
     current_state = RECRUITMENT;
     last_state = SEEDING;
 
@@ -1211,6 +1214,9 @@ void RobotKIT::Locking()
             msg_subog_seq_expected |= 1<<docking_side;
             current_state = INORGANISM;
             last_state = LOCKING;
+
+            //start IPC thread, as a client 
+            commander_IPC.Start(IPToString(commander_IP), commander_port, false);
         }
     }
 }
@@ -1516,14 +1522,16 @@ void RobotKIT::InOrganism()
             buf[target.Encoded_Seq().size() + 1] = COMMANDER_PORT;//commander port
             PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size() + 2);
             PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size() + 2);*/
-            uint8_t data[2];
+            /*uint8_t data[2];
             data[0] = (my_IP.i32>>24) & 0xFF;
             data[1] =COMMANDER_PORT;
             PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED, data, 2);
-            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, data, 2);
+            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, data, 2);*/
 
-            //start IPC thread, as a server
-            commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+            uint8_t buf[target.Encoded_Seq().size()];
+            for(int i = 0; i< target.Encoded_Seq().size(); i++)
+                buf[i] = target.Encoded_Seq()[i].data;
+            commander_IPC.SendData(MSG_TYPE_ORGANISM_FORMED, buf, sizeof(buf));
 
             //init the client list and the acks
             pthread_mutex_lock(&IPC_data_mutex);
@@ -1615,8 +1623,6 @@ void RobotKIT::InOrganism()
                 printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
             }
 
-            //start IPC thread, as a client 
-            commander_IPC.Start(IPToString(commander_IP), commander_port, false);
         }
     }
 
