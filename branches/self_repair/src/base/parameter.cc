@@ -22,6 +22,7 @@ Parameter::Parameter():
     hinge_motor_lowing_time(40),
     locking_motor_opening_time(30),
     locking_motor_closing_time(40),
+    locking_motor_isense_threshold(220),
     aligning_reverse_time(50),
     print_proximity(false),
     print_beacon(false),

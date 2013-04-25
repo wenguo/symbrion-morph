@@ -170,6 +170,7 @@ bool Robot::LoadParameters(const char * filename)
         {
             para.locking_motor_opening_time = optionfile->ReadInt(entity, "locking_motor_opening_time", 30);
             para.locking_motor_closing_time = optionfile->ReadInt(entity, "locking_motor_closing_time", 40);
+            para.locking_motor_isense_threshold= optionfile->ReadInt(entity, "locking_motor_isense_threshold", 220);
             if( Morph::CProperty* prop = optionfile->GetProperty( entity, "locking_motor_enabled" ) )
             {
                 for(int i=0;i<4;i++)

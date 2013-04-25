@@ -50,6 +50,7 @@ const char * message_names[MSG_TYPE_COUNT]={
     "Stop",
     "IP_Addr_Collection",
     "ACK",
+    "Remote Debug message",
     "Recruiting",
     "Recruiting_REQ",
     "Expelling",
@@ -76,4 +77,11 @@ const char * message_names[MSG_TYPE_COUNT]={
     "IPC_Lowering_start",
     "IPC_Lowering_stop",
     "IPC_ACK"
+};
+
+const char * remote_cmd_names[REMOTE_CMD_COUNT] = {
+    "NONE",
+    "locking motor cmd",
+    "2d locomotion cmd",
+    "3d hinge cmd"
 };
