@@ -2389,6 +2389,28 @@ void RobotAW::Debugging()
                 }
 
             }
+            break;
+
+        case 30:
+            {
+                fd_set fds;
+                FD_ZERO(&fds);
+                FD_SET(fileno(stdin), &fds); 
+                char buf[256];
+
+                if(select(fileno(stdin)+1, &fds, NULL, NULL, NULL)>0)
+                {
+                    if (FD_ISSET(fileno(stdin), &fds))
+                    {
+                        if(fgets(buf,256,stdin)!=NULL)
+                        {
+                            ParseCMD(buf); 
+                            fprintf(stderr,"cmd>");
+                        }
+                    }
+                }
+            }
+            break;
 
         default:
             break;

@@ -53,3 +53,58 @@ void Robot::RemoteDebugging(char * data)
         printf("%d: remote control command received\n", remote_cmd_names[data[1]]);
 
 }
+
+bool Robot::ParseCMD(char * buf)
+{
+        char cmd[16];
+    int arg1=0,arg2=0, arg3, arg4;
+    int res=0;
+    int i=0;
+    //cmd id para1 para2 para3
+    //locking 115 0 3; locking robot115's front side, open
+    //move 115 speed1 speed2 speed3
+    //hinge 115 up
+    if((res=sscanf(buf, "%s %d %d %d %d\n", cmd, &arg1, &arg2 , &arg3, &arg4))!=EOF)
+    {
+        switch(res)
+        {
+            case 1:
+                if(strcmp(cmd,"exit")==0)
+                {
+                    return 0;
+                }
+                else if(strcmp(cmd, "help")==0)
+                {
+                    printf("\t lock robot_id robot_side[0-3] open/close[2 or 0]\n");
+                    printf("\t move robot_id speed0 speed1 speed2\n");
+                    printf("\t hing robot_id speed angle\n");
+                }
+                break;
+            case 2:
+                break;
+            case 3:
+                if(strcmp(cmd, "hinge")==0)
+                {
+                    printf("move robot%d's hinge [%d] [%d]\n", arg1, arg2, arg3);
+                }
+                break;
+            case 4:
+                if(strcmp(cmd, "lock")==0)
+                {
+                    printf("locking robot%d's side [%d] [%d]\n", arg1, arg2, arg3);
+                }
+                break;
+            case 5:
+                if(strcmp(cmd, "move")==0)
+                {
+                    printf("move robot%d at speed [%d %d %d]\n", arg1, arg2, arg3, arg4);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    return true;
+}
+

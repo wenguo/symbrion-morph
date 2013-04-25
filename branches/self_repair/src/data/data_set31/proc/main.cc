@@ -53,12 +53,24 @@ int main(int argc, char ** agrv)
     std::sort(record_files.begin(),record_files.end(), comp);
     for (unsigned int i = 0;i < record_files.size();i++) 
     {
-        std::cout << record_files[i].dir_name << std::endl;
+        int min = 9999;
+        int max = -9999;
+        int sum = 0;
+        int count = 0;
+       // std::cout << record_files[i].dir_name << std::endl;
         for (unsigned int j = 0;j < record_files[i].files.size();j++) 
         {
             //std::cout << record_files[i].files[j] << std::endl;
-            ProcessRecord(record_files[i].files[j], record_files[i].dir_name);
+            int ret = ProcessRecord(record_files[i].files[j], record_files[i].dir_name);
+            if(ret > max)
+                max = ret;
+            if(ret < min)
+                min = ret;
+            if(ret >0)
+                count++;
+            sum += ret;
         }
+        printf("%s\t%f\t%d\t%d\n", record_files[i].dir_name.c_str(), sum * 1.0/count, min, max);
     }
 
 
@@ -78,7 +90,7 @@ int GetRecord(std::vector<record_file_t> &record_files, const char * parent_dir)
     while ((dirp = readdir(dp)) != NULL) 
     {
         std::string str(dirp->d_name);
-        if(str.compare(0,2,"p1") ==0 && str.length() ==3)
+        if(str.compare(0,1,"p") ==0 && str.length() ==3)
         {
             if((sub_dp  = opendir(std::string(std::string(parent_dir) + std::string("/") + std::string(dirp->d_name)).c_str())) != NULL) 
             {
@@ -138,9 +150,9 @@ int ProcessRecord(std::string filename, std::string path)
             }
 
         }
-        std::cout<<filename<<"\t"<<trials<<std::endl;
+        //std::cout<<filename<<"\t"<<trials<<std::endl;
         logfile.close();
     }
 
-    return 1;
+    return trials;
 }
