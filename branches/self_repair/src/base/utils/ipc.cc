@@ -256,7 +256,7 @@ bool IPC::ConnectToServer(const char * host, int port)
 
 bool Connection::SendData(const uint8_t type, uint8_t *data, int data_size)
 {
-    printf("Send data [%s] to %s:%d\n", ipc_message_names[type], inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+    printf("Send data [%s] to %s:%d\n", message_names[type], inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
     LolMessage msg;
     lolmsgInit(&msg, type, data, data_size);
     int len = lolmsgSerializedSize(&msg);

@@ -31,7 +31,7 @@ const char* state_names[STATE_COUNT]={
     "Climbing",
 };
 
-const char * message_names[IR_MSG_TYPE_COUNT]={
+const char * message_names[MSG_TYPE_COUNT]={
     "UnKnown",
     "Propagated",
     "Disassembling",
@@ -65,21 +65,15 @@ const char * message_names[IR_MSG_TYPE_COUNT]={
     "Assembly_Info",
     "Assembly_Info_REQ",
     "IP_Addr",
-    "IP_Addr_REQ"
-
-};
-
-const char * ipc_message_names[IPC_MSG_COUNT]=
-{
-    "Unknown",
-    "Hinge_3D_Motion_REQ",
-    "Locomotion_2D_REQ",
-    "Proximity_data_REQ",
-    "Beacon_data_REQ",
-    "Reflective_data_REQ",
-    "Raising_start",
-    "Raising_stop",
-    "Lowering_start",
-    "Lowering_stop",
-    "ACK"
+    "IP_Addr_REQ",
+    "IPC_Hinge_3D_Motion_REQ",
+    "IPC_Locomotion_2D_REQ",
+    "IPC_Proximity_data_REQ",
+    "IPC_Beacon_data_REQ",
+    "IPC_Reflective_data_REQ",
+    "IPC_Raising_start",
+    "IPC_Raising_stop",
+    "IPC_Lowering_start",
+    "IPC_Lowering_stop",
+    "IPC_ACK"
 };

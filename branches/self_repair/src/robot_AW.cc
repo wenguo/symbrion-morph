@@ -427,6 +427,9 @@ void RobotAW::Seeding() //the same as in RobotKIT
         recruitment_count[i] = 0;
         recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
     }
+    
+    //start IPC thread, as a server
+    commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
 
     current_state = RECRUITMENT;
     last_state = SEEDING;
@@ -1146,6 +1149,9 @@ void RobotAW::Locking()
             // RobotBase::SetIRRX(board_dev_num[docking_side], false);
             SetRGBLED(docking_side, 0,0,0,0);
         }
+
+        //start IPC thread, as a client 
+        commander_IPC.Start(IPToString(commander_IP), commander_port, false);
     }
 }
 void RobotAW::Recruitment()
@@ -1397,18 +1403,21 @@ void RobotAW::InOrganism()
             /*uint8_t buf[target.Encoded_Seq().size() + 2];
             for(int i = 0; i< target.Encoded_Seq().size(); i++)
                 buf[i] = target.Encoded_Seq()[i].data;
-            buf[target.Encoded_Seq().size()] = (my_IP.i32>>24)& 0xFF; //IP*
+            buf[target.Encoded_Seq().size()] = (my_IP.i32>>24)& 0xFF; //IP
             buf[target.Encoded_Seq().size() + 1] = COMMANDER_PORT;//commander port
             PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size() + 2);
             PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size() + 2);*/
-            uint8_t data[2];
+            /*uint8_t data[2];
             data[0] = (my_IP.i32>>24) & 0xFF;
             data[1] =COMMANDER_PORT;
             PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED, data, 2);
             PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, data, 2);
+            */
+            uint8_t buf[target.Encoded_Seq().size()];
+            for(int i = 0; i< target.Encoded_Seq().size(); i++)
+                buf[i] = target.Encoded_Seq()[i].data;
+            commander_IPC.SendData(MSG_TYPE_ORGANISM_FORMED, buf, sizeof(buf));
 
-            //start IPC thread, as a server
-            commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
 
             //init the client list and the acks
             pthread_mutex_lock(&IPC_data_mutex);
@@ -1500,8 +1509,6 @@ void RobotAW::InOrganism()
                 printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
             }
 
-            //start IPC thread, as a client 
-            commander_IPC.Start(IPToString(commander_IP), commander_port, false);
         }
     }
 }

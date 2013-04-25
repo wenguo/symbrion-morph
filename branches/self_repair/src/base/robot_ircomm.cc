@@ -218,6 +218,11 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 else
                     assembly_info = sym; //it is ok to update assembly_info, even they are not the same
 
+                //get commander_IP of the seed
+                commander_IP = getFullIP(data[3]);
+                commander_port = COMMANDER_PORT_BASE + (uint8_t)data[4];
+                std::cout<<"commander_IP: "<<IPToString(commander_IP)<<" port: "<<commander_port<<std::endl;
+
                 ack_required = true;
             }
             break;
@@ -231,8 +236,12 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 rt_status ret = mytree.getBranch(seq, (robot_side)channel);
                 std::cout<<seq<<std::endl;
                 printf("assembly_info %#x\n", seq.getSymbol(0).data);
+                uint8_t data[3];
+                data[0] = seq.getSymbol(0).data;
+                data[1] = (commander_IP.i32 >> 24 ) & 0xFF;
+                data[2] = (commander_port - COMMANDER_PORT_BASE) & 0xFF;
                 if(ret.status == RT_OK)
-                    SendIRMessage(channel, IR_MSG_TYPE_ASSEMBLY_INFO, seq.getSymbol(0).data, 5);
+                    SendIRMessage(channel, IR_MSG_TYPE_ASSEMBLY_INFO, data, 3, 5);
                 else
                     printf("Error in getting branch, no Assembly info be sent\n");
             }
@@ -437,8 +446,8 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                             case MSG_TYPE_ORGANISM_FORMED:
                                 {
                                     organism_formed = true;
-                                    commander_IP = getFullIP(data[8]);
-                                    commander_port = COMMANDER_PORT_BASE + (uint8_t)data[9];
+                       //             commander_IP = getFullIP(data[8]);
+                       //             commander_port = COMMANDER_PORT_BASE + (uint8_t)data[9];
                                     std::cout<<"commander_IP: "<<IPToString(commander_IP)<<" port: "<<commander_port<<std::endl;
                                     CPrintf1(SCR_GREEN,"%d -- organism formed !", timestamp);
                                 }

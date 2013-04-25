@@ -292,6 +292,8 @@ bool Robot::Init(const char * optionfile)
     InitHardware();
 
     my_IP = Ethernet::GetLocalIP();
+    commander_IP = my_IP;
+    commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
 
     printf("Create threads\n");
     pthread_attr_t attributes;
@@ -829,7 +831,7 @@ Ethernet::IP Robot::StringToIP(const char *str)
 }
 Ethernet::IP Robot::getFullIP(const uint8_t addr)
 {
-    return Ethernet::ip_t(uint32_t(addr)<<24 | 2 << 16 | 168 <<8 | 192);
+    return Ethernet::ip_t(uint32_t(addr)<<24 | 52 << 16 | 168 <<8 | 192);
 }
 
 void Robot::UpdateOGIRSensors(uint8_t config[2], int data[8], int sensor_type)
