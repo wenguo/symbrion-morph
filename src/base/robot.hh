@@ -218,6 +218,7 @@ class Robot
     void SendEthMessage(const EthMessage& msg);
     void ProcessIRMessage(std::auto_ptr<Message>);
     void ProcessEthMessage(std::auto_ptr<Message>);
+    void RemoteDebugging(char *data);
 
     //for organism control
     static void Process_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
@@ -227,7 +228,7 @@ class Robot
 
     uint32_t timestamp;
     uint32_t timestamp_propagated_msg_received;
-    uint32_t id;
+    uint8_t id;
     robot_type type;
     char *name;
 

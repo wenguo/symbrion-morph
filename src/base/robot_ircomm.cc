@@ -100,6 +100,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
     //first byte indicates the msg type
     switch(data[1])
     {
+        case IR_MSG_TYPE_REMOTE_DEBUG:
+            RemoteDebugging(data+2);
+            break;
         //broadcast, no ack required
         case IR_MSG_TYPE_RECRUITING:
             {

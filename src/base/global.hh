@@ -136,6 +136,7 @@ enum msg_type_t {
 
     MSG_TYPE_ACK,              //followed by acknowledged message type
 
+    IR_MSG_TYPE_REMOTE_DEBUG,
 
     //broadcast, no ack required
     IR_MSG_TYPE_RECRUITING, //followed by assembly_info
@@ -191,11 +192,22 @@ enum hinge_motor_status_t{
     LIFTING=0x3
 };
 
+
+enum remote_cmd_t{
+    CMD_NONE = 0x0,
+    CMD_LOCKING_MOTOR,
+    CMD_2D_LOCOMOTION,
+    CMD_3D_HINGE,
+
+    REMOTE_CMD_COUNT
+};
+
 //#define IR_MSG_REPEATED_DELAY 20 // 1 SECOND
 
 
 extern const char* state_names[STATE_COUNT];
 extern const char* message_names[MSG_TYPE_COUNT];
+extern const char* remote_cmd_names[REMOTE_CMD_COUNT];
 //enum led_t {LED0=0x1,LED1=0x2,LED2=0x4, IR_PULSE0=0x1, IR_PULSE1=0x2, IR_PULSE2=0x4}; //TODO: ActiveWheel has different no
 
 

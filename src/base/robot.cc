@@ -295,6 +295,8 @@ bool Robot::Init(const char * optionfile)
     commander_IP = my_IP;
     commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
 
+    id = (my_IP.i32 >> 24) & 0xFF;
+
     printf("Create threads\n");
     pthread_attr_t attributes;
     pthread_attr_init(&attributes);
@@ -587,7 +589,7 @@ void Robot::CheckDockingMotor()
         {
             locking_motor_isense_hist.Print2();
             locking_motor_operating_count[i]++ ;   
-            if(locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=2)
+            if(locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=4)
             {
                 SetDockingMotor(i, STOP);
                 CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", locking_motor_operating_count[i]);
@@ -610,7 +612,7 @@ void Robot::CheckDockingMotor()
         {
             locking_motor_operating_count[i]++ ;   
             locking_motor_isense_hist.Print2();
-            if(locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=2)
+            if(locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=4)
             {
                 SetDockingMotor(i, STOP);
                 CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", locking_motor_operating_count[i]);
