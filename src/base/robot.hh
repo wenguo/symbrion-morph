@@ -174,6 +174,10 @@ class Robot
     void RequestOGIRSensors(int sensor_type);
     void RequestOGIRSensors(uint32_t addr, int sensor_type);
     void InitRobotPoseInOrganism();
+    
+    //for remote debugging
+    void RemoteDebugging(char *data);
+    bool ParseCMD(char *buff);
 
     private:
     static void Calibrating(Robot *robot){robot->Calibrating();}
@@ -218,7 +222,6 @@ class Robot
     void SendEthMessage(const EthMessage& msg);
     void ProcessIRMessage(std::auto_ptr<Message>);
     void ProcessEthMessage(std::auto_ptr<Message>);
-    void RemoteDebugging(char *data);
 
     //for organism control
     static void Process_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
