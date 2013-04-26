@@ -41,6 +41,8 @@ class Parameter
         int docking_failed_reverse_time;
         int hinge_motor_lifting_time;
         int hinge_motor_lowing_time;
+        int hinge_motor_speed;
+        int hinge_motor_angle;
 
         int locking_motor_opening_time;
         int locking_motor_closing_time;

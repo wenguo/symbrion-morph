@@ -20,6 +20,8 @@ Parameter::Parameter():
     docking_failed_reverse_time(10),
     hinge_motor_lifting_time(30),
     hinge_motor_lowing_time(40),
+    hinge_motor_speed(30),
+    hinge_motor_angle(45),
     locking_motor_opening_time(30),
     locking_motor_closing_time(40),
     locking_motor_isense_threshold(220),
