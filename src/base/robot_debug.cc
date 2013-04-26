@@ -50,7 +50,7 @@ void Robot::RemoteDebugging(char * data)
     }
 
     if(valid)
-        printf("%d: remote control command received\n", remote_cmd_names[data[1]]);
+        printf("%d: remote control command received [%s]\n",timestamp, remote_cmd_names[data[1]]);
 
 }
 
@@ -71,7 +71,7 @@ bool Robot::ParseCMD(char * buf)
             case 1:
                 if(strcmp(cmd,"exit")==0)
                 {
-                    return 0;
+                    return false;
                 }
                 else if(strcmp(cmd, "help")==0)
                 {
@@ -83,21 +83,39 @@ bool Robot::ParseCMD(char * buf)
             case 2:
                 break;
             case 3:
-                if(strcmp(cmd, "hinge")==0)
-                {
-                    printf("move robot%d's hinge [%d] [%d]\n", arg1, arg2, arg3);
-                }
                 break;
             case 4:
                 if(strcmp(cmd, "lock")==0)
                 {
-                    printf("locking robot%d's side [%d] [%d]\n", arg1, arg2, arg3);
+                    uint8_t data[4];
+                    data[0] = arg1; //id
+                    data[1] = CMD_LOCKING_MOTOR; //cmd
+                    data[2] = arg2; //side
+                    data[3] = arg3 > 0 ? 0 : (arg3 < 0 ? 2 : 1); //open or close
+                    BroadcastIRMessage(0, IR_MSG_TYPE_REMOTE_DEBUG, data, 4, 0);
+                    if(data[3] == 0)
+                    {
+                        printf("   unlocking robot%d's side [%d]\n", arg1, arg2);
+                    }
+                    else if(data[3] == 1)
+                    {
+                        printf("   stop robot%d's side [%d] locking motor\n", arg1, arg2);
+                    }
+                    else if(data[3] == 2)
+                    {
+                        printf("   locking robot%d's side [%d]\n", arg1, arg2);
+                    }
+                }
+                else if(strcmp(cmd, "hinge")==0)
+                {
+                    printf("   move robot%d's hinge to [%d] at speed [%d]\n", arg1, arg2, arg3);
                 }
                 break;
             case 5:
                 if(strcmp(cmd, "move")==0)
                 {
-                    printf("move robot%d at speed [%d %d %d]\n", arg1, arg2, arg3, arg4);
+                    printf("   move robot%d at speed [%d %d %d]\n", arg1, arg2, arg3, arg4);
+
                 }
                 break;
             default:
