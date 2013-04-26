@@ -833,7 +833,10 @@ Ethernet::IP Robot::StringToIP(const char *str)
 }
 Ethernet::IP Robot::getFullIP(const uint8_t addr)
 {
-    return Ethernet::ip_t(uint32_t(addr)<<24 | 52 << 16 | 168 <<8 | 192);
+    if(addr == 0)
+        return Ethernet::ip_t(0);
+    else
+        return Ethernet::ip_t(uint32_t(addr)<<24 | 52 << 16 | 168 <<8 | 192);
 }
 
 void Robot::UpdateOGIRSensors(uint8_t config[2], int data[8], int sensor_type)

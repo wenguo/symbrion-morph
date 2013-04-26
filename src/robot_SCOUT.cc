@@ -512,7 +512,7 @@ void RobotSCOUT::Waiting()
 
     waiting_count++;
 
-    if(waiting_count >= para.waiting_time)
+    if(waiting_count >= (uint32_t)para.waiting_time)
     {
         waiting_count = 0;//DEFAULT_WAITING_COUNT;
         foraging_count = 0;//DEFAULT_FORAGING_COUNT;
@@ -546,7 +546,7 @@ void RobotSCOUT::Assembly()
 
     assembly_count++;
 
-    if(assembly_count >= para.assembly_time)
+    if(assembly_count >= (uint32_t)para.assembly_time)
     {
         organism_found = false;
 
@@ -581,7 +581,7 @@ void RobotSCOUT::Assembly()
     else if(assembly_info == OrganismSequence::Symbol(0) )
     {
         printf("beacon_signals_detected: %d\n", beacon_signals_detected);
-        for(int i=0;i<NUM_DOCKS;i++)
+        for(uint8_t i=0;i<NUM_DOCKS;i++)
         {
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
             if(timestamp % 12 == 3 * i && (beacon_signals_detected & (0x3 << (2*i)))!=0)
@@ -698,7 +698,7 @@ void RobotSCOUT::LocateBeacon()
     } 
     else if (beacon_signals_detected ==0 )
     {
-        if(locatebeacon_count >= para.locatebeacon_time)
+        if(locatebeacon_count >= (uint32_t)para.locatebeacon_time)
         {
             current_state = ASSEMBLY;
             last_state = LOCATEBEACON;
@@ -817,7 +817,7 @@ void RobotSCOUT::Alignment()
             }
 
             //added for scout --> aw docking 
-            if((reflective_hist[id0].Avg() > 100 | reflective_hist[id1].Avg() > 100 ) && (reflective_hist[id1 + 1].Avg()  > 100 | reflective_hist[id1+2].Avg() > 100))
+            if((reflective_hist[id0].Avg() > 100 || reflective_hist[id1].Avg() > 100 ) && (reflective_hist[id1 + 1].Avg()  > 100 || reflective_hist[id1+2].Avg() > 100))
             {
                 blocking_count += 4 * reflective_hist[id1 + 1].Avg() / 60;
                 blocking_count += 4 * reflective_hist[id1 + 2].Avg() / 60;
@@ -890,9 +890,6 @@ void RobotSCOUT::Alignment()
             else
             {
                 int shift_factor = 4;
-                int start = 0;
-                int end = NUM_IRS-1;    
-
 
                 if(assembly_info.type1 == ROBOT_SCOUT)
                 {
@@ -976,7 +973,7 @@ void RobotSCOUT::Alignment()
                 }
 
                 //added
-                if(reflective_hist[id1 + 1].Avg()  > 100 | reflective_hist[id1+2].Avg() > 100)
+                if(reflective_hist[id1 + 1].Avg()  > 100 || reflective_hist[id1+2].Avg() > 100)
                 {
                    // speed[0] -= 0;
                    // speed[1] -= 0;
@@ -1015,7 +1012,7 @@ void RobotSCOUT::Recover()
     {
         //turn left/right according to reflective value;
         //robot will stop there for 1 seconds
-        if(recover_count < para.aligning_reverse_time + docking_trials * 3)
+        if(recover_count < (uint32_t) para.aligning_reverse_time + docking_trials * 3)
         {
             //docked to the wrong robots
             if(assembly_info == OrganismSequence::Symbol(0))
@@ -1065,7 +1062,7 @@ void RobotSCOUT::Recover()
                 }
             }
         }
-        else if( recover_count == para.aligning_reverse_time + docking_trials * 5 )
+        else if( recover_count == (uint32_t)para.aligning_reverse_time + docking_trials * 5 )
         {
             for(int i=0; i<SIDE_COUNT; i++)
                 SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,0);
@@ -1215,7 +1212,7 @@ void RobotSCOUT::Recruitment()
                 Robot::BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data, 0);
             }
 
-            if( recruitment_count[i]++ > para.recruiting_beacon_signals_time )
+            if( recruitment_count[i]++ > (uint32_t)para.recruiting_beacon_signals_time )
             {
                 recruitment_count[i]=0;
                 recruitment_stage[i]=STAGE0;
@@ -1478,7 +1475,7 @@ void RobotSCOUT::InOrganism()
             PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, data, 2);*/
 
             uint8_t buf[target.Encoded_Seq().size()];
-            for(int i = 0; i< target.Encoded_Seq().size(); i++)
+            for(uint32_t i = 0; i< target.Encoded_Seq().size(); i++)
                 buf[i] = target.Encoded_Seq()[i].data;
             commander_IPC.SendData(MSG_TYPE_ORGANISM_FORMED, buf, sizeof(buf));
 
@@ -1544,7 +1541,7 @@ void RobotSCOUT::InOrganism()
             mytree.getAllIPs(IPs);
             uint8_t data[IPs.size()+1];
             data[0]=IPs.size();
-            for(int i=0;i<IPs.size();i++)
+            for(uint32_t i=0;i<IPs.size();i++)
                 data[i+1]=IPs[i];
             SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, para.ir_msg_repeated_num);
             SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
@@ -1770,7 +1767,7 @@ void RobotSCOUT::Raising()
     bool flash_leds = false;
 
     // Wait longer with larger structures
-    int raising_delay = (mytree.Size()/2+1)*30;
+    uint32_t raising_delay = (mytree.Size()/2+1)*30;
     static bool IPC_health = true;
 
     if(seed)
@@ -1791,7 +1788,7 @@ void RobotSCOUT::Raising()
         {
             hinge_motor_operating_count++;
 
-            if(hinge_motor_operating_count < para.hinge_motor_lifting_time)
+            if(hinge_motor_operating_count <(uint32_t)para.hinge_motor_lifting_time)
             {
                 int hinge_motor_speed = 30;
                 hinge_command[0] = hinge_motor_speed;
@@ -2321,7 +2318,7 @@ void RobotSCOUT::Debugging()
                 ((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[9]));
 
             }
-            else if( timestamp == para.locking_motor_opening_time + 2 || (timestamp > 12 && locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
+            else if( timestamp == (uint32_t)para.locking_motor_opening_time + 2 || (timestamp > 12 && locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
             {
                 ((ScoutBot*)irobot)->MoveDocking((ScoutBot::Side(para.debug.para[9])),0);
             }
@@ -2634,6 +2631,77 @@ void RobotSCOUT::Debugging()
                         }
                     }
                 }
+            }
+            break;
+        case 31:
+            {
+                if(timestamp ==2)
+                {
+                    IP_collection_done = false;
+
+                    printf("Set neighbour's IP\n");
+                    neighbours_IP[0] = getFullIP(para.debug.para[0]);
+                    neighbours_IP[1] = getFullIP(para.debug.para[1]);
+                    neighbours_IP[2] = getFullIP(para.debug.para[2]);
+                    neighbours_IP[3] = getFullIP(para.debug.para[3]);
+
+
+                    //fill tree and branches
+                    printf("Set mytree and all recruiting side ip\n");
+                    
+                    if(!para.og_seq_list.empty())
+                    {
+                        mytree = target = para.og_seq_list[0];
+                        std::cout<<mytree<<std::endl;
+                    }
+                    
+                    rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
+                    if(ret.status >= RT_ERROR)
+                    {
+                        std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
+                    }
+
+                    //set all recruiting side
+                    std::vector<OrganismSequence>::iterator it;
+                    for(it = mybranches.begin() ; it != mybranches.end(); it++)
+                    {
+                        //check the first symbol that indicates the parent and child side of the connection
+                        uint8_t branch_side = it->getSymbol(0).side1;
+                        //enalbe docking signals
+                        std::cout<<name<<" branch "<<*it<<std::endl;
+
+                        docked[branch_side]= it->getSymbol(0).data;
+
+                        std::vector<uint8_t> root_IPs;
+                        root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
+                        root_IPs.push_back(uint8_t((neighbours_IP[branch_side].i32>>24) & 0xFF));
+                        mytree.setBranchRootIPs(robot_side(branch_side),root_IPs);
+                    }
+
+                    seed = para.debug.para[7];
+
+                    //set parent side;
+                    if(!seed)
+                    {
+                        printf("Set parent side\n");
+                        parent_side = para.debug.para[4];
+                        docked[parent_side] = type| parent_side <<2| para.debug.para[5] << 4 | para.debug.para[6] << 6;
+                        msg_organism_seq_received = true;
+
+                        commander_IP = getFullIP(para.debug.para[8]);
+                        commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
+                        
+                        commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+                    }
+                    else
+                        commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+                }
+                else if(timestamp == 10)
+                {
+                    current_state = INORGANISM;
+                    last_state = DEBUGGING;
+                }
+
             }
             break;
         default:

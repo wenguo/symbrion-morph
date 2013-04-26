@@ -1677,8 +1677,7 @@ void RobotAW::Raising()
 
             if(hinge_motor_operating_count < (uint32_t)para.hinge_motor_lifting_time)
             {
-                int hinge_motor_speed = 30;
-                hinge_command[0] = hinge_motor_speed;
+                hinge_command[0] = para.hinge_motor_speed;
                 hinge_command[1] = hinge_motor_operating_count;
                 hinge_command[2] = 10;
                 hinge_command[3] = 0;
@@ -1957,6 +1956,12 @@ void RobotAW::MacroLocomotion()
         speed[1] = locomotion_command[2];
         speed[2] = locomotion_command[3];
     }
+
+
+    //debugging, to be removed
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     printf("%d: direction - %d, speed - [%d %d %d]\n", timestamp, direction, speed[0], speed[1], speed[2]);
     
@@ -2423,6 +2428,77 @@ void RobotAW::Debugging()
                         }
                     }
                 }
+            }
+            break;
+        case 31:
+            {
+                if(timestamp ==2)
+                {
+                    IP_collection_done = false;
+
+                    printf("Set neighbour's IP\n");
+                    neighbours_IP[0] = getFullIP(para.debug.para[0]);
+                    neighbours_IP[1] = getFullIP(para.debug.para[1]);
+                    neighbours_IP[2] = getFullIP(para.debug.para[2]);
+                    neighbours_IP[3] = getFullIP(para.debug.para[3]);
+
+
+                    //fill tree and branches
+                    printf("Set mytree and all recruiting side ip\n");
+
+                    if(!para.og_seq_list.empty())
+                    {
+                        mytree = target = para.og_seq_list[0];
+                        std::cout<<mytree<<std::endl;
+                    }
+
+                    rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
+                    if(ret.status >= RT_ERROR)
+                    {
+                        std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
+                    }
+
+                    //set all recruiting side
+                    std::vector<OrganismSequence>::iterator it;
+                    for(it = mybranches.begin() ; it != mybranches.end(); it++)
+                    {
+                        //check the first symbol that indicates the parent and child side of the connection
+                        uint8_t branch_side = it->getSymbol(0).side1;
+                        //enalbe docking signals
+                        std::cout<<name<<" branch "<<*it<<std::endl;
+
+                        docked[branch_side]= it->getSymbol(0).data;
+
+                        std::vector<uint8_t> root_IPs;
+                        root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
+                        root_IPs.push_back(uint8_t((neighbours_IP[branch_side].i32>>24) & 0xFF));
+                        mytree.setBranchRootIPs(robot_side(branch_side),root_IPs);
+                    }
+
+                    seed = para.debug.para[7];
+
+                    //set parent side;
+                    if(!seed)
+                    {
+                        printf("Set parent side\n");
+                        parent_side = para.debug.para[4];
+                        docked[parent_side] = type| parent_side <<2| para.debug.para[5] << 4 | para.debug.para[6] << 6;
+                        msg_organism_seq_received = true;
+
+                        commander_IP = getFullIP(para.debug.para[8]);
+                        commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
+                        
+                        commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+                    }
+                    else
+                        commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+                }
+                else if(timestamp == 10)
+                {
+                    current_state = INORGANISM;
+                    last_state = DEBUGGING;
+                }
+
             }
             break;
 
