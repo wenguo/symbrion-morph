@@ -262,7 +262,7 @@ void RobotSCOUT::UpdateSensors()
         if(irobot->isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])))
             ethernet_status |= 1<<i;
 
-        if(irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])) > 220)
+        if(irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])) > para.locking_motor_isense_threshold)
             isense |= 1<<i;
 
         //        printf("%d\t", irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])));

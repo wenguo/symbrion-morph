@@ -265,18 +265,18 @@ void RobotKIT::UpdateSensors()
 
     uint8_t ethernet_status=0;
     uint8_t isense=0;
-    //    printf("Isense: ");
+  //      printf("Isense: ");
     for(int i=0;i<NUM_DOCKS;i++)
     {
         if(irobot->isEthernetPortConnected(KaBot::Side(board_dev_num[i])))
             ethernet_status |= 1<<i;
 
-        if(irobot->GetDScrewISense(KaBot::Side(board_dev_num[i])) > 220)
+        if(irobot->GetDScrewISense(KaBot::Side(board_dev_num[i])) > para.locking_motor_isense_threshold)
             isense |= 1<<i;
 
-        //            printf("%d\t", irobot->GetDScrewISense(KaBot::Side(board_dev_num[i])));
+               //     printf("%d\t", irobot->GetDScrewISense(KaBot::Side(board_dev_num[i])));
     }
-    //    printf("\n");
+ //       printf("\n");
 
     ethernet_status_hist.Push2(ethernet_status);
     locking_motor_isense_hist.Push2(isense);
@@ -2622,6 +2622,14 @@ void RobotKIT::Debugging()
                 uint8_t rev = ((KaBot*)irobot)->GetDScrewRevolutions(KaBot::Side(para.debug.para[9]));
                 uint8_t ise = ((KaBot*)irobot)->GetDScrewISense(KaBot::Side(para.debug.para[9]));
                 printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
+            }
+            break;
+        case 25:
+            {
+                if(timestamp ==2)
+                {
+                    SetDockingMotor(KaBot::Side(para.debug.para[9]), CLOSE);
+                }
             }
             break;
 

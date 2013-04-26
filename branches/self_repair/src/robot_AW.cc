@@ -2391,6 +2391,20 @@ void RobotAW::Debugging()
             }
             break;
 
+        case 26:
+            {
+                if(timestamp % 10 ==0)
+                {
+                    uint8_t data[4];
+                    data[0] = 159; //id
+                    data[1] = CMD_LOCKING_MOTOR; //cmd
+                    data[2] = para.debug.para[0]; //side
+                    data[3] = para.debug.para[9]; //cmd
+                    BroadcastIRMessage(0, IR_MSG_TYPE_REMOTE_DEBUG, data, 4, 0);
+                }
+            }
+            break;
+
         case 30:
             {
                 fd_set fds;
