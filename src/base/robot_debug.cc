@@ -92,7 +92,7 @@ bool Robot::ParseCMD(char * buf)
                     data[1] = CMD_LOCKING_MOTOR; //cmd
                     data[2] = arg2; //side
                     data[3] = arg3 > 0 ? 0 : (arg3 < 0 ? 2 : 1); //open or close
-                    BroadcastIRMessage(0, IR_MSG_TYPE_REMOTE_DEBUG, data, 4, 0);
+                    BroadcastIRMessage(2, IR_MSG_TYPE_REMOTE_DEBUG, data, 4, 0);
                     if(data[3] == 0)
                     {
                         printf("   unlocking robot%d's side [%d]\n", arg1, arg2);
