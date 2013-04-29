@@ -39,6 +39,7 @@ void RobotAW::InitHardware()
     for(int i=0;i<NUM_DOCKS;i++)
     {
         irobot->SetPrintEnabled(i, false);
+        irobot->enableAccelerometer(i, true);
     }
 
     irobot->EnableMotors(true);
@@ -2407,6 +2408,23 @@ void RobotAW::Debugging()
                     data[3] = para.debug.para[9]; //cmd
                     BroadcastIRMessage(0, IR_MSG_TYPE_REMOTE_DEBUG, data, 4, 0);
                 }
+            }
+            break;
+        
+        case 27:
+            {
+                acceleration_t acc = irobot->GetAcceleration();
+                hingeData hd = irobot->GetHingeStatus();
+                if(timestamp == 2 )
+                {
+                    irobot->MoveHingeToAngle(para.debug.para[8],20);
+                }
+                else if(timestamp == 100)
+                {
+                    irobot->MoveHingeToAngle(para.debug.para[9]/10, para.debug.para[9]%10, 20);
+                }
+                double angle = 360 * atan((acc.x * 1.0) / (-acc.z * 1.0)) /2 *M_PI;
+                printf("Hinge: %d %d acc: %d %d %d \ncurrent angle %f\n", hd.currentAngle, hd.targetAngle, acc.x, acc.y, acc.z, angle);
             }
             break;
 
