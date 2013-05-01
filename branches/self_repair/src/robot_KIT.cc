@@ -1588,7 +1588,7 @@ void RobotKIT::InOrganism()
                 last_state = INORGANISM;
             }
         }
-        else if(msg_organism_seq_received && (mytree.isAllIPSet() || mytree.Size() ==0) && !IP_collection_done)
+        else if(msg_organism_seq_received && (mytree.isAllIPSet()  && mytree.Size() !=0) && !IP_collection_done)
         {
             IP_collection_done = true;
             //send the IPs to its parent
@@ -1747,68 +1747,102 @@ void RobotKIT::Lowering()
 {
     lowering_count++;
 
-    //flashing RGB leds
-    static int index = 0;
-    index = (timestamp / 2) % 6;
-    for(int i=0;i<NUM_DOCKS;i++)
+    // std::cout << "Lowering count: " << lowering_count << std::endl;
+    int lowering_delay = (mytree.Size()/2+1)*30;
+    if(seed)
     {
-        switch (index)
+        if(lowering_count < lowering_delay)
         {
-            case 0:
-                SetRGBLED(i, 0, 0, YELLOW, YELLOW);
-                break;
-            case 1:
+            //waiting;
+            if(broken_eth_connections > 0)
+                IPC_health = false;
+
+            memset(hinge_command, 0, sizeof(hinge_command));
+        }
+        else if(IPC_health)
+        {
+            hinge_motor_operating_count++;
+
+            if(hinge_motor_operating_count < (uint32_t)para.hinge_motor_lowing_time)
+            {
+                hinge_command[0] = 7;
+                hinge_command[1] = para.hinge_motor_speed;
+                hinge_command[2] = hinge_motor_operating_count ;
+                hinge_command[3] = 1; //this indicates the validation of command
+                commander_IPC.SendData(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)hinge_command, sizeof(hinge_command));
+            }
+            else
+            {
+                for(int i=0;i<NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                
+                commander_IPC.SendData(IPC_MSG_LOWERING_STOP,NULL, 0);
+
+       //         PropagateIRMessage(MSG_TYPE_DISASSEMBLY);
+       //         PropagateEthMessage(MSG_TYPE_DISASSEMBLY);
+
+                current_state = DISASSEMBLY;
+                last_state = LOWERING;
+                lowering_count = 0;
+
+                for(int i=0;i<NUM_DOCKS;i++)
+                {
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    if(docked[i])
+                        msg_unlocked_expected |=1<<i;
+                }
+            }
+
+            //check if all robot 
+            if(lowering_count % 5 == 4)
+            {
+                std::map<uint32_t, int>::iterator it;
+                for(it = commander_acks.begin(); it != commander_acks.end(); it++)
+                {
+                    //check if lost received some messages
+                    if(it->second < 3) //2 out of 5
+                    {
+                        IPC_health = false;
+                        printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
+                    }
+                    //reset the count
+                    it->second = 0;
+                }
+            }
+
+        }
+        else
+        {
+            printf("%d: not all robots are reachable through ethernet, something is wrong, stop moving\n", timestamp);
+            memset(hinge_command, 0, sizeof(hinge_command));
+        }
+    }
+    else
+    {
+        //lost connection to the commander?
+        if(broken_eth_connections >0)
+        {
+            memset(hinge_command, 0, sizeof(hinge_command));
+        }
+
+        if(msg_disassembly_received)
+        {
+            current_state = DISASSEMBLY;
+            last_state = LOWERING;
+            lowering_count = 0;
+
+            msg_disassembly_received = false;
+
+            for(int i=0;i<NUM_DOCKS;i++)
+            {
                 SetRGBLED(i, 0, 0, 0, 0);
-                break;
-            case 2:
-                SetRGBLED(i, YELLOW, YELLOW, 0, 0);
-                break;
-            case 3: //
-            case 4: // short delay to better symbolise lowering
-            case 5: //
-                SetRGBLED(i, 0, 0, 0, 0);
-                break;
-            default:
-                break;
+                if(docked[i])
+                    msg_unlocked_expected |=1<<i;
+            }
         }
+
+
     }
-
-
-    return; // for testing - do not allow to enter disassembly
-
-    //else if(seed && lowering_count >= 150)
-    if(seed && lowering_count >= 150)
-    {
-        PropagateIRMessage(MSG_TYPE_DISASSEMBLY);
-        PropagateEthMessage(MSG_TYPE_DISASSEMBLY);
-
-        current_state = DISASSEMBLY;
-        last_state = LOWERING;
-        lowering_count = 0;
-
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            SetRGBLED(i, 0, 0, 0, 0);
-            if(docked[i])
-                msg_unlocked_expected |=1<<i;
-        }
-    }
-    else if(msg_disassembly_received)
-    {
-        current_state = DISASSEMBLY;
-        last_state = LOWERING;
-        lowering_count = 0;
-
-        msg_disassembly_received = 0;
-
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            SetRGBLED(i, 0, 0, 0, 0);
-            if(docked[i])
-                msg_unlocked_expected |=1<<i;
-        }
-    }
-
 }
 
 void RobotKIT::Raising()
@@ -1820,18 +1854,18 @@ void RobotKIT::Raising()
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
+        
+    raising_count++;
 
     // Leds symbolise the raising process
     bool flash_leds = false;
 
     // Wait longer with larger structures
     int raising_delay = (mytree.Size()/2+1)*30;
-    static bool IPC_health = true;
 
     if(seed)
     {
 
-        raising_count++;
 
         //wait for a while until the propagated messages are done within the organism
         if(raising_count < raising_delay)
@@ -1848,11 +1882,10 @@ void RobotKIT::Raising()
 
             if(hinge_motor_operating_count < para.hinge_motor_lifting_time)
             {
-                int hinge_motor_speed = 30;
-                hinge_command[0] = hinge_motor_speed;
-                hinge_command[1] = hinge_motor_operating_count;
-                hinge_command[2] = 10;
-                hinge_command[3] = 0;
+                hinge_command[0] = para.hinge_motor_angle;
+                hinge_command[1] = para.hinge_motor_speed;
+                hinge_command[2] = hinge_motor_operating_count ;
+                hinge_command[3] = 1; //this indicates the validation of command
                 commander_IPC.SendData(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)&hinge_command, sizeof(hinge_command));
             }
             else
@@ -2120,7 +2153,7 @@ void RobotKIT::Reshaping()
         current_state = DISASSEMBLY;
         last_state = RESHAPING;
 
-        msg_disassembly_received = 0;
+        msg_disassembly_received = false;
 
         for(int i=0;i<NUM_DOCKS;i++)
         {
@@ -2153,16 +2186,26 @@ void RobotKIT::MacroLocomotion()
         speed[2] = 0;
 
         //set the speed of all other AW robot in the organism
-        std::map<uint32_t, robot_pose_t>::iterator it;
+        std::map<uint32_t, robot_pose>::iterator it;
         for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
         {
-            locomotion_command[0] = it->second.pose[1];
-            locomotion_command[1] = speed[1];
-            locomotion_command[2] = speed[2];
-            locomotion_command[3] = speed[3];
+            if(it->second.type == ROBOT_AW)
+            {
+                locomotion_command[0] = it->second.direction;
+                locomotion_command[1] = speed[0];
+                locomotion_command[2] = speed[1];
+                locomotion_command[3] = speed[2];
+            }
+            else
+            {
+                locomotion_command[0] = it->second.direction;
+                locomotion_command[1] = 0;
+                locomotion_command[2] = 0;
+                locomotion_command[3] = 0;
+            }
             commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
         }
-    }
+     }
     else
     {
         direction = locomotion_command[0];
@@ -2696,6 +2739,9 @@ void RobotKIT::Debugging()
                         root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
                         root_IPs.push_back(uint8_t((neighbours_IP[branch_side].i32>>24) & 0xFF));
                         mytree.setBranchRootIPs(robot_side(branch_side),root_IPs);
+
+                        unlocking_required[branch_side] = true;
+                        locking_motors_status[branch_side] = CLOSED;
                     }
 
                     seed = para.debug.para[7];
@@ -2712,6 +2758,10 @@ void RobotKIT::Debugging()
                         commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
                         
                         commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+                        
+                        unlocking_required[parent_side] = true;
+                        locking_motors_status[parent_side] = CLOSED;
+
                     }
                     else
                         commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);

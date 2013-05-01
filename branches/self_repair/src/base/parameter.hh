@@ -43,6 +43,7 @@ class Parameter
         int hinge_motor_lowing_time;
         int hinge_motor_speed;
         int hinge_motor_angle;
+        int hinge_motor_default_pos; //
 
         int locking_motor_opening_time;
         int locking_motor_closing_time;

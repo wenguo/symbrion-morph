@@ -14,6 +14,12 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
         case MSG_TYPE_ORGANISM_FORMED:
             robot->organism_formed = true;
             break;
+        case MSG_TYPE_LOWERING:
+            robot->msg_lowering_received = true;
+            break;
+        case MSG_TYPE_DISASSEMBLY:
+            robot->msg_disassembly_received = true;
+            break;
         case IPC_MSG_HINGE_3D_MOTION_REQ:
             {
                 //followed by speed, count, rotation, angle, [int, int, int, int]

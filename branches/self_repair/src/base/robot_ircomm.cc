@@ -436,7 +436,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         {
                             case MSG_TYPE_DISASSEMBLY:
                                 {
-                                    msg_disassembly_received |= 1<<channel;
+                                    msg_disassembly_received = true;
                                     CPrintf1(SCR_GREEN,"%d -- organism starts to disassemble !", timestamp);
                                 }
                                 break;
@@ -475,7 +475,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                                 break;
                             case MSG_TYPE_LOWERING:
                                 {
-                                    msg_lowering_received |= 1<<channel;
+                                    msg_lowering_received = true;
                                     CPrintf1(SCR_GREEN,"%d -- start to lower !", timestamp);
                                 }
                                 break;

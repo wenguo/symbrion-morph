@@ -350,8 +350,8 @@ class Robot
     uint8_t msg_raising_received;
     bool msg_raising_start_received;
     bool msg_raising_stop_received;
-    uint8_t msg_lowering_received;
-    uint8_t msg_disassembly_received;
+    bool msg_lowering_received;
+    bool msg_disassembly_received;
     uint8_t msg_locked_received;
     uint8_t msg_locked_expected;
     uint8_t msg_unlocked_received;
@@ -440,9 +440,29 @@ class Robot
     std::map<uint32_t, int> commander_acks; //store all ips in the organism, except itself, and the acks from them.
     pthread_mutex_t IPC_data_mutex;
     int broken_eth_connections;
+    bool IPC_health;
 
-    struct robot_pose_t{int pose[2];};
-    std::map<uint32_t, robot_pose_t> robot_pose_in_organism;
+    class robot_pose
+    {
+        public: robot_pose()
+                {
+                    index = 0;
+                    direction = 1;
+                    type = ROBOT_NONE;
+                }
+                robot_pose & operator= (const robot_pose& rhs)
+                {
+                    index = rhs.index;
+                    direction = rhs.direction;
+                    type = rhs.type;
+                    return *this;
+                }
+        int index;
+        int direction;
+        int type;
+    };
+
+    std::map<uint32_t, robot_pose> robot_pose_in_organism;
 
     int hinge_command[4];
     int locomotion_command[4];//direction, speed[0], speed[1], speed[2]

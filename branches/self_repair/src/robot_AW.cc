@@ -181,7 +181,12 @@ bool RobotAW::SetHingeMotor(int status)
 
 bool RobotAW::MoveHingeMotor(int command[4])
 {
-    irobot->MoveHinge(command[0]);
+    //irobot->MoveHinge(command[0]);
+    //a valid hinge command
+    if(command[3] == 1)
+        irobot->MoveHingeToAngle(command[0], command[1]);
+    else
+        irobot->MoveHinge(0);
     printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
 
     return true;
@@ -1475,7 +1480,7 @@ void RobotAW::InOrganism()
                 last_state = INORGANISM;
             }
         }
-        else if(msg_organism_seq_received && (mytree.isAllIPSet() ||mytree.Size() ==0) && !IP_collection_done)
+        else if(msg_organism_seq_received && (mytree.isAllIPSet()  && mytree.Size() !=0) && !IP_collection_done)
         {
             IP_collection_done = true;
             //send the IPs to its parent
@@ -1599,46 +1604,106 @@ void RobotAW::Lowering()
     lowering_count++;
 
     // std::cout << "Lowering count: " << lowering_count << std::endl;
-
-    if( lowering_count == 10 )
+    int lowering_delay = (mytree.Size()/2+1)*30;
+    if(seed)
     {
-        //MoveHingeToAngle(hinge_start_pos, hinge_speed );
-        //        SetHingeMotor(DOWN);
-    }
-
-    // For testing - don't allow to enter disassembly
-    else if(seed && lowering_count >= 150)
-    {
-        PropagateIRMessage(MSG_TYPE_DISASSEMBLY);
-        PropagateEthMessage(MSG_TYPE_DISASSEMBLY);
-
-        current_state = DISASSEMBLY;
-        last_state = LOWERING;
-        lowering_count = 0;
-
-        for(int i=0;i<NUM_DOCKS;i++)
+        if(lowering_count < lowering_delay)
         {
-            SetRGBLED(i, 0, 0, 0, 0);
-            if(docked[i])
-                msg_unlocked_expected |=1<<i;
+            //waiting;
+            if(broken_eth_connections > 0)
+                IPC_health = false;
+
+            memset(hinge_command, 0, sizeof(hinge_command));
+        }
+        else if(IPC_health)
+        {
+            hinge_motor_operating_count++;
+
+            if(hinge_motor_operating_count < (uint32_t)para.hinge_motor_lowing_time)
+            {
+                hinge_command[0] = 7;
+                hinge_command[1] = para.hinge_motor_speed;
+                hinge_command[2] = hinge_motor_operating_count ;
+                hinge_command[3] = 1; //this indicates the validation of command
+                commander_IPC.SendData(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)hinge_command, sizeof(hinge_command));
+            }
+            else
+            {
+                for(int i=0;i<NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+
+                hinge_motor_operating_count = 0;
+
+                //commander_IPC.SendData(MSG_TYPE_DISASSEMBLY, NULL, 0);
+
+                current_state = DISASSEMBLY;
+                last_state = LOWERING;
+                lowering_count = 0;
+
+                for(int i=0;i<NUM_DOCKS;i++)
+                {
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    if(docked[i])
+                        msg_unlocked_expected |=1<<i;
+                }
+            }
+
+            //check if all robot 
+            if(lowering_count % 5 == 4)
+            {
+                std::map<uint32_t, int>::iterator it;
+                for(it = commander_acks.begin(); it != commander_acks.end(); it++)
+                {
+                    //check if lost received some messages
+                    if(it->second < 3) //2 out of 5
+                    {
+                        IPC_health = false;
+                        printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
+                    }
+                    //reset the count
+                    it->second = 0;
+                }
+            }
+
+        }
+        else
+        {
+            printf("%d: not all robots are reachable through ethernet, something is wrong, stop moving\n", timestamp);
+            memset(hinge_command, 0, sizeof(hinge_command));
         }
     }
-    else if(msg_disassembly_received)
+    else
     {
-        current_state = DISASSEMBLY;
-        last_state = LOWERING;
-        lowering_count = 0;
-
-        msg_disassembly_received = 0;
-
-        for(int i=0;i<NUM_DOCKS;i++)
+        //lost connection to the commander?
+        if(broken_eth_connections >0)
         {
-            SetRGBLED(i, 0, 0, 0, 0);
-            if(docked[i])
-                msg_unlocked_expected |=1<<i;
+            memset(hinge_command, 0, sizeof(hinge_command));
         }
+
+        if(msg_disassembly_received)
+        {
+            current_state = DISASSEMBLY;
+            last_state = LOWERING;
+            lowering_count = 0;
+
+            msg_disassembly_received = false;
+
+            for(int i=0;i<NUM_DOCKS;i++)
+            {
+                SetRGBLED(i, 0, 0, 0, 0);
+                if(docked[i])
+                    msg_unlocked_expected |= 1<<i;
+            }
+        }
+
+
     }
-}
+    
+    MoveHingeMotor(hinge_command);
+    //reset, to be used next time
+    memset(hinge_command, 0, sizeof(hinge_command));
+
+ }
 
 
 void RobotAW::Raising()
@@ -1656,12 +1721,11 @@ void RobotAW::Raising()
 
     // Wait longer with larger structures
     int raising_delay = (mytree.Size()/2+1)*30;
-    static bool IPC_health = true;
+    raising_count++;
 
     if(seed)
     {
 
-        raising_count++;
 
         //wait for a while until the propagated messages are done within the organism
         if(raising_count < raising_delay)
@@ -1678,10 +1742,10 @@ void RobotAW::Raising()
 
             if(hinge_motor_operating_count < (uint32_t)para.hinge_motor_lifting_time)
             {
-                hinge_command[0] = para.hinge_motor_speed;
-                hinge_command[1] = hinge_motor_operating_count;
-                hinge_command[2] = 10;
-                hinge_command[3] = 0;
+                hinge_command[0] = para.hinge_motor_angle;
+                hinge_command[1] = para.hinge_motor_speed;
+                hinge_command[2] = hinge_motor_operating_count ;
+                hinge_command[3] = 1; //this indicates the validation of command
                 commander_IPC.SendData(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)hinge_command, sizeof(hinge_command));
             }
             else
@@ -1698,6 +1762,7 @@ void RobotAW::Raising()
                 last_state = RAISING;
                 raising_count = 0;
                 flash_leds = false;
+                hinge_motor_operating_count = 0;
             }
 
             //check if all robot 
@@ -1770,13 +1835,13 @@ void RobotAW::Raising()
             switch (index)
             {
                 case 0:
-                    SetRGBLED(i, YELLOW, YELLOW, 0, 0);
+                    SetRGBLED(i, RED, RED, 0, 0);
                     break;
                 case 1:
                     SetRGBLED(i, 0, 0, 0, 0);
                     break;
                 case 2:
-                    SetRGBLED(i, 0, 0, YELLOW, YELLOW);
+                    SetRGBLED(i, 0, 0, RED, RED);
                     break;
                 case 3: //
                 case 4: // short delay to better symbolise raising
@@ -1890,7 +1955,7 @@ void RobotAW::Reshaping()
         current_state = DISASSEMBLY;
         last_state = RESHAPING;
 
-        msg_disassembly_received = 0;
+        msg_disassembly_received = false;
 
         for(int i=0;i<NUM_DOCKS;i++)
         {
@@ -1936,17 +2001,37 @@ void RobotAW::MacroLocomotion()
             speed[0] = 0;
             speed[0] = 0;
             speed[0] = 0;
+            commander_IPC.SendData(MSG_TYPE_LOWERING, NULL, 0);
+
+            current_state = LOWERING;
+            last_state = MACROLOCOMOTION;
+
+            IPC_health = true;
+            lowering_count =0;
+            macrolocomotion_count = 0;
+            hinge_motor_operating_count = 0;
+
         }
 
 
         //set the speed of all other AW robot in the organism
-        std::map<uint32_t, robot_pose_t>::iterator it;
+        std::map<uint32_t, robot_pose>::iterator it;
         for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
         {
-            locomotion_command[0] = it->second.pose[1];
-            locomotion_command[1] = speed[0];
-            locomotion_command[2] = speed[1];
-            locomotion_command[3] = speed[2];
+            if(it->second.type == ROBOT_AW)
+            {
+                locomotion_command[0] = it->second.direction;
+                locomotion_command[1] = speed[0];
+                locomotion_command[2] = speed[1];
+                locomotion_command[3] = speed[2];
+            }
+            else
+            {
+                locomotion_command[0] = it->second.direction;
+                locomotion_command[1] = 0;
+                locomotion_command[2] = 0;
+                locomotion_command[3] = 0;
+            }
             commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
         }
     }
@@ -2347,11 +2432,11 @@ void RobotAW::Debugging()
 
                 InitRobotPoseInOrganism();
 
-                std::map<uint32_t, robot_pose_t>::iterator it;
+                std::map<uint32_t, robot_pose>::iterator it;
                 for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                 {
-                    printf("%s's index: %d pose: %d\n", IPToString(it->first), it->second.pose[0],
-                                it->second.pose[1]);
+                    printf("%s's index: %d pose: %d type: %c\n", IPToString(it->first), it->second.index,
+                                it->second.direction, robottype_names[it->second.type]);
                 }
 
             }
@@ -2387,11 +2472,11 @@ void RobotAW::Debugging()
 
                 InitRobotPoseInOrganism();
 
-                std::map<uint32_t, robot_pose_t>::iterator it;
+                std::map<uint32_t, robot_pose>::iterator it;
                 for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                 {
-                    printf("%s's index: %d pose: %d\n", IPToString(it->first), it->second.pose[0],
-                                it->second.pose[1]);
+                    printf("%s's index: %d pose: %d type: %c\n", IPToString(it->first), it->second.index,
+                                it->second.direction, robottype_names[it->second.type]);
                 }
 
             }
@@ -2415,14 +2500,25 @@ void RobotAW::Debugging()
             {
                 acceleration_t acc = irobot->GetAcceleration();
                 hingeData hd = irobot->GetHingeStatus();
-                if(timestamp == 2 )
+                if(timestamp <= 100 )
                 {
-                    irobot->MoveHingeToAngle(para.debug.para[8],20);
+                    irobot->MoveHingeToAngle(para.debug.para[9],40);
                 }
-                else if(timestamp == 100)
+                else if(timestamp <= 150)
                 {
-                    irobot->MoveHingeToAngle(para.debug.para[9]/10, para.debug.para[9]%10, 20);
+                    irobot->MoveHingeToAngle(para.hinge_motor_default_pos/10, para.hinge_motor_default_pos%10, 40);
                 }
+                /*
+                else if(timestamp == 160)
+                {
+                    irobot->MoveDockingLeft(-30);
+                    irobot->MoveDockingRight(-30);
+                }
+                else if(timestamp == 170)
+                {
+                    irobot->MoveDockingLeft(0);
+                    irobot->MoveDockingRight(0);
+                }*/
                 double angle = 360 * atan((acc.x * 1.0) / (-acc.z * 1.0)) /2 *M_PI;
                 printf("Hinge: %d %d acc: %d %d %d \ncurrent angle %f\n", hd.currentAngle, hd.targetAngle, acc.x, acc.y, acc.z, angle);
             }
