@@ -128,12 +128,12 @@ Robot::Robot()
     msg_unlockme_expected = 0;
     msg_lockme_received = 0;
     msg_lockme_expected = 0;
-    msg_disassembly_received = 0;
+    msg_disassembly_received = false;
     msg_reshaping_received=0;
     msg_raising_received = 0;
     msg_raising_start_received = false;
     msg_raising_stop_received = false;
-    msg_lowering_received = 0;
+    msg_lowering_received = false;
     msg_guideme_received = 0;
     msg_docking_signal_req_received = 0;
     msg_organism_seq_received = false;
@@ -202,6 +202,7 @@ Robot::Robot()
     commander_acks.clear();
     pthread_mutex_init(&IPC_data_mutex, NULL);
     broken_eth_connections = 0;
+    IPC_health = true;
 
     memset(hinge_command, 0, sizeof(hinge_command));
     memset(locomotion_command, 0, sizeof(locomotion_command));
@@ -218,7 +219,7 @@ void Robot::ResetAssembly()
     organism_found = false;
     organism_formed = false;
     msg_raising_received = 0;
-    msg_lowering_received = 0;
+    msg_lowering_received = false;
     msg_score_received = 0;
     msg_stop_received = false;
     msg_retreat_received = false;
@@ -257,6 +258,7 @@ void Robot::ResetAssembly()
 
     target.Clear();
     IP_collection_done = false;
+    IPC_health = true;
 
     commander_acks.clear();
     broken_eth_connections = 0;
@@ -882,7 +884,7 @@ void Robot::InitRobotPoseInOrganism()
     int pos_index = 0;
     int dir = 1;
     bool new_branch = true;
-    robot_pose_t pose;
+    robot_pose pose;
     pthread_mutex_lock(&IPC_data_mutex);
     for(unsigned int i=0;i<mytree.Encoded_Seq().size();i++)
     {
@@ -898,15 +900,17 @@ void Robot::InitRobotPoseInOrganism()
             }
 
             pos_index += dir;
-            pose.pose[0] = pos_index;
-            pose.pose[1] = (mytree.Encoded_Seq()[i].side2 == FRONT ? 1 : -1) * dir;
+            pose.index = pos_index;
+            pose.direction = (mytree.Encoded_Seq()[i].side2 == FRONT ? 1 : -1) * dir;
+            pose.type = mytree.Encoded_Seq()[i].type2;
             robot_pose_in_organism[getFullIP(mytree.Encoded_Seq()[i].child_IP).i32] = pose;
-            printf("%d : %s direction %d\n", mytree.Encoded_Seq()[i].child_IP, IPToString(getFullIP(mytree.Encoded_Seq()[i].child_IP).i32), pose.pose[1]);
+            printf("%d : %s direction %d\n", mytree.Encoded_Seq()[i].child_IP, IPToString(getFullIP(mytree.Encoded_Seq()[i].child_IP).i32), pose.direction);
         }
         else
         {
             pos_index = 0;
             new_branch = true;
+            printf("new branches\n");
         }
     }
     pthread_mutex_unlock(&IPC_data_mutex);

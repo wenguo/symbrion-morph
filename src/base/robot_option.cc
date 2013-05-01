@@ -183,6 +183,7 @@ bool Robot::LoadParameters(const char * filename)
             para.hinge_motor_lowing_time = optionfile->ReadInt(entity, "hinge_motor_lowing_time", 40);
             para.hinge_motor_speed = optionfile->ReadInt(entity, "hinge_motor_speed", 30);
             para.hinge_motor_angle = optionfile->ReadInt(entity, "hinge_motor_angle", 45);
+            para.hinge_motor_default_pos = optionfile->ReadInt(entity, "hinge_motor_default_pos", 75);
         }
         else if( strcmp( typestr, "Motor" ) == 0 )
         {
