@@ -844,38 +844,44 @@ Ethernet::IP Robot::getFullIP(const uint8_t addr)
 void Robot::UpdateOGIRSensors(uint8_t config[2], int data[8], int sensor_type)
 {
     OG_IRsensor * ir_sensors;
-    if(sensor_type == 0)
+    if(sensor_type == IR_REFLECTIVE_DATA)
         ir_sensors = &og_reflective_sensors;
-    else if(sensor_type == 1)
+    else if(sensor_type == IR_AMBIENT_DATA)
         ir_sensors= &og_ambient_sensors;
-    else if(sensor_type == 2)
+    else if(sensor_type == IR_PROXIMITY_DATA)
         ir_sensors = &og_proximity_sensors;
-    else if(sensor_type == 3)
+    else if(sensor_type == IR_BEACON_DATA)
         ir_sensors = &og_beacon_sensors;
     else
         return;
 
+
+    printf("update og from %s\n", IPToString(getFullIP(config[0])));
+    pthread_mutex_lock(&IPC_data_mutex);
+    pthread_mutex_unlock(&IPC_data_mutex);
+
 }
 
-void Robot::RequestOGIRSensors(int sensor_type)
+void Robot::RequestOGIRSensors(uint8_t sensor_type)
 {
-    //check mytree to find out 
-    //1. the front robot
-    //2. the rear robot
-    //3. all activewheels
+    std::map<uint32_t, robot_pose>::iterator it;
+    for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
+    {
+        if(it->first != my_IP.i32 || it->second.og_irsensor_index >=0 || it->second.tail_header !=0)
+            RequestOGIRSensors(it->first, sensor_type);
+    }
 
-    //I am in the middle
-
-    //I am a header
-
-    //I am a tail
 }
 
-void Robot::RequestOGIRSensors(uint32_t addr, int sensor_type)
+void Robot::RequestOGIRSensors(uint32_t addr, uint8_t sensor_type)
 {
     printf("%d: request OGIRSensors[%d] from %s\n", timestamp, sensor_type, IPToString(addr));
 
+    commander_IPC.SendData(addr, IPC_MSG_IRSENSOR_DATA_REQ, (uint8_t*)&sensor_type, 1);
+
 }
+
+
 
 //only works for the snake like organism, connected using only front and back sides
 void Robot::InitRobotPoseInOrganism()
@@ -886,6 +892,16 @@ void Robot::InitRobotPoseInOrganism()
     bool new_branch = true;
     robot_pose pose;
     pthread_mutex_lock(&IPC_data_mutex);
+    int index_min = 0;
+    int index_max = 0;
+
+    //insert myself
+    pose.direction = 1;
+    pose.index = 0;
+    pose.type = type;
+    robot_pose_in_organism[my_IP.i32] = pose;
+
+    //insert all other robots
     for(unsigned int i=0;i<mytree.Encoded_Seq().size();i++)
     {
         if(mytree.Encoded_Seq()[i] != OrganismSequence::Symbol(0))
@@ -912,6 +928,100 @@ void Robot::InitRobotPoseInOrganism()
             new_branch = true;
             printf("new branches\n");
         }
+
+        if(index_min < pos_index)
+            index_min = pos_index;
+
+        if(index_max > pos_index)
+            index_max = pos_index;
     }
+
+    printf("min: %d\nmax: %d\n", index_min, index_max);
+
+    //sort it according to index
+    std::vector< std::pair<uint32_t, robot_pose> > myvec(robot_pose_in_organism.begin(), robot_pose_in_organism.end());
+    std::sort(myvec.begin(), myvec.end(),Cmp());
+
+    //fill in og_irsensor_index
+    int og_irsensor_index = 0;
+    for(int i=0;i<myvec.size();i++)
+    {
+        printf("inside: %s's index: %d pose: %d type: %c\n", IPToString(myvec[i].first), myvec[i].second.index,
+                myvec[i].second.direction, robottype_names[myvec[i].second.type]);
+        //reset other memembers
+        robot_pose_in_organism[myvec[i].first].tail_header = 0;
+        robot_pose_in_organism[myvec[i].first].og_irsensor_index = og_irsensor_index;
+
+        //set og_irsensor_index if it is AW
+        if(myvec[i].second.type == ROBOT_AW)
+        {
+            og_irsensor_index++;
+            robot_pose_in_organism[myvec[i].first].og_irsensor_index = og_irsensor_index;
+        }
+    }
+    //set tail_header
+    robot_pose_in_organism[myvec[0].first].tail_header = -1;
+    robot_pose_in_organism[myvec[myvec.size()-1].first].tail_header = 1;
+
+
+    //init the OGIRsensor, to make them the right size for easy access later
+    og_reflective_sensors.left.clear();
+    og_reflective_sensors.right.clear();
+    og_proximity_sensors.left.clear();
+    og_proximity_sensors.right.clear();
+    og_beacon_sensors.left.clear();
+    og_beacon_sensors.right.clear();
+    og_ambient_sensors.left.clear();
+    og_ambient_sensors.right.clear();
+    std::map<uint32_t, robot_pose>::iterator it;
+    for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
+    {
+        if(it->second.type == ROBOT_AW)
+        {
+            //increase the size of left and right for 2
+            og_reflective_sensors.left.push_back(0);
+            og_reflective_sensors.left.push_back(0);
+            og_reflective_sensors.right.push_back(0);
+            og_reflective_sensors.right.push_back(0);
+            og_proximity_sensors.left.push_back(0);
+            og_proximity_sensors.left.push_back(0);
+            og_proximity_sensors.right.push_back(0);
+            og_proximity_sensors.right.push_back(0);
+            og_beacon_sensors.left.push_back(0);
+            og_beacon_sensors.left.push_back(0);
+            og_beacon_sensors.right.push_back(0);
+            og_beacon_sensors.right.push_back(0);
+            og_ambient_sensors.left.push_back(0);
+            og_ambient_sensors.left.push_back(0);
+            og_ambient_sensors.right.push_back(0);
+            og_ambient_sensors.right.push_back(0);
+
+        }
+    }
+
+    /*
+    //I am a activewheel?
+    if(type == ROBOT_AW)
+    {
+        //increase the size of left and right for 2
+        og_reflective_sensors.left.push_back(0);
+        og_reflective_sensors.left.push_back(0);
+        og_reflective_sensors.right.push_back(0);
+        og_reflective_sensors.right.push_back(0);
+        og_proximity_sensors.left.push_back(0);
+        og_proximity_sensors.left.push_back(0);
+        og_proximity_sensors.right.push_back(0);
+        og_proximity_sensors.right.push_back(0);
+        og_beacon_sensors.left.push_back(0);
+        og_beacon_sensors.left.push_back(0);
+        og_beacon_sensors.right.push_back(0);
+        og_beacon_sensors.right.push_back(0);
+        og_ambient_sensors.left.push_back(0);
+        og_ambient_sensors.left.push_back(0);
+        og_ambient_sensors.right.push_back(0);
+        og_ambient_sensors.right.push_back(0);
+    }*/
+
     pthread_mutex_unlock(&IPC_data_mutex);
+
 }
