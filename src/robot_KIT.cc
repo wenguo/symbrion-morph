@@ -1531,7 +1531,7 @@ void RobotKIT::InOrganism()
             uint8_t buf[target.Encoded_Seq().size()];
             for(int i = 0; i< target.Encoded_Seq().size(); i++)
                 buf[i] = target.Encoded_Seq()[i].data;
-            commander_IPC.SendData(MSG_TYPE_ORGANISM_FORMED, buf, sizeof(buf));
+            IPCSendMessage(MSG_TYPE_ORGANISM_FORMED, buf, sizeof(buf));
 
             //init the client list and the acks
             pthread_mutex_lock(&IPC_data_mutex);
@@ -1769,14 +1769,14 @@ void RobotKIT::Lowering()
                 hinge_command[1] = para.hinge_motor_speed;
                 hinge_command[2] = hinge_motor_operating_count ;
                 hinge_command[3] = 1; //this indicates the validation of command
-                commander_IPC.SendData(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)hinge_command, sizeof(hinge_command));
+                IPCSendMessage(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)hinge_command, sizeof(hinge_command));
             }
             else
             {
                 for(int i=0;i<NUM_DOCKS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
                 
-                commander_IPC.SendData(IPC_MSG_LOWERING_STOP,NULL, 0);
+                IPCSendMessage(IPC_MSG_LOWERING_STOP,NULL, 0);
 
        //         PropagateIRMessage(MSG_TYPE_DISASSEMBLY);
        //         PropagateEthMessage(MSG_TYPE_DISASSEMBLY);
@@ -1886,7 +1886,7 @@ void RobotKIT::Raising()
                 hinge_command[1] = para.hinge_motor_speed;
                 hinge_command[2] = hinge_motor_operating_count ;
                 hinge_command[3] = 1; //this indicates the validation of command
-                commander_IPC.SendData(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)&hinge_command, sizeof(hinge_command));
+                IPCSendMessage(IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)&hinge_command, sizeof(hinge_command));
             }
             else
             {
@@ -1894,7 +1894,7 @@ void RobotKIT::Raising()
                 for(int i=0;i<NUM_DOCKS;i++)
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
                 
-                commander_IPC.SendData(IPC_MSG_RAISING_STOP,NULL, 0);
+                IPCSendMessage(IPC_MSG_RAISING_STOP,NULL, 0);
                 
                 InitRobotPoseInOrganism();
                 
@@ -2206,7 +2206,7 @@ void RobotKIT::MacroLocomotion()
             
             //exclude myself
             if(it->first != my_IP.i32)
-                commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
+                IPCSendMessage(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
         }
      }
     else

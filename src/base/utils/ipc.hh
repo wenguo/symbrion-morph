@@ -70,6 +70,8 @@ class IPC
         bool SendData(const uint32_t dest, const uint8_t type, uint8_t * data, int len);
         int RemoveBrokenConnections();
         inline void SetCallback(Callback c, void * u) {callback = c; user_data = u;}
+        inline bool Server(){return server;}
+        std::vector<Connection*> *Connections(){ return &connections;}
 
     private:
         static void * Monitoring(void *ptr);

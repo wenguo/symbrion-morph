@@ -169,6 +169,9 @@ class Robot
     virtual bool SetDockingMotor(int channel, int status)=0;
     virtual bool SetHingeMotor(int status)=0;
     virtual bool MoveHingeMotor(int command[4])=0;
+
+    void IPCSendMessage(uint32_t dst,  uint8_t type, const uint8_t *data=NULL, int size=0);
+    void IPCSendMessage(uint8_t type, const uint8_t *data = NULL, int size=0);
     
     //for organism control
     void RequestOGIRSensors(uint8_t sensor_type);

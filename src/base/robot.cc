@@ -877,10 +877,35 @@ void Robot::RequestOGIRSensors(uint32_t addr, uint8_t sensor_type)
 {
     printf("%d: request OGIRSensors[%d] from %s\n", timestamp, sensor_type, IPToString(addr));
 
-    commander_IPC.SendData(addr, IPC_MSG_IRSENSOR_DATA_REQ, (uint8_t*)&sensor_type, 1);
+    IPCSendMessage(addr, IPC_MSG_IRSENSOR_DATA_REQ, (uint8_t*)&sensor_type, 1);
 
 }
 
+//send data to specified address, it may be relayed by the server
+void Robot::IPCSendMessage(uint32_t dst,  uint8_t type, const uint8_t *data, int size)
+{
+    uint8_t buf[size + 2];
+    buf[0] = (dst >> 24) & 0xFF;
+    buf[1] = (my_IP.i32 >> 24) & 0xFF;
+    memcpy(buf+2, data, size);
+
+    if(commander_IPC.Server()) 
+        commander_IPC.SendData(dst, type, buf, sizeof(buf));
+    else
+        commander_IPC.SendData(type, buf, sizeof(buf));
+}
+
+//send data to all from the server, or send back to server from the client
+void Robot::IPCSendMessage(uint8_t type, const uint8_t *data, int size)
+{
+    uint8_t buf[size + 2];
+    buf[0] = 0;
+    buf[1] = (my_IP.i32 >> 24) & 0xFF;
+    memcpy(buf+2, data, size);
+
+    commander_IPC.SendData(type, buf, sizeof(buf));
+
+}
 
 
 //only works for the snake like organism, connected using only front and back sides
