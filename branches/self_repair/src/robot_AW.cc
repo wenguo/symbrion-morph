@@ -1523,7 +1523,6 @@ void RobotAW::Disassembly()
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
-
     //no need to propagate disassembling messages?
     if(!MessageWaitingAck(MSG_TYPE_PROPAGATED))
     {
@@ -1976,6 +1975,8 @@ void RobotAW::MacroLocomotion()
     speed[2] = 0;
 
     macrolocomotion_count++;
+    
+    RequestOGIRSensors(IR_BEACON_DATA);
 
     if(seed)
     {
@@ -2032,7 +2033,10 @@ void RobotAW::MacroLocomotion()
                 locomotion_command[2] = 0;
                 locomotion_command[3] = 0;
             }
-            commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
+
+            //exclude myself
+            if(it->first != my_IP.i32)
+                commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
         }
     }
     else
@@ -2435,13 +2439,14 @@ void RobotAW::Debugging()
                 std::map<uint32_t, robot_pose>::iterator it;
                 for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                 {
-                    printf("%s's index: %d pose: %d type: %c\n", IPToString(it->first), it->second.index,
-                                it->second.direction, robottype_names[it->second.type]);
+                    printf("%s's index: %d pose: %d type: %c og_irsensor_index: %d tail_header: %d\n", IPToString(it->first), it->second.index,
+                                it->second.direction, robottype_names[it->second.type], it->second.og_irsensor_index, it->second.tail_header);
                 }
 
             }
             else if(timestamp == 3)
             {
+                robot_pose_in_organism.clear();
                 printf("1\n");
                 mytree.reBuild("ABSBSFABAFSB000000000000AFSFSBAFABSF000000000000");
                 std::cout<<mytree<<std::endl;
@@ -2475,8 +2480,8 @@ void RobotAW::Debugging()
                 std::map<uint32_t, robot_pose>::iterator it;
                 for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                 {
-                    printf("%s's index: %d pose: %d type: %c\n", IPToString(it->first), it->second.index,
-                                it->second.direction, robottype_names[it->second.type]);
+                    printf("%s's index: %d pose: %d type: %c og_irsensor_index: %d tail_header: %d\n", IPToString(it->first), it->second.index,
+                                it->second.direction, robottype_names[it->second.type], it->second.og_irsensor_index, it->second.tail_header);
                 }
 
             }
@@ -2587,6 +2592,7 @@ void RobotAW::Debugging()
                         root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
                         root_IPs.push_back(uint8_t((neighbours_IP[branch_side].i32>>24) & 0xFF));
                         mytree.setBranchRootIPs(robot_side(branch_side),root_IPs);
+
                     }
 
                     seed = para.debug.para[7];

@@ -42,24 +42,31 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                         );
             }
             break;
-        case IPC_MSG_PROXIMITY_DATA_REQ:
+        case IPC_MSG_IRSENSOR_DATA_REQ:
             {
-            }
-            break;
-        case IPC_MSG_BEACON_DATA_REQ:
-            {
-            }
-            break;
-        case IPC_MSG_REFLECTIVE_DATA_REQ:
-            {
-                int reflective_calibrated[NUM_IRS];
-                uint8_t data[sizeof(reflective_calibrated) + 3];
+                int irsensor_data[NUM_IRS];
+                uint8_t data[sizeof(irsensor_data) + 4];
                 data[0] = msg->command;
-                data[1] = msg->data[0];
-                data[2] = msg->data[1];
-                for(int i=0;i<NUM_IRS;i++)
-                    reflective_calibrated[i]=robot->reflective[i] - robot->para.reflective_calibrated[i];
-                memcpy(data+3, (uint8_t*)reflective_calibrated, sizeof(reflective_calibrated));
+                data[1] = msg->data[0]; //ir sensor type
+                data[2] = (robot->my_IP.i32>>24)&0xFF; //my ip
+                data[3] = 0;//reserved
+                if(data[1] == IR_REFLECTIVE_DATA)
+                {
+                    for(int i=0;i<NUM_IRS;i++)
+                        irsensor_data[i]=robot->reflective[i] - robot->para.reflective_calibrated[i];
+                }
+                else if(data[1] == IR_PROXIMITY_DATA)
+                {
+                    for(int i=0;i<NUM_IRS;i++)
+                        irsensor_data[i]=robot->reflective[i] - robot->para.reflective_calibrated[i];
+                }
+                else if(data[1] == IR_BEACON_DATA)
+                {
+                    for(int i=0;i<NUM_IRS;i++)
+                        irsensor_data[i]=robot->reflective[i] - robot->para.reflective_calibrated[i];
+                }
+
+                memcpy(data+4, (uint8_t*)irsensor_data, sizeof(irsensor_data));
                 
                 conn->SendData(IPC_MSG_ACK, data, sizeof(data));
             }
@@ -84,22 +91,16 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 pthread_mutex_unlock(&robot->IPC_data_mutex);
                 //for sensor data msg->data: 
                 // 0 -- REQ type
-                // 1 -- organism side; front, left, back, right
-                // 2 -- index, for left side and right side
-                // 3 -- sensor mask, each bit correspond to one sensor
-                // 2 - 34, sensor data
+                // 1 --2 -- configuration tag in the organism 
+                // 3 - 34, sensor data
                 switch(msg->data[0])
                 {
-                    case IPC_MSG_PROXIMITY_DATA_REQ:
-                        break;
-                    case IPC_MSG_BEACON_DATA_REQ:
-                        break;
-                    case IPC_MSG_REFLECTIVE_DATA_REQ:
+                    case IPC_MSG_IRSENSOR_DATA_REQ:
                         uint8_t config[2];
                         int data[NUM_IRS];
-                        memcpy(config, msg->data + 1, 2);
-                        memcpy((uint8_t*)data, msg->data + 3, sizeof(data));
-                        robot->UpdateOGIRSensors(config, data, 0);
+                        memcpy(config, msg->data + 2, 2);
+                        memcpy((uint8_t*)data, msg->data + 4, sizeof(data));
+                        robot->UpdateOGIRSensors(config, data, msg->data[1]);
                         break;
                     default:
                         break;

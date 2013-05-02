@@ -171,8 +171,8 @@ class Robot
     virtual bool MoveHingeMotor(int command[4])=0;
     
     //for organism control
-    void RequestOGIRSensors(int sensor_type);
-    void RequestOGIRSensors(uint32_t addr, int sensor_type);
+    void RequestOGIRSensors(uint8_t sensor_type);
+    void RequestOGIRSensors(uint32_t addr, uint8_t sensor_type);
     void InitRobotPoseInOrganism();
     
     //for remote debugging
@@ -448,21 +448,35 @@ class Robot
                 {
                     index = 0;
                     direction = 1;
+                    og_irsensor_index = -1;
                     type = ROBOT_NONE;
+                    tail_header = 0;
                 }
                 robot_pose & operator= (const robot_pose& rhs)
                 {
                     index = rhs.index;
                     direction = rhs.direction;
                     type = rhs.type;
+                    og_irsensor_index = rhs.og_irsensor_index;
+                    tail_header = rhs.tail_header;
                     return *this;
                 }
-        int index;
+        int index; //relative postion to the seed, 
+        int og_irsensor_index; //index used for og_irsenosr vector, only valid for AW robot
         int direction;
         int type;
+        int tail_header;
     };
 
     std::map<uint32_t, robot_pose> robot_pose_in_organism;
+
+        struct Cmp 
+        {
+            inline bool operator ()(const std::pair<uint32_t, robot_pose>& _left, const std::pair<uint32_t, robot_pose>& _right)
+            {
+                return _left.second.index < _right.second.index;
+            }
+        };
 
     int hinge_command[4];
     int locomotion_command[4];//direction, speed[0], speed[1], speed[2]

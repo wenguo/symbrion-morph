@@ -2144,7 +2144,10 @@ void RobotSCOUT::MacroLocomotion()
                 locomotion_command[2] = 0;
                 locomotion_command[3] = 0;
             }
-            commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
+            
+            //exclude myself
+            if(it->first != my_IP.i32)
+                commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
         }
    }
     else
@@ -2720,6 +2723,7 @@ void RobotSCOUT::Debugging()
                         
                         unlocking_required[parent_side] = true;
                         locking_motors_status[parent_side] = CLOSED;
+                        
                     }
 
                     seed = para.debug.para[7];
@@ -2739,6 +2743,7 @@ void RobotSCOUT::Debugging()
                         
                         unlocking_required[parent_side] = true;
                         locking_motors_status[parent_side] = CLOSED;
+                        
                     }
                     else
                         commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);

@@ -2203,7 +2203,10 @@ void RobotKIT::MacroLocomotion()
                 locomotion_command[2] = 0;
                 locomotion_command[3] = 0;
             }
-            commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
+            
+            //exclude myself
+            if(it->first != my_IP.i32)
+                commander_IPC.SendData(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
         }
      }
     else
@@ -2742,6 +2745,7 @@ void RobotKIT::Debugging()
 
                         unlocking_required[branch_side] = true;
                         locking_motors_status[branch_side] = CLOSED;
+                            
                     }
 
                     seed = para.debug.para[7];
