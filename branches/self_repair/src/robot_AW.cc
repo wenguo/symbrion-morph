@@ -187,9 +187,23 @@ bool RobotAW::MoveHingeMotor(int command[4])
         irobot->MoveHingeToAngle(command[0], command[1]);
     else
         irobot->MoveHinge(0);
-    printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
+  //  printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
 
     return true;
+}
+
+bool RobotAW::RotateDockingUnit(int channel, int8_t angle)
+{
+    bool ret = true;
+
+    if(channel == FRONT)
+        irobot->MoveDockingSideDToAngle(angle);
+    else if(channel == BACK)
+        irobot->MoveDockingSideBToAngle(angle);
+    else
+        ret = false;
+
+    return ret;
 }
 
 void RobotAW::UpdateSensors()
@@ -1490,8 +1504,9 @@ void RobotAW::InOrganism()
             data[0]=IPs.size();
             for(int i=0;i<IPs.size();i++)
                 data[i+1]=IPs[i];
-            SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, para.ir_msg_repeated_num);
-            SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
+            //SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, para.ir_msg_repeated_num);
+            //SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
+            IPCSendMessage(neighbours_IP[parent_side].i32, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1);
 
         }
         else if(organism_formed)
@@ -1633,9 +1648,16 @@ void RobotAW::Lowering()
                 hinge_motor_operating_count = 0;
 
                 //IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
-
-                current_state = DISASSEMBLY;
+                //
+                IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
+                macrolocomotion_count = 0;
+                raising_count = 0;
+                current_state = RAISING;
                 last_state = LOWERING;
+
+
+                //current_state = DISASSEMBLY;
+                //last_state = LOWERING;
                 lowering_count = 0;
 
                 for(int i=0;i<NUM_DOCKS;i++)
@@ -1693,6 +1715,13 @@ void RobotAW::Lowering()
                     msg_unlocked_expected |= 1<<i;
             }
         }
+        else if(msg_raising_start_received)
+        {
+            macrolocomotion_count = 0;
+            raising_count = 0;
+            current_state = RAISING;
+            last_state = LOWERING;
+        }
 
 
     }
@@ -1720,7 +1749,7 @@ void RobotAW::Raising()
     bool flash_leds = false;
 
     // Wait longer with larger structures
-    int raising_delay = (mytree.Size()/2+1)*30;
+    int raising_delay = 10;//(mytree.Size()/2+1)*30;
     raising_count++;
 
     if(seed)
@@ -1763,6 +1792,7 @@ void RobotAW::Raising()
                 raising_count = 0;
                 flash_leds = false;
                 hinge_motor_operating_count = 0;
+                macrolocomotion_count = 0;
             }
 
             //check if all robot 
@@ -1808,6 +1838,7 @@ void RobotAW::Raising()
             last_state = RAISING;
             raising_count = 0;
             hinge_motor_operating_count=0;
+            macrolocomotion_count = 0;
 
             memset(hinge_command, 0, sizeof(hinge_command));
 
@@ -1978,8 +2009,30 @@ void RobotAW::MacroLocomotion()
     speed[2] = 0;
 
     macrolocomotion_count++;
-    
-    RequestOGIRSensors(IR_BEACON_DATA);
+
+   // RequestOGIRSensors(IR_BEACON_DATA);
+
+    /*
+    //adjust docking unit
+    if(macrolocomotion_count < 10)
+    {
+        std::vector<OrganismSequence>::iterator it;
+        for(it = mybranches.begin() ; it != mybranches.end(); it++)
+        {
+            //check the first symbol that indicates the parent and child side of the connection
+            uint8_t branch_side = it->getSymbol(0).side1;
+            //enalbe docking signals
+            std::cout<<name<<" branch "<<*it<<std::endl;
+
+            if(branch_side == FRONT) 
+                irobot->MoveDockingSideDToAngle(90);
+            else if(branch_side == BACK) 
+                irobot->MoveDockingSideBToAngle(90);
+        }
+
+    }
+    */
+
 
     if(seed)
     {
@@ -1988,13 +2041,13 @@ void RobotAW::MacroLocomotion()
 
         //make a decision for the speed of organism
         direction = FORWARD;
-        if(macrolocomotion_count < 100)
+        if(macrolocomotion_count < 50)
         {
             speed[0] = 30;
             speed[1] = 30;
             speed[2] = 0;
         }
-        else if(macrolocomotion_count < 200)
+        else if(macrolocomotion_count < 60)
         {
             speed[0] = 0;
             speed[1] = 0;
@@ -2093,10 +2146,11 @@ void RobotAW::MacroLocomotion()
         speed[1] = 0;
         speed[2] = 0;
 
+        msg_lowering_received = false;
         last_state = MACROLOCOMOTION;
         current_state = LOWERING;
         lowering_count = 0;
-        seed = false;
+        macrolocomotion_count=0;
     }
 }
 
