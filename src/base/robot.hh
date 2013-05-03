@@ -234,6 +234,7 @@ class Robot
 
     uint32_t timestamp;
     uint32_t timestamp_propagated_msg_received;
+    uint32_t timestamp_motors_cmd_received; //the last time motor command received from the commander
     uint8_t id;
     robot_type type;
     char *name;

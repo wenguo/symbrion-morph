@@ -14,6 +14,7 @@ Robot::Robot()
     name = strdup("Robot");
     timestamp = 0;
     timestamp_propagated_msg_received=0;
+    timestamp_motors_cmd_received =0;
     type = ROBOT_KIT;
 
     bumped=0;

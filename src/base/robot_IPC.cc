@@ -10,10 +10,10 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
     uint8_t receiver = msg->data[0];
 
     //do I need to relay the message
-    if(receiver != 0 || receiver != ((robot->my_IP.i32 >> 24)&0xFF))
+    if(receiver != 0 && receiver != ((robot->my_IP.i32 >> 24)&0xFF))
     {
         if(!robot->commander_IPC.Server())
-            printf("This shouldn't happen, please check\n");
+            printf("This shouldn't happen, please check! data: %d %d\n", msg->data[0], msg->data[1]);
         else
         {
             robot->commander_IPC.SendData(robot->getFullIP(receiver).i32, msg->command, (uint8_t*)msg->data, msg->length);
@@ -43,8 +43,8 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                     //followed by speed, count, rotation, angle, [int, int, int, int]
                     memcpy((uint8_t*)robot->hinge_command, data, sizeof(robot->hinge_command));
                     uint8_t command = msg->command; 
-
                     robot->IPCSendMessage(IPC_MSG_ACK, &command, 1);
+                    robot->timestamp_motors_cmd_received  = robot->timestamp;
                 }
                 break;
             case IPC_MSG_LOCOMOTION_2D_REQ:
@@ -53,6 +53,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                     memcpy((uint8_t*)robot->locomotion_command, data, sizeof(robot->locomotion_command));
                     uint8_t command = msg->command; 
                     robot->IPCSendMessage(IPC_MSG_ACK, &command, 1);
+                    robot->timestamp_motors_cmd_received  = robot->timestamp;
                     printf("%d: received [%s] %d %d %d %d\n", robot->timestamp, message_names[msg->command],
                             robot->locomotion_command[0],
                             robot->locomotion_command[1],
