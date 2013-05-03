@@ -1,6 +1,7 @@
 #!/bin/bash
 
 robotIPs=(61 159 211 56 216 224 52)
+#robotIPs=(211 61 159 56 216 52 224)
 
 sudo ifconfig eth0 192.168.52.100
 

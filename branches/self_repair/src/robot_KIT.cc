@@ -1748,9 +1748,9 @@ void RobotKIT::Lowering()
     lowering_count++;
 
     // std::cout << "Lowering count: " << lowering_count << std::endl;
-    int lowering_delay = (mytree.Size()/2+1)*30;
     if(seed)
     {
+        int lowering_delay = 10;
         if(lowering_count < lowering_delay)
         {
             //waiting;
@@ -1959,9 +1959,9 @@ void RobotKIT::Raising()
 
     }
     
-    MoveHingeMotor(hinge_command);
+ //   MoveHingeMotor(hinge_command);
     //reset, to be used next time
-    memset(hinge_command, 0, sizeof(hinge_command));
+  //  memset(hinge_command, 0, sizeof(hinge_command));
 
     if(flash_leds)
     {
@@ -2219,7 +2219,9 @@ void RobotKIT::MacroLocomotion()
 
     printf("%d: direction - %d, speed - [%d %d %d]\n", timestamp, direction, speed[0], speed[1], speed[2]);
     
-    memset(locomotion_command, 0, sizeof(locomotion_command));
+    //reset
+    if(timestamp - timestamp_motors_cmd_received > 3)
+        memset(locomotion_command, 0, sizeof(locomotion_command));
 
 
     //flashing RGB leds
