@@ -21,6 +21,7 @@ class RobotAW:public Robot
         virtual bool SetDockingMotor(int channel, int status);
         virtual bool SetHingeMotor(int status);
         virtual bool MoveHingeMotor(int command[4]);
+        virtual bool RotateDockingUnit(int channel, int8_t angle);
         virtual void SetSpeed(int leftspeed, int rightspeed, int sidespeed);
         virtual void Reset();
 

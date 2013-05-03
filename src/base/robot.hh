@@ -142,9 +142,9 @@ class Robot
     void RemoveFromQueue(uint8_t type, uint8_t subtype = 0);
 
     std::string ClockString();
-    const char * IPToString(Ethernet::IP ip);
-    Ethernet::IP StringToIP(const char *);
-    Ethernet::IP getFullIP(const uint8_t addr);
+    static const char * IPToString(Ethernet::IP ip);
+    static Ethernet::IP StringToIP(const char *);
+    static Ethernet::IP getFullIP(const uint8_t addr);
 
     //  void BroadcastMessage(Message); //broadcast message via wired communication bus
     //  void SendMessage(int i, Message*);
@@ -169,6 +169,7 @@ class Robot
     virtual bool SetDockingMotor(int channel, int status)=0;
     virtual bool SetHingeMotor(int status)=0;
     virtual bool MoveHingeMotor(int command[4])=0;
+    virtual bool RotateDockingUnit(int channel, int8_t angle)=0;
 
     void IPCSendMessage(uint32_t dst,  uint8_t type, const uint8_t *data=NULL, int size=0);
     void IPCSendMessage(uint8_t type, const uint8_t *data = NULL, int size=0);

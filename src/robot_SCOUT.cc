@@ -1543,8 +1543,9 @@ void RobotSCOUT::InOrganism()
             data[0]=IPs.size();
             for(uint32_t i=0;i<IPs.size();i++)
                 data[i+1]=IPs[i];
-            SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, para.ir_msg_repeated_num);
-            SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
+            //SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, para.ir_msg_repeated_num);
+            //SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
+            IPCSendMessage(neighbours_IP[parent_side].i32, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1);
 
         }
         else if(organism_formed)
@@ -1780,6 +1781,14 @@ void RobotSCOUT::Lowering()
                     msg_unlocked_expected |=1<<i;
             }
         }
+        else if(msg_raising_start_received)
+        {
+            macrolocomotion_count = 0;
+            raising_count = 0;
+            current_state = RAISING;
+            last_state = LOWERING;
+        }
+
 
 
     }
@@ -1799,8 +1808,7 @@ void RobotSCOUT::Raising()
     bool flash_leds = false;
 
     // Wait longer with larger structures
-    uint32_t raising_delay = (mytree.Size()/2+1)*30;
-    static bool IPC_health = true;
+    uint32_t raising_delay = 10;//(mytree.Size()/2+1)*30;
 
     if(seed)
     {
@@ -1842,6 +1850,7 @@ void RobotSCOUT::Raising()
                 last_state = RAISING;
                 raising_count = 0;
                 flash_leds = false;
+                macrolocomotion_count = 0;
             }
 
             //check if all robot 
@@ -1887,6 +1896,7 @@ void RobotSCOUT::Raising()
             last_state = RAISING;
             raising_count = 0;
             hinge_motor_operating_count=0;
+            macrolocomotion_count = 0;
 
             memset(hinge_command, 0, sizeof(hinge_command));
 
@@ -2114,6 +2124,22 @@ void RobotSCOUT::MacroLocomotion()
 
     macrolocomotion_count++;
 
+    if(macrolocomotion_count <10)
+    {
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            printf("%d: process side %d\n", timestamp, i);
+            OrganismSequence::Symbol sym = OrganismSequence::Symbol(docked[i]);
+            if(sym.type2 == ROBOT_AW)
+            {
+                printf("%d request to rotate docking angle %d %s\n", timestamp, i, IPToString(neighbours_IP[i]));
+                int8_t angle = 90;
+                IPCSendMessage(neighbours_IP[i].i32,IPC_MSG_DOCKING_ROTATION_REQ, (uint8_t*)&angle, 1);
+                break;
+            }
+        }
+    }
+
     if(seed)
     {
         //request IRSensors
@@ -2205,9 +2231,11 @@ void RobotSCOUT::MacroLocomotion()
         speed[1] = 0;
         speed[2] = 0;
 
+        msg_lowering_received = false;
         last_state = MACROLOCOMOTION;
         current_state = LOWERING;
         lowering_count = 0;
+        macrolocomotion_count = 0;
     }
 
 }

@@ -8,6 +8,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
     IPC::Connection * conn=(IPC::Connection*) connection;
 
     uint8_t receiver = msg->data[0];
+    uint8_t sender = msg->data[1];
 
     //do I need to relay the message
     if(receiver != 0 && receiver != ((robot->my_IP.i32 >> 24)&0xFF))
@@ -38,6 +39,33 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
             case MSG_TYPE_DISASSEMBLY:
                 robot->msg_disassembly_received = true;
                 break;
+            case MSG_TYPE_IP_ADDR_COLLECTION:
+                {
+                    uint8_t channel = robot->getEthChannel(getFullIP(sender));
+                    if(channel < SIDE_COUNT)
+                    {
+                        //first fill in the ip_list in the right position of 'mytree' using received data
+                        std::vector<uint8_t> branch_IPs;
+                        printf("IPC received IPs (%d):", data[0]);
+                        for(int i=0;i<data[0];i++)
+                        {
+                            printf("%d ", (uint8_t)data[i+1]);
+                            branch_IPs.push_back(data[i+1]);
+                        }
+                        printf("\n");
+                        if(branch_IPs.size() > 0)
+                            robot->mytree.setBranchIPs(robot_side(channel), branch_IPs);
+
+                        robot->IPCSendMessage(getFullIP(sender).i32,IPC_MSG_ACK, (uint8_t*)&msg->command, 1);
+
+                    }
+                    else
+                    {
+                        printf("%d: message is not from my neighbour ip %s\n", robot->timestamp, IPToString(getFullIP(sender)));
+
+                    }
+                }
+                break;
             case IPC_MSG_HINGE_3D_MOTION_REQ:
                 {
                     //followed by speed, count, rotation, angle, [int, int, int, int]
@@ -60,6 +88,17 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                             robot->locomotion_command[2],
                             robot->locomotion_command[3]
                           );
+                }
+                break;
+            case IPC_MSG_DOCKING_ROTATION_REQ:
+                {
+                    if(robot->type == ROBOT_AW)
+                    {
+                        uint8_t channel = robot->getEthChannel(getFullIP(sender));
+                        int8_t angle = data[0];
+                        robot->RotateDockingUnit(channel, angle);
+                    }
+
                 }
                 break;
             case IPC_MSG_IRSENSOR_DATA_REQ:
@@ -122,6 +161,9 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                             memcpy((uint8_t*)buf, data + 4, sizeof(data));
                             robot->UpdateOGIRSensors(config, buf, data[1]);
                             break;
+                        case MSG_TYPE_IP_ADDR_COLLECTION:
+                            printf("%d: MSG_TYPE_IP_ADDR_COLLECTION acknowleged %d %d\n", robot->timestamp, sender, receiver);
+                            break;
                         default:
                             break;
                     }
@@ -143,3 +185,31 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
     }
 
 }
+
+//send data to specified address, it may be relayed by the server
+void Robot::IPCSendMessage(uint32_t dst,  uint8_t type, const uint8_t *data, int size)
+{
+    uint8_t buf[size + 2];
+    buf[0] = (dst >> 24) & 0xFF;
+    buf[1] = (my_IP.i32 >> 24) & 0xFF;
+    memcpy(buf+2, data, size);
+
+    if(commander_IPC.Server()) 
+        commander_IPC.SendData(dst, type, buf, sizeof(buf));
+    else
+        commander_IPC.SendData(type, buf, sizeof(buf));
+}
+
+//send data to all from the server, or send back to server from the client
+void Robot::IPCSendMessage(uint8_t type, const uint8_t *data, int size)
+{
+    uint8_t buf[size + 2];
+    buf[0] = 0;
+    buf[1] = (my_IP.i32 >> 24) & 0xFF;
+    memcpy(buf+2, data, size);
+
+    commander_IPC.SendData(type, buf, sizeof(buf));
+
+}
+
+

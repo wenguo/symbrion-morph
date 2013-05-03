@@ -113,7 +113,7 @@ void * Connection::Receiving(void * p)
                 LolMessage* msg = lolmsgParseDone(&ptr->parseContext);
                 if(msg!=NULL && ptr->callback)
                 {
-                    printf("received data from %s : %d\n",inet_ntoa(ptr->addr.sin_addr),ntohs(ptr->addr.sin_port));
+                    //printf("received data from %s : %d\n",inet_ntoa(ptr->addr.sin_addr),ntohs(ptr->addr.sin_port));
                     ptr->callback(msg, ptr, ptr->user_data);
                 }
             }
@@ -256,7 +256,7 @@ bool IPC::ConnectToServer(const char * host, int port)
 
 bool Connection::SendData(const uint8_t type, uint8_t *data, int data_size)
 {
-    printf("Send data [%s] to %s:%d\n", message_names[type], inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+    //printf("Send data [%s] to %s:%d\n", message_names[type], inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
     LolMessage msg;
     lolmsgInit(&msg, type, data, data_size);
     int len = lolmsgSerializedSize(&msg);
