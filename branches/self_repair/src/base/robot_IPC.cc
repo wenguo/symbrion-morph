@@ -13,11 +13,11 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
     //do I need to relay the message
     if(receiver != 0 && receiver != ((robot->my_IP.i32 >> 24)&0xFF))
     {
-        if(!robot->commander_IPC.Server())
+        if(robot->commander_IPC.Server())
             printf("This shouldn't happen, please check! data: %d %d\n", msg->data[0], msg->data[1]);
         else
         {
-            robot->commander_IPC.SendData(robot->getFullIP(receiver).i32, msg->command, (uint8_t*)msg->data, msg->length);
+            robot->master_IPC.SendData(robot->getFullIP(receiver).i32, msg->command, (uint8_t*)msg->data, msg->length);
         }
 
     }
@@ -72,7 +72,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                     memcpy((uint8_t*)robot->hinge_command, data, sizeof(robot->hinge_command));
                     uint8_t command = msg->command; 
                     robot->IPCSendMessage(IPC_MSG_ACK, &command, 1);
-                    robot->timestamp_motors_cmd_received  = robot->timestamp;
+                    robot->timestamp_hinge_motor_cmd_received  = robot->timestamp;
                 }
                 break;
             case IPC_MSG_LOCOMOTION_2D_REQ:
@@ -81,13 +81,13 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                     memcpy((uint8_t*)robot->locomotion_command, data, sizeof(robot->locomotion_command));
                     uint8_t command = msg->command; 
                     robot->IPCSendMessage(IPC_MSG_ACK, &command, 1);
-                    robot->timestamp_motors_cmd_received  = robot->timestamp;
-                    printf("%d: received [%s] %d %d %d %d\n", robot->timestamp, message_names[msg->command],
-                            robot->locomotion_command[0],
-                            robot->locomotion_command[1],
-                            robot->locomotion_command[2],
-                            robot->locomotion_command[3]
-                          );
+                    robot->timestamp_locomotion_motors_cmd_received  = robot->timestamp;
+                    //printf("%d: received [%s] %d %d %d %d\n", robot->timestamp, message_names[msg->command],
+                    //        robot->locomotion_command[0],
+                    //        robot->locomotion_command[1],
+                    //        robot->locomotion_command[2],
+                    //        robot->locomotion_command[3]
+                    //      );
                 }
                 break;
             case IPC_MSG_DOCKING_ROTATION_REQ:
@@ -131,16 +131,34 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 }
                 break;
             case IPC_MSG_RAISING_START:
-                robot->msg_raising_start_received = true;
+                {
+                    if(!robot->seed)
+                        robot->msg_raising_start_received = true;
+                }
                 break;
             case IPC_MSG_RAISING_STOP:
-                robot->msg_raising_stop_received = true;
+                {
+                    if(!robot->seed)
+                        robot->msg_raising_stop_received = true;
+                }
                 break;
             case IPC_MSG_LOWERING_START:
                 //            msg_lowering_start_received = true;
                 break;
             case IPC_MSG_LOWERING_STOP:
                 //          msg_lowering_stop_received = true;
+                break;
+            case IPC_MSG_CLIMBING_START:
+                {
+                    if(!robot->seed)
+                        robot->msg_climbing_start_received = true;
+                }
+                break;
+            case IPC_MSG_CLIMBING_STOP:
+                {
+                    if(!robot->seed)
+                        robot->msg_climbing_stop_received = true;
+                }
                 break;
             case IPC_MSG_ACK:
                 {
@@ -163,6 +181,9 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                             break;
                         case MSG_TYPE_IP_ADDR_COLLECTION:
                             printf("%d: MSG_TYPE_IP_ADDR_COLLECTION acknowleged %d %d\n", robot->timestamp, sender, receiver);
+                            robot->RemoveFromQueue(robot->getEthChannel(getFullIP(sender)),MSG_TYPE_IP_ADDR_COLLECTION);
+                            printf("%d: removed any message in IR txQue from  channel %d\n", robot->timestamp, robot->getEthChannel(getFullIP(sender)));
+                            printf("%d: received [%s - %s]\n", robot->timestamp, message_names[msg->command], message_names[msg->data[2]] );
                             break;
                         default:
                             break;
@@ -194,8 +215,8 @@ void Robot::IPCSendMessage(uint32_t dst,  uint8_t type, const uint8_t *data, int
     buf[1] = (my_IP.i32 >> 24) & 0xFF;
     memcpy(buf+2, data, size);
 
-    if(commander_IPC.Server()) 
-        commander_IPC.SendData(dst, type, buf, sizeof(buf));
+    if(seed) 
+        master_IPC.SendData(dst, type, buf, sizeof(buf));
     else
         commander_IPC.SendData(type, buf, sizeof(buf));
 }
@@ -208,8 +229,10 @@ void Robot::IPCSendMessage(uint8_t type, const uint8_t *data, int size)
     buf[1] = (my_IP.i32 >> 24) & 0xFF;
     memcpy(buf+2, data, size);
 
-    commander_IPC.SendData(type, buf, sizeof(buf));
-
+    if(seed) 
+        master_IPC.SendData(type, buf, sizeof(buf));
+    else
+        commander_IPC.SendData(type, buf, sizeof(buf));
 }
 
 

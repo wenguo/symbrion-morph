@@ -138,8 +138,8 @@ class Robot
     uint8_t recruitmentProgress();
     uint8_t getEthChannel(Ethernet::IP);
 
-    void RemoveFromQueue(int channel, uint8_t type, uint8_t subtype = 0);
-    void RemoveFromQueue(uint8_t type, uint8_t subtype = 0);
+    void RemoveFromQueue(int channel, uint8_t type, uint8_t subtype = MSG_TYPE_UNKNOWN);
+    void RemoveFromQueue(uint8_t type, uint8_t subtype = MSG_TYPE_UNKNOWN);
 
     std::string ClockString();
     static const char * IPToString(Ethernet::IP ip);
@@ -235,7 +235,8 @@ class Robot
 
     uint32_t timestamp;
     uint32_t timestamp_propagated_msg_received;
-    uint32_t timestamp_motors_cmd_received; //the last time motor command received from the commander
+    uint32_t timestamp_hinge_motor_cmd_received; //the last time motor command received from the commander
+    uint32_t timestamp_locomotion_motors_cmd_received; //the last time motor command received from the commander
     uint8_t id;
     robot_type type;
     char *name;
@@ -357,6 +358,8 @@ class Robot
     bool msg_raising_stop_received;
     bool msg_lowering_received;
     bool msg_disassembly_received;
+    bool msg_climbing_start_received;
+    bool msg_climbing_stop_received;
     uint8_t msg_locked_received;
     uint8_t msg_locked_expected;
     uint8_t msg_unlocked_received;
@@ -437,8 +440,15 @@ class Robot
     Ethernet::IP my_IP;
     Ethernet::IP neighbours_IP[SIDE_COUNT];
     bool IP_collection_done;
+    
+    uint8_t LED0;
+    uint8_t LED1;
+    uint8_t LED2;
 
     //for macrolomotion control
+    IPC::IPC  master_IPC;
+    Ethernet::IP master_IP;
+    int          master_port;
     IPC::IPC  commander_IPC;
     Ethernet::IP commander_IP;
     int          commander_port;
@@ -449,39 +459,65 @@ class Robot
 
     class robot_pose
     {
-        public: robot_pose()
-                {
-                    index = 0;
-                    direction = 1;
-                    og_irsensor_index = -1;
-                    type = ROBOT_NONE;
-                    tail_header = 0;
-                }
-                robot_pose & operator= (const robot_pose& rhs)
-                {
-                    index = rhs.index;
-                    direction = rhs.direction;
-                    type = rhs.type;
-                    og_irsensor_index = rhs.og_irsensor_index;
-                    tail_header = rhs.tail_header;
-                    return *this;
-                }
-        int index; //relative postion to the seed, 
-        int og_irsensor_index; //index used for og_irsenosr vector, only valid for AW robot
-        int direction;
-        int type;
-        int tail_header;
+        public: 
+            robot_pose()
+            {
+                index = 0;
+                direction = 1;
+                og_irsensor_index = -1;
+                type = ROBOT_NONE;
+                tail_header = 0;
+            }
+            robot_pose & operator= (const robot_pose& rhs)
+            {
+                index = rhs.index;
+                direction = rhs.direction;
+                type = rhs.type;
+                og_irsensor_index = rhs.og_irsensor_index;
+                tail_header = rhs.tail_header;
+                return *this;
+            }
+            int index; //relative postion to the seed, 
+            int og_irsensor_index; //index used for og_irsenosr vector, only valid for AW robot
+            int direction;
+            int type;
+            int tail_header;
+    };
+
+    class action_sequence
+    {
+        public: 
+            action_sequence()
+            {
+                sequence_index  = 0;
+                counter = 0;
+                duration = 0;
+                cmd_type = CMD_PUSH_DRAG;
+            }
+
+            typedef struct
+            {
+                int index;
+                int cmd_data[3];
+            } robot_in_action_t;
+            enum cmd_type_t {CMD_PUSH_DRAG = 0, CMD_LIFT_ONE = 1};
+            int sequence_index;
+            int cmd_type;
+            uint32_t duration;
+            uint32_t counter; //timer to count how many step have already been spent on this action
+            std::vector<robot_in_action_t> robots_in_action;
     };
 
     std::map<uint32_t, robot_pose> robot_pose_in_organism;
+    std::map<int, uint32_t>robot_in_organism_index_sorted; //helper variable for fast access to robot_pose_in_organism
 
-        struct Cmp 
+    struct Cmp 
+    {
+        inline bool operator ()(const std::pair<uint32_t, robot_pose>& _left, const std::pair<uint32_t, robot_pose>& _right)
         {
-            inline bool operator ()(const std::pair<uint32_t, robot_pose>& _left, const std::pair<uint32_t, robot_pose>& _right)
-            {
-                return _left.second.index < _right.second.index;
-            }
-        };
+            return _left.second.index < _right.second.index;
+        }
+    };
 
     int hinge_command[4];
     int locomotion_command[4];//direction, speed[0], speed[1], speed[2]
@@ -501,9 +537,9 @@ class Robot
     OG_IRsensor og_proximity_sensors;
     OG_IRsensor og_beacon_sensors;
 
-    uint8_t LED0;
-    uint8_t LED1;
-    uint8_t LED2;
+    std::vector<action_sequence> organism_actions;
+    int current_action_sequence_index;
+
 };
 
 #endif

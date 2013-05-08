@@ -14,7 +14,8 @@ Robot::Robot()
     name = strdup("Robot");
     timestamp = 0;
     timestamp_propagated_msg_received=0;
-    timestamp_motors_cmd_received =0;
+    timestamp_hinge_motor_cmd_received =0;
+    timestamp_locomotion_motors_cmd_received =0;
     type = ROBOT_KIT;
 
     bumped=0;
@@ -135,6 +136,8 @@ Robot::Robot()
     msg_raising_start_received = false;
     msg_raising_stop_received = false;
     msg_lowering_received = false;
+    msg_climbing_start_received = false;
+    msg_climbing_stop_received = false;
     msg_guideme_received = 0;
     msg_docking_signal_req_received = 0;
     msg_organism_seq_received = false;
@@ -207,6 +210,8 @@ Robot::Robot()
 
     memset(hinge_command, 0, sizeof(hinge_command));
     memset(locomotion_command, 0, sizeof(locomotion_command));
+
+    current_action_sequence_index = 0;
 
     LED0 = 0x1;
     LED1 = 0x2;
@@ -335,6 +340,7 @@ bool Robot::Init(const char * optionfile)
     beacon_signals_detected_hist.Reset();
 
     commander_IPC.SetCallback(Process_Organism_command, this);
+    master_IPC.SetCallback(Process_Organism_command, this);
 
     return true;
 }
@@ -474,7 +480,7 @@ void Robot::Update(const uint32_t& ts)
     LogState();
 
     //remove any broken ethernet communication connections
-    broken_eth_connections = commander_IPC.RemoveBrokenConnections();
+    broken_eth_connections = master_IPC.RemoveBrokenConnections();
 
 
 }
@@ -857,7 +863,7 @@ void Robot::UpdateOGIRSensors(uint8_t config[2], int data[8], int sensor_type)
         return;
 
 
-    printf("update og from %s\n", IPToString(getFullIP(config[0])));
+ //   printf("update og from %s\n", IPToString(getFullIP(config[0])));
     pthread_mutex_lock(&IPC_data_mutex);
     pthread_mutex_unlock(&IPC_data_mutex);
 
@@ -868,7 +874,7 @@ void Robot::RequestOGIRSensors(uint8_t sensor_type)
     std::map<uint32_t, robot_pose>::iterator it;
     for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
     {
-        if(it->first != my_IP.i32 || it->second.og_irsensor_index >=0 || it->second.tail_header !=0)
+        if(it->first != my_IP.i32 && (it->second.og_irsensor_index >=0 || it->second.tail_header !=0))
             RequestOGIRSensors(it->first, sensor_type);
     }
 
@@ -876,7 +882,7 @@ void Robot::RequestOGIRSensors(uint8_t sensor_type)
 
 void Robot::RequestOGIRSensors(uint32_t addr, uint8_t sensor_type)
 {
-    printf("%d: request OGIRSensors[%d] from %s\n", timestamp, sensor_type, IPToString(addr));
+  //  printf("%d: request OGIRSensors[%d] from %s\n", timestamp, sensor_type, IPToString(addr));
 
     IPCSendMessage(addr, IPC_MSG_IRSENSOR_DATA_REQ, (uint8_t*)&sensor_type, 1);
 
@@ -886,6 +892,10 @@ void Robot::RequestOGIRSensors(uint32_t addr, uint8_t sensor_type)
 //only works for the snake like organism, connected using only front and back sides
 void Robot::InitRobotPoseInOrganism()
 {
+    //clear the existing data
+    robot_pose_in_organism.clear();
+    robot_in_organism_index_sorted.clear();
+    
     //init the client list and the acks
     int pos_index = 0;
     int dir = 1;
@@ -938,30 +948,38 @@ void Robot::InitRobotPoseInOrganism()
 
     printf("min: %d\nmax: %d\n", index_min, index_max);
 
+
+    std::map<uint32_t, robot_pose>::iterator it;
+    for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
+    {
+        robot_in_organism_index_sorted[it->second.index] = it->first;
+    }
+
     //sort it according to index
     std::vector< std::pair<uint32_t, robot_pose> > myvec(robot_pose_in_organism.begin(), robot_pose_in_organism.end());
     std::sort(myvec.begin(), myvec.end(),Cmp());
 
     //fill in og_irsensor_index
     int og_irsensor_index = 0;
-    for(int i=0;i<myvec.size();i++)
+    std::map<int, uint32_t>::iterator it1=robot_in_organism_index_sorted.begin();
+    //set tail_header
+    robot_pose_in_organism[it1->second].tail_header = -1;
+    //for(int i=0;i<myvec.size();i++)
+    for(it1 = robot_in_organism_index_sorted.begin(); it1 != robot_in_organism_index_sorted.end(); it1++)
     {
-        printf("inside: %s's index: %d pose: %d type: %c\n", IPToString(myvec[i].first), myvec[i].second.index,
-                myvec[i].second.direction, robottype_names[myvec[i].second.type]);
+        robot_pose &p = robot_pose_in_organism[it1->second];
+        printf("inside: %s's index: %d pose: %d type: %c\n", IPToString(it1->second), p.index,p.direction, robottype_names[p.type]);
         //reset other memembers
-        robot_pose_in_organism[myvec[i].first].tail_header = 0;
-        robot_pose_in_organism[myvec[i].first].og_irsensor_index = og_irsensor_index;
+        //robot_pose_in_organism[it1->second].tail_header = 0;
+        //robot_pose_in_organism[it1->second].og_irsensor_index = -1;
 
         //set og_irsensor_index if it is AW
-        if(myvec[i].second.type == ROBOT_AW)
-        {
-            og_irsensor_index++;
-            robot_pose_in_organism[myvec[i].first].og_irsensor_index = og_irsensor_index;
-        }
+        if(robot_pose_in_organism[it1->second].type == ROBOT_AW)
+            robot_pose_in_organism[it1->second].og_irsensor_index = og_irsensor_index++;
     }
     //set tail_header
-    robot_pose_in_organism[myvec[0].first].tail_header = -1;
-    robot_pose_in_organism[myvec[myvec.size()-1].first].tail_header = 1;
+    it1--;
+    robot_pose_in_organism[it1->second].tail_header = 1;
 
 
     //init the OGIRsensor, to make them the right size for easy access later
@@ -973,7 +991,6 @@ void Robot::InitRobotPoseInOrganism()
     og_beacon_sensors.right.clear();
     og_ambient_sensors.left.clear();
     og_ambient_sensors.right.clear();
-    std::map<uint32_t, robot_pose>::iterator it;
     for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
     {
         if(it->second.type == ROBOT_AW)
@@ -998,29 +1015,6 @@ void Robot::InitRobotPoseInOrganism()
 
         }
     }
-
-    /*
-    //I am a activewheel?
-    if(type == ROBOT_AW)
-    {
-        //increase the size of left and right for 2
-        og_reflective_sensors.left.push_back(0);
-        og_reflective_sensors.left.push_back(0);
-        og_reflective_sensors.right.push_back(0);
-        og_reflective_sensors.right.push_back(0);
-        og_proximity_sensors.left.push_back(0);
-        og_proximity_sensors.left.push_back(0);
-        og_proximity_sensors.right.push_back(0);
-        og_proximity_sensors.right.push_back(0);
-        og_beacon_sensors.left.push_back(0);
-        og_beacon_sensors.left.push_back(0);
-        og_beacon_sensors.right.push_back(0);
-        og_beacon_sensors.right.push_back(0);
-        og_ambient_sensors.left.push_back(0);
-        og_ambient_sensors.left.push_back(0);
-        og_ambient_sensors.right.push_back(0);
-        og_ambient_sensors.right.push_back(0);
-    }*/
 
     pthread_mutex_unlock(&IPC_data_mutex);
 

@@ -1,7 +1,11 @@
-./rcp2robot.sh 52
-./rcp2robot.sh 56
-./rcp2robot.sh 61
-./rcp2robot.sh 159
-./rcp2robot.sh 211
-./rcp2robot.sh 216
-./rcp2robot.sh 224
+#!/bin/bash    
+robotIPs=(61 159 211 56 216 224 52)
+
+for i in ${robotIPs[@]}
+do
+    echo copy files to 192.168.52.$i
+    ./rcp2robot.sh $i ${1}
+
+done    
+
+#./rcp2robot.sh 52

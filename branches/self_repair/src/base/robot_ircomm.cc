@@ -804,6 +804,8 @@ void Robot::RemoveFromQueue(int channel, uint8_t type, uint8_t subtype)
     pthread_mutex_lock(&ir_txqueue_mutex);
     while(it!=IR_TXMsgQueue[channel].end())
     {
+        
+        std::cout<<*it<<std::endl;
         if((*it).type == type && (subtype == MSG_TYPE_UNKNOWN || subtype == (*it).data[0]))
         {
             printf("%d Ack no longer needed for message %s, removing it from queue.\n", timestamp, message_names[(*it).type]);

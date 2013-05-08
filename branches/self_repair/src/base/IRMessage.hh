@@ -21,6 +21,7 @@ class IRMessage
         uint8_t type;
         uint8_t data[MAX_IR_MESSAGE_SIZE-1];
         uint8_t data_len;
+        friend std::ostream& operator<<(std::ostream&, const IRMessage&);
 };
 
 class EthMessage
