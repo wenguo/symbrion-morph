@@ -1894,7 +1894,8 @@ void RobotSCOUT::Raising()
             memset(hinge_command, 0, sizeof(hinge_command));
 
             flash_leds = false;
-        }
+
+         }
         else if( msg_raising_start_received )
         {
             flash_leds = true;
@@ -2117,22 +2118,6 @@ void RobotSCOUT::MacroLocomotion()
 
     macrolocomotion_count++;
 
-    if(macrolocomotion_count <10)
-    {
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            printf("%d: process side %d\n", timestamp, i);
-            OrganismSequence::Symbol sym = OrganismSequence::Symbol(docked[i]);
-            if(sym.type2 == ROBOT_AW)
-            {
-                printf("%d request to rotate docking angle %d %s\n", timestamp, i, IPToString(neighbours_IP[i]));
-                int8_t angle = 90;
-                IPCSendMessage(neighbours_IP[i].i32,IPC_MSG_DOCKING_ROTATION_REQ, (uint8_t*)&angle, 1);
-                break;
-            }
-        }
-    }
-
     if(seed)
     {
         //request IRSensors
@@ -2290,8 +2275,8 @@ void RobotSCOUT::Climbing()
                     if(as_ptr->cmd_type == action_sequence::CMD_PUSH_DRAG)
                     {
                         locomotion_command[0] = robot_pose_in_organism[robot_ip].direction;
-                        locomotion_command[1] = as_ptr->robots_in_action[i].cmd_data[0];
-                        locomotion_command[2] = as_ptr->robots_in_action[i].cmd_data[1];
+                        locomotion_command[1] = locomotion_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[0] : as_ptr->robots_in_action[i].cmd_data[1] ;
+                        locomotion_command[2] = locomotion_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[1] : as_ptr->robots_in_action[i].cmd_data[0] ;
                         locomotion_command[3] = as_ptr->robots_in_action[i].cmd_data[2];
                         IPCSendMessage(robot_ip, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
                     }

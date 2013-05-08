@@ -131,8 +131,8 @@ void RobotAW::SetSpeed(int left, int right, int side)
             rear = -right * para.aw_adjustment_ratio;
         }
     }
- //   irobot->MoveWheelsFront(-direction * frontright, direction * frontleft);
- //   irobot->MoveWheelsRear(direction * rear,0);
+    irobot->MoveWheelsFront(-direction * frontright, direction * frontleft);
+    irobot->MoveWheelsRear(direction * rear,0);
 
 }
 
@@ -1776,6 +1776,7 @@ void RobotAW::Raising()
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
                 
                 IPCSendMessage(IPC_MSG_RAISING_STOP,NULL, 0);
+                IPCSendMessage(IPC_MSG_RESET_POSE_REQ,NULL, 0);
 
                 InitRobotPoseInOrganism();
                 
@@ -2149,9 +2150,8 @@ void RobotAW::Climbing()
                     if(as_ptr->cmd_type == action_sequence::CMD_PUSH_DRAG)
                     {
                         locomotion_command[0] = robot_pose_in_organism[robot_ip].direction;
-                        locomotion_command[1] = as_ptr->robots_in_action[i].cmd_data[0];
-                        locomotion_command[2] = as_ptr->robots_in_action[i].cmd_data[1];
-                        locomotion_command[3] = as_ptr->robots_in_action[i].cmd_data[2];
+                        locomotion_command[1] = locomotion_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[0] : as_ptr->robots_in_action[i].cmd_data[1] ;
+                        locomotion_command[2] = locomotion_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[1] : as_ptr->robots_in_action[i].cmd_data[0] ;
                         IPCSendMessage(robot_ip, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
                     }
                     else if(as_ptr->cmd_type == action_sequence::CMD_LIFT_ONE)

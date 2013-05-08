@@ -1943,6 +1943,7 @@ void RobotKIT::Raising()
             memset(hinge_command, 0, sizeof(hinge_command));
 
             flash_leds = false;
+
         }
         else if( msg_raising_start_received )
         {
@@ -2166,22 +2167,6 @@ void RobotKIT::MacroLocomotion()
 
     macrolocomotion_count++;
 
-    if(macrolocomotion_count <10)
-    {
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            printf("%d: process side %d\n", timestamp, i);
-            OrganismSequence::Symbol sym = OrganismSequence::Symbol(docked[i]);
-            if(sym.type2 == ROBOT_AW)
-            {
-                printf("%d request to rotate docking angle %d %s\n", timestamp, i, IPToString(neighbours_IP[i]));
-                int8_t angle = 90;
-                IPCSendMessage(neighbours_IP[i].i32,IPC_MSG_DOCKING_ROTATION_REQ, (uint8_t*)&angle, 1);
-                break;
-            }
-        }
-    }
-
     if(seed)
     {
         //request IRSensors
@@ -2337,20 +2322,9 @@ void RobotKIT::Climbing()
                     printf("Send command [%d] to %s\n",as_ptr->cmd_type, IPToString(robot_ip));
                     if(as_ptr->cmd_type == action_sequence::CMD_PUSH_DRAG)
                     {           // Stop moving
-            speed[0] = 0;
-            speed[1] = 0;
-            speed[2] = 0;
-
-            msg_lowering_received = false;
-            last_state = CLIMBING;
-            current_state = LOWERING;
-            climbing_count =0;
-            macrolocomotion_count=0;
-            hinge_motor_operating_count = 0;
-
                         locomotion_command[0] = robot_pose_in_organism[robot_ip].direction;
-                        locomotion_command[1] = as_ptr->robots_in_action[i].cmd_data[0];
-                        locomotion_command[2] = as_ptr->robots_in_action[i].cmd_data[1];
+                        locomotion_command[1] = locomotion_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[0] : as_ptr->robots_in_action[i].cmd_data[1];
+                        locomotion_command[2] = locomotion_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[1] : as_ptr->robots_in_action[i].cmd_data[0]; 
                         locomotion_command[3] = as_ptr->robots_in_action[i].cmd_data[2];
                         IPCSendMessage(robot_ip, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
                     }
@@ -2361,7 +2335,7 @@ void RobotKIT::Climbing()
                         hinge_command[2] = as_ptr->robots_in_action[i].cmd_data[2];
                         hinge_command[3] = 1; //this indicates the validation of command
 
-                    //    IPCSendMessage(robot_ip, IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)hinge_command, sizeof(hinge_command));
+                        //    IPCSendMessage(robot_ip, IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)hinge_command, sizeof(hinge_command));
                     }
 
                 }

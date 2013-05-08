@@ -70,6 +70,7 @@ const char * message_names[MSG_TYPE_COUNT]={
     "IPC_Hinge_3D_Motion_REQ",
     "IPC_Locomotion_2D_REQ",
     "IPC_Docking_rotation_REQ",
+    "IPC_Reset_Pose_REQ",
     "IPC_IRSensor_data_REQ",
     "IPC_Raising_start",
     "IPC_Raising_stop",
