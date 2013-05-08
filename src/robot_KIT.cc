@@ -433,7 +433,7 @@ void RobotKIT::Seeding()
     }
 
     //start IPC thread, as a server
-    commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+    master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
 
     current_state = RECRUITMENT;
     last_state = SEEDING;
@@ -1598,7 +1598,7 @@ void RobotKIT::InOrganism()
             data[0]=IPs.size();
             for(int i=0;i<IPs.size();i++)
                 data[i+1]=IPs[i];
-            //SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, para.ir_msg_repeated_num);
+            SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, para.ir_msg_repeated_num);
             //SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
             IPCSendMessage(neighbours_IP[parent_side].i32, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1);
 
@@ -1779,9 +1779,6 @@ void RobotKIT::Lowering()
                 
                 IPCSendMessage(IPC_MSG_LOWERING_STOP,NULL, 0);
 
-       //         PropagateIRMessage(MSG_TYPE_DISASSEMBLY);
-       //         PropagateEthMessage(MSG_TYPE_DISASSEMBLY);
-
                 current_state = DISASSEMBLY;
                 last_state = LOWERING;
                 lowering_count = 0;
@@ -1820,12 +1817,6 @@ void RobotKIT::Lowering()
     }
     else
     {
-        //lost connection to the commander?
-        if(broken_eth_connections >0)
-        {
-            memset(hinge_command, 0, sizeof(hinge_command));
-        }
-
         if(msg_disassembly_received)
         {
             current_state = DISASSEMBLY;
@@ -1848,9 +1839,6 @@ void RobotKIT::Lowering()
             current_state = RAISING;
             last_state = LOWERING;
         }
-
-
-
 
     }
 }
@@ -1942,14 +1930,6 @@ void RobotKIT::Raising()
     }
     else
     {
-        //lost connection to the commander?
-        if(broken_eth_connections >0)
-        {
-            //memset(hinge_command, 0, sizeof(hinge_command));
-            //MoveHingeMotor(hinge_command);
-            memset(hinge_command, 0, sizeof(hinge_command));
-        }
-
         if( msg_raising_stop_received )
         {
             msg_raising_start_received = false;
@@ -2190,6 +2170,7 @@ void RobotKIT::MacroLocomotion()
     {
         for(int i=0;i<NUM_DOCKS;i++)
         {
+            printf("%d: process side %d\n", timestamp, i);
             OrganismSequence::Symbol sym = OrganismSequence::Symbol(docked[i]);
             if(sym.type2 == ROBOT_AW)
             {
@@ -2208,9 +2189,35 @@ void RobotKIT::MacroLocomotion()
 
         //make a decision for the speed of organism
         direction = FORWARD;
-        speed[0] = 0;
-        speed[1] = 0;
-        speed[2] = 0;
+        if(macrolocomotion_count < 50)
+        {
+            speed[0] = 30;
+            speed[1] = 30;
+            speed[2] = 0;
+        }
+        else if(macrolocomotion_count < 60)
+        {
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 30;
+        }
+        else
+        {
+            speed[0] = 0;
+            speed[0] = 0;
+            speed[0] = 0;
+            IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
+
+            current_state = CLIMBING;
+            last_state = MACROLOCOMOTION;
+
+            IPC_health = true;
+            climbing_count =0;
+            macrolocomotion_count = 0;
+            hinge_motor_operating_count = 0;
+
+        }
+
 
         //set the speed of all other AW robot in the organism
         std::map<uint32_t, robot_pose>::iterator it;
@@ -2230,26 +2237,47 @@ void RobotKIT::MacroLocomotion()
                 locomotion_command[2] = 0;
                 locomotion_command[3] = 0;
             }
-            
-            //exclude myself
-            if(it->first != my_IP.i32)
-                IPCSendMessage(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
+
         }
-     }
+    }
     else
     {
-        direction = locomotion_command[0];
-        speed[0] = locomotion_command[1];
-        speed[1] = locomotion_command[2];
-        speed[2] = locomotion_command[3];
+        if( msg_lowering_received )
+        {
+            // Stop moving
+            memset(hinge_command, 0, sizeof(hinge_command));
+            memset(locomotion_command, 0, sizeof(locomotion_command));
+
+            msg_lowering_received = false;
+            last_state = MACROLOCOMOTION;
+            current_state = LOWERING;
+            lowering_count = 0;
+            macrolocomotion_count=0;
+        }
+        else if (msg_climbing_start_received)
+        {
+            // Stop moving
+            memset(hinge_command, 0, sizeof(hinge_command));
+            memset(locomotion_command, 0, sizeof(locomotion_command));
+
+            msg_climbing_start_received = false;
+            last_state = MACROLOCOMOTION;
+            current_state = CLIMBING;
+            climbing_count = 0;
+            macrolocomotion_count=0;
+            hinge_motor_operating_count = 0;
+        }
+
     }
-
-    printf("%d: direction - %d, speed - [%d %d %d]\n", timestamp, direction, speed[0], speed[1], speed[2]);
     
-    //reset
-    if(timestamp - timestamp_motors_cmd_received > 3)
-        memset(locomotion_command, 0, sizeof(locomotion_command));
+    direction = locomotion_command[0];
+    speed[0] = locomotion_command[1];
+    speed[1] = locomotion_command[2];
+    speed[2] = locomotion_command[3];
 
+    //reset
+    if(timestamp - timestamp_locomotion_motors_cmd_received > 3)
+        memset(locomotion_command, 0, sizeof(locomotion_command));
 
     //flashing RGB leds
     static int index = 0;
@@ -2275,37 +2303,124 @@ void RobotKIT::MacroLocomotion()
         }
     }
 
-    if(seed && macrolocomotion_count >300)
-    {
-        macrolocomotion_count = 0;
-        PropagateIRMessage(MSG_TYPE_LOWERING);
-        PropagateEthMessage(MSG_TYPE_LOWERING);
-        last_state = MACROLOCOMOTION;
-        current_state = LOWERING;
-        lowering_count = 0;
-        macrolocomotion_count = 0;
-    }
-
-    if( msg_lowering_received )
-    {
-        // Stop moving
-        speed[0] = 0;
-        speed[1] = 0;
-        speed[2] = 0;
-        
-        msg_lowering_received = false;
-        last_state = MACROLOCOMOTION;
-        current_state = LOWERING;
-        lowering_count = 0;
-        macrolocomotion_count = 0;
-    }
 
 }
-
 
 void RobotKIT::Climbing()
 {
     climbing_count++;
+
+    if(seed)
+    {
+        if(current_action_sequence_index < organism_actions.size())
+        {
+            action_sequence * as_ptr = &organism_actions[current_action_sequence_index];
+            as_ptr->counter++;
+
+            //end of life?
+            if(as_ptr->counter >= as_ptr->duration)
+            {
+                current_action_sequence_index++;
+                as_ptr->counter = 0;
+                memset(hinge_command, 0, sizeof(hinge_command));
+                memset(locomotion_command, 0, sizeof(locomotion_command));
+
+                printf("%d next command %d\n", timestamp, as_ptr->cmd_type);
+
+            }
+            else
+            {
+                //set the command for each robots in the organism
+                for(int i=0;i<as_ptr->robots_in_action.size();i++)
+                {
+                    uint32_t robot_ip=robot_in_organism_index_sorted[as_ptr->robots_in_action[i].index];
+                    printf("Send command [%d] to %s\n",as_ptr->cmd_type, IPToString(robot_ip));
+                    if(as_ptr->cmd_type == action_sequence::CMD_PUSH_DRAG)
+                    {           // Stop moving
+            speed[0] = 0;
+            speed[1] = 0;
+            speed[2] = 0;
+
+            msg_lowering_received = false;
+            last_state = CLIMBING;
+            current_state = LOWERING;
+            climbing_count =0;
+            macrolocomotion_count=0;
+            hinge_motor_operating_count = 0;
+
+                        locomotion_command[0] = robot_pose_in_organism[robot_ip].direction;
+                        locomotion_command[1] = as_ptr->robots_in_action[i].cmd_data[0];
+                        locomotion_command[2] = as_ptr->robots_in_action[i].cmd_data[1];
+                        locomotion_command[3] = as_ptr->robots_in_action[i].cmd_data[2];
+                        IPCSendMessage(robot_ip, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
+                    }
+                    else if(as_ptr->cmd_type == action_sequence::CMD_LIFT_ONE)
+                    { 
+                        hinge_command[0] = as_ptr->robots_in_action[i].cmd_data[0];
+                        hinge_command[1] = as_ptr->robots_in_action[i].cmd_data[1];
+                        hinge_command[2] = as_ptr->robots_in_action[i].cmd_data[2];
+                        hinge_command[3] = 1; //this indicates the validation of command
+
+                    //    IPCSendMessage(robot_ip, IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)hinge_command, sizeof(hinge_command));
+                    }
+
+                }
+            }
+        }
+        else
+        {
+            // Stop moving
+            memset(hinge_command, 0, sizeof(hinge_command));
+            memset(locomotion_command, 0, sizeof(locomotion_command));
+
+            current_action_sequence_index =0;
+            msg_lowering_received = false;
+            last_state = CLIMBING;
+            current_state = LOWERING;
+            climbing_count =0;
+            macrolocomotion_count=0;
+            hinge_motor_operating_count = 0;
+
+            IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+        }
+    }
+    else
+    {
+        if( msg_lowering_received )
+        {
+            // Stop moving
+            memset(hinge_command, 0, sizeof(hinge_command));
+            memset(locomotion_command, 0, sizeof(locomotion_command));
+
+            current_action_sequence_index =0;
+            msg_lowering_received = false;
+            last_state = CLIMBING;
+            current_state = LOWERING;
+            climbing_count =0;
+            macrolocomotion_count=0;
+            hinge_motor_operating_count = 0;
+        }
+    }
+    //disable speed for testing
+  //  memset(hinge_command, 0, sizeof(hinge_command));
+  //  memset(locomotion_command, 0, sizeof(locomotion_command));
+
+    //2d locomotion will be called automatially
+    direction = locomotion_command[0];
+    speed[0] = locomotion_command[1];
+    speed[1] = locomotion_command[2];
+    speed[2] = locomotion_command[3];
+
+    //move hinge
+   // MoveHingeMotor(hinge_command);
+
+    //reset if no cmd received, to be used to stop the motor automatically
+    if(timestamp - timestamp_hinge_motor_cmd_received > 3)
+        memset(hinge_command, 0, sizeof(hinge_command));
+
+    if(timestamp - timestamp_locomotion_motors_cmd_received > 3)
+        memset(locomotion_command, 0, sizeof(locomotion_command));
+
 }
 
 void RobotKIT::Debugging()
@@ -2799,7 +2914,16 @@ void RobotKIT::Debugging()
 
                     }
                     else
-                        commander_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+                        master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+                }
+                else if(timestamp == 9)
+                {
+                    if(seed)
+                    {
+                        commander_IP = my_IP;
+                        commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
+                        commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+                    }
                 }
                 else if(timestamp == 10)
                 {

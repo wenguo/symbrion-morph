@@ -16,11 +16,14 @@ sudo ifconfig eth0 192.168.52.100
 
 prefix=''
 
-for i in {0..6}
+counter=0
+
+for i in ${robotIPs[@]} 
 do
-   delay=`echo sleep $i`
+   counter=`expr ${counter} + 1`
+   delay=`echo sleep $counter`
    # argument=`echo $argument --tab -e \"bash -c \'sleep $i\'; echo test\" -t ${robotIPs[$i]}`
-    argument=`echo $argument --tab -e \"bash -c \'$delay\'\;\'/home/wliu/self-repair/src/${cmd} ${robotIPs[$i]}\'\" -t ${robotIPs[$i]}`
+    argument=`echo $argument --tab -e \"bash -c \'$delay\'\;\'/home/wliu/self-repair/src/${cmd} ${i}\'\" -t ${i}`
 done
     echo $argument | xargs gnome-terminal
 
