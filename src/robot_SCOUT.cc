@@ -1434,6 +1434,13 @@ void RobotSCOUT::Recruitment()
             printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
             SetRGBLED(i, 0, 0, 0, 0);
         }
+        
+        if(seed)
+        {
+            commander_IP = my_IP;
+            commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
+            commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+        }
     }
 }
 
