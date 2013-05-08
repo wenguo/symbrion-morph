@@ -26,6 +26,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
 
         bool ack_required = true;
 
+        uint8_t command = msg->command; 
         uint8_t* data = (uint8_t*)msg->data + 2;
 
         switch(msg->command)
@@ -70,7 +71,6 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 {
                     //followed by speed, count, rotation, angle, [int, int, int, int]
                     memcpy((uint8_t*)robot->hinge_command, data, sizeof(robot->hinge_command));
-                    uint8_t command = msg->command; 
                     robot->IPCSendMessage(IPC_MSG_ACK, &command, 1);
                     robot->timestamp_hinge_motor_cmd_received  = robot->timestamp;
                 }
@@ -79,7 +79,6 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 {
                     //followed by speed[0], speed[1], speed[2]
                     memcpy((uint8_t*)robot->locomotion_command, data, sizeof(robot->locomotion_command));
-                    uint8_t command = msg->command; 
                     robot->IPCSendMessage(IPC_MSG_ACK, &command, 1);
                     robot->timestamp_locomotion_motors_cmd_received  = robot->timestamp;
                     //printf("%d: received [%s] %d %d %d %d\n", robot->timestamp, message_names[msg->command],
@@ -97,8 +96,26 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                         uint8_t channel = robot->getEthChannel(getFullIP(sender));
                         int8_t angle = data[0];
                         robot->RotateDockingUnit(channel, angle);
+                        robot->IPCSendMessage(getFullIP(sender).i32, IPC_MSG_ACK, &command, 1);
                     }
 
+                }
+                break;
+            case IPC_MSG_RESET_POSE_REQ:
+                {
+                    for(int i=0;i<NUM_DOCKS;i++)
+                    {
+                        printf("%d: process side %d\n", robot->timestamp, i);
+                        OrganismSequence::Symbol sym = OrganismSequence::Symbol(robot->docked[i]);
+                        if(sym.type2 == ROBOT_AW)
+                        {
+                            printf("%d request to rotate docking angle %d %s\n", robot->timestamp, i, IPToString(robot->neighbours_IP[i]));
+                            int8_t angle = 90;
+                            robot->IPCSendMessage(robot->neighbours_IP[i].i32,IPC_MSG_DOCKING_ROTATION_REQ, (uint8_t*)&angle, 1);
+                            break;
+                        }
+                    }
+                    robot->IPCSendMessage(getFullIP(sender).i32, IPC_MSG_ACK, &command, 1);
                 }
                 break;
             case IPC_MSG_IRSENSOR_DATA_REQ:
@@ -196,12 +213,13 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
         }
 
+        /*
         if(msg->command == IPC_MSG_ACK)
             printf("%d: received [%s - %s]\n", robot->timestamp, message_names[msg->command], message_names[msg->data[2]] );
         else
         {
             printf("%d: received [%s]\n", robot->timestamp, message_names[msg->command]);
-        }
+        }*/
 
     }
 
