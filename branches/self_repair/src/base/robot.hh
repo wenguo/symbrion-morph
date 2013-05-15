@@ -121,6 +121,9 @@ class Robot
     virtual void Debugging()=0;
     virtual void Log()=0;
 
+
+    virtual int32_t get_aux_reflective(uint8_t i)=0;
+
     // for self-repair
     void CheckForFailures();
     bool StartRepair();
@@ -139,7 +142,7 @@ class Robot
     uint8_t getEthChannel(Ethernet::IP);
 
     void RemoveFromQueue(int channel, uint8_t type, uint8_t subtype = MSG_TYPE_UNKNOWN);
-    void RemoveFromQueue(uint8_t type, uint8_t subtype = MSG_TYPE_UNKNOWN);
+    void RemoveFromAllQueues(uint8_t type, uint8_t subtype = MSG_TYPE_UNKNOWN);
 
     std::string ClockString();
     static const char * IPToString(Ethernet::IP ip);

@@ -819,7 +819,7 @@ void Robot::RemoveFromQueue(int channel, uint8_t type, uint8_t subtype)
     pthread_mutex_unlock(&ir_txqueue_mutex);
 }
 
-void Robot::RemoveFromQueue( uint8_t type, uint8_t subtype)
+void Robot::RemoveFromAllQueues( uint8_t type, uint8_t subtype)
 {
     for(int i=0;i<NUM_DOCKS;i++)
     {

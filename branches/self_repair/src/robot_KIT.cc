@@ -1743,7 +1743,7 @@ void RobotKIT::Undocking()
 
         last_state = UNDOCKING;
 
-        RemoveFromQueue(IR_MSG_TYPE_UNLOCKED);
+        RemoveFromQueue(IR_MSG_TYPE_UNLOCKED, 0);
         ResetAssembly(); // reset variables used during assembly
     }
 
