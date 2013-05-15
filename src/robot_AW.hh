@@ -25,6 +25,8 @@ class RobotAW:public Robot
         virtual void SetSpeed(int leftspeed, int rightspeed, int sidespeed);
         virtual void Reset();
 
+        virtual int32_t get_aux_reflective(uint8_t i){return aux_reflective[i & 0x7];};
+
         virtual void UpdateSensors();
         virtual void UpdateActuators();
         // for self-repair

@@ -105,7 +105,6 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 {
                     for(int i=0;i<NUM_DOCKS;i++)
                     {
-                        printf("%d: process side %d\n", robot->timestamp, i);
                         OrganismSequence::Symbol sym = OrganismSequence::Symbol(robot->docked[i]);
                         if(sym.type2 == ROBOT_AW)
                         {
@@ -140,6 +139,11 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                     {
                         for(int i=0;i<NUM_IRS;i++)
                             irsensor_data[i]=robot->reflective[i] - robot->para.reflective_calibrated[i];
+                    }
+                    else if(buf[1] == IR_AUX_REFLECTIVE_DATA)
+                    {
+                        for(int i=0;i<NUM_IRS;i++)
+                            irsensor_data[i]=robot->get_aux_reflective(i) - robot->para.aux_reflective_calibrated[i];
                     }
 
                     memcpy(buf+4, (uint8_t*)irsensor_data, sizeof(irsensor_data));
@@ -183,24 +187,21 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                     pthread_mutex_lock(&robot->IPC_data_mutex);
                     robot->commander_acks[conn->addr.sin_addr.s_addr]++;
                     pthread_mutex_unlock(&robot->IPC_data_mutex);
-                    //for sensor data msg->data: 
-                    // 0 -- REQ type
-                    // 1 --2 -- configuration tag in the organism 
-                    // 3 - 34, sensor data
                     switch(data[0])
                     {
                         case IPC_MSG_IRSENSOR_DATA_REQ:
+                            //for sensor data msg->data: 
+                            // 1 -- sensor data type
+                            // 2 -- 3 -- configuration tag in the organism 
+                            // 4 - 35, sensor data
                             uint8_t config[2];
-                            int buf[NUM_IRS];
+                            int32_t buf[NUM_IRS];
                             memcpy(config, data + 2, 2);
                             memcpy((uint8_t*)buf, data + 4, sizeof(data));
                             robot->UpdateOGIRSensors(config, buf, data[1]);
                             break;
                         case MSG_TYPE_IP_ADDR_COLLECTION:
-                            printf("%d: MSG_TYPE_IP_ADDR_COLLECTION acknowleged %d %d\n", robot->timestamp, sender, receiver);
                             robot->RemoveFromQueue(robot->getEthChannel(getFullIP(sender)),MSG_TYPE_IP_ADDR_COLLECTION);
-                            printf("%d: removed any message in IR txQue from  channel %d\n", robot->timestamp, robot->getEthChannel(getFullIP(sender)));
-                            printf("%d: received [%s - %s]\n", robot->timestamp, message_names[msg->command], message_names[msg->data[2]] );
                             break;
                         default:
                             break;

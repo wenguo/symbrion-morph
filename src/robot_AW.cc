@@ -1623,6 +1623,10 @@ void RobotAW::Undocking()
 void RobotAW::Lowering()
 {
     lowering_count++;
+    
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
     if(seed)
     {
@@ -2005,30 +2009,47 @@ void RobotAW::MacroLocomotion()
     if(seed)
     {
         //request IRSensors
-        RequestOGIRSensors(0);
+        RequestOGIRSensors(IR_REFLECTIVE_DATA);
+
+        int cmd_speed[3] = {0,0,0};
 
         //make a decision for the speed of organism
         direction = FORWARD;
+        /*
         if(macrolocomotion_count < 50)
         {
-            speed[0] = 30;
-            speed[1] = 30;
-            speed[2] = 0;
+            cmd_speed[0] = 30;
+            cmd_speed[1] = 30;
+            cmd_speed[2] = 0;
         }
-        else if(macrolocomotion_count < 60)
+        else if(macrolocomotion_count < 100)
         {
-            speed[0] = 0;
-            speed[1] = 0;
-            speed[2] = 30;
+            cmd_speed[0] = 0;
+            cmd_speed[1] = 0;
+            cmd_speed[2] = 60;
+        }
+        else if(macrolocomotion_count < 150)
+        {
+            cmd_speed[0] = -30;
+            cmd_speed[1] = -30;
+            cmd_speed[2] = 0;
+        }
+        else if(macrolocomotion_count < 200)
+        {
+            cmd_speed[0] = 0;
+            cmd_speed[1] = 0;
+            cmd_speed[2] = -60;
         }
         else
         {
-            speed[0] = 0;
-            speed[0] = 0;
-            speed[0] = 0;
-            IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
+            cmd_speed[0] = 0;
+            cmd_speed[0] = 0;
+            cmd_speed[0] = 0;
+            IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+            //IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
 
-            current_state = CLIMBING;
+            current_state = LOWERING;
+            //current_state = CLIMBING;
             last_state = MACROLOCOMOTION;
 
             IPC_health = true;
@@ -2036,28 +2057,29 @@ void RobotAW::MacroLocomotion()
             macrolocomotion_count = 0;
             hinge_motor_operating_count = 0;
 
-        }
+        }*/
 
 
         //set the speed of all other AW robot in the organism
         std::map<uint32_t, robot_pose>::iterator it;
         for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
         {
+            int motor_command[4];
             if(it->second.type == ROBOT_AW)
             {
-                locomotion_command[0] = it->second.direction;
-                locomotion_command[1] = speed[0];
-                locomotion_command[2] = speed[1];
-                locomotion_command[3] = speed[2];
+                motor_command[0] = it->second.direction;
+                motor_command[1] = motor_command[0] >0 ? cmd_speed[0] : cmd_speed[1];
+                motor_command[2] = motor_command[0] >0 ? cmd_speed[1] : cmd_speed[0];
+                motor_command[3] = cmd_speed[2];
+                IPCSendMessage(it->first, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)motor_command, sizeof(motor_command));
             }
             else
             {
-                locomotion_command[0] = it->second.direction;
-                locomotion_command[1] = 0;
-                locomotion_command[2] = 0;
-                locomotion_command[3] = 0;
+                motor_command[0] = it->second.direction;
+                motor_command[1] = 0;
+                motor_command[2] = 0;
+                motor_command[3] = 0;
             }
-
         }
     }
     else
@@ -2141,8 +2163,8 @@ void RobotAW::Climbing()
             {
                 current_action_sequence_index++;
                 as_ptr->counter = 0;
-                memset(hinge_command, 0, sizeof(hinge_command));
-                memset(locomotion_command, 0, sizeof(locomotion_command));
+              //  memset(hinge_command, 0, sizeof(hinge_command));
+              //  memset(locomotion_command, 0, sizeof(locomotion_command));
 
                 printf("%d next command %d\n", timestamp, as_ptr->cmd_type);
 
@@ -2154,21 +2176,23 @@ void RobotAW::Climbing()
                 {
                     uint32_t robot_ip=robot_in_organism_index_sorted[as_ptr->robots_in_action[i].index];
                     printf("Send command [%d] to %s\n",as_ptr->cmd_type, IPToString(robot_ip));
+                    int motor_command[4];
                     if(as_ptr->cmd_type == action_sequence::CMD_PUSH_DRAG)
                     {
-                        locomotion_command[0] = robot_pose_in_organism[robot_ip].direction;
-                        locomotion_command[1] = locomotion_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[0] : as_ptr->robots_in_action[i].cmd_data[1] ;
-                        locomotion_command[2] = locomotion_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[1] : as_ptr->robots_in_action[i].cmd_data[0] ;
-                        IPCSendMessage(robot_ip, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)locomotion_command, sizeof(locomotion_command));
+                        motor_command[0] = robot_pose_in_organism[robot_ip].direction;
+                        motor_command[1] = motor_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[0] : as_ptr->robots_in_action[i].cmd_data[1] ;
+                        motor_command[2] = motor_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[1] : as_ptr->robots_in_action[i].cmd_data[0] ;
+                        motor_command[3] = as_ptr->robots_in_action[i].cmd_data[2];
+                        IPCSendMessage(robot_ip, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)motor_command, sizeof(motor_command));
                     }
                     else if(as_ptr->cmd_type == action_sequence::CMD_LIFT_ONE)
                     { 
-                        hinge_command[0] = as_ptr->robots_in_action[i].cmd_data[0];
-                        hinge_command[1] = as_ptr->robots_in_action[i].cmd_data[1];
-                        hinge_command[2] = as_ptr->robots_in_action[i].cmd_data[2];
-                        hinge_command[3] = 1; //this indicates the validation of command
+                        motor_command[0] = as_ptr->robots_in_action[i].cmd_data[0];
+                        motor_command[1] = as_ptr->robots_in_action[i].cmd_data[1];
+                        motor_command[2] = as_ptr->robots_in_action[i].cmd_data[2];
+                        motor_command[3] = 1; //this indicates the validation of command
 
-                    //    IPCSendMessage(robot_ip, IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)hinge_command, sizeof(hinge_command));
+                        IPCSendMessage(robot_ip, IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)motor_command, sizeof(motor_command));
                     }
 
                 }
@@ -2211,8 +2235,8 @@ void RobotAW::Climbing()
     }
 
     //disable speed for testing
-    memset(hinge_command, 0, sizeof(hinge_command));
-    memset(locomotion_command, 0, sizeof(locomotion_command));
+  //  memset(hinge_command, 0, sizeof(hinge_command));
+  //  memset(locomotion_command, 0, sizeof(locomotion_command));
 
     //2d locomotion will be called automatially
     direction = locomotion_command[0];

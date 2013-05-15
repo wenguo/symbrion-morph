@@ -863,7 +863,7 @@ void Robot::UpdateOGIRSensors(uint8_t config[2], int data[8], int sensor_type)
         return;
 
 
- //   printf("update og from %s\n", IPToString(getFullIP(config[0])));
+    //printf("%d: update sensor data [%d] og from %s\n", timestamp, sensor_type, IPToString(getFullIP(config[0])));
     pthread_mutex_lock(&IPC_data_mutex);
     pthread_mutex_unlock(&IPC_data_mutex);
 

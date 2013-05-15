@@ -1686,7 +1686,7 @@ void RobotSCOUT::Undocking()
 
         last_state = UNDOCKING;
 
-        RemoveFromQueue(IR_MSG_TYPE_UNLOCKED);
+        RemoveFromAllQueues(IR_MSG_TYPE_UNLOCKED);
         ResetAssembly(); // reset variables used during assembly
     }
 

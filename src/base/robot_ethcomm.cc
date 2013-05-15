@@ -106,7 +106,7 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
                     printf("%d Sub-organism string received\n",timestamp);
                     PrintSubOGString(subog_str);
 
-                    RemoveFromQueue(channel,MSG_TYPE_SUB_OG_STRING);
+                    RemoveFromQueue(channel,MSG_TYPE_SUB_OG_STRING, 0);
                 }
             }
             break;
@@ -163,7 +163,7 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
                                 msg_retreat_received = true;
                                 CPrintf1(SCR_BLUE,"%d -- retreating !", timestamp);
                                 // Robot no longer needs to send sub_og_string
-                                RemoveFromQueue(channel,MSG_TYPE_SUB_OG_STRING);
+                                RemoveFromQueue(channel,MSG_TYPE_SUB_OG_STRING, 0);
                             }
                             break;
                         case MSG_TYPE_STOP:
@@ -267,7 +267,7 @@ void Robot::ProcessEthMessage(std::auto_ptr<Message> msg)
                         break;
                     case MSG_TYPE_IP_ADDR_COLLECTION:
                         CPrintf2(SCR_GREEN, "%d -- Removed MSG_TYPE_IP_ADDR_COLLECTION from channel %d", timestamp, channel);
-                        RemoveFromQueue(channel,MSG_TYPE_IP_ADDR_COLLECTION);
+                        RemoveFromQueue(channel,MSG_TYPE_IP_ADDR_COLLECTION,0);
                         break;
                     default:
                         break;
