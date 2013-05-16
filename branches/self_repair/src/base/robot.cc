@@ -340,7 +340,7 @@ bool Robot::Init(const char * optionfile)
     beacon_signals_detected_hist.Reset();
 
     commander_IPC.SetCallback(Process_Organism_command, this);
-    master_IPC.SetCallback(Process_Organism_command, this);
+    master_IPC.SetCallback(Relay_Organism_command, this);
 
     return true;
 }
@@ -862,9 +862,36 @@ void Robot::UpdateOGIRSensors(uint8_t config[2], int data[8], int sensor_type)
     else
         return;
 
-
-    //printf("%d: update sensor data [%d] og from %s\n", timestamp, sensor_type, IPToString(getFullIP(config[0])));
+    uint32_t robot_ip = getFullIP(config[0]).i32;
+    int robot_direction =  robot_pose_in_organism[robot_ip].direction;
+    int robot_og_irsensor_index =  robot_pose_in_organism[robot_ip].og_irsensor_index;
+    //header
     pthread_mutex_lock(&IPC_data_mutex);
+    if(robot_pose_in_organism[robot_ip].tail_header == -1)
+    {
+      //  printf("%d: update sensor data [%d] og from %s, as a header (%d) \n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_direction);
+        ir_sensors->front[0] = robot_direction == 1 ? data[0] : data[4];//front right 
+        ir_sensors->front[1] = robot_direction == 1 ? data[1] : data[5];//front left
+    }
+
+    //tail
+    if(robot_pose_in_organism[robot_ip].tail_header == 1)
+    {
+    // printf("%d: update sensor data [%d] og from %s, as a tail (%d)\n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_direction);
+        ir_sensors->back[0] = robot_direction == 1 ? data[4] : data[0]; ;//back left 
+        ir_sensors->back[1] = robot_direction == 1 ? data[5] : data[1] ;//back right 
+    }
+
+    //left and right
+    if(robot_pose_in_organism[robot_ip].og_irsensor_index != -1)
+    {
+    // printf("%d: update sensor data [%d] og from %s, push into og_irsensor[%d]\n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_og_irsensor_index);
+        ir_sensors->left[2 * robot_og_irsensor_index]       = robot_direction == 1? data[2] : data[6];
+        ir_sensors->left[2 * robot_og_irsensor_index + 1]   = robot_direction == 1? data[3] : data[7];
+        ir_sensors->right[2 * robot_og_irsensor_index]      = robot_direction == 1? data[7] : data[3];
+        ir_sensors->right[2 * robot_og_irsensor_index + 1]  = robot_direction == 1? data[6] : data[2];
+    }
+
     pthread_mutex_unlock(&IPC_data_mutex);
 
 }
@@ -874,7 +901,7 @@ void Robot::RequestOGIRSensors(uint8_t sensor_type)
     std::map<uint32_t, robot_pose>::iterator it;
     for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
     {
-        if(it->first != my_IP.i32 && (it->second.og_irsensor_index >=0 || it->second.tail_header !=0))
+        if(it->second.og_irsensor_index >=0 || it->second.tail_header !=0)
             RequestOGIRSensors(it->first, sensor_type);
     }
 
@@ -882,10 +909,8 @@ void Robot::RequestOGIRSensors(uint8_t sensor_type)
 
 void Robot::RequestOGIRSensors(uint32_t addr, uint8_t sensor_type)
 {
-  //  printf("%d: request OGIRSensors[%d] from %s\n", timestamp, sensor_type, IPToString(addr));
 
     IPCSendMessage(addr, IPC_MSG_IRSENSOR_DATA_REQ, (uint8_t*)&sensor_type, 1);
-
 }
 
 
@@ -955,16 +980,11 @@ void Robot::InitRobotPoseInOrganism()
         robot_in_organism_index_sorted[it->second.index] = it->first;
     }
 
-    //sort it according to index
-    std::vector< std::pair<uint32_t, robot_pose> > myvec(robot_pose_in_organism.begin(), robot_pose_in_organism.end());
-    std::sort(myvec.begin(), myvec.end(),Cmp());
-
     //fill in og_irsensor_index
     int og_irsensor_index = 0;
     std::map<int, uint32_t>::iterator it1=robot_in_organism_index_sorted.begin();
     //set tail_header
     robot_pose_in_organism[it1->second].tail_header = -1;
-    //for(int i=0;i<myvec.size();i++)
     for(it1 = robot_in_organism_index_sorted.begin(); it1 != robot_in_organism_index_sorted.end(); it1++)
     {
         robot_pose &p = robot_pose_in_organism[it1->second];
@@ -1017,5 +1037,48 @@ void Robot::InitRobotPoseInOrganism()
     }
 
     pthread_mutex_unlock(&IPC_data_mutex);
+}
+
+void Robot::PrintOGIRSensor(uint8_t sensor_type)
+{
+    OG_IRsensor * ir_sensors;
+    char str[10];
+    if(sensor_type == IR_REFLECTIVE_DATA)
+    {
+        ir_sensors = &og_reflective_sensors;
+        sprintf(str, "Reflective");
+    }
+    else if(sensor_type == IR_AMBIENT_DATA)
+    {
+        ir_sensors= &og_ambient_sensors;
+        sprintf(str, "Ambient");
+    }
+    else if(sensor_type == IR_PROXIMITY_DATA)
+    {
+        ir_sensors = &og_proximity_sensors;
+        sprintf(str, "Proximity");
+    }
+    else if(sensor_type == IR_BEACON_DATA)
+    {
+        ir_sensors = &og_beacon_sensors;
+        sprintf(str, "Beacon");
+    }
+    else
+        return;
+
+    printf("IR %s Data\n", str);
+    printf("\tFront: %d\t%d\n", ir_sensors->front[0], ir_sensors->front[1]);
+    printf("\tLeft: ");
+    for(int i=0;i<ir_sensors->left.size();i++)
+        printf("%d\t", ir_sensors->left[i]);
+    printf("\n");
+    printf("\tRight: ");
+    for(int i=0;i<ir_sensors->right.size();i++)
+        printf("%d\t", ir_sensors->right[i]);
+    printf("\n");
+    printf("\tBack: %d\t%d\n", ir_sensors->back[0], ir_sensors->back[1]);
+
+
 
 }
+

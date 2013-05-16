@@ -57,6 +57,7 @@ class Robot
     void PrintRGB();
     void PrintStatus();
     void PrintSubOGString( uint8_t* );
+    void PrintOGIRSensor(uint8_t type);
     void LogState();
 
     uint32_t CheckIRLEDStatus(int channel, int led);
@@ -174,8 +175,8 @@ class Robot
     virtual bool MoveHingeMotor(int command[4])=0;
     virtual bool RotateDockingUnit(int channel, int8_t angle)=0;
 
-    void IPCSendMessage(uint32_t dst,  uint8_t type, const uint8_t *data=NULL, int size=0);
-    void IPCSendMessage(uint8_t type, const uint8_t *data = NULL, int size=0);
+    void IPCSendMessage(uint32_t dst,  uint8_t type, const uint8_t *data, int size);
+    void IPCSendMessage(uint8_t type, const uint8_t *data, int size);
     
     //for organism control
     void RequestOGIRSensors(uint8_t sensor_type);
@@ -231,6 +232,7 @@ class Robot
     void ProcessEthMessage(std::auto_ptr<Message>);
 
     //for organism control
+    static void Relay_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
     static void Process_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
     void UpdateOGIRSensors(uint8_t config[2], int data[NUM_IRS], int sensor_type);//config: 0 -- position in og, 1-- orientation related to seed
 
@@ -481,10 +483,10 @@ class Robot
                 return *this;
             }
             int index; //relative postion to the seed, 
-            int og_irsensor_index; //index used for og_irsenosr vector, only valid for AW robot
+            int og_irsensor_index; //index used for og_irsenosr vector, only valid for AW robot, as Scout and KIT will be in the middle
             int direction;
             int type;
-            int tail_header;
+            int tail_header; // -1 -- header, 1 -- tail
     };
 
     class action_sequence
@@ -513,14 +515,6 @@ class Robot
 
     std::map<uint32_t, robot_pose> robot_pose_in_organism;
     std::map<int, uint32_t>robot_in_organism_index_sorted; //helper variable for fast access to robot_pose_in_organism
-
-    struct Cmp 
-    {
-        inline bool operator ()(const std::pair<uint32_t, robot_pose>& _left, const std::pair<uint32_t, robot_pose>& _right)
-        {
-            return _left.second.index < _right.second.index;
-        }
-    };
 
     int hinge_command[4];
     int locomotion_command[4];//direction, speed[0], speed[1], speed[2]
