@@ -1,4 +1,28 @@
 #include "robot.hh"
+void Robot::Relay_Organism_command(const LolMessage*msg, void* connection, void *user_ptr)
+{
+    if(!msg || !connection || !user_ptr)
+        return;
+
+    Robot *robot = (Robot*)user_ptr;
+    IPC::Connection * conn=(IPC::Connection*) connection;
+    IPC::IPC * ipc = (IPC::IPC*) conn->ipc;
+
+    uint8_t receiver = msg->data[0];
+    uint8_t sender = msg->data[1];
+
+    if(receiver != 0)// && receiver != ((robot->my_IP.i32 >> 24)&0xFF))
+    {
+       // printf("%d: relay message %s, from %d to %d\n", robot->timestamp, message_names[msg->command], (int)sender, (int)receiver);
+        robot->master_IPC.SendData(robot->getFullIP(receiver).i32, msg->command, (uint8_t*)msg->data, msg->length);
+    }
+    else
+    {
+       // printf("%d: relay message %s, from %d to everyone\n", robot->timestamp, message_names[msg->command], (int)sender);
+        robot->master_IPC.SendData(msg->command, (uint8_t*)msg->data, msg->length);
+    }
+
+}
 void Robot::Process_Organism_command(const LolMessage*msg, void* connection, void *user_ptr)
 {
     if(!msg || !connection || !user_ptr)
@@ -6,20 +30,14 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
 
     Robot *robot = (Robot*)user_ptr;
     IPC::Connection * conn=(IPC::Connection*) connection;
+    IPC::IPC * ipc = (IPC::IPC*) conn->ipc;
 
     uint8_t receiver = msg->data[0];
     uint8_t sender = msg->data[1];
 
-    //do I need to relay the message
     if(receiver != 0 && receiver != ((robot->my_IP.i32 >> 24)&0xFF))
     {
-        if(robot->commander_IPC.Server())
-            printf("This shouldn't happen, please check! data: %d %d\n", msg->data[0], msg->data[1]);
-        else
-        {
-            robot->master_IPC.SendData(robot->getFullIP(receiver).i32, msg->command, (uint8_t*)msg->data, msg->length);
-        }
-
+            printf("This shouldn't happen, please check! data: %d %d\n", (int)receiver, (int)sender);
     }
     else
     {
@@ -71,7 +89,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 {
                     //followed by speed, count, rotation, angle, [int, int, int, int]
                     memcpy((uint8_t*)robot->hinge_command, data, sizeof(robot->hinge_command));
-                    robot->IPCSendMessage(IPC_MSG_ACK, &command, 1);
+                    robot->IPCSendMessage(getFullIP(sender).i32,IPC_MSG_ACK, &command, 1);
                     robot->timestamp_hinge_motor_cmd_received  = robot->timestamp;
                 }
                 break;
@@ -79,7 +97,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 {
                     //followed by speed[0], speed[1], speed[2]
                     memcpy((uint8_t*)robot->locomotion_command, data, sizeof(robot->locomotion_command));
-                    robot->IPCSendMessage(IPC_MSG_ACK, &command, 1);
+                    robot->IPCSendMessage(getFullIP(sender).i32,IPC_MSG_ACK, &command, 1);
                     robot->timestamp_locomotion_motors_cmd_received  = robot->timestamp;
                     //printf("%d: received [%s] %d %d %d %d\n", robot->timestamp, message_names[msg->command],
                     //        robot->locomotion_command[0],
@@ -133,12 +151,12 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                     else if(buf[1] == IR_PROXIMITY_DATA)
                     {
                         for(int i=0;i<NUM_IRS;i++)
-                            irsensor_data[i]=robot->reflective[i] - robot->para.reflective_calibrated[i];
+                            irsensor_data[i]=robot->proximity[i];
                     }
                     else if(buf[1] == IR_BEACON_DATA)
                     {
                         for(int i=0;i<NUM_IRS;i++)
-                            irsensor_data[i]=robot->reflective[i] - robot->para.reflective_calibrated[i];
+                            irsensor_data[i]=robot->beacon[i];
                     }
                     else if(buf[1] == IR_AUX_REFLECTIVE_DATA)
                     {
@@ -148,7 +166,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
 
                     memcpy(buf+4, (uint8_t*)irsensor_data, sizeof(irsensor_data));
 
-                    robot->IPCSendMessage(IPC_MSG_ACK, buf, sizeof(buf));
+                    robot->IPCSendMessage(getFullIP(sender).i32,IPC_MSG_ACK, buf, sizeof(buf));
                 }
                 break;
             case IPC_MSG_RAISING_START:
@@ -185,7 +203,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 {
                     ack_required = false;
                     pthread_mutex_lock(&robot->IPC_data_mutex);
-                    robot->commander_acks[conn->addr.sin_addr.s_addr]++;
+                    robot->commander_acks[getFullIP(sender).i32]++;
                     pthread_mutex_unlock(&robot->IPC_data_mutex);
                     switch(data[0])
                     {
@@ -197,7 +215,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                             uint8_t config[2];
                             int32_t buf[NUM_IRS];
                             memcpy(config, data + 2, 2);
-                            memcpy((uint8_t*)buf, data + 4, sizeof(data));
+                            memcpy((uint8_t*)buf, data + 4, sizeof(buf));
                             robot->UpdateOGIRSensors(config, buf, data[1]);
                             break;
                         case MSG_TYPE_IP_ADDR_COLLECTION:
@@ -226,7 +244,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
 
 }
 
-//send data to specified address, it may be relayed by the server
+//send data to specified address, it will be relayed by the server
 void Robot::IPCSendMessage(uint32_t dst,  uint8_t type, const uint8_t *data, int size)
 {
     uint8_t buf[size + 2];
@@ -234,24 +252,13 @@ void Robot::IPCSendMessage(uint32_t dst,  uint8_t type, const uint8_t *data, int
     buf[1] = (my_IP.i32 >> 24) & 0xFF;
     memcpy(buf+2, data, size);
 
-    if(seed) 
-        master_IPC.SendData(dst, type, buf, sizeof(buf));
-    else
-        commander_IPC.SendData(type, buf, sizeof(buf));
+    commander_IPC.SendData(type, buf, sizeof(buf));
 }
 
-//send data to all from the server, or send back to server from the client
+//send data to all from the master_IPC, or send back to master from the client, exclude the seed
 void Robot::IPCSendMessage(uint8_t type, const uint8_t *data, int size)
 {
-    uint8_t buf[size + 2];
-    buf[0] = 0;
-    buf[1] = (my_IP.i32 >> 24) & 0xFF;
-    memcpy(buf+2, data, size);
-
-    if(seed) 
-        master_IPC.SendData(type, buf, sizeof(buf));
-    else
-        commander_IPC.SendData(type, buf, sizeof(buf));
+    IPCSendMessage(0, type, data, size);
 }
 
 

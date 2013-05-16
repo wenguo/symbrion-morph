@@ -1686,7 +1686,7 @@ void RobotAW::Lowering()
                 for(it = commander_acks.begin(); it != commander_acks.end(); it++)
                 {
                     //check if lost received some messages
-                    if(it->second < 3) //2 out of 5
+                    if(it->second < 2) //2 out of 5
                     {
                         IPC_health = false;
                         printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
@@ -1784,7 +1784,7 @@ void RobotAW::Raising()
             {
                 //transfer to state Macrolocomotion
                 for(int i=0;i<NUM_DOCKS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, IRPULSE0|IRPULSE1);
                 
                 IPCSendMessage(IPC_MSG_RAISING_STOP,NULL, 0);
                 IPCSendMessage(IPC_MSG_RESET_POSE_REQ,NULL, 0);
@@ -1806,7 +1806,7 @@ void RobotAW::Raising()
                 for(it = commander_acks.begin(); it != commander_acks.end(); it++)
                 {
                     //check if lost received some messages
-                    if(it->second < 3) //2 out of 5
+                    if(it->second < 2) //2 out of 5
                     {
                         IPC_health = false;
                         printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
@@ -1839,6 +1839,9 @@ void RobotAW::Raising()
             memset(hinge_command, 0, sizeof(hinge_command));
 
             flash_leds = false;
+
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetIRLED(i, IRLEDOFF, LED0|LED2, IRPULSE0|IRPULSE1);
 
         }
         else if( msg_raising_start_received )
@@ -2008,6 +2011,7 @@ void RobotAW::MacroLocomotion()
 
     if(seed)
     {
+        PrintOGIRSensor(IR_REFLECTIVE_DATA);
         //request IRSensors
         RequestOGIRSensors(IR_REFLECTIVE_DATA);
 
@@ -2015,6 +2019,59 @@ void RobotAW::MacroLocomotion()
 
         //make a decision for the speed of organism
         direction = FORWARD;
+
+        uint8_t organism_bumped = 0;
+        //check front and back side
+        for(int i=0;i<2;i++)
+        {
+            if(og_reflective_sensors.front[i] > 2000)
+                organism_bumped |= 1;
+            if(og_reflective_sensors.back[i] > 2000)
+                organism_bumped |= 1<<2;
+        }
+
+        if(organism_bumped & 0x5 == 0x5) //both front and back are bumped
+        {
+            cmd_speed[0] = 0;
+            cmd_speed[1] = 0;
+            direction = FORWARD;
+        }
+        else if(organism_bumped & 0x5 == 0x1)//front bumped
+        {
+            direction = BACKWARD;
+        }
+        else if(organism_bumped & 0x5 == 0x4)//back bumped
+        {
+            direction = FORWARD;
+        }
+        else
+        {
+            cmd_speed[0] = 30;
+            cmd_speed[1] = 30;
+        }
+
+        //check left and right side
+        for(int i=0;i<og_reflective_sensors.left.size();i++)
+        {
+            if(og_reflective_sensors.left[i] > 2000)
+                organism_bumped |= 1<<1;
+            if(og_reflective_sensors.right[i] > 2000)
+                organism_bumped |= 1<<3;
+        }
+
+        //left and right
+        if(organism_bumped & 0xA == 0xA) //both left and right are bumped
+            cmd_speed[2] = 0;
+        else if(organism_bumped & 0xA == 0x2) //left bumped
+            cmd_speed[2] = -60;
+        else if(organism_bumped & 0xA == 0x8) //right bumped
+            cmd_speed[2] = 60;
+        else
+            cmd_speed[2] = 0;
+
+
+
+
         /*
         if(macrolocomotion_count < 50)
         {
@@ -2067,7 +2124,7 @@ void RobotAW::MacroLocomotion()
             int motor_command[4];
             if(it->second.type == ROBOT_AW)
             {
-                motor_command[0] = it->second.direction;
+                motor_command[0] = direction * it->second.direction;
                 motor_command[1] = motor_command[0] >0 ? cmd_speed[0] : cmd_speed[1];
                 motor_command[2] = motor_command[0] >0 ? cmd_speed[1] : cmd_speed[0];
                 motor_command[3] = cmd_speed[2];
@@ -2075,7 +2132,7 @@ void RobotAW::MacroLocomotion()
             }
             else
             {
-                motor_command[0] = it->second.direction;
+                motor_command[0] = direction * it->second.direction;
                 motor_command[1] = 0;
                 motor_command[2] = 0;
                 motor_command[3] = 0;
@@ -2179,7 +2236,7 @@ void RobotAW::Climbing()
                     int motor_command[4];
                     if(as_ptr->cmd_type == action_sequence::CMD_PUSH_DRAG)
                     {
-                        motor_command[0] = robot_pose_in_organism[robot_ip].direction;
+                        motor_command[0] = direction * robot_pose_in_organism[robot_ip].direction;
                         motor_command[1] = motor_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[0] : as_ptr->robots_in_action[i].cmd_data[1] ;
                         motor_command[2] = motor_command[0] >0 ? as_ptr->robots_in_action[i].cmd_data[1] : as_ptr->robots_in_action[i].cmd_data[0] ;
                         motor_command[3] = as_ptr->robots_in_action[i].cmd_data[2];

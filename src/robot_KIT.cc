@@ -1897,7 +1897,7 @@ void RobotKIT::Raising()
             {
                 //transfer to state Macrolocomotion
                 for(int i=0;i<NUM_DOCKS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
+                    SetIRLED(i, IRLEDOFF, LED0|LED2, IRPULSE0|IRPULSE1);
                 
                 IPCSendMessage(IPC_MSG_RAISING_STOP,NULL, 0);
                 
@@ -1951,6 +1951,8 @@ void RobotKIT::Raising()
 
             flash_leds = false;
 
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetIRLED(i, IRLEDOFF, LED0|LED2, IRPULSE0|IRPULSE1);
         }
         else if( msg_raising_start_received )
         {
