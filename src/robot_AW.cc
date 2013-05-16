@@ -2030,24 +2030,21 @@ void RobotAW::MacroLocomotion()
                 organism_bumped |= 1<<2;
         }
 
-        if(organism_bumped & 0x5 == 0x5) //both front and back are bumped
+        if((organism_bumped & 0x5) == 0x5) //both front and back are bumped
         {
             cmd_speed[0] = 0;
             cmd_speed[1] = 0;
-            direction = FORWARD;
-        }
-        else if(organism_bumped & 0x5 == 0x1)//front bumped
-        {
-            direction = BACKWARD;
-        }
-        else if(organism_bumped & 0x5 == 0x4)//back bumped
-        {
             direction = FORWARD;
         }
         else
         {
             cmd_speed[0] = 30;
             cmd_speed[1] = 30;
+
+            if((organism_bumped & 0x5) == 0x1)//front bumped
+                direction = BACKWARD;
+            else if((organism_bumped & 0x5) == 0x4)//back bumped
+                direction = FORWARD;
         }
 
         //check left and right side
@@ -2060,14 +2057,16 @@ void RobotAW::MacroLocomotion()
         }
 
         //left and right
-        if(organism_bumped & 0xA == 0xA) //both left and right are bumped
+        if((organism_bumped & 0xA) == 0xA) //both left and right are bumped
             cmd_speed[2] = 0;
-        else if(organism_bumped & 0xA == 0x2) //left bumped
+        else if((organism_bumped & 0xA) == 0x2) //left bumped
             cmd_speed[2] = -60;
-        else if(organism_bumped & 0xA == 0x8) //right bumped
+        else if((organism_bumped & 0xA) == 0x8) //right bumped
             cmd_speed[2] = 60;
         else
             cmd_speed[2] = 0;
+
+        printf("Speed: %d %d %d %#x\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], organism_bumped);
 
 
 
