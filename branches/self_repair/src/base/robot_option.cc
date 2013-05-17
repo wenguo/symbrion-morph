@@ -184,12 +184,14 @@ bool Robot::LoadParameters(const char * filename)
             para.hinge_motor_speed = optionfile->ReadInt(entity, "hinge_motor_speed", 30);
             para.hinge_motor_angle = optionfile->ReadInt(entity, "hinge_motor_angle", 45);
             para.hinge_motor_default_pos = optionfile->ReadInt(entity, "hinge_motor_default_pos", 75);
+            para.hinge_motor_enabled = optionfile->ReadInt(entity, "hinge_motor_enabled", 1);
         }
         else if( strcmp( typestr, "Motor" ) == 0 )
         {
             para.speed_forward = optionfile->ReadInt(entity, "speed_forward", 30);
             para.speed_sideward = optionfile->ReadInt(entity, "speed_sideward", 0);
             para.aw_adjustment_ratio = optionfile->ReadFloat(entity, "aw_adjustment_ratio",0.9);
+            para.locomotion_motor_enabled = optionfile->ReadInt(entity, "locomotion_motor_enabled",1);
             if( Morph::CProperty* prop = optionfile->GetProperty( entity, "scout_wheels_direction" ) )
             {
                 for(int i=0;i<2;i++)

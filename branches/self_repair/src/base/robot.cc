@@ -210,8 +210,10 @@ Robot::Robot()
 
     memset(hinge_command, 0, sizeof(hinge_command));
     memset(locomotion_command, 0, sizeof(locomotion_command));
+    memset(og_front_aux_reflective_sensors, 0, sizeof(og_front_aux_reflective_sensors));
 
     current_action_sequence_index = 0;
+    front_aw_ip = 0;
 
     LED0 = 0x1;
     LED1 = 0x2;
@@ -850,49 +852,71 @@ Ethernet::IP Robot::getFullIP(const uint8_t addr)
 
 void Robot::UpdateOGIRSensors(uint8_t config[2], int data[8], int sensor_type)
 {
-    OG_IRsensor * ir_sensors;
-    if(sensor_type == IR_REFLECTIVE_DATA)
-        ir_sensors = &og_reflective_sensors;
-    else if(sensor_type == IR_AMBIENT_DATA)
-        ir_sensors= &og_ambient_sensors;
-    else if(sensor_type == IR_PROXIMITY_DATA)
-        ir_sensors = &og_proximity_sensors;
-    else if(sensor_type == IR_BEACON_DATA)
-        ir_sensors = &og_beacon_sensors;
-    else
-        return;
-
     uint32_t robot_ip = getFullIP(config[0]).i32;
     int robot_direction =  robot_pose_in_organism[robot_ip].direction;
     int robot_og_irsensor_index =  robot_pose_in_organism[robot_ip].og_irsensor_index;
-    //header
-    pthread_mutex_lock(&IPC_data_mutex);
-    if(robot_pose_in_organism[robot_ip].tail_header == -1)
-    {
-      //  printf("%d: update sensor data [%d] og from %s, as a header (%d) \n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_direction);
-        ir_sensors->front[0] = robot_direction == 1 ? data[0] : data[4];//front right 
-        ir_sensors->front[1] = robot_direction == 1 ? data[1] : data[5];//front left
-    }
 
-    //tail
-    if(robot_pose_in_organism[robot_ip].tail_header == 1)
+    if(sensor_type == IR_AUX_REFLECTIVE_DATA)
     {
-    // printf("%d: update sensor data [%d] og from %s, as a tail (%d)\n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_direction);
-        ir_sensors->back[0] = robot_direction == 1 ? data[4] : data[0]; ;//back left 
-        ir_sensors->back[1] = robot_direction == 1 ? data[5] : data[1] ;//back right 
-    }
+        if(robot_direction == 1)
+        {
+            og_front_aux_reflective_sensors[0] = data[6];
+            og_front_aux_reflective_sensors[1] = data[7];
+            og_front_aux_reflective_sensors[2] = data[0];
+            og_front_aux_reflective_sensors[3] = data[1];
+        }
+        else
+        {
+            og_front_aux_reflective_sensors[0] = data[2];
+            og_front_aux_reflective_sensors[1] = data[3];
+            og_front_aux_reflective_sensors[2] = data[4];
+            og_front_aux_reflective_sensors[3] = data[5];
+        }
 
-    //left and right
-    if(robot_pose_in_organism[robot_ip].og_irsensor_index != -1)
+    }
+    else
     {
-    // printf("%d: update sensor data [%d] og from %s, push into og_irsensor[%d]\n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_og_irsensor_index);
-        ir_sensors->left[2 * robot_og_irsensor_index]       = robot_direction == 1? data[2] : data[6];
-        ir_sensors->left[2 * robot_og_irsensor_index + 1]   = robot_direction == 1? data[3] : data[7];
-        ir_sensors->right[2 * robot_og_irsensor_index]      = robot_direction == 1? data[7] : data[3];
-        ir_sensors->right[2 * robot_og_irsensor_index + 1]  = robot_direction == 1? data[6] : data[2];
-    }
+        OG_IRsensor * ir_sensors;
+        if(sensor_type == IR_REFLECTIVE_DATA)
+            ir_sensors = &og_reflective_sensors;
+        else if(sensor_type == IR_AMBIENT_DATA)
+            ir_sensors= &og_ambient_sensors;
+        else if(sensor_type == IR_PROXIMITY_DATA)
+            ir_sensors = &og_proximity_sensors;
+        else if(sensor_type == IR_BEACON_DATA)
+            ir_sensors = &og_beacon_sensors;
+        else
+            return;
 
-    pthread_mutex_unlock(&IPC_data_mutex);
+        //header
+        pthread_mutex_lock(&IPC_data_mutex);
+        if(robot_pose_in_organism[robot_ip].tail_header == -1)
+        {
+            //  printf("%d: update sensor data [%d] og from %s, as a header (%d) \n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_direction);
+            ir_sensors->front[0] = robot_direction == 1 ? data[0] : data[4];//front right 
+            ir_sensors->front[1] = robot_direction == 1 ? data[1] : data[5];//front left
+        }
+
+        //tail
+        if(robot_pose_in_organism[robot_ip].tail_header == 1)
+        {
+            // printf("%d: update sensor data [%d] og from %s, as a tail (%d)\n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_direction);
+            ir_sensors->back[0] = robot_direction == 1 ? data[4] : data[0]; ;//back left 
+            ir_sensors->back[1] = robot_direction == 1 ? data[5] : data[1] ;//back right 
+        }
+
+        //left and right
+        if(robot_pose_in_organism[robot_ip].og_irsensor_index != -1)
+        {
+            // printf("%d: update sensor data [%d] og from %s, push into og_irsensor[%d]\n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_og_irsensor_index);
+            ir_sensors->left[2 * robot_og_irsensor_index]       = robot_direction == 1? data[2] : data[6];
+            ir_sensors->left[2 * robot_og_irsensor_index + 1]   = robot_direction == 1? data[3] : data[7];
+            ir_sensors->right[2 * robot_og_irsensor_index]      = robot_direction == 1? data[7] : data[3];
+            ir_sensors->right[2 * robot_og_irsensor_index + 1]  = robot_direction == 1? data[6] : data[2];
+        }
+
+        pthread_mutex_unlock(&IPC_data_mutex);
+    }
 
 }
 
@@ -955,13 +979,13 @@ void Robot::InitRobotPoseInOrganism()
             pose.direction = (mytree.Encoded_Seq()[i].side2 == FRONT ? 1 : -1) * dir;
             pose.type = mytree.Encoded_Seq()[i].type2;
             robot_pose_in_organism[getFullIP(mytree.Encoded_Seq()[i].child_IP).i32] = pose;
-            printf("%d : %s direction %d\n", mytree.Encoded_Seq()[i].child_IP, IPToString(getFullIP(mytree.Encoded_Seq()[i].child_IP).i32), pose.direction);
+          //  printf("%d : %s direction %d\n", mytree.Encoded_Seq()[i].child_IP, IPToString(getFullIP(mytree.Encoded_Seq()[i].child_IP).i32), pose.direction);
         }
         else
         {
             pos_index = 0;
             new_branch = true;
-            printf("new branches\n");
+       //     printf("new branches\n");
         }
 
         if(index_min < pos_index)
@@ -971,7 +995,7 @@ void Robot::InitRobotPoseInOrganism()
             index_max = pos_index;
     }
 
-    printf("min: %d\nmax: %d\n", index_min, index_max);
+   // printf("min: %d\nmax: %d\n", index_min, index_max);
 
 
     std::map<uint32_t, robot_pose>::iterator it;
@@ -988,11 +1012,7 @@ void Robot::InitRobotPoseInOrganism()
     for(it1 = robot_in_organism_index_sorted.begin(); it1 != robot_in_organism_index_sorted.end(); it1++)
     {
         robot_pose &p = robot_pose_in_organism[it1->second];
-        printf("inside: %s's index: %d pose: %d type: %c\n", IPToString(it1->second), p.index,p.direction, robottype_names[p.type]);
-        //reset other memembers
-        //robot_pose_in_organism[it1->second].tail_header = 0;
-        //robot_pose_in_organism[it1->second].og_irsensor_index = -1;
-
+  //      printf("inside: %s's index: %d pose: %d type: %c\n", IPToString(it1->second), p.index,p.direction, robottype_names[p.type]);
         //set og_irsensor_index if it is AW
         if(robot_pose_in_organism[it1->second].type == ROBOT_AW)
             robot_pose_in_organism[it1->second].og_irsensor_index = og_irsensor_index++;
@@ -1041,6 +1061,12 @@ void Robot::InitRobotPoseInOrganism()
 
 void Robot::PrintOGIRSensor(uint8_t sensor_type)
 {
+    if(sensor_type ==IR_AUX_REFLECTIVE_DATA)
+    {
+        printf("IR aux reflective: %d %d %d %d\n", og_front_aux_reflective_sensors[0],og_front_aux_reflective_sensors[1],og_front_aux_reflective_sensors[2],og_front_aux_reflective_sensors[3]);
+        return;
+    }
+
     OG_IRsensor * ir_sensors;
     char str[10];
     if(sensor_type == IR_REFLECTIVE_DATA)

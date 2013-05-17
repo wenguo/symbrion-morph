@@ -533,9 +533,12 @@ class Robot
     OG_IRsensor og_ambient_sensors;
     OG_IRsensor og_proximity_sensors;
     OG_IRsensor og_beacon_sensors;
+    int32_t og_front_aux_reflective_sensors[4]; //the 'front' 4 aux sensors located in the first AW robots, front right to left 
+    
 
     std::vector<action_sequence> organism_actions;
-    int current_action_sequence_index;
+    int current_action_sequence_index; //index for the action sequence of organism
+    uint32_t front_aw_ip; //ip of the front AW when executing the push-drag behaviour
 
 };
 
