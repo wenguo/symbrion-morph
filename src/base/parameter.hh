@@ -25,6 +25,7 @@ class Parameter
         int speed_forward;
         int speed_sideward;
         float aw_adjustment_ratio;
+        bool locomotion_motor_enabled;
         int scout_wheels_direction[2];
         int locatebeacon_forward_speed[3];
         int aligning_forward_speed[3];
@@ -44,6 +45,7 @@ class Parameter
         int hinge_motor_speed;
         int hinge_motor_angle;
         int hinge_motor_default_pos; //
+        bool hinge_motor_enabled;
 
         int locking_motor_opening_time;
         int locking_motor_closing_time;

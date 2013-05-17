@@ -171,13 +171,13 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case IPC_MSG_RAISING_START:
                 {
-                    if(!robot->seed)
+                //    if(!robot->seed)
                         robot->msg_raising_start_received = true;
                 }
                 break;
             case IPC_MSG_RAISING_STOP:
                 {
-                    if(!robot->seed)
+                //    if(!robot->seed)
                         robot->msg_raising_stop_received = true;
                 }
                 break;
@@ -189,13 +189,13 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case IPC_MSG_CLIMBING_START:
                 {
-                    if(!robot->seed)
+                  //  if(!robot->seed)
                         robot->msg_climbing_start_received = true;
                 }
                 break;
             case IPC_MSG_CLIMBING_STOP:
                 {
-                    if(!robot->seed)
+                 //   if(!robot->seed)
                         robot->msg_climbing_stop_received = true;
                 }
                 break;

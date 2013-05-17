@@ -91,6 +91,13 @@ void RobotKIT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_
 
 void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
 {
+
+    if(!para.locomotion_motor_enabled)
+    {
+        printf("%d: locomotion speed [%d %d %d]\n",timestamp, speed0, speed1, speed2);
+        return;
+    }
+
     if(speed0 > 100)
         speed0 = 100;
     if(speed0 < -100)

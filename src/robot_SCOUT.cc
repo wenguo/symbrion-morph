@@ -94,6 +94,12 @@ void RobotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint
 
 void RobotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
 {
+    if(!para.locomotion_motor_enabled)
+    {
+        printf("%d: locomotion speed [%d %d %d]\n",timestamp, leftspeed, rightspeed, speed3);
+        return;
+    }
+
     //note that the leftspeed is in fact set to the right motor of scouts, rightspeed is on the left motor
     if(leftspeed > 100)
         leftspeed = 100;
