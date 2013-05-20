@@ -53,10 +53,16 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 robot->organism_formed = true;
                 break;
             case MSG_TYPE_LOWERING:
-                robot->msg_lowering_received = true;
+                {
+                    if(!robot->seed)
+                        robot->msg_lowering_received = true;
+                }
                 break;
             case MSG_TYPE_DISASSEMBLY:
-                robot->msg_disassembly_received = true;
+                {
+                    if(!robot->seed)
+                        robot->msg_disassembly_received = true;
+                }
                 break;
             case MSG_TYPE_IP_ADDR_COLLECTION:
                 {
@@ -115,6 +121,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                         int8_t angle = data[0];
                         robot->RotateDockingUnit(channel, angle);
                         robot->IPCSendMessage(getFullIP(sender).i32, IPC_MSG_ACK, &command, 1);
+                        printf("%d received request to rotate docking angle %d from side %d\n", robot->timestamp, (int)angle, (int)channel);
                     }
 
                 }
@@ -171,13 +178,13 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case IPC_MSG_RAISING_START:
                 {
-                //    if(!robot->seed)
+                    if(!robot->seed)
                         robot->msg_raising_start_received = true;
                 }
                 break;
             case IPC_MSG_RAISING_STOP:
                 {
-                //    if(!robot->seed)
+                    if(!robot->seed)
                         robot->msg_raising_stop_received = true;
                 }
                 break;
@@ -189,13 +196,13 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case IPC_MSG_CLIMBING_START:
                 {
-                  //  if(!robot->seed)
+                    if(!robot->seed)
                         robot->msg_climbing_start_received = true;
                 }
                 break;
             case IPC_MSG_CLIMBING_STOP:
                 {
-                 //   if(!robot->seed)
+                    if(!robot->seed)
                         robot->msg_climbing_stop_received = true;
                 }
                 break;

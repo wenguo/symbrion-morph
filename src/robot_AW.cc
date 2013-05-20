@@ -1657,31 +1657,17 @@ void RobotAW::Lowering()
             }
             else
             {
-                for(int i=0;i<NUM_DOCKS;i++)
-                    SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-
                 hinge_motor_operating_count = 0;
 
                 //IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
                 //
                 if(!msg_raising_start_received) //this will prevent the message being sent twice 
-                    IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
-         /*       macrolocomotion_count = 0;
-                raising_count = 0;
-                current_state = RAISING;
-                last_state = LOWERING;
-*/
-
-                //current_state = DISASSEMBLY;
-                //last_state = LOWERING;
-                lowering_count = 0;
-
-                for(int i=0;i<NUM_DOCKS;i++)
                 {
-                    SetRGBLED(i, 0, 0, 0, 0);
-                    if(docked[i])
-                        msg_unlocked_expected |=1<<i;
+                    IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
+                    msg_raising_start_received = true;
                 }
+                
+                lowering_count = 0;
             }
 
             //check if all robot 
@@ -1735,8 +1721,6 @@ void RobotAW::Lowering()
         last_state = LOWERING;
     }
 
-
-
     MoveHingeMotor(hinge_command);
     
     //reset if no cmd received, to be used to stop the motor automatically
@@ -1755,13 +1739,14 @@ void RobotAW::Raising()
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
+    
+    raising_count++;
 
     // Leds symbolise the raising process
     bool flash_leds = false;
 
     // Wait longer with larger structures
     int raising_delay = 10;//(mytree.Size()/2+1)*30;
-    raising_count++;
 
     if(seed)
     {
@@ -1792,23 +1777,16 @@ void RobotAW::Raising()
                 {
                     printf("%d: send raising stop\n", timestamp);
                     IPCSendMessage(IPC_MSG_RAISING_STOP,NULL, 0);
+                    msg_raising_stop_received = true;
+                    IPCSendMessage(IPC_MSG_RESET_POSE_REQ,NULL, 0);
                 }
 
-                IPCSendMessage(IPC_MSG_RESET_POSE_REQ,NULL, 0);
 
                 InitRobotPoseInOrganism();
 
                 IPC_health = true;
                 
-                /*
-                current_state = MACROLOCOMOTION;
-                last_state = RAISING;
-                raising_count = 0;
-                flash_leds = false;
-                hinge_motor_operating_count = 0;
-                macrolocomotion_count = 0;
-                */
-            }
+             }
 
             //check if all robot 
             if(raising_count % 5 == 4)
@@ -1840,6 +1818,7 @@ void RobotAW::Raising()
     if( msg_raising_stop_received )
     {
         printf("%d: recieved raising stop\n", timestamp);
+
         msg_raising_stop_received = false;
         current_state = MACROLOCOMOTION;
         last_state = RAISING;
@@ -1995,6 +1974,7 @@ void RobotAW::Reshaping()
     }
     else if( msg_disassembly_received )
     {
+        printf("%d: received disassembly start\n", timestamp);
         current_state = DISASSEMBLY;
         last_state = RESHAPING;
 
@@ -2077,10 +2057,6 @@ void RobotAW::MacroLocomotion()
         else
             cmd_speed[2] = 0;
 
-        printf("Speed: %d %d %d %#x\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], organism_bumped);
-
-
-
 
         /*
         if(macrolocomotion_count < 50)
@@ -2114,14 +2090,14 @@ void RobotAW::MacroLocomotion()
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
-            //IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
 
             if(!msg_climbing_start_received) //this will prevent the message being sent twice 
+            {
+                printf("%d: send climbing start\n", timestamp);
                 IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
-
-            //current_state = LOWERING;
-          //  current_state = CLIMBING;
-          //  last_state = MACROLOCOMOTION;
+                //IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+                msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
+            }
 
             IPC_health = true;
             climbing_count =0;
@@ -2131,7 +2107,7 @@ void RobotAW::MacroLocomotion()
         }
 
 
-        //set the speed of all other AW robot in the organism
+        //set the speed of all AW robots in the organism
         std::map<uint32_t, robot_pose>::iterator it;
         for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
         {
@@ -2155,7 +2131,8 @@ void RobotAW::MacroLocomotion()
     }
     
     if( msg_lowering_received )
-    {
+    {       
+        printf("%d: received lowing start\n", timestamp);
         // Stop moving
         memset(hinge_command, 0, sizeof(hinge_command));
         memset(locomotion_command, 0, sizeof(locomotion_command));
@@ -2168,6 +2145,7 @@ void RobotAW::MacroLocomotion()
     }
     else if (msg_climbing_start_received)
     {
+        printf("%d: received climbing start\n", timestamp);
         // Stop moving
         memset(hinge_command, 0, sizeof(hinge_command));
         memset(locomotion_command, 0, sizeof(locomotion_command));
@@ -2180,7 +2158,7 @@ void RobotAW::MacroLocomotion()
         hinge_motor_operating_count = 0;
     }
 
-    direction = locomotion_command[0];
+    direction = locomotion_command[0] == 0 ? FORWARD : locomotion_command[0];
     speed[0] = locomotion_command[1];
     speed[1] = locomotion_command[2];
     speed[2] = locomotion_command[3];
@@ -2248,7 +2226,6 @@ void RobotAW::Climbing()
                     front_aw_ip = 0;
             }
 
-
             //end of life?
             if(as_ptr->counter >= as_ptr->duration)
             {
@@ -2268,7 +2245,6 @@ void RobotAW::Climbing()
                         {
                             if(it->second.og_irsensor_index == robot_pose_in_organism[front_aw_ip].og_irsensor_index + 1)
                             {
-                                printf("I found you\n");
                                 flag = true;
                                 front_aw_ip = it->first;
                                 break;
@@ -2292,7 +2268,7 @@ void RobotAW::Climbing()
                 {
                     //printf("I am request aux_reflective_data from %s\n", IPToString(front_aw_ip));
                     RequestOGIRSensors(front_aw_ip, IR_AUX_REFLECTIVE_DATA);
-                    PrintOGIRSensor(IR_AUX_REFLECTIVE_DATA);
+                    //PrintOGIRSensor(IR_AUX_REFLECTIVE_DATA);
                 }
                 else
                 {
@@ -2303,7 +2279,7 @@ void RobotAW::Climbing()
                 for(int i=0;i<as_ptr->robots_in_action.size();i++)
                 {
                     uint32_t robot_ip=robot_in_organism_index_sorted[as_ptr->robots_in_action[i].index];
-                    printf("Send command [%d] to %s\n",as_ptr->cmd_type, IPToString(robot_ip));
+                    //printf("Send command [%d] to %s\n",as_ptr->cmd_type, IPToString(robot_ip));
                     int motor_command[4];
 
 
@@ -2350,22 +2326,19 @@ void RobotAW::Climbing()
 
             front_aw_ip = 0; //reset it to the right value 
             
-            /*
-            current_action_sequence_index =0;
-            msg_lowering_received = false;
-            last_state = CLIMBING;
-            current_state = LOWERING;
-            climbing_count =0;
-            macrolocomotion_count=0;
-            hinge_motor_operating_count = 0;*/
             if(!msg_lowering_received)
+            {
+                printf("%d: send lowering start\n", timestamp);
                 IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+                msg_lowering_received = true;
+            }
         }
     }
 
 
     if( msg_lowering_received )
     {
+        printf("%d: received lowering start\n", timestamp);
         // Stop moving
         memset(hinge_command, 0, sizeof(hinge_command));
         memset(locomotion_command, 0, sizeof(locomotion_command));
@@ -2379,16 +2352,11 @@ void RobotAW::Climbing()
         hinge_motor_operating_count = 0;
     }
 
-    //disable speed for testing
-  //  memset(hinge_command, 0, sizeof(hinge_command));
-  //  memset(locomotion_command, 0, sizeof(locomotion_command));
-
     //2d locomotion will be called automatially
-    direction = locomotion_command[0];
+    direction = locomotion_command[0] == 0 ? FORWARD: locomotion_command[0];
     speed[0] = locomotion_command[1];
     speed[1] = locomotion_command[2];
     speed[2] = locomotion_command[3];
-    printf("%d: speed %d %d %d\n", direction, speed[0], speed[1], speed[2]);
 
     //move hinge
     MoveHingeMotor(hinge_command);
