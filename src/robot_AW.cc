@@ -189,9 +189,15 @@ bool RobotAW::MoveHingeMotor(int command[4])
 
     //a valid hinge command
     if(command[3] == 1)
+    {
+        printf("%d: move hinge %d %d\n", timestamp, command[0], command[1]);
         irobot->MoveHingeToAngle(command[0], command[1]);
+    }
     else
+    {
+        printf("%d: stop hinge\n", timestamp);
         irobot->MoveHinge(0);
+    }
 
     return true;
 }
@@ -917,6 +923,10 @@ void RobotAW::Recover()
             if(assembly_info == OrganismSequence::Symbol(0))
             {
                 ResetAssembly();
+                
+                for(int i=0; i<SIDE_COUNT; i++)
+                    SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
+                
                 current_state = FORAGING;
                 last_state = RECOVER;
             }
@@ -928,6 +938,10 @@ void RobotAW::Recover()
                 if(docking_trials >= para.docking_trials)
                 {
                     ResetAssembly();
+                    
+                    for(int i=0; i<SIDE_COUNT; i++)
+                        SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
+                   
                     docking_trials = 0;
 
                     current_state = FORAGING;
@@ -1617,6 +1631,9 @@ void RobotAW::Undocking()
         last_state = UNDOCKING;
         current_state = FORAGING;
         ResetAssembly(); // reset variables used during assembly
+                
+        for(int i=0; i<SIDE_COUNT; i++)
+            SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
     }
 
     undocking_count++;
@@ -1710,6 +1727,8 @@ void RobotAW::Lowering()
             if(docked[i])
                 msg_unlocked_expected |= 1<<i;
         }
+        
+        memset(hinge_command, 0, sizeof(hinge_command));
     }
     else if(msg_raising_start_received)
     {
@@ -1719,6 +1738,8 @@ void RobotAW::Lowering()
         lowering_count = 0;
         current_state = RAISING;
         last_state = LOWERING;
+        
+        memset(hinge_command, 0, sizeof(hinge_command));
     }
 
     MoveHingeMotor(hinge_command);
@@ -2307,10 +2328,18 @@ void RobotAW::Climbing()
                     }
                     else if(as_ptr->cmd_type == action_sequence::CMD_LIFT_ONE)
                     { 
-                        motor_command[0] = as_ptr->robots_in_action[i].cmd_data[0];
-                        motor_command[1] = as_ptr->robots_in_action[i].cmd_data[1];
-                        motor_command[2] = as_ptr->robots_in_action[i].cmd_data[2];
-                        motor_command[3] = 1; //this indicates the validation of command
+                        if(as_ptr->counter + 1 >= as_ptr->duration)
+                        {
+                            //send a stop hinge command;
+                            memset(motor_command, 0, sizeof(motor_command));
+                        }
+                        else
+                        {
+                            motor_command[0] = as_ptr->robots_in_action[i].cmd_data[0];
+                            motor_command[1] = as_ptr->robots_in_action[i].cmd_data[1];
+                            motor_command[2] = as_ptr->robots_in_action[i].cmd_data[2];
+                            motor_command[3] = 1; //this indicates the validation of command
+                        }
 
                         IPCSendMessage(robot_ip, IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)motor_command, sizeof(motor_command));
                     }

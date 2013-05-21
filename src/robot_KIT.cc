@@ -1749,6 +1749,9 @@ void RobotKIT::Undocking()
 
         RemoveFromQueue(IR_MSG_TYPE_UNLOCKED, 0);
         ResetAssembly(); // reset variables used during assembly
+        
+        for(int i=0; i<SIDE_COUNT; i++)
+            SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
     }
 
     undocking_count++;
@@ -1841,6 +1844,8 @@ void RobotKIT::Lowering()
             if(docked[i])
                 msg_unlocked_expected |= 1<<i;
         }
+
+        memset(hinge_command, 0, sizeof(hinge_command));
     }
     else if(msg_raising_start_received)
     {
@@ -1850,6 +1855,8 @@ void RobotKIT::Lowering()
         lowering_count = 0;
         current_state = RAISING;
         last_state = LOWERING;
+
+        memset(hinge_command, 0, sizeof(hinge_command));
     }
 
     //MoveHingeMotor(hinge_command);
@@ -2498,10 +2505,18 @@ void RobotKIT::Climbing()
                     }
                     else if(as_ptr->cmd_type == action_sequence::CMD_LIFT_ONE)
                     { 
-                        motor_command[0] = as_ptr->robots_in_action[i].cmd_data[0];
-                        motor_command[1] = as_ptr->robots_in_action[i].cmd_data[1];
-                        motor_command[2] = as_ptr->robots_in_action[i].cmd_data[2];
-                        motor_command[3] = 1; //this indicates the validation of command
+                        if(as_ptr->counter + 1 >= as_ptr->duration)
+                        {
+                            //send a stop hinge command;
+                            memset(motor_command, 0, sizeof(motor_command));
+                        }
+                        else
+                        {
+                            motor_command[0] = as_ptr->robots_in_action[i].cmd_data[0];
+                            motor_command[1] = as_ptr->robots_in_action[i].cmd_data[1];
+                            motor_command[2] = as_ptr->robots_in_action[i].cmd_data[2];
+                            motor_command[3] = 1; //this indicates the validation of command
+                        }
 
                         IPCSendMessage(robot_ip, IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)motor_command, sizeof(motor_command));
                     }

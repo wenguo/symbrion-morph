@@ -18,29 +18,10 @@ Robot::Robot()
     timestamp_locomotion_motors_cmd_received =0;
     type = ROBOT_KIT;
 
-    bumped=0;
-    assembly_info_checked=false;
-    num_robots_inorganism=1;
-    organism_found=false;
-    powersource_found=false;
-    seed=false;
-    organism_formed=false;
-    module_failed=false;
-    heading = 0;
-    wait_side = FRONT;
-    parent_side = SIDE_COUNT;
-    repair_stage = STAGE0;
-    repair_start = 0;
-    repair_duration = 50;
-    move_start = 0;
-    move_duration = 50;
-    broadcast_start = 0;
-    broadcast_duration = 200;
-    broadcast_period = 50;
-
-    hinge_motor_status = LOWED;
-    RGBLED_flashing = 0;
-
+    LED0 = 0x1;
+    LED1 = 0x2;
+    LED2 = 0x4;
+ 
     RegisterBehaviour(&Robot::Calibrating, CALIBRATING);
     RegisterBehaviour(&Robot::Exploring, EXPLORING);
     RegisterBehaviour(&Robot::Resting, RESTING);
@@ -70,6 +51,42 @@ Robot::Robot()
     RegisterBehaviour(&Robot::LeadRepair, LEADREPAIR);
     RegisterBehaviour(&Robot::Repair, REPAIR);
 
+    pthread_mutex_init(&ir_rx_mutex, NULL);
+    pthread_mutex_init(&ir_txqueue_mutex, NULL);
+    pthread_mutex_init(&eth_rx_mutex, NULL);
+    pthread_mutex_init(&eth_txqueue_mutex, NULL);
+    pthread_mutex_init(&IPC_data_mutex, NULL);
+
+    ResetAssembly();
+
+}
+
+// Reset variables used during assembly
+void Robot::ResetAssembly()
+{
+    bumped=0;
+    assembly_info_checked=false;
+    num_robots_inorganism=1;
+    organism_found=false;
+    powersource_found=false;
+    seed=false;
+    organism_formed=false;
+    module_failed=false;
+    heading = 0;
+    wait_side = FRONT;
+    parent_side = SIDE_COUNT;
+    repair_stage = STAGE0;
+    repair_start = 0;
+    repair_duration = 50;
+    move_start = 0;
+    move_duration = 50;
+    broadcast_start = 0;
+    broadcast_duration = 200;
+    broadcast_period = 50;
+
+    hinge_motor_status = LOWED;
+    RGBLED_flashing = 0;
+
     for (int i = 0; i < NUM_IRS; i++)
     {
         reflective[i]=0;
@@ -86,7 +103,7 @@ Robot::Robot()
         docked[i] = 0;
         docking_done[i] = false;
         unlocking_required[i] = false;
-        recruitment_signal_interval_count[i]=0;//DEFAULT_RECRUITMENT_COUNT;
+        recruitment_signal_interval_count[i]=DEFAULT_RECRUITMENT_COUNT; //what is this for?
         recruitment_count[i]=0;
         neighbours[i]=NULL;
         IRLED_status[i] = 0;
@@ -98,6 +115,9 @@ Robot::Robot()
         new_id[i] = SIDE_COUNT;
         new_score[i] = 0;
         guiding_signals_count[i]=0;
+
+        //SetRGBLED(i, 0, 0, 0, 0);
+        //SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
     }
 
 
@@ -179,10 +199,6 @@ Robot::Robot()
     best_id = SIDE_COUNT;
     own_score = 0;
 
-    pthread_mutex_init(&ir_rx_mutex, NULL);
-    pthread_mutex_init(&ir_txqueue_mutex, NULL);
-    pthread_mutex_init(&eth_rx_mutex, NULL);
-    pthread_mutex_init(&eth_txqueue_mutex, NULL);
 
     robots_in_range_detected_hist.Resize(15);
     ethernet_status_hist.Resize(15);
@@ -204,7 +220,6 @@ Robot::Robot()
     IP_collection_done = false;
 
     commander_acks.clear();
-    pthread_mutex_init(&IPC_data_mutex, NULL);
     broken_eth_connections = 0;
     IPC_health = true;
 
@@ -215,61 +230,6 @@ Robot::Robot()
     current_action_sequence_index = 0;
     front_aw_ip = 0;
 
-    LED0 = 0x1;
-    LED1 = 0x2;
-    LED2 = 0x4;
-}
-
-// Reset variables used during assembly
-void Robot::ResetAssembly()
-{
-    powersource_found = false;
-    organism_found = false;
-    organism_formed = false;
-    msg_raising_received = 0;
-    msg_lowering_received = false;
-    msg_score_received = 0;
-    msg_stop_received = false;
-    msg_retreat_received = false;
-    //msg_unlocked_received = 0;
-    msg_assembly_info_received = 0;
-    msg_assembly_info_expected = 0;
-    msg_assembly_info_req_received = 0;
-    msg_assembly_info_req_expected = 0;
-    num_robots_inorganism=1;
-    msg_raising_start_received = false;
-    msg_raising_stop_received = false;
-    seed = false;
-
-    for(int i=0; i<SIDE_COUNT; i++)
-    {
-        recruitment_stage[i]=STAGE0;
-        recruitment_count[i] = 0;
-        recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
-    }
-
-    docking_approaching_sensor_id[0] = 0; 
-    docking_approaching_sensor_id[1] = 1; 
-
-    docking_blocked = false;
-    docking_region_detected = false;
-    aligning_region_detected = false;
-    blocking_count = 0;
-
-    assembly_info = 0;
-
-    direction = FORWARD;
-
-    ethernet_status_hist.Reset();
-
-    parent_side = SIDE_COUNT;
-
-    target.Clear();
-    IP_collection_done = false;
-    IPC_health = true;
-
-    commander_acks.clear();
-    broken_eth_connections = 0;
 }
 
 Robot::~Robot()
