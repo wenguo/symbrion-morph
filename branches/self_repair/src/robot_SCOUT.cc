@@ -1691,6 +1691,9 @@ void RobotSCOUT::Undocking()
 
         RemoveFromAllQueues(IR_MSG_TYPE_UNLOCKED);
         ResetAssembly(); // reset variables used during assembly
+
+        for(int i=0; i<SIDE_COUNT; i++)
+            SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
     }
 
     undocking_count++;
@@ -1733,13 +1736,19 @@ void RobotSCOUT::Lowering()
             {
                 hinge_motor_operating_count = 0;
 
-                //IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
-                //
+#if 0
                 if(!msg_raising_start_received) //this will prevent the message being sent twice 
                 {
                     IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
                     msg_raising_start_received = true;
                 }
+#else
+                if(!msg_disassembly_received) //this will prevent the message being sent twice 
+                {
+                    IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
+                    msg_disassembly_received = true;
+                }
+#endif           
                 
                 lowering_count = 0;
             }
@@ -1784,6 +1793,8 @@ void RobotSCOUT::Lowering()
             if(docked[i])
                 msg_unlocked_expected |= 1<<i;
         }
+
+        memset(hinge_command, 0, sizeof(hinge_command));
     }
     else if(msg_raising_start_received)
     {
@@ -1793,6 +1804,8 @@ void RobotSCOUT::Lowering()
         lowering_count = 0;
         current_state = RAISING;
         last_state = LOWERING;
+
+        memset(hinge_command, 0, sizeof(hinge_command));
     }
 
     //MoveHingeMotor(hinge_command);
@@ -2222,21 +2235,25 @@ void RobotSCOUT::MacroLocomotion()
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
 
+#if 0
             if(!msg_climbing_start_received) //this will prevent the message being sent twice 
             {
-                printf("%d: send climbing start\n", timestamp);
                 IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
-                //IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
                 msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
             }
+#else
+            if(!msg_lowering_received)
+            {
+                IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+                msg_lowering_received = true;
+            }
+#endif
 
             IPC_health = true;
             climbing_count =0;
             macrolocomotion_count = 0;
             hinge_motor_operating_count = 0;
-
         }
-
 
         //set the speed of all AW robots in the organism
         std::map<uint32_t, robot_pose>::iterator it;
@@ -2438,10 +2455,18 @@ void RobotSCOUT::Climbing()
                     }
                     else if(as_ptr->cmd_type == action_sequence::CMD_LIFT_ONE)
                     { 
-                        motor_command[0] = as_ptr->robots_in_action[i].cmd_data[0];
-                        motor_command[1] = as_ptr->robots_in_action[i].cmd_data[1];
-                        motor_command[2] = as_ptr->robots_in_action[i].cmd_data[2];
-                        motor_command[3] = 1; //this indicates the validation of command
+                        if(as_ptr->counter + 1 >= as_ptr->duration)
+                        {
+                            //send a stop hinge command;
+                            memset(motor_command, 0, sizeof(motor_command));
+                        }
+                        else
+                        {
+                            motor_command[0] = as_ptr->robots_in_action[i].cmd_data[0];
+                            motor_command[1] = as_ptr->robots_in_action[i].cmd_data[1];
+                            motor_command[2] = as_ptr->robots_in_action[i].cmd_data[2];
+                            motor_command[3] = 1; //this indicates the validation of command
+                        }
 
                         IPCSendMessage(robot_ip, IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)motor_command, sizeof(motor_command));
                     }
@@ -3005,8 +3030,8 @@ void RobotSCOUT::Debugging()
                         root_IPs.push_back(uint8_t((neighbours_IP[branch_side].i32>>24) & 0xFF));
                         mytree.setBranchRootIPs(robot_side(branch_side),root_IPs);
                         
-                        unlocking_required[parent_side] = true;
-                        locking_motors_status[parent_side] = CLOSED;
+                        unlocking_required[branch_side] = true;
+                        locking_motors_status[branch_side] = CLOSED;
                         
                     }
 

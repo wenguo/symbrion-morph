@@ -15,7 +15,7 @@ do
     if [ ${counter} -le ${2} ]; then
         echo "  copying" $f 
         rcp $f root@192.168.52.${1}:/flash/morph
-    else
-        echo "  skip" $f
+#    else
+#        echo "  skip" $f
     fi
 done
