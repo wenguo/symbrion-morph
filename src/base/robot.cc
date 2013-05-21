@@ -230,6 +230,9 @@ void Robot::ResetAssembly()
     current_action_sequence_index = 0;
     front_aw_ip = 0;
 
+    commander_IPC.Stop();
+    master_IPC.Stop();
+
 }
 
 Robot::~Robot()

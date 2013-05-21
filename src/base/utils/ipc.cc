@@ -31,6 +31,8 @@ Connection::Connection()
 Connection::~Connection()
 {
     //clean up
+    shutdown(sockfds, 2);
+    printf("remove connection %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 }
 
 bool Connection::Start()
@@ -86,7 +88,7 @@ void * Connection::Receiving(void * p)
 {
 
     Connection * ptr = (Connection*)p;
-    printf("create receiving thread %d\n", ptr->sockfds);
+    printf("create receiving thread for %s:%d\n",inet_ntoa(ptr->addr.sin_addr), ntohs(ptr->addr.sin_port));
 
     //main loop, keep reading
     unsigned char rx_buffer[IPCBLOCKSIZE];
@@ -120,7 +122,7 @@ void * Connection::Receiving(void * p)
         }
     }
 
-    printf("Exit monitoring thread\n");
+    printf("exit receiving thread for %s:%d\n",inet_ntoa(ptr->addr.sin_addr), ntohs(ptr->addr.sin_port));
 
     pthread_exit(NULL);
 }
@@ -128,7 +130,7 @@ void * Connection::Receiving(void * p)
 void * Connection::Transmiting(void *p)
 {
     Connection * ptr = (Connection*)p;
-    printf("create transmiting thread %d\n", ptr->sockfds);
+    printf("create transmiting thread for %s:%d\n", inet_ntoa(ptr->addr.sin_addr), ntohs(ptr->addr.sin_port));
     uint8_t txBuf[IPCBLOCKSIZE];
 
     while(ptr->connected)
@@ -150,6 +152,7 @@ void * Connection::Transmiting(void *p)
 
         usleep(100000);
     }
+    printf("exit transmiting thread for %s:%d\n", inet_ntoa(ptr->addr.sin_addr), ntohs(ptr->addr.sin_port));
     pthread_exit(NULL);
 }
 
@@ -317,6 +320,12 @@ int IPC::RemoveBrokenConnections()
             it++;
     }
     return count;
+}
+
+bool IPC::Stop()
+{
+    shutdown(sockfd, 2);
+
 }
 
 }//end of namespace

@@ -59,7 +59,8 @@ void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t puls
 {
     int board = board_dev_num[channel];
     irobot->SetIRLED(ScoutBot::Side(board), led);
-    irobot->SetIRPulse(ScoutBot::Side(board), pulse_led|IRPULSE2);
+    irobot->SetIRPulse(ScoutBot::Side(board), 0);
+    //irobot->SetIRPulse(ScoutBot::Side(board), pulse_led|IRPULSE2);
     irobot->SetIRMode(ScoutBot::Side(board), mode);
 
     if(mode !=IRLEDOFF)
@@ -431,6 +432,7 @@ void RobotSCOUT::Seeding()
     current_state = RECRUITMENT;
     last_state = SEEDING;
 
+    msg_docking_signal_req_received = 0;
     seed = true;
 
 
@@ -688,7 +690,20 @@ void RobotSCOUT::LocateBeacon()
     }
 
     //checking
-    if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 30 && beacon[id1] >= 30)  
+    if((beacon_signals_detected_hist.Sum(id0) >= 6 || beacon_signals_detected_hist.Sum(id1) >=6) && ethernet_status_hist.Sum(assembly_info.side2) > 4) 
+    {
+        SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+        docking_count = 0;
+        docking_failed_reverse_count = 0;
+
+        docking_blocked = false;
+
+        current_state = DOCKING;
+        last_state = LOCATEBEACON;
+
+        SetRGBLED(0,0,0,0,0);
+    }
+    else if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 30 && beacon[id1] >= 30)  
     {
         current_state = ALIGNMENT;
         last_state = LOCATEBEACON;
@@ -1541,6 +1556,7 @@ void RobotSCOUT::InOrganism()
             {
                 current_state = RECRUITMENT;
                 last_state = INORGANISM;
+                msg_docking_signal_req_received = 0;
             }
         }
         else if(msg_organism_seq_received && (mytree.isAllIPSet()  && mytree.Size() !=0) && !IP_collection_done)
@@ -1691,6 +1707,8 @@ void RobotSCOUT::Undocking()
 
         RemoveFromAllQueues(IR_MSG_TYPE_UNLOCKED);
         ResetAssembly(); // reset variables used during assembly
+
+        current_state = fsm_state_t(para.init_state);
 
         for(int i=0; i<SIDE_COUNT; i++)
             SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);

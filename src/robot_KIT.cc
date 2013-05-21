@@ -443,6 +443,7 @@ void RobotKIT::Seeding()
     last_state = SEEDING;
 
     seed = true;
+    msg_docking_signal_req_received = 0;
 
 
     //prepare branches sequence
@@ -703,7 +704,20 @@ void RobotKIT::LocateBeacon()
     }
 
     //checking
-    if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 10 && beacon[id1] >= 10)  
+    if((beacon_signals_detected_hist.Sum(id0) >= 6 || beacon_signals_detected_hist.Sum(id1) >=6) && ethernet_status_hist.Sum(assembly_info.side2) > 4) 
+    {
+        SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+        docking_count = 0;
+        docking_failed_reverse_count = 0;
+
+        docking_blocked = false;
+
+        current_state = DOCKING;
+        last_state = LOCATEBEACON;
+
+        SetRGBLED(0,0,0,0,0);
+    }
+    else if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 10 && beacon[id1] >= 10)  
     {
         current_state = ALIGNMENT;
         last_state = LOCATEBEACON;
@@ -1597,6 +1611,7 @@ void RobotKIT::InOrganism()
             {
                 current_state = RECRUITMENT;
                 last_state = INORGANISM;
+                msg_docking_signal_req_received = 0;
             }
         }
         else if(msg_organism_seq_received && (mytree.isAllIPSet()  && mytree.Size() !=0) && !IP_collection_done)
@@ -1750,6 +1765,8 @@ void RobotKIT::Undocking()
         RemoveFromQueue(IR_MSG_TYPE_UNLOCKED, 0);
         ResetAssembly(); // reset variables used during assembly
         
+        current_state = fsm_state_t(para.init_state);
+
         for(int i=0; i<SIDE_COUNT; i++)
             SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
     }
