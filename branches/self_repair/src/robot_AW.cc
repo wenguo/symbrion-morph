@@ -56,9 +56,9 @@ void RobotAW::Reset()
 void RobotAW::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
 {
     int board = board_dev_num[channel];
-    // RobotBase::SetIRLED(board, mode, led, pulse_led);
     irobot->SetIRLED(ActiveWheel::Side(board), led);
-    irobot->SetIRPulse(ActiveWheel::Side(board), pulse_led |IRPULSE2|IRPULSE3|IRPULSE4|IRPULSE5);
+    irobot->SetIRPulse(ActiveWheel::Side(board), 0);
+    //irobot->SetIRPulse(ActiveWheel::Side(board), pulse_led |IRPULSE2|IRPULSE3|IRPULSE4|IRPULSE5);
     irobot->SetIRMode(ActiveWheel::Side(board), mode);
 
     if(mode !=IRLEDOFF)
@@ -463,6 +463,8 @@ void RobotAW::Seeding() //the same as in RobotKIT
 
     current_state = RECRUITMENT;
     last_state = SEEDING;
+    
+    msg_docking_signal_req_received = 0;
 
     seed = true;
 
@@ -709,7 +711,20 @@ void RobotAW::LocateBeacon()
 
 
     //checking
-    if(beacon_signals_detected_hist.Sum(id0) >= 6 && beacon_signals_detected_hist.Sum(id1) >= 6)
+    if((beacon_signals_detected_hist.Sum(id0) >= 6 || beacon_signals_detected_hist.Sum(id1) >=6) && ethernet_status_hist.Sum(assembly_info.side2) > 4) 
+    {
+        SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+        docking_count = 0;
+        docking_failed_reverse_count = 0;
+
+        docking_blocked = false;
+
+        current_state = DOCKING;
+        last_state = LOCATEBEACON;
+
+        SetRGBLED(0,0,0,0,0);
+    }
+    else if(beacon_signals_detected_hist.Sum(id0) >= 6 && beacon_signals_detected_hist.Sum(id1) >= 6)
     {
         current_state = ALIGNMENT;
         last_state = LOCATEBEACON;
@@ -740,6 +755,8 @@ void RobotAW::LocateBeacon()
             }
         }
     }
+
+
 
 }
 
@@ -1405,6 +1422,7 @@ void RobotAW::Recruitment()
         last_state = RECRUITMENT;
         memset(docking_done, 0, NUM_DOCKS);
         robot_in_range_replied = 0;
+        msg_docking_signal_req_received = 0;
 
         printf("my IP is %s\n", IPToString(my_IP));
         for(int i=0;i<NUM_DOCKS;i++)
@@ -1517,6 +1535,8 @@ void RobotAW::InOrganism()
             {
                 current_state = RECRUITMENT;
                 last_state = INORGANISM;
+
+                msg_docking_signal_req_received = 0;
             }
         }
         else if(msg_organism_seq_received && (mytree.isAllIPSet()  && mytree.Size() !=0) && !IP_collection_done)
@@ -1632,6 +1652,8 @@ void RobotAW::Undocking()
         current_state = FORAGING;
         ResetAssembly(); // reset variables used during assembly
                 
+        current_state = fsm_state_t(para.init_state);
+
         for(int i=0; i<SIDE_COUNT; i++)
             SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
     }
@@ -1984,6 +2006,8 @@ void RobotAW::Reshaping()
         else
         {
             current_state = RECRUITMENT;
+
+            msg_docking_signal_req_received = 0;
 
             // turn off LEDs
             for(int i=0; i<NUM_DOCKS; i++)

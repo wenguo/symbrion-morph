@@ -66,6 +66,7 @@ class IPC
         ~IPC();
 
         bool Start(const char *host,int port, bool server);
+        bool Stop();
         bool SendData(const uint8_t type, uint8_t *data, int len);
         bool SendData(const uint32_t dest, const uint8_t type, uint8_t * data, int len);
         int RemoveBrokenConnections();
