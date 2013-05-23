@@ -347,6 +347,8 @@ bool Robot::InitLog()
 
 void Robot::Stop()
 {
+    master_IPC.Stop();
+    commander_IPC.Stop();
     SetSpeed(0,0,0);
     Reset();
 }
@@ -445,9 +447,7 @@ void Robot::Update(const uint32_t& ts)
     LogState();
 
     //remove any broken ethernet communication connections
-    broken_eth_connections = master_IPC.RemoveBrokenConnections();
-
-
+    broken_eth_connections = master_IPC.BrokenConnections();
 }
 
 void Robot::Calibrating()
