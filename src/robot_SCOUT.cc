@@ -698,7 +698,7 @@ void RobotSCOUT::LocateBeacon()
 
         docking_blocked = false;
 
-        current_state = DOCKING;
+        current_state = ALIGNMENT;
         last_state = LOCATEBEACON;
 
         SetRGBLED(0,0,0,0,0);

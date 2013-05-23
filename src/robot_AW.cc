@@ -190,12 +190,10 @@ bool RobotAW::MoveHingeMotor(int command[4])
     //a valid hinge command
     if(command[3] == 1)
     {
-        printf("%d: move hinge %d %d\n", timestamp, command[0], command[1]);
         irobot->MoveHingeToAngle(command[0], command[1]);
     }
     else
     {
-        printf("%d: stop hinge\n", timestamp);
         irobot->MoveHinge(0);
     }
 
