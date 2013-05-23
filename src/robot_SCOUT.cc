@@ -52,7 +52,12 @@ void RobotSCOUT::InitHardware()
 
 void RobotSCOUT::Reset()
 {
-    RobotBase::MSPReset();
+    irobot->MSPReset();
+}
+
+void RobotSCOUT::EnablePowerSharing(int side, bool on)
+{
+    irobot->EnablePowerSharing(ScoutBot::Side(board_dev_num[side]), on);
 }
 
 void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
@@ -1180,6 +1185,9 @@ void RobotSCOUT::Locking()
             current_state = INORGANISM;
             last_state = LOCKING;
 
+
+            EnablePowerSharing(docking_side, true);
+
             //start IPC thread, as a client 
             commander_IPC.Start(IPToString(commander_IP), commander_port, false);
         }
@@ -1426,6 +1434,8 @@ void RobotSCOUT::Recruitment()
                 //remove branches since it has been sent to newly joined robot
                 erase_required = true;
 
+                EnablePowerSharing(i, true);
+
                 // Reset stage variable
                 recruitment_stage[i] = STAGE0;
             }
@@ -1626,6 +1636,8 @@ void RobotSCOUT::Disassembly()
                     docked[i]=0;
                     num_docked--;
                 }
+
+                EnablePowerSharing(i, false);//this may be sent multiple times
             }
 
         }

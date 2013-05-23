@@ -50,7 +50,12 @@ void RobotAW::InitHardware()
 
 void RobotAW::Reset()
 {
-    RobotBase::MSPReset();
+    irobot->MSPReset();
+}
+
+void RobotAW::EnablePowerSharing(int side, bool on)
+{
+    irobot->EnablePowerSharing(ActiveWheel::Side(board_dev_num[side]), on);
 }
 
 void RobotAW::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
@@ -1203,6 +1208,7 @@ void RobotAW::Locking()
             SetRGBLED(docking_side, 0,0,0,0);
         }
 
+        EnablePowerSharing(docking_side, true);
         //start IPC thread, as a client 
         commander_IPC.Start(IPToString(commander_IP), commander_port, false);
     }
@@ -1402,6 +1408,9 @@ void RobotAW::Recruitment()
 
                 // Reset stage variable
                 recruitment_stage[i] = STAGE0;
+
+
+                EnablePowerSharing(i, true);
             }
         }
 
@@ -1594,12 +1603,13 @@ void RobotAW::Disassembly()
                 {
                     docked[i]=0;//false;
                     num_docked--;
+
+                    EnablePowerSharing(i, false);
                 }
             }
 
         }
 
-        //only one  or less 
         if(num_docked ==0)
         {
             undocking_count = 0;
@@ -2948,6 +2958,15 @@ void RobotAW::Debugging()
                     last_state = DEBUGGING;
                 }
 
+            }
+            break;
+        case 32:
+            if(timestamp ==20)
+            {
+                printf("enabled power side %c(%#x)\n", side_names[para.debug.para[9]], ActiveWheel::Side(board_dev_num[para.debug.para[9]]));
+                EnablePowerSharing(para.debug.para[9], true);
+                printf("enabled power side %c(%#x)\n", side_names[para.debug.para[8]], ActiveWheel::Side(board_dev_num[para.debug.para[8]]));
+                EnablePowerSharing(para.debug.para[8], true);
             }
             break;
 
