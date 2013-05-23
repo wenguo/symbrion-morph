@@ -53,6 +53,11 @@ void RobotKIT::Reset()
     irobot->MSPReset();
 }
 
+void RobotKIT::EnablePowerSharing(int side, bool on)
+{
+    irobot->EnablePowerSharing(KaBot::Side(board_dev_num[side]), on);
+}
+
 void RobotKIT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
 {
     KaBot::Side board = (KaBot::Side)board_dev_num[channel];
@@ -1233,6 +1238,8 @@ void RobotKIT::Locking()
             current_state = INORGANISM;
             last_state = LOCKING;
 
+            EnablePowerSharing(docking_side, true);
+
             //start IPC thread, as a client 
             commander_IPC.Start(IPToString(commander_IP), commander_port, false);
         }
@@ -1479,6 +1486,8 @@ void RobotKIT::Recruitment()
                 //remove branches since it has been sent to newly joined robot
                 erase_required = true;
 
+                EnablePowerSharing(i, true);
+
                 // Reset stage variable
                 recruitment_stage[i] = STAGE0;
             }
@@ -1682,6 +1691,9 @@ void RobotKIT::Disassembly()
                     docked[i]=0;
                     num_docked--;
                 }
+                
+                EnablePowerSharing(i, false);//this may be sent multiple times
+
             }
 
         }

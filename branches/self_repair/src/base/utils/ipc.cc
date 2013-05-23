@@ -381,7 +381,7 @@ int IPC::RemoveBrokenConnections()
         //remove broken connection
         if((*it) == NULL)
             it = connections.erase(it);
-        else if(!(*it)->connected &&!(*it)->transmiting_thread_running && !(*it)->receiving_thread_running)
+        else if(!(*it)->connected)
         { 
             printf("\tremove broken connection from %s:%d\n", inet_ntoa((*it)->addr.sin_addr), ntohs((*it)->addr.sin_port));
             delete *it;

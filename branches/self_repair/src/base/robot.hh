@@ -94,6 +94,7 @@ class Robot
     virtual void UpdateSensors()=0;
     virtual void UpdateActuators()=0;
     virtual void Reset()=0;
+    virtual void EnablePowerSharing(int side, bool on)=0;
     // for self-repair
     virtual void UpdateFailures()=0;
 

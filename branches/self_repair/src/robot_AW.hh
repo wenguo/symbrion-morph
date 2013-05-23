@@ -24,6 +24,7 @@ class RobotAW:public Robot
         virtual bool RotateDockingUnit(int channel, int8_t angle);
         virtual void SetSpeed(int leftspeed, int rightspeed, int sidespeed);
         virtual void Reset();
+        virtual void EnablePowerSharing(int side, bool on);
 
         virtual int32_t get_aux_reflective(uint8_t i){return aux_reflective[i & 0x7];};
 
