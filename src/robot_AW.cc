@@ -1444,7 +1444,7 @@ void RobotAW::Recruitment()
             commander_IPC.Start(IPToString(commander_IP), commander_port, false);
     }
 }
-void RobotAW::InOrganism()
+void RobotAW::_InOrganism()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1669,7 +1669,7 @@ void RobotAW::Undocking()
 
 }
 
-void RobotAW::Lowering()
+void RobotAW::_Lowering()
 {
     lowering_count++;
     
@@ -1779,7 +1779,7 @@ void RobotAW::Lowering()
  }
 
 
-void RobotAW::Raising()
+void RobotAW::_Raising()
 {
     //wait until all propapagated messages are gone
     if(MessageWaitingAck(MSG_TYPE_PROPAGATED))
@@ -2044,7 +2044,7 @@ void RobotAW::Reshaping()
 }
 
 
-void RobotAW::MacroLocomotion()
+void RobotAW::_MacroLocomotion()
 {
     // Stop moving
     speed[0] = 0;
@@ -2256,7 +2256,7 @@ void RobotAW::MacroLocomotion()
 
 }
 
-void RobotAW::Climbing()
+void RobotAW::_Climbing()
 {
     climbing_count++;
 
@@ -2967,9 +2967,6 @@ void RobotAW::Debugging()
                 {
                     current_state = INORGANISM;
                     last_state = DEBUGGING;
-
-                    for(int i=0;i<NUM_DOCKS;i++)
-                        EnablePowerSharing(i, true);
                 }
 
             }

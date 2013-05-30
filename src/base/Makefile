@@ -1,4 +1,4 @@
-SRC = robot.cc robot_ircomm.cc robot_ethcomm.cc robot_option.cc robot_self_repair.cc parameter.cc global.cc IRMessage.cc robot_IPC.cc robot_debug.cc
+SRC = robot.cc robot_ircomm.cc robot_ethcomm.cc robot_option.cc robot_self_repair.cc parameter.cc global.cc IRMessage.cc robot_IPC.cc robot_debug.cc robot_organism.cc
 SRC+= organism.cc organism_sequence.cc organism_sample.cc
 SRC+= support.cc worldfile.cc hist.cc ipc.cc
 

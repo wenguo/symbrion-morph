@@ -41,6 +41,8 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
     }
     else
     {
+        //msg->data[0] -- reciver
+        //msg->data[1] -- sender
 
         bool ack_required = true;
 
@@ -204,6 +206,12 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 {
                     if(!robot->seed)
                         robot->msg_climbing_stop_received = true;
+                }
+                break;
+            case IPC_MSG_OPAQUE:
+                {
+                    robot->user_input += data[0] - 1;
+                    printf("%d: opaque message received from %s: user_input %d (%#x)\n", robot->timestamp, IPToString(getFullIP(sender)), robot->user_input, data[0]);
                 }
                 break;
             case IPC_MSG_ACK:

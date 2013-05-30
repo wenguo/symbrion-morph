@@ -1530,7 +1530,7 @@ void RobotKIT::Recruitment()
 }
 
 
-void RobotKIT::InOrganism()
+void RobotKIT::_InOrganism()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1791,7 +1791,7 @@ void RobotKIT::Undocking()
 }
 
 
-void RobotKIT::Lowering()
+void RobotKIT::_Lowering()
 {
     lowering_count++;
     
@@ -1906,7 +1906,7 @@ void RobotKIT::Lowering()
 
  }
 
-void RobotKIT::Raising()
+void RobotKIT::_Raising()
 {
     //wait until all propapagated messages are gone
     if(MessageWaitingAck(MSG_TYPE_PROPAGATED))
@@ -2230,7 +2230,7 @@ void RobotKIT::Reshaping()
 
 }
 
-void RobotKIT::MacroLocomotion()
+void RobotKIT::_MacroLocomotion()
 {
     // Stop moving
     speed[0] = 0;
@@ -2443,7 +2443,7 @@ void RobotKIT::MacroLocomotion()
 
 }
 
-void RobotKIT::Climbing()
+void RobotKIT::_Climbing()
 {
     climbing_count++;
 
@@ -3133,9 +3133,6 @@ void RobotKIT::Debugging()
                 {
                     current_state = INORGANISM;
                     last_state = DEBUGGING;
-
-                    for(int i=0;i<NUM_DOCKS;i++)
-                        EnablePowerSharing(i, true);
                 }
 
             }

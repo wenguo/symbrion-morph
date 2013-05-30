@@ -174,6 +174,8 @@ enum msg_type_t {
     IPC_MSG_CLIMBING_START,
     IPC_MSG_CLIMBING_STOP,
 
+    IPC_MSG_OPAQUE,
+
     IPC_MSG_ACK,
 
     MSG_TYPE_COUNT

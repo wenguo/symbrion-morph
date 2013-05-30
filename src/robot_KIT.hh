@@ -42,15 +42,15 @@ class RobotKIT:public Robot
         virtual void Recover();
         virtual void Docking();
         virtual void Locking();
-        virtual void InOrganism();
+        virtual void _InOrganism();
         virtual void Disassembly();
         virtual void Undocking();
         virtual void Recruitment();
-        virtual void Raising();
-        virtual void Lowering();
+        virtual void _Raising();
+        virtual void _Lowering();
         virtual void Reshaping();
-        virtual void MacroLocomotion();
-        virtual void Climbing();
+        virtual void _MacroLocomotion();
+        virtual void _Climbing();
         virtual void Debugging();
 
         virtual void Log();
