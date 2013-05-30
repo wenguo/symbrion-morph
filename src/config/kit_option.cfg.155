@@ -70,7 +70,7 @@ MacroLocomotion
 Debugging
 (
     mode 31 
-    para [0 0 52 0 2 3 0 0 211 0]
+    para [0 0 61 0 2 3 2 0 211 0]
 )
 
 Global
@@ -80,14 +80,14 @@ Global
 	init_state 26 
 	print_proximity 0
         print_beacon 0
-        print_reflective 1
+        print_reflective 0
         print_ambient 0
         print_status 1
     	ir_msg_repeated_delay 20
     	ir_msg_repeated_num 10
 	ir_msg_ack_delay 3
-        reflective_calibrated [1168 97 258 83 977 980 1075 1005]
-        ambient_calibrated [3646 3880 3755 3797 3883 3959 3649 3686]
+        reflective_calibrated [89 123 263 1206 174 220 180 114]
+        ambient_calibrated [3785 3876 3885 3889 3606 3758 3628 3735]
 	#fail_in_state 20
 	#fail_after_delay 100
 )
@@ -171,8 +171,7 @@ Climbing
 
 ShapeInfo
 (
-seq ""
-   # seq "SBAFABSBSFABAFSFSBAFABKB000000000000000000000000"
+    seq "SBAFABSBSFABAFSFSBAF00000000000000000000"
 )
 
 

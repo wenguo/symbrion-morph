@@ -6,7 +6,8 @@ if [ $# -ne 1 ] ; then
 fi
 
 FILES="aw_option.cfg \
-       scout_option.cfg"
+       scout_option.cfg\
+       kit_option.cfg"
 counter=0
 for f in $FILES
 do

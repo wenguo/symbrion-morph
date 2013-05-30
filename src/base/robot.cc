@@ -64,6 +64,7 @@ Robot::Robot()
 // Reset variables used during assembly
 void Robot::ResetAssembly()
 {
+    printf("%d: Reset Assembly\n", timestamp);
     bumped=0;
     assembly_info_checked=false;
     num_robots_inorganism=1;

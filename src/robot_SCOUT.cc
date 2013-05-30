@@ -64,8 +64,8 @@ void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t puls
 {
     int board = board_dev_num[channel];
     irobot->SetIRLED(ScoutBot::Side(board), led);
-    irobot->SetIRPulse(ScoutBot::Side(board), 0);
-    //irobot->SetIRPulse(ScoutBot::Side(board), pulse_led|IRPULSE2);
+   // irobot->SetIRPulse(ScoutBot::Side(board), 0);
+    irobot->SetIRPulse(ScoutBot::Side(board), pulse_led|IRPULSE2);
     irobot->SetIRMode(ScoutBot::Side(board), mode);
 
     if(mode !=IRLEDOFF)
@@ -433,6 +433,8 @@ void RobotSCOUT::Seeding()
 
     //start IPC thread, as a server
     master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+    commander_IP = my_IP;
+    commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
 
     current_state = RECRUITMENT;
     last_state = SEEDING;
@@ -1464,11 +1466,7 @@ void RobotSCOUT::Recruitment()
         }
         
         if(seed)
-        {
-            commander_IP = my_IP;
-            commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
             commander_IPC.Start(IPToString(commander_IP), commander_port, false);
-        }
     }
 }
 
@@ -1720,7 +1718,7 @@ void RobotSCOUT::Undocking()
         RemoveFromAllQueues(IR_MSG_TYPE_UNLOCKED);
         ResetAssembly(); // reset variables used during assembly
 
-        current_state = fsm_state_t(para.init_state);
+        current_state = FORAGING;//fsm_state_t(para.init_state);
 
         for(int i=0; i<SIDE_COUNT; i++)
             SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
@@ -1790,7 +1788,7 @@ void RobotSCOUT::Lowering()
                 for(it = commander_acks.begin(); it != commander_acks.end(); it++)
                 {
                     //check if lost received some messages
-                    if(it->second < 2) //2 out of 5
+                    if(it->second < 1) //no response?
                     {
                         IPC_health = false;
                         printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
@@ -1911,7 +1909,7 @@ void RobotSCOUT::Raising()
                 for(it = commander_acks.begin(); it != commander_acks.end(); it++)
                 {
                     //check if lost received some messages
-                    if(it->second < 2) //2 out of 5
+                    if(it->second < 1) //no response?
                     {
                         IPC_health = false;
                         printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
@@ -1944,6 +1942,8 @@ void RobotSCOUT::Raising()
         macrolocomotion_count = 0;
 
         memset(hinge_command, 0, sizeof(hinge_command));
+
+        direction = FORWARD;
 
 
         for(int i=0;i<NUM_DOCKS;i++)
@@ -2176,14 +2176,13 @@ void RobotSCOUT::MacroLocomotion()
 
     if(seed)
     {
-     //   PrintOGIRSensor(IR_REFLECTIVE_DATA);
+        PrintOGIRSensor(IR_REFLECTIVE_DATA);
         //request IRSensors
         RequestOGIRSensors(IR_REFLECTIVE_DATA);
 
         int cmd_speed[3] = {0,0,0};
 
         //make a decision for the speed of organism
-        direction = FORWARD;
 
         uint8_t organism_bumped = 0;
         //check front and back side
@@ -2232,6 +2231,9 @@ void RobotSCOUT::MacroLocomotion()
             cmd_speed[2] = 0;
 
 
+        printf("macrolocomotion speed: %d %d %d %d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction);
+
+
         /*
         if(macrolocomotion_count < 50)
         {
@@ -2259,7 +2261,7 @@ void RobotSCOUT::MacroLocomotion()
         }
         else
         */
-        if(macrolocomotion_count > 50)
+        if(macrolocomotion_count > 1000)
         {
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
@@ -2274,8 +2276,8 @@ void RobotSCOUT::MacroLocomotion()
 #else
             if(!msg_lowering_received)
             {
-                IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
-                msg_lowering_received = true;
+     //           IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+     //           msg_lowering_received = true;
             }
 #endif
 
@@ -2336,7 +2338,8 @@ void RobotSCOUT::MacroLocomotion()
         hinge_motor_operating_count = 0;
     }
 
-    direction = locomotion_command[0] == 0 ? FORWARD : locomotion_command[0];
+    if(locomotion_command[0] != 0)
+        direction = locomotion_command[0];
     speed[0] = locomotion_command[1];
     speed[1] = locomotion_command[2];
     speed[2] = locomotion_command[3];
@@ -2353,16 +2356,16 @@ void RobotSCOUT::MacroLocomotion()
         switch (index)
         {
             case 0:
-                SetRGBLED(i, RED, GREEN, 0, 0);
+                SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
                 break;
             case 1:
-                SetRGBLED(i, 0, RED, 0, GREEN);
+                SetRGBLED(i, 0, 0, 0, 0);
                 break;
             case 2:
-                SetRGBLED(i, 0, 0, GREEN, RED);
+                SetRGBLED(i, 0, 0, 0, 0);
                 break;
             case 3:
-                SetRGBLED(i, GREEN, 0, RED, 0);
+                SetRGBLED(i, 0, 0, 0, 0);
                 break;
             default:
                 break;
@@ -2539,7 +2542,8 @@ void RobotSCOUT::Climbing()
     }
 
     //2d locomotion will be called automatially
-    direction = locomotion_command[0] == 0 ? FORWARD: locomotion_command[0];
+    if(locomotion_command[0] != 0)
+        direction = locomotion_command[0];
     speed[0] = locomotion_command[1];
     speed[1] = locomotion_command[2];
     speed[2] = locomotion_command[3];
@@ -3018,7 +3022,7 @@ void RobotSCOUT::Debugging()
             break;
         case 31:
             {
-                if(timestamp ==2)
+                if(timestamp ==7)
                 {
                     IP_collection_done = false;
 
@@ -3062,7 +3066,8 @@ void RobotSCOUT::Debugging()
                         
                         unlocking_required[branch_side] = true;
                         locking_motors_status[branch_side] = CLOSED;
-                        
+
+
                     }
 
                     seed = para.debug.para[7];
@@ -3100,6 +3105,9 @@ void RobotSCOUT::Debugging()
                 {
                     current_state = INORGANISM;
                     last_state = DEBUGGING;
+
+                    for(int i=0;i<NUM_DOCKS;i++)
+                        EnablePowerSharing(i, true);
                 }
 
             }

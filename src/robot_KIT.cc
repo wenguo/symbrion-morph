@@ -443,6 +443,8 @@ void RobotKIT::Seeding()
 
     //start IPC thread, as a server
     master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+    commander_IP = my_IP;
+    commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
 
     current_state = RECRUITMENT;
     last_state = SEEDING;
@@ -708,30 +710,36 @@ void RobotKIT::LocateBeacon()
         Avoidance();
     }
 
+    printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tid: %d %d\n", beacon[0], beacon[1], beacon[2], beacon[3], beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, id0, id1);
+
+
     //checking
-    if((beacon_signals_detected_hist.Sum(id0) >= 6 || beacon_signals_detected_hist.Sum(id1) >=6) && ethernet_status_hist.Sum(assembly_info.side2) > 4) 
+    if((beacon_signals_detected_hist.Sum(id0) >= 6 || beacon_signals_detected_hist.Sum(id1) >=6)) 
     {
-        SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-        docking_count = 0;
-        docking_failed_reverse_count = 0;
+        if(ethernet_status_hist.Sum(assembly_info.side2) > 4)
+        {
+            SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+            docking_count = 0;
+            docking_failed_reverse_count = 0;
 
-        docking_blocked = false;
+            docking_blocked = false;
 
-        current_state = DOCKING;
-        last_state = LOCATEBEACON;
+            current_state = DOCKING;
+            last_state = LOCATEBEACON;
 
-        SetRGBLED(0,0,0,0,0);
+            SetRGBLED(0,0,0,0,0);
+        }
+        else if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 10 && beacon[id1] >= 10)  
+        {
+            current_state = ALIGNMENT;
+            last_state = LOCATEBEACON;
+
+            //using reflective signals if not set
+            for(int i=0; i< NUM_DOCKS;i++)
+                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1);
+
+        } 
     }
-    else if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 10 && beacon[id1] >= 10)  
-    {
-        current_state = ALIGNMENT;
-        last_state = LOCATEBEACON;
-
-        //using reflective signals if not set
-        for(int i=0; i< NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1);
-
-    } 
     else if (beacon_signals_detected ==0 )
     {
         locatebeacon_count++;
@@ -1516,11 +1524,7 @@ void RobotKIT::Recruitment()
         }
 
         if(seed)
-        {
-            commander_IP = my_IP;
-            commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
             commander_IPC.Start(IPToString(commander_IP), commander_port, false);
-        }
     }
 
 }
@@ -1774,10 +1778,10 @@ void RobotKIT::Undocking()
 
         last_state = UNDOCKING;
 
-        RemoveFromQueue(IR_MSG_TYPE_UNLOCKED, 0);
+        RemoveFromAllQueues(IR_MSG_TYPE_UNLOCKED);
         ResetAssembly(); // reset variables used during assembly
         
-        current_state = fsm_state_t(para.init_state);
+        current_state = SEEDING;//fsm_state_t(para.init_state);
 
         for(int i=0; i<SIDE_COUNT; i++)
             SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
@@ -1822,14 +1826,20 @@ void RobotKIT::Lowering()
             {
                 hinge_motor_operating_count = 0;
 
-                //IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
-                //
+#if 0
                 if(!msg_raising_start_received) //this will prevent the message being sent twice 
                 {
                     IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
                     msg_raising_start_received = true;
                 }
-                
+#else
+                if(!msg_disassembly_received) //this will prevent the message being sent twice 
+                {
+                    IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
+                    msg_disassembly_received = true;
+                }
+#endif     
+
                 lowering_count = 0;
             }
 
@@ -1840,7 +1850,7 @@ void RobotKIT::Lowering()
                 for(it = commander_acks.begin(); it != commander_acks.end(); it++)
                 {
                     //check if lost received some messages
-                    if(it->second < 2) //2 out of 5
+                    if(it->second < 1) //no response?
                     {
                         IPC_health = false;
                         printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
@@ -1961,7 +1971,7 @@ void RobotKIT::Raising()
                 for(it = commander_acks.begin(); it != commander_acks.end(); it++)
                 {
                     //check if lost received some messages
-                    if(it->second < 2) //2 out of 5
+                    if(it->second < 1) //no response?
                     {
                         IPC_health = false;
                         printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
@@ -1994,6 +2004,8 @@ void RobotKIT::Raising()
         macrolocomotion_count = 0;
 
         memset(hinge_command, 0, sizeof(hinge_command));
+
+        direction = FORWARD;
 
 
         for(int i=0;i<NUM_DOCKS;i++)
@@ -2236,7 +2248,6 @@ void RobotKIT::MacroLocomotion()
         int cmd_speed[3] = {0,0,0};
 
         //make a decision for the speed of organism
-        direction = FORWARD;
 
         uint8_t organism_bumped = 0;
         //check front and back side
@@ -2312,12 +2323,13 @@ void RobotKIT::MacroLocomotion()
         }
         else
         */
-        if(macrolocomotion_count > 50)
+        if(macrolocomotion_count > 1000)
         {
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
 
+#if 0
             if(!msg_climbing_start_received) //this will prevent the message being sent twice 
             {
                 printf("%d: send climbing start\n", timestamp);
@@ -2325,6 +2337,15 @@ void RobotKIT::MacroLocomotion()
                 //IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
                 msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
             }
+#else
+            if(!msg_lowering_received)
+            {
+                IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+                msg_lowering_received = true;
+            }
+#endif
+
+
 
             IPC_health = true;
             climbing_count =0;
@@ -2385,7 +2406,8 @@ void RobotKIT::MacroLocomotion()
         hinge_motor_operating_count = 0;
     }
 
-    direction = locomotion_command[0] == 0 ? FORWARD : locomotion_command[0];
+    if(locomotion_command[0] != 0)
+        direction = locomotion_command[0];
     speed[0] = locomotion_command[1];
     speed[1] = locomotion_command[2];
     speed[2] = locomotion_command[3];
@@ -2402,16 +2424,16 @@ void RobotKIT::MacroLocomotion()
         switch (index)
         {
             case 0:
-                SetRGBLED(i, RED, GREEN, 0, 0);
+                SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
                 break;
             case 1:
-                SetRGBLED(i, 0, RED, 0, GREEN);
+                SetRGBLED(i, 0, 0, 0, 0);
                 break;
             case 2:
-                SetRGBLED(i, 0, 0, GREEN, RED);
+                SetRGBLED(i, 0, 0, 0, 0);
                 break;
             case 3:
-                SetRGBLED(i, GREEN, 0, RED, 0);
+                SetRGBLED(i, 0, 0, 0, 0);
                 break;
             default:
                 break;
@@ -2588,7 +2610,8 @@ void RobotKIT::Climbing()
     }
 
     //2d locomotion will be called automatially
-    direction = locomotion_command[0] == 0 ? FORWARD: locomotion_command[0];
+    if(locomotion_command[0] != 0)
+        direction = locomotion_command[0];
     speed[0] = locomotion_command[1];
     speed[1] = locomotion_command[2];
     speed[2] = locomotion_command[3];
@@ -3028,7 +3051,7 @@ void RobotKIT::Debugging()
             break;
         case 31:
             {
-                if(timestamp ==2)
+                if(timestamp ==7)
                 {
                     IP_collection_done = false;
 
@@ -3110,6 +3133,9 @@ void RobotKIT::Debugging()
                 {
                     current_state = INORGANISM;
                     last_state = DEBUGGING;
+
+                    for(int i=0;i<NUM_DOCKS;i++)
+                        EnablePowerSharing(i, true);
                 }
 
             }
