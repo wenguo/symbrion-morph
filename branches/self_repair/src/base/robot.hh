@@ -112,14 +112,14 @@ class Robot
     virtual void Locking()=0;
     virtual void Recover()=0;
     virtual void Undocking()=0;
-    virtual void InOrganism()=0;
+    virtual void InOrganism();
     virtual void Disassembly()=0;
     virtual void Recruitment()=0;
-    virtual void Raising()=0;
-    virtual void Lowering()=0;
+    virtual void Raising();
+    virtual void Lowering();
     virtual void Reshaping()=0;
-    virtual void MacroLocomotion()=0;
-    virtual void Climbing()=0;
+    virtual void MacroLocomotion();
+    virtual void Climbing();
     virtual void Debugging()=0;
     virtual void Log()=0;
 
@@ -540,6 +540,9 @@ class Robot
     std::vector<action_sequence> organism_actions;
     int current_action_sequence_index; //index for the action sequence of organism
     uint32_t front_aw_ip; //ip of the front AW when executing the push-drag behaviour
+
+    int user_input;
+    uint32_t timestamp_user_input_received;
 
 };
 

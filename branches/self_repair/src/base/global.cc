@@ -78,6 +78,7 @@ const char * message_names[MSG_TYPE_COUNT]={
     "IPC_Lowering_stop",
     "IPC_Climbing_start",
     "IPC_Climbing_stop",
+    "IPC_Opaque",
     "IPC_ACK"
 };
 

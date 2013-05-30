@@ -211,7 +211,7 @@ bool RobotSCOUT::SetHingeMotor(int status)
 
 bool RobotSCOUT::MoveHingeMotor(int command[4])
 {
-    printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
+   // printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
     return true;
 }
 
@@ -1471,7 +1471,7 @@ void RobotSCOUT::Recruitment()
 }
 
 
-void RobotSCOUT::InOrganism()
+void RobotSCOUT::_InOrganism()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1729,7 +1729,7 @@ void RobotSCOUT::Undocking()
 }
 
 
-void RobotSCOUT::Lowering()
+void RobotSCOUT::_Lowering()
 {
     lowering_count++;
     
@@ -1844,7 +1844,7 @@ void RobotSCOUT::Lowering()
 
  }
 
-void RobotSCOUT::Raising()
+void RobotSCOUT::_Raising()
 {
     //wait until all propapagated messages are gone
     if(MessageWaitingAck(MSG_TYPE_PROPAGATED))
@@ -2165,7 +2165,7 @@ void RobotSCOUT::Reshaping()
 
 }
 
-void RobotSCOUT::MacroLocomotion()
+void RobotSCOUT::_MacroLocomotion()
 {
     // Stop moving
     speed[0] = 0;
@@ -2375,7 +2375,7 @@ void RobotSCOUT::MacroLocomotion()
 
 }
 
-void RobotSCOUT::Climbing()
+void RobotSCOUT::_Climbing()
 {
     climbing_count++;
 
@@ -3105,9 +3105,6 @@ void RobotSCOUT::Debugging()
                 {
                     current_state = INORGANISM;
                     last_state = DEBUGGING;
-
-                    for(int i=0;i<NUM_DOCKS;i++)
-                        EnablePowerSharing(i, true);
                 }
 
             }

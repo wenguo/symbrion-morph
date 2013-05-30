@@ -16,6 +16,7 @@ Robot::Robot()
     timestamp_propagated_msg_received=0;
     timestamp_hinge_motor_cmd_received =0;
     timestamp_locomotion_motors_cmd_received =0;
+    timestamp_user_input_received = 0;
     type = ROBOT_KIT;
 
     LED0 = 0x1;
@@ -230,6 +231,7 @@ void Robot::ResetAssembly()
 
     current_action_sequence_index = 0;
     front_aw_ip = 0;
+    user_input = 0;
 
     commander_IPC.Stop();
     master_IPC.Stop();
