@@ -1,13 +1,13 @@
 #!/bin/bash
 
 if [ $# = 0 ]; then
-    robotIPs=(61 211 56 216 224 52)
+    robotIPs=(155 61 211 56 216 224 52)
     cmd=killRobot.sh
 elif [ $1 = 0 ]; then
-    robotIPs=(224 52 216 56 211 61)
+    robotIPs=(224 52 216 56 211 61 155)
     cmd=connectRobot.sh
 elif [ $1 = 1 ]; then
-    robotIPs=(61 211 56 216 52 224)
+    robotIPs=(61 211 56 216 52 224 155)
     cmd=enablePowersharing.sh
 fi
 
