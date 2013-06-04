@@ -113,11 +113,11 @@ class Robot
     virtual void Recover()=0;
     virtual void Undocking()=0;
     virtual void InOrganism();
-    virtual void Disassembly()=0;
+    virtual void Disassembly();
     virtual void Recruitment()=0;
     virtual void Raising();
     virtual void Lowering();
-    virtual void Reshaping()=0;
+    virtual void Reshaping();
     virtual void MacroLocomotion();
     virtual void Climbing();
     virtual void Debugging()=0;
@@ -350,6 +350,8 @@ class Robot
     uint32_t blocking_count;
     uint32_t locatebeacon_count;
     uint32_t climbing_count;
+    uint32_t reshaping_count;
+    uint32_t disassembly_count;
 
     uint8_t docking_trials;
 
@@ -366,6 +368,8 @@ class Robot
     bool msg_disassembly_received;
     bool msg_climbing_start_received;
     bool msg_climbing_stop_received;
+    bool msg_reshaping_start_received;
+    bool msg_reshaping_done_received;
     uint8_t msg_locked_received;
     uint8_t msg_locked_expected;
     uint8_t msg_unlocked_received;
@@ -417,6 +421,7 @@ class Robot
     OrganismSequence mytree;
     OrganismSequence subog;
     OrganismSequence target; //the complete organism
+
     std::vector<OrganismSequence> mybranches;
     Organism * og;
     OrganismSequence::Symbol assembly_info; //information for which types of robot and which side is required by recruiting robots
@@ -544,6 +549,12 @@ class Robot
     int user_input;
     uint32_t timestamp_user_input_received;
 
+    uint8_t reshaping_waiting_for_undock;
+    uint8_t reshaping_unlock_sent;
+    bool reshaping_seed;
+    uint8_t reshaping_processed;
+    
+    uint8_t disassembly_waiting_for_undock;
 };
 
 #endif

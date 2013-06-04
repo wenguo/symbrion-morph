@@ -362,6 +362,9 @@ rt_status OrganismSequence::fillBranches(const OrganismSequence& og_seq, std::ve
 
     int count=0;
 
+    //clear the branches in case of not empty
+    branches.clear();
+
     std::vector<Element>::iterator start, end;
     start = eList.begin();
 

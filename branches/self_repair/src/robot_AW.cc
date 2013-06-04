@@ -1583,7 +1583,7 @@ void RobotAW::_InOrganism()
         }
     }
 }
-void RobotAW::Disassembly()
+void RobotAW::_Disassembly()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1933,7 +1933,7 @@ void RobotAW::_Raising()
  *  sure that only one robot is the seed and that that robot's tree (mytree) reflects the
  *  desired shape. Can also be used to initiate disassembly if the seed robot's tree is empty.
  */
-void RobotAW::Reshaping()
+void RobotAW::_Reshaping()
 {
 
     speed[0] = 0;

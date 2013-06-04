@@ -138,6 +138,8 @@ void Robot::ResetAssembly()
     lowering_count = 0;
     locatebeacon_count = 0;
     climbing_count = 0;
+    reshaping_count = 0;
+    disassembly_count = 0;
 
     beacon_signals_detected=0;
     robot_in_range_replied=0;
@@ -160,6 +162,8 @@ void Robot::ResetAssembly()
     msg_lowering_received = false;
     msg_climbing_start_received = false;
     msg_climbing_stop_received = false;
+    msg_reshaping_start_received = false;
+    msg_reshaping_done_received = false;
     msg_guideme_received = 0;
     msg_docking_signal_req_received = 0;
     msg_organism_seq_received = false;
@@ -235,6 +239,13 @@ void Robot::ResetAssembly()
 
     commander_IPC.Stop();
     master_IPC.Stop();
+
+    reshaping_waiting_for_undock = 0xF;
+    reshaping_unlock_sent = 0;
+    reshaping_seed = false;
+    reshaping_processed = 0;
+
+    disassembly_waiting_for_undock = 0xF;
 
 }
 

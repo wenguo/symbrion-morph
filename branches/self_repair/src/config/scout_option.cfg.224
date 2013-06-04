@@ -64,7 +64,7 @@ MacroLocomotion
     hinge_motor_speed 40
     hinge_motor_angle 25
     hinge_motor_default_pos 75
-    hinge_motor_enabled 0
+    hinge_motor_enabled 1
 )
 
 Debugging
@@ -80,7 +80,7 @@ Global
 	init_state 26 
 	print_proximity 0
         print_beacon 0
-        print_reflective 1
+        print_reflective 0
         print_ambient 0
         print_status 1
     	ir_msg_repeated_delay 20
@@ -97,7 +97,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     scout_wheels_direction [1 -1]
-    locomotion_motor_enabled 0                       
+    locomotion_motor_enabled 1                       
         
 )
 

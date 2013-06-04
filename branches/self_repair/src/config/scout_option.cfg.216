@@ -62,7 +62,7 @@ MacroLocomotion
     hinge_motor_speed 40
     hinge_motor_angle 25
     hinge_motor_default_pos 75
-    hinge_motor_enabled 0
+    hinge_motor_enabled 1
 )
 
 
@@ -97,7 +97,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     scout_wheels_direction [1 -1]
-    locomotion_motor_enabled 0                       
+    locomotion_motor_enabled 1                       
         
 )
 

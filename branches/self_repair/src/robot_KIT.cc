@@ -220,7 +220,7 @@ bool RobotKIT::SetHingeMotor(int status)
 
 bool RobotKIT::MoveHingeMotor(int command[4])
 {
-    printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
+//    printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
     return true;
 }
 
@@ -1668,7 +1668,7 @@ void RobotKIT::_InOrganism()
 
 }
 
-void RobotKIT::Disassembly()
+void RobotKIT::_Disassembly()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1781,7 +1781,7 @@ void RobotKIT::Undocking()
         RemoveFromAllQueues(IR_MSG_TYPE_UNLOCKED);
         ResetAssembly(); // reset variables used during assembly
         
-        current_state = SEEDING;//fsm_state_t(para.init_state);
+        current_state = FORAGING;//fsm_state_t(para.init_state);
 
         for(int i=0; i<SIDE_COUNT; i++)
             SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
@@ -2060,7 +2060,7 @@ void RobotKIT::_Raising()
  *  sure that only one robot is the seed and that that robot's tree (mytree) reflects the
  *  desired shape. Can also be used to initiate disassembly if the seed robot's tree is empty.
  */
-void RobotKIT::Reshaping()
+void RobotKIT::_Reshaping()
 {
 
     static uint8_t waiting_for_undock = 0;
