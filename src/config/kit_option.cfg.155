@@ -64,13 +64,13 @@ MacroLocomotion
     hinge_motor_speed 40
     hinge_motor_angle 25
     hinge_motor_default_pos 75
-    hinge_motor_enabled 0
+    hinge_motor_enabled 1
 )
 
 Debugging
 (
     mode 31 
-    para [0 0 61 0 2 3 2 0 211 0]
+    para [0 0 61 0 2 3 2 0 211 56]
 )
 
 Global
@@ -97,7 +97,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     scout_wheels_direction [1 -1]
-    locomotion_motor_enabled 0                       
+    locomotion_motor_enabled 1                       
         
 )
 
@@ -171,7 +171,13 @@ Climbing
 
 ShapeInfo
 (
-    seq "SBAFABSBSFABAFSFSBAF00000000000000000000"
+    seq "KBABAFSBSFAFABSFSBABAFSB000000000000000000000000"
 )
+
+ShapeInfo
+(
+    seq "AFSFSBAF00000000ABSFSBAB00000000"
+)
+
 
 

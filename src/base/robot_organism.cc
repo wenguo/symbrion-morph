@@ -16,24 +16,10 @@ void Robot::InOrganism()
             IP_collection_done = true;
 
             textcolor(BRIGHT, SCR_RED, SCR_BLACK);  
-            printf("%d -- organism (%d) formed !!\n", timestamp, target.Encoded_Seq().size());
+            printf("%d -- organism formed !!\n", timestamp);
             textcolor(RESET, SCR_WHITE, SCR_BLACK); 
             for(int i=0;i<NUM_DOCKS;i++)
                 SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
-
-            //prepare organism_formed_messages
-            /*uint8_t buf[target.Encoded_Seq().size() + 2];
-            for(int i = 0; i< target.Encoded_Seq().size(); i++)
-                buf[i] = target.Encoded_Seq()[i].data;
-            buf[target.Encoded_Seq().size()] = (my_IP.i32>>24)& 0xFF; //IP
-            buf[target.Encoded_Seq().size() + 1] = COMMANDER_PORT;//commander port
-            PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size() + 2);
-            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, buf, target.Encoded_Seq().size() + 2);*/
-            /*uint8_t data[2];
-            data[0] = (my_IP.i32>>24) & 0xFF;
-            data[1] =COMMANDER_PORT;
-            PropagateIRMessage(MSG_TYPE_ORGANISM_FORMED, data, 2);
-            PropagateEthMessage(MSG_TYPE_ORGANISM_FORMED, data, 2);*/
 
             uint8_t buf[target.Encoded_Seq().size()];
             for(uint32_t i = 0; i< target.Encoded_Seq().size(); i++)
@@ -113,7 +99,7 @@ void Robot::InOrganism()
         }
         else if(organism_formed)
         {
-            msg_organism_seq_received  = 0;
+            msg_organism_seq_received  = false;
 
             textcolor(BRIGHT, SCR_RED, SCR_BLACK);  
             printf("%d -- organism formed !!\n", timestamp);
@@ -159,7 +145,7 @@ void Robot::Raising()
     if(seed)
     {
         //wait for a while until the propagated messages are done within the organism
-        if(raising_count < raising_delay)
+        if(raising_count < (uint32_t)raising_delay)
         {
             //waiting;
             if(broken_eth_connections > 0)
@@ -216,7 +202,7 @@ void Robot::Raising()
         }
         else
         {
-            printf("%d: not all robots are reachable through ethernet, something is wrong, stop moving\n", timestamp);
+           // printf("%d: not all robots are reachable through ethernet, something is wrong, stop moving\n", timestamp);
             flash_leds = true;
             memset(hinge_command, 0, sizeof(hinge_command));
         }
@@ -251,7 +237,9 @@ void Robot::Raising()
     }
 
     
+#ifdef WITH_MOTION
     MoveHingeMotor(hinge_command);
+#endif
     
     //reset if no cmd received, to be used to stop the motor automatically
     if(timestamp - timestamp_hinge_motor_cmd_received > 3)
@@ -334,7 +322,7 @@ void Robot::MacroLocomotion()
         }
 
         //check left and right side
-        for(int i=0;i<og_reflective_sensors.left.size();i++)
+        for(uint32_t i=0;i<og_reflective_sensors.left.size();i++)
         {
             if(og_reflective_sensors.left[i] > 2000)
                 organism_bumped |= 1<<1;
@@ -352,32 +340,31 @@ void Robot::MacroLocomotion()
         else
             cmd_speed[2] = 0;
 
-
-        if(user_input <= 0)
-        {
+        //only moves when user_input ==1
+        if(user_input != 1)
             memset(cmd_speed, 0, sizeof(cmd_speed));
-            if(user_input <= -3)
+
+        if(user_input <= -2)
+        {
+            if(!msg_lowering_received)
             {
-                if(!msg_lowering_received)
-                {
-                    IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
-                    msg_lowering_received = true;
+                IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+                msg_lowering_received = true;
 
-                    IPC_health = true;
-                    lowering_count =0;
-                    macrolocomotion_count = 0;
-                    hinge_motor_operating_count = 0;
-                }
-                user_input = 0;
-
+                IPC_health = true;
+                lowering_count =0;
+                macrolocomotion_count = 0;
+                hinge_motor_operating_count = 0;
             }
+            user_input = 0;
+
         }
-        else if(user_input >= 3)
+        else if(user_input >= 5)
         {
             if(!msg_climbing_start_received) //this will prevent the message being sent twice 
             {
-         //       IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
-         //       msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
+                //       IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
+                //       msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
 
                 IPC_health = true;
                 climbing_count =0;
@@ -387,7 +374,7 @@ void Robot::MacroLocomotion()
             user_input = 0;
         }
 
-        printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
+        //printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
 
 
         /*
@@ -417,22 +404,22 @@ void Robot::MacroLocomotion()
         }
         else
         */
-#if 0
-        if(macrolocomotion_count > 1000)
+#ifdef WIP
+        if(macrolocomotion_count > 50)
         {
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
 
-            if(!msg_climbing_start_received) //this will prevent the message being sent twice 
-            {
-                IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
-                msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
-            }
+      //      if(!msg_climbing_start_received) //this will prevent the message being sent twice 
+      //      {
+      //          IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
+      //          msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
+      //      }
             if(!msg_lowering_received)
             {
-     //           IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
-     //           msg_lowering_received = true;
+                IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+                msg_lowering_received = true;
             }
 
             IPC_health = true;
@@ -505,8 +492,7 @@ void Robot::MacroLocomotion()
 
 
     //check ambient light to catch up some user input
-
-    if(type != ROBOT_AW &&timestamp - timestamp_user_input_received > 30)
+    if(type != ROBOT_AW &&timestamp - timestamp_user_input_received > 10)
     {
         if(ambient_hist[2].Avg() > 1000 || ambient_hist[3].Avg() > 1000) //left
         {
@@ -548,6 +534,12 @@ void Robot::MacroLocomotion()
         }
     }
 
+#ifndef WITH_MOTION
+    speed[0]=0;
+    speed[1]=0;
+    speed[2]=0;
+#endif
+
 
 }
 
@@ -559,7 +551,7 @@ void Robot::Climbing()
     {
         direction = FORWARD;
 
-        if(current_action_sequence_index < organism_actions.size())
+        if((uint32_t)current_action_sequence_index < organism_actions.size())
         {
             action_sequence * as_ptr = &organism_actions[current_action_sequence_index];
             as_ptr->counter++;
@@ -591,7 +583,7 @@ void Robot::Climbing()
                 printf("%d the finished command is %s (%d)\n", timestamp, as_ptr->cmd_type == 0 ? "PUSH_DRAG":"LIFT_ONE", as_ptr->sequence_index);
               //  memset(hinge_command, 0, sizeof(hinge_command));
               //  memset(locomotion_command, 0, sizeof(locomotion_command));
-                if(current_action_sequence_index < organism_actions.size())
+                if((uint32_t)current_action_sequence_index < organism_actions.size())
                 {
                     //if the latest action sequence is lifting, then next one should be push-drag
                     if(as_ptr->cmd_type == action_sequence::CMD_LIFT_ONE)
@@ -633,7 +625,7 @@ void Robot::Climbing()
                 }
 
                 //set the command for each robots in the organism
-                for(int i=0;i<as_ptr->robots_in_action.size();i++)
+                for(uint32_t i=0;i<as_ptr->robots_in_action.size();i++)
                 {
                     uint32_t robot_ip=robot_in_organism_index_sorted[as_ptr->robots_in_action[i].index];
                     //printf("Send command [%d] to %s\n",as_ptr->cmd_type, IPToString(robot_ip));
@@ -651,7 +643,7 @@ void Robot::Climbing()
                             motor_command[1] = 0;
                             motor_command[2] = 0;
                             motor_command[3] = 0;
-                            printf("%d: stop! no need to move forward as AW detects the edge of the stairs\n");
+                            printf("%d: stop! no need to move forward as AW detects the edge of the stairs\n", timestamp);
                         }
                         else
                         {
@@ -725,7 +717,9 @@ void Robot::Climbing()
     speed[2] = locomotion_command[3];
 
     //move hinge
+#ifdef WITH_MOTION
     MoveHingeMotor(hinge_command);
+#endif
 
     //reset if no cmd received, to be used to stop the motor automatically
     if(timestamp - timestamp_hinge_motor_cmd_received > 3)
@@ -745,7 +739,7 @@ void Robot::Lowering()
 
     if(seed)
     {
-        int lowering_delay = 10;
+        uint32_t lowering_delay = 10;
         if(lowering_count < lowering_delay)
         {
             //waiting;
@@ -770,18 +764,34 @@ void Robot::Lowering()
             {
                 hinge_motor_operating_count = 0;
 
-#if 1
+#ifdef WIP
+                if(!msg_reshaping_start_received)
+                {
+                    //prepare the buffer for new shaping + new seed
+                    OrganismSequence::OrganismSequence &seq = para.og_seq_list[1];
+                    int size = seq.Size() + 3;
+                    uint8_t buf[size];
+                    buf[0] = para.debug.para[9];
+                    buf[1] = COMMANDER_PORT;
+                    buf[2] = seq.Size();
+                    for(unsigned int i=0; i < buf[2];i++)
+                        buf[i+3] =seq.Encoded_Seq()[i].data;
+
+                    IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
+                    seed = false;
+                }
+#else
                 if(!msg_raising_start_received) //this will prevent the message being sent twice 
                 {
                     IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
                     msg_raising_start_received = true;
                 }
-#else
-                if(!msg_disassembly_received) //this will prevent the message being sent twice 
-                {
-                    IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
-                    msg_disassembly_received = true;
-                }
+
+                //if(!msg_disassembly_received) //this will prevent the message being sent twice 
+               // {
+               //     IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
+               //     msg_disassembly_received = true;
+               // }
 #endif           
                 
                 lowering_count = 0;
@@ -807,7 +817,7 @@ void Robot::Lowering()
         }
         else
         {
-            printf("%d: not all robots are reachable through ethernet, something is wrong, stop moving\n", timestamp);
+            //printf("%d: not all robots are reachable through ethernet, something is wrong, stop moving\n", timestamp);
             memset(hinge_command, 0, sizeof(hinge_command));
         }
     }
@@ -841,8 +851,45 @@ void Robot::Lowering()
 
         memset(hinge_command, 0, sizeof(hinge_command));
     }
+    else if(msg_reshaping_start_received)
+    {
+        //start the new master_IPC if necessary
+        if(reshaping_seed)
+        {
+            //if it is not the older seed, then start a new
+            if(!master_IPC.Running())
+                master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
 
+            seed = reshaping_seed;
+            reshaping_seed = false;
+            
+            msg_organism_seq_received = true;
+        }
+
+        //stop all commander IPCs
+        if(commander_IPC.Running())
+        {
+            commander_IPC.Stop();
+        }
+        else
+        {
+            msg_reshaping_start_received = false;
+            reshaping_waiting_for_undock = 0xF; // all wait
+            reshaping_processed = 0;
+
+            organism_formed = false;
+            IP_collection_done = false;
+
+            commander_acks.clear();
+            
+            current_state = RESHAPING;
+            last_state = LOWERING;
+        }
+    }
+
+#ifdef WITH_MOTION
     MoveHingeMotor(hinge_command);
+#endif
     
     //reset if no cmd received, to be used to stop the motor automatically
     if(timestamp - timestamp_hinge_motor_cmd_received > 3)
@@ -850,4 +897,273 @@ void Robot::Lowering()
 
  }
 
+//Stage 0 -- outside of reshaping, set the new seed and new target tree, clean up all other's tree in old organism
+//           stop all commander IPCs
+//           the new seed start the master_IPC 
+//Stage 1 -- all robots reconnect to tha new master_IPC, the older seed stop the master_IPC
+void Robot::Reshaping()
+{
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
+
+    reshaping_count++;
+
+
+    //delay a while to let socket closed
+    int reshaping_delay = 10;
+    if(reshaping_count < (uint32_t)reshaping_delay)
+        return;
+
+    //reconnect to the new seed
+    if(!commander_IPC.Running())
+    {
+        commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+        return;
+    }
+
+    //send new branches to connected neighbours
+    //just do this once
+    if(msg_organism_seq_received)
+    {
+        msg_organism_seq_received = false;
+
+        // Prepare branch sequences
+        rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
+        if(ret.status >= RT_ERROR)
+        {
+            std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
+        }
+
+        // disable all LEDs
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
+
+        std::vector<OrganismSequence>::iterator it = mybranches.begin();
+        while(it !=mybranches.end())
+        {
+            bool erase_required = false;
+            uint8_t branch_side = it->getSymbol(0).side1;
+            if(docked[branch_side])
+            {
+                //if the older neighbour matches with the new require
+                if(it->getSymbol(0) != OrganismSequence::Symbol(0) && it->getSymbol(0) == docked[branch_side])
+                {
+                    docking_done[branch_side] = true;
+                    
+                    //prepare the buffer for new shaping + new seed
+                    OrganismSequence::OrganismSequence &seq = *it;
+                    int size = seq.Size() + 3;
+                    uint8_t buf[size];
+                    buf[0] = (commander_IP.i32 >> 24) & 0xFF;
+                    buf[1] = commander_port - COMMANDER_PORT_BASE;
+                    buf[2] = seq.Size();
+                    for(unsigned int i=0; i < buf[2];i++)
+                        buf[i+3] =seq.Encoded_Seq()[i].data;
+
+                    IPCSendMessage(neighbours_IP[branch_side].i32,IPC_MSG_ORGANISM_SEQ, buf, sizeof(buf));
+                    erase_required = true;
+
+                    reshaping_processed |= 1<<branch_side;
+
+                    //set IPs in mytree
+                    std::vector<uint8_t> root_IPs;
+                    root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
+                    root_IPs.push_back(uint8_t((neighbours_IP[branch_side].i32>>24) & 0xFF));
+                    mytree.setBranchRootIPs(robot_side(branch_side),root_IPs);
+                }
+
+            }
+
+            if(erase_required)
+                it = mybranches.erase(it);
+            else
+                ++it;
+
+        }
+    }
+
+    //send reshaping done message to grigger unwanted robot to disassemble
+    if(reshaping_count == 100 && seed)
+    {
+        IPCSendMessage(IPC_MSG_RESHAPING_DONE, NULL, 0);
+    }
+
+    //reshpaing done -- notified from the seeds
+    //do it once
+    if(msg_reshaping_done_received)
+    {
+        msg_reshaping_done_received = false;
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            if(docked[i] && ((reshaping_processed & (1<<i)) ==0)) //docked but not processed
+            {
+                reshaping_waiting_for_undock |= 1<<i;
+                //open motor if its locking motor is closed
+                if(unlocking_required[i])
+                {
+                    SetDockingMotor(i, OPEN);
+                }
+                else  
+                    msg_unlocked_expected |= 1<<i; //waiting for undocked message
+                
+                //no need to send unlock me request, just wait for unlocked
+                EnablePowerSharing(i, false);//this may be sent multiple times
+
+            }
+            else
+                reshaping_waiting_for_undock &= ~(1<<i);
+
+            printf("docked: %#x reshaping_processed: %#x\n", docked[i], reshaping_processed);
+        }
+    }
+
+
+    //waiting for undock
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+        //received unlocked message
+        if( (msg_unlocked_received & 1<<i) || ethernet_status_hist.Sum(i) < 1 )
+        {
+            docked[i]=0;
+            reshaping_waiting_for_undock &= ~(1<<i);
+            
+          //  EnablePowerSharing(i, false);//this may be sent multiple times
+        }
+        
+        //motor fully opened
+        if((reshaping_waiting_for_undock & (1<<i)) && unlocking_required[i] && locking_motors_status[i]==OPENED)
+        {
+            Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
+            docked[i]=0;
+            unlocking_required[i] = false;
+
+            reshaping_waiting_for_undock &= ~(1<<i);
+        }
+    }
+
+    if(reshaping_waiting_for_undock == 0)
+    {
+        uint8_t recruiting_required = 0;
+        std::vector<OrganismSequence>::iterator it = mybranches.begin();
+        while(it !=mybranches.end())
+        {
+            uint8_t branch_side = it->getSymbol(0).side1;
+
+            recruitment_count[branch_side] = 0;
+            recruitment_signal_interval_count[branch_side] = DEFAULT_RECRUITMENT_COUNT;
+            recruitment_stage[branch_side] = STAGE0;
+            recruiting_required++;
+
+            it++;
+        }
+
+        if(reshaping_processed == 0)
+        {
+            reshaping_waiting_for_undock = 0xF;
+            reshaping_count = 0;
+
+            current_state = DISASSEMBLY;
+            last_state = RESHAPING;
+        }
+        else if(recruiting_required)
+        {
+            msg_docking_signal_req_received = 0;
+            reshaping_waiting_for_undock = 0xF;
+            reshaping_count = 0;
+            reshaping_processed = 0;
+
+            current_state = RECRUITMENT;
+            last_state = RESHAPING;
+        }
+        else
+        {
+            reshaping_waiting_for_undock = 0xF;
+            reshaping_count = 0;
+            reshaping_processed = 0;
+
+            msg_organism_seq_received = true; //to enable IP collection message
+
+            current_state = INORGANISM;
+            last_state = RESHAPING;
+        }
+
+    }
+}
+
+void Robot::Disassembly()
+{
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
+
+    if(MessageWaitingAck(MSG_TYPE_PROPAGATED))
+        return;
+
+    disassembly_count++;
+
+    if(disassembly_count == 1)
+    {
+        //disconnect if there is any
+        master_IPC.Stop();
+        commander_IPC.Stop();
+
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            if(docked[i]) //docked but not processed
+            {
+                disassembly_waiting_for_undock |= 1<<i;
+                //open motor if its locking motor is closed
+                if(unlocking_required[i])
+                {
+                    SetDockingMotor(i, OPEN);
+                }
+                else  
+                    msg_unlocked_expected |= 1<<i; //waiting for undocked message
+
+                //no need to send unlock me request, just wait for unlocked
+                EnablePowerSharing(i, false);//this may be sent multiple times
+
+            }
+            else
+                disassembly_waiting_for_undock &= ~(1<<i);
+
+        }
+    }
+
+    //waiting for undock
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+        if(disassembly_waiting_for_undock & (1<<i))
+        {
+            //received unlocked message
+            if( (msg_unlocked_received & 1<<i) || ethernet_status_hist.Sum(i) < 1 )
+            {
+                docked[i]=0;
+                disassembly_waiting_for_undock &= ~(1<<i);
+            }
+
+            //motor fully opened
+            if(unlocking_required[i] && locking_motors_status[i]==OPENED)
+            {
+                Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
+                docked[i]=0;
+                unlocking_required[i] = false;
+
+                disassembly_waiting_for_undock &= ~(1<<i);
+            }
+        }
+    }
+
+    if(disassembly_waiting_for_undock ==0)
+    {
+        disassembly_waiting_for_undock = 0xF;
+        disassembly_count = 0;
+        undocking_count = 0;
+
+        current_state = UNDOCKING;
+        last_state = DISASSEMBLY;
+    }
+
+}
 

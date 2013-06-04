@@ -20,7 +20,7 @@ counter=0
 
 for i in ${robotIPs[@]} 
 do
-   counter=`expr ${counter} + 1`
+   counter=`expr ${counter} + 2`
    delay=`echo sleep $counter`
    # argument=`echo $argument --tab -e \"bash -c \'sleep $i\'; echo test\" -t ${robotIPs[$i]}`
     argument=`echo $argument --tab -e \"bash -c \'$delay\'\;\'/home/wliu/self-repair/src/${cmd} ${i}\'\" -t ${i}`

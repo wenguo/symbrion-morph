@@ -214,6 +214,54 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                     printf("%d: opaque message received from %s: user_input %d (%#x)\n", robot->timestamp, IPToString(getFullIP(sender)), robot->user_input, data[0]);
                 }
                 break;
+            case IPC_MSG_ORGANISM_SEQ:
+                {
+                    robot->msg_organism_seq_received = true;
+                    robot->mytree.Clear();
+                    robot->mybranches.clear();
+                    //data[0] -- seeds' ip
+                    //data[1] -- seeds' port
+                    //data[2] -- size of branch 
+                    //data[3]-data[x] -- branch shape 
+                    robot->commander_IP = getFullIP(data[0]);
+                    robot->commander_port = COMMANDER_PORT_BASE + (uint8_t)data[1];
+
+                    //fill mytree, removing the parental info
+                    rt_status ret = robot->mytree.reBuild((uint8_t*)&(data[4]), data[2]-2);
+
+                    robot->parent_side = robot->getEthChannel(getFullIP(sender));
+                    robot->reshaping_processed |= 1<<robot->parent_side;
+                    printf("%d: received msg_organism_seq from %s\n", robot->timestamp, IPToString(getFullIP(sender)));
+                    std::cout<<"new seq: "<<robot->mytree<<std::endl;
+                }
+                break;
+            case IPC_MSG_RESHAPING_START:
+                {
+                    robot->msg_reshaping_start_received = true;
+                    //clear my tree
+                    robot->mytree.Clear();
+                    robot->mybranches.clear();
+                    //data[0] -- new seeds' ip
+                    //data[1] -- new seeds' port
+                    //data[2] -- size of new shape
+                    //data[3]-data[x] -- new shape
+                    robot->commander_IP = getFullIP(data[0]);
+                    robot->commander_port = COMMANDER_PORT_BASE + (uint8_t)data[1];
+                    if(robot->my_IP == robot->commander_IP)
+                    {
+                        robot->reshaping_seed = true;
+                        //rebuild mytree
+                        rt_status ret = robot->mytree.reBuild((uint8_t*)&(data[3]), data[2]);
+                        std::cout<<robot->ClockString()<<":receive new subtree: "<<robot->mytree<<std::endl;
+                        robot->parent_side = SIDE_COUNT;
+                    }
+                }
+                break;
+            case IPC_MSG_RESHAPING_DONE:
+                {
+                    robot->msg_reshaping_done_received = true;
+                }
+                break;
             case IPC_MSG_ACK:
                 {
                     ack_required = false;

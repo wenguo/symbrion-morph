@@ -1608,7 +1608,7 @@ void RobotSCOUT::_InOrganism()
 
 }
 
-void RobotSCOUT::Disassembly()
+void RobotSCOUT::_Disassembly()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1998,7 +1998,7 @@ void RobotSCOUT::_Raising()
  *  sure that only one robot is the seed and that that robot's tree (mytree) reflects the
  *  desired shape. Can also be used to initiate disassembly if the seed robot's tree is empty.
  */
-void RobotSCOUT::Reshaping()
+void RobotSCOUT::_Reshaping()
 {
 
     static uint8_t waiting_for_undock = 0;
@@ -3040,6 +3040,9 @@ void RobotSCOUT::Debugging()
                     {
                         mytree = target = para.og_seq_list[0];
                         std::cout<<mytree<<std::endl;
+
+                        for(int i=0;i<para.og_seq_list.size();i++)
+                            std::cout<<i<<" : "<<para.og_seq_list[i]<<std::endl;
                     }
                     
                     rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
