@@ -36,6 +36,8 @@ void Robot::InOrganism()
             }
             pthread_mutex_unlock(&IPC_data_mutex);
 
+            InitRobotPoseInOrganism();
+
             macrolocomotion_count = 0;
             raising_count = 0;
             current_state = RAISING;
@@ -82,7 +84,8 @@ void Robot::InOrganism()
                 msg_docking_signal_req_received = 0;
             }
         }
-        else if(msg_organism_seq_received && (mytree.isAllIPSet()  && mytree.Size() !=0) && !IP_collection_done)
+        else if((mytree.isAllIPSet()  && mytree.Size() !=0) && !IP_collection_done)
+        //else if(msg_organism_seq_received && (mytree.isAllIPSet()  && mytree.Size() !=0) && !IP_collection_done)
         {
             IP_collection_done = true;
             //send the IPs to its parent
@@ -93,7 +96,6 @@ void Robot::InOrganism()
             for(uint32_t i=0;i<IPs.size();i++)
                 data[i+1]=IPs[i];
             SendIRMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, para.ir_msg_repeated_num);
-            //SendEthMessage(parent_side, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1, true);
             IPCSendMessage(neighbours_IP[parent_side].i32, MSG_TYPE_IP_ADDR_COLLECTION, data, IPs.size() + 1);
 
         }
@@ -148,8 +150,8 @@ void Robot::Raising()
         if(raising_count < (uint32_t)raising_delay)
         {
             //waiting;
-            if(broken_eth_connections > 0)
-                IPC_health = false;
+            //if(broken_eth_connections > 0)
+            //    IPC_health = false;
 
             memset(hinge_command, 0, sizeof(hinge_command));
         }
@@ -176,7 +178,6 @@ void Robot::Raising()
                 }
 
 
-                InitRobotPoseInOrganism();
 
                 IPC_health = true;
                 
@@ -547,6 +548,9 @@ void Robot::Climbing()
 {
     climbing_count++;
 
+    // Leds symbolise the raising process
+    bool flash_leds = false;
+
     if(seed)
     {
         direction = FORWARD;
@@ -727,6 +731,35 @@ void Robot::Climbing()
 
     if(timestamp - timestamp_locomotion_motors_cmd_received > 3)
         memset(locomotion_command, 0, sizeof(locomotion_command));
+
+    if(flash_leds)
+    {
+        //flashing RGB leds
+        static int index = 0;
+        index = (timestamp / 2) % 6;
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            switch (index)
+            {
+                case 0:
+                    SetRGBLED(i, RED, RED, 0, 0);
+                    break;
+                case 1:
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                case 2:
+                    SetRGBLED(i, 0, 0, RED, RED);
+                    break;
+                case 3: //
+                case 4: // short delay to better symbolise raising
+                case 5: //
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 }
 
 void Robot::Lowering()
@@ -737,14 +770,18 @@ void Robot::Lowering()
     speed[1] = 0;
     speed[2] = 0;
 
+
+    // Leds symbolise the raising process
+    bool flash_leds = false;
+
     if(seed)
     {
         uint32_t lowering_delay = 10;
         if(lowering_count < lowering_delay)
         {
             //waiting;
-            if(broken_eth_connections > 0)
-                IPC_health = false;
+            //if(broken_eth_connections > 0)
+            //    IPC_health = false;
 
             memset(hinge_command, 0, sizeof(hinge_command));
         }
@@ -818,6 +855,7 @@ void Robot::Lowering()
         else
         {
             //printf("%d: not all robots are reachable through ethernet, something is wrong, stop moving\n", timestamp);
+            flash_leds = true;
             memset(hinge_command, 0, sizeof(hinge_command));
         }
     }
@@ -895,6 +933,35 @@ void Robot::Lowering()
     if(timestamp - timestamp_hinge_motor_cmd_received > 3)
         memset(hinge_command, 0, sizeof(hinge_command));
 
+    if(flash_leds)
+    {
+        //flashing RGB leds
+        static int index = 0;
+        index = (timestamp / 2) % 6;
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            switch (index)
+            {
+                case 0:
+                    SetRGBLED(i, RED, RED, 0, 0);
+                    break;
+                case 1:
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                case 2:
+                    SetRGBLED(i, 0, 0, RED, RED);
+                    break;
+                case 3: //
+                case 4: // short delay to better symbolise raising
+                case 5: //
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
  }
 
 //Stage 0 -- outside of reshaping, set the new seed and new target tree, clean up all other's tree in old organism
@@ -911,16 +978,19 @@ void Robot::Reshaping()
 
 
     //delay a while to let socket closed
-    int reshaping_delay = 10;
-    if(reshaping_count < (uint32_t)reshaping_delay)
+    //and reconnected
+    if(reshaping_count <10)
         return;
-
-    //reconnect to the new seed
-    if(!commander_IPC.Running())
+    else if(reshaping_count < 20)
     {
-        commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+        //reconnect to the new seed
+        if(!commander_IPC.Running())
+            commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+     
         return;
     }
+
+    
 
     //send new branches to connected neighbours
     //just do this once
@@ -961,7 +1031,11 @@ void Robot::Reshaping()
                     for(unsigned int i=0; i < buf[2];i++)
                         buf[i+3] =seq.Encoded_Seq()[i].data;
 
-                    IPCSendMessage(neighbours_IP[branch_side].i32,IPC_MSG_ORGANISM_SEQ, buf, sizeof(buf));
+                    if(neighbours_IP[branch_side].i32 ==0)
+                        printf("%d: ERROR!!!!!!!!!!, my neighbour %d should have an valid IP\n", timestamp, branch_side);
+                    else
+                        IPCSendMessage(neighbours_IP[branch_side].i32,IPC_MSG_ORGANISM_SEQ, buf, sizeof(buf));
+                    printf("%d send organism_seq to %d(%s))\n", timestamp, branch_side, IPToString(neighbours_IP[branch_side]));
                     erase_required = true;
 
                     reshaping_processed |= 1<<branch_side;
@@ -984,7 +1058,7 @@ void Robot::Reshaping()
     }
 
     //send reshaping done message to grigger unwanted robot to disassemble
-    if(reshaping_count == 100 && seed)
+    if(reshaping_count == 50 && seed)
     {
         IPCSendMessage(IPC_MSG_RESHAPING_DONE, NULL, 0);
     }
@@ -1025,6 +1099,7 @@ void Robot::Reshaping()
         //received unlocked message
         if( (msg_unlocked_received & 1<<i) || ethernet_status_hist.Sum(i) < 1 )
         {
+            msg_unlocked_received &= ~(1<<i);
             docked[i]=0;
             reshaping_waiting_for_undock &= ~(1<<i);
             
@@ -1036,6 +1111,7 @@ void Robot::Reshaping()
         {
             Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
             docked[i]=0;
+            neighbours_IP[i]=0;
             unlocking_required[i] = false;
 
             reshaping_waiting_for_undock &= ~(1<<i);
@@ -1062,6 +1138,8 @@ void Robot::Reshaping()
         {
             reshaping_waiting_for_undock = 0xF;
             reshaping_count = 0;
+            msg_unlocked_received = 0;
+
 
             current_state = DISASSEMBLY;
             last_state = RESHAPING;
@@ -1069,6 +1147,7 @@ void Robot::Reshaping()
         else if(recruiting_required)
         {
             msg_docking_signal_req_received = 0;
+            msg_unlocked_received = 0;
             reshaping_waiting_for_undock = 0xF;
             reshaping_count = 0;
             reshaping_processed = 0;
@@ -1083,12 +1162,35 @@ void Robot::Reshaping()
             reshaping_processed = 0;
 
             msg_organism_seq_received = true; //to enable IP collection message
+            msg_unlocked_received = 0;
 
             current_state = INORGANISM;
             last_state = RESHAPING;
         }
 
     }
+
+    //flashing RGB leds
+    static int index = 0;
+    index = (timestamp / 2) % 6;
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+        switch (index)
+        {
+            case 0:
+                SetRGBLED(i, BLUE, BLUE, BLUE, BLUE);
+                break;
+            case 1:
+            case 3: //
+            case 4: // short delay to better symbolise raising
+            case 5: //
+                SetRGBLED(i, 0, 0, 0, 0);
+                break;
+            default:
+                break;
+        }
+    }
+
 }
 
 void Robot::Disassembly()
@@ -1139,7 +1241,9 @@ void Robot::Disassembly()
             //received unlocked message
             if( (msg_unlocked_received & 1<<i) || ethernet_status_hist.Sum(i) < 1 )
             {
+                msg_unlocked_received &= ~(1<<i);
                 docked[i]=0;
+                neighbours_IP[i]=0;
                 disassembly_waiting_for_undock &= ~(1<<i);
             }
 
@@ -1148,6 +1252,7 @@ void Robot::Disassembly()
             {
                 Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
                 docked[i]=0;
+                neighbours_IP[i]=0;
                 unlocking_required[i] = false;
 
                 disassembly_waiting_for_undock &= ~(1<<i);
@@ -1160,6 +1265,7 @@ void Robot::Disassembly()
         disassembly_waiting_for_undock = 0xF;
         disassembly_count = 0;
         undocking_count = 0;
+        msg_unlocked_received = 0;
 
         current_state = UNDOCKING;
         last_state = DISASSEMBLY;

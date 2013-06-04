@@ -1427,6 +1427,8 @@ void RobotSCOUT::Recruitment()
             //get new ip address?
             else if(msg_ip_addr_received & (1<<i))
             {
+                msg_ip_addr_received &= ~(1<<i);
+
                 std::vector<uint8_t> root_IPs;
                 root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
                 root_IPs.push_back(uint8_t((neighbours_IP[i].i32>>24) & 0xFF));
