@@ -210,7 +210,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
             }
             break;
         case IR_MSG_TYPE_ASSEMBLY_INFO:
-            if(msg_assembly_info_expected & 1<< channel)
+            if(msg_assembly_info_expected & (1<< channel))
             {
                 printf("%d received assemby_info %#x\n", timestamp, data[2]);
                 msg_assembly_info_received |=1<<channel;
@@ -254,8 +254,12 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 OrganismSequence::Symbol sym = OrganismSequence::Symbol(data[2]);
                 if(channel == sym.side1 && type == sym.type1)
                 {
-                    msg_ip_addr_received |= 1<<channel;
-                    memcpy((uint8_t*)&neighbours_IP[channel], (uint8_t*)&data[3], 4);
+                    if(msg_ip_addr_expected & (1<<channel))
+                    {
+                        msg_ip_addr_expected &= ~(1<<channel);
+                        msg_ip_addr_received |= 1<<channel;
+                        memcpy((uint8_t*)&neighbours_IP[channel], (uint8_t*)&data[3], 4);
+                    }
                     ack_required = true;
                 }
             }

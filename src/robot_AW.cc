@@ -1346,7 +1346,7 @@ void RobotAW::Recruitment()
                 SendBranchTree(i, (*it1)); //new in AW
 
                 recruitment_stage[i]=STAGE4;
-                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d (docked: %#x)\n\n", timestamp,i, recruitment_stage[i], docked[i]);
             }
             // When performing parallel docking, occasionally a robot will lock on a recruiting side and
             // that recruiting side will then revert to an earlier STAGE I think the following two clauses
@@ -1382,6 +1382,7 @@ void RobotAW::Recruitment()
                 if(seed)
                     num_robots_inorganism++;
 
+                msg_ip_addr_expected |= 1<<i;
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
         }
@@ -1399,6 +1400,8 @@ void RobotAW::Recruitment()
             //get new ip address?
             else if(msg_ip_addr_received & (1<<i))
             {
+                msg_ip_addr_received &= ~(1<<i);
+
                 std::vector<uint8_t> root_IPs;
                 root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
                 root_IPs.push_back(uint8_t((neighbours_IP[i].i32>>24) & 0xFF));
