@@ -66,7 +66,7 @@ MacroLocomotion
 Debugging
 (
     mode 31 
-    para [224 0 216 0 2 2 2 0 211 0]
+    para [224 0 216 0 2 2 2 0 211 61]
 )
 
 Global
@@ -101,6 +101,11 @@ Motor
 ShapeInfo
 (
 seq "AFSB0000"
+)
+
+ShapeInfo
+(
+ seq "AFSBSFAF00000000ABKB0000"
 )
 
 

@@ -57,7 +57,10 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
             case MSG_TYPE_LOWERING:
                 {
                     if(!robot->seed)
+                    {
+                        printf("%d: received lowering\n", robot->timestamp);
                         robot->msg_lowering_received = true;
+                    }
                 }
                 break;
             case MSG_TYPE_DISASSEMBLY:
@@ -252,9 +255,10 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                         robot->reshaping_seed = true;
                         //rebuild mytree
                         rt_status ret = robot->mytree.reBuild((uint8_t*)&(data[3]), data[2]);
-                        std::cout<<robot->ClockString()<<":receive new subtree: "<<robot->mytree<<std::endl;
+                        std::cout<<robot->ClockString()<<": receive new target tree: "<<robot->mytree<<std::endl;
                         robot->parent_side = SIDE_COUNT;
                     }
+                    printf("%d: reshaping start, new seed @ %s\n", robot->timestamp, IPToString(robot->commander_IP));
                 }
                 break;
             case IPC_MSG_RESHAPING_DONE:

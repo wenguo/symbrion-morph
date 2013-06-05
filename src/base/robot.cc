@@ -60,6 +60,9 @@ Robot::Robot()
 
     ResetAssembly();
 
+    master_IPC.Name("master");
+    commander_IPC.Name("commander");
+
 }
 
 // Reset variables used during assembly

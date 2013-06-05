@@ -123,6 +123,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                             printf("Received conflicting assembly info, may need to check !!!\n");
 
                         assembly_info = sym;
+                        printf("assembly_info: %c%c\n", robottype_names[assembly_info.type2], side_names[assembly_info.side2]);
                     }
                 }
                 else if(current_state == LOCATEBEACON && sym.type2 == type)

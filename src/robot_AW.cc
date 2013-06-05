@@ -1228,9 +1228,10 @@ void RobotAW::Recruitment()
         bool erase_required = false;
         if(recruitment_stage[i]==STAGE0)
         {
+
             if( robots_in_range_detected_hist.Sum(2*i) > 14 ||
                     robots_in_range_detected_hist.Sum(2*i+1) >14 ||
-                    (msg_docking_signal_req_received & (1<<i)) )
+                    (msg_docking_signal_req_received & (1<<i)) || (msg_assembly_info_req_received & (1<<i)))
             {
                 msg_docking_signal_req_received &= ~(1<<i);
 
@@ -1242,6 +1243,9 @@ void RobotAW::Recruitment()
             }
             else
             {
+                if(ethernet_status_hist.Sum(i) > 1)
+                    msg_assembly_info_req_expected |= 1<<i;
+
                 //or send recruitment message
                 SetIRLED(i, IRLEDOFF, LED1, 0);
                 irobot->SetIRRX(ActiveWheel::Side(board_dev_num[i]), false); //using side receiver
@@ -1661,7 +1665,7 @@ void RobotAW::Undocking()
         current_state = FORAGING;
         ResetAssembly(); // reset variables used during assembly
                 
-        current_state = fsm_state_t(para.init_state);
+        current_state = FORAGING;//fsm_state_t(para.init_state);
 
         for(int i=0; i<SIDE_COUNT; i++)
             SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
