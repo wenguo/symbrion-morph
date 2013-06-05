@@ -1211,7 +1211,7 @@ void RobotSCOUT::Recruitment()
         {
             if( robots_in_range_detected_hist.Sum(2*i) > 14 ||
                     robots_in_range_detected_hist.Sum(2*i+1) >14 ||
-                    (msg_docking_signal_req_received & (1<<i)) )
+                    (msg_docking_signal_req_received & (1<<i)) || (msg_assembly_info_req_received & (1<<i)))
             {
                 msg_docking_signal_req_received &= ~(1<<i);
 
@@ -1223,6 +1223,9 @@ void RobotSCOUT::Recruitment()
             }
             else
             {
+                if(ethernet_status_hist.Sum(i) > 1)
+                    msg_assembly_info_req_expected |= 1<<i;
+
                 //or send recruitment message
                 SetIRLED(i, IRLEDOFF, LED1, 0);
                 SetRGBLED(i, 0,0,0,0);
@@ -1717,7 +1720,7 @@ void RobotSCOUT::Undocking()
 
         last_state = UNDOCKING;
 
-        RemoveFromAllQueues(IR_MSG_TYPE_UNLOCKED);
+        //RemoveFromAllQueues(IR_MSG_TYPE_UNLOCKED);
         ResetAssembly(); // reset variables used during assembly
 
         current_state = FORAGING;//fsm_state_t(para.init_state);

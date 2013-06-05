@@ -67,7 +67,7 @@ MacroLocomotion
 Debugging
 (
     mode 31 
-    para [211 0 155 0 0 2 2 0 211 0]
+    para [211 0 155 0 0 2 2 0 211 56]
 )
 
 Global
@@ -169,6 +169,11 @@ Climbing
 ShapeInfo
 (
  seq "ABKB0000"
+)
+
+ShapeInfo
+(
+ seq "AFSFSBAF00000000ABSFSBAB00000000"
 )
 
 

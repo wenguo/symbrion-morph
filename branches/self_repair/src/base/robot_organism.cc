@@ -38,6 +38,23 @@ void Robot::InOrganism()
 
             InitRobotPoseInOrganism();
 
+            //TODO: force to disconnect any unwanted ethernet connections
+            std::vector<IPC::Connection*> *connections = master_IPC.Connections();
+            for(int i=0;i<connections->size();i++)
+            {
+                uint32_t ip = (*connections)[i]->addr.sin_addr.s_addr;
+                std::map<uint32_t, robot_pose>::iterator it;
+                it=robot_pose_in_organism.find(ip);
+                if(it!= robot_pose_in_organism.end())
+                    printf("organism ip list: %d\n", ip>>24 & 0xFF);
+                else 
+                {
+                    (*connections)[i]->Disconnect();
+                   // printf("\tnot in organism ip list: %d\n", ip>>24 & 0xFF);
+                }
+            }
+
+
             macrolocomotion_count = 0;
             raising_count = 0;
             current_state = RAISING;
@@ -114,6 +131,13 @@ void Robot::InOrganism()
             current_state = RAISING;
             last_state = INORGANISM;
 
+            /*
+            msg_lowering_received = false;
+            msg_raising_stop_received = false;
+            msg_climbing_start_received =false;
+            msg_climbing_stop_received =false;
+            */
+
             printf("my IP is %s\n", IPToString(my_IP));
             for(int i=0;i<NUM_DOCKS;i++)
             {
@@ -184,19 +208,19 @@ void Robot::Raising()
              }
 
             //check if all robot 
-            if(raising_count % 5 == 4)
+            if(raising_count % 10 == 9)
             {
-                std::map<uint32_t, int>::iterator it;
-                for(it = commander_acks.begin(); it != commander_acks.end(); it++)
+                std::map<uint32_t, robot_pose>::iterator it;
+                for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                 {
                     //check if lost received some messages
-                    if(it->second < 1) //no response at all?
+                    if(commander_acks[it->first] < 1) //no response at all?
                     {
                         IPC_health = false;
-                        printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
+                        printf("%d : WARNING! ip: %s acks %d\n", timestamp, IPToString(it->first), commander_acks[it->first] );
                     }
                     //reset the count
-                    it->second = 0;
+                    commander_acks[it->first] = 0;
                 }
             }
 
@@ -349,6 +373,7 @@ void Robot::MacroLocomotion()
         {
             if(!msg_lowering_received)
             {
+                printf("%d: send lowering start\n", timestamp);
                 IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
                 msg_lowering_received = true;
 
@@ -419,6 +444,7 @@ void Robot::MacroLocomotion()
       //      }
             if(!msg_lowering_received)
             {
+                printf("%d: send lowering start\n", timestamp);
                 IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
                 msg_lowering_received = true;
             }
@@ -815,6 +841,7 @@ void Robot::Lowering()
                         buf[i+3] =seq.Encoded_Seq()[i].data;
 
                     IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
+                    printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
                     seed = false;
                 }
 #else
@@ -833,21 +860,20 @@ void Robot::Lowering()
                 
                 lowering_count = 0;
             }
-
             //check if all robot 
-            if(lowering_count % 5 == 4)
+            if(raising_count % 10 == 9)
             {
-                std::map<uint32_t, int>::iterator it;
-                for(it = commander_acks.begin(); it != commander_acks.end(); it++)
+                std::map<uint32_t, robot_pose>::iterator it;
+                for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                 {
                     //check if lost received some messages
-                    if(it->second < 1) //no response?
+                    if(commander_acks[it->first] < 1) //no response at all?
                     {
                         IPC_health = false;
-                        printf("%d : ip: %s acks %d\n", timestamp, IPToString(it->first), it->second );
+                        printf("%d : WARNING! ip: %s acks %d\n", timestamp, IPToString(it->first), commander_acks[it->first] );
                     }
                     //reset the count
-                    it->second = 0;
+                    commander_acks[it->first] = 0;
                 }
             }
 
@@ -895,8 +921,7 @@ void Robot::Lowering()
         if(reshaping_seed)
         {
             //if it is not the older seed, then start a new
-            if(!master_IPC.Running())
-                master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+            master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
 
             seed = reshaping_seed;
             reshaping_seed = false;
@@ -984,9 +1009,9 @@ void Robot::Reshaping()
     else if(reshaping_count < 20)
     {
         //reconnect to the new seed
-        if(!commander_IPC.Running())
-            commander_IPC.Start(IPToString(commander_IP), commander_port, false);
-     
+        commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+        printf("%d start IPC %s to %s:%d\n", timestamp, commander_IPC.Name(), IPToString(commander_IP), commander_port);
+
         return;
     }
 
@@ -1036,6 +1061,7 @@ void Robot::Reshaping()
                     else
                         IPCSendMessage(neighbours_IP[branch_side].i32,IPC_MSG_ORGANISM_SEQ, buf, sizeof(buf));
                     printf("%d send organism_seq to %d(%s))\n", timestamp, branch_side, IPToString(neighbours_IP[branch_side]));
+                    std::cout<<"seq: "<<*it<<std::endl;
                     erase_required = true;
 
                     reshaping_processed |= 1<<branch_side;
