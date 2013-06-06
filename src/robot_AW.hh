@@ -45,9 +45,11 @@ class RobotAW:public Robot
         virtual void Alignment();
         virtual void Recover();
         virtual void Docking();
+        virtual void Undocking();
         virtual void Locking();
         virtual void Recruitment();
         virtual void Debugging();
+        virtual void Avoidance();
 
         virtual void Log();
 
@@ -55,7 +57,6 @@ class RobotAW:public Robot
         uint8_t hinge_speed;
 
     private:
-        void Avoidance();
         ActiveWheel * irobot;
         int32_t aux_ambient[8];
         int32_t aux_reflective[8];   //proximity sensors, using 350us pulse

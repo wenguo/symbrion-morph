@@ -339,20 +339,9 @@ void RobotKIT::UpdateFailures()
 
 void RobotKIT::Avoidance()
 {
-    //for demo 
-    static bool triggered = false;
-    if(ambient_hist[0].Avg() > 1000 || ambient_hist[1].Avg() > 1000)
-        triggered = true;
-    else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
-        triggered = false;
-    if(!triggered)
-    {
-        speed[0] = 0;
-        speed[1] = 0;
-        speed[2] = 0;
-        return;
-    }
+    Robot::Avoidance();
 
+    /*
     speed[0] = 30;
     speed[1] = 30;
     speed[2] = 0;
@@ -380,9 +369,7 @@ void RobotKIT::Avoidance()
             speed[2] = -direction * 30;
         else if((bumped & (1<<6 | 1<<7)) !=0)
             speed[2] = direction * 30;
-    }
-
-    //printf("direction: %d bumped: %#x speed: %d %d %d\n",direction, bumped, speed[0], speed[1], speed[2]);
+    }*/
 
 }
 
@@ -1532,6 +1519,11 @@ void RobotKIT::Recruitment()
             commander_IPC.Start(IPToString(commander_IP), commander_port, false);
     }
 
+}
+
+void RobotKIT::Undocking()
+{
+    Robot::Undocking();
 }
 
 void RobotKIT::Debugging()

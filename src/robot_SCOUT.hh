@@ -41,13 +41,14 @@ class RobotSCOUT:public Robot
         virtual void Alignment();
         virtual void Recover();
         virtual void Docking();
+        virtual void Undocking();
         virtual void Locking();
         virtual void Recruitment();
         virtual void Debugging();
+        virtual void Avoidance();
 
         virtual void Log();
     private:
-        void Avoidance();
         ScoutBot * irobot;
 
         hallSensorScout encoders, last_encoders;
