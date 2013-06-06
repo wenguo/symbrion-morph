@@ -88,6 +88,13 @@ IPC::~IPC()
     //cleanup
 }
 
+bool IPC::Start(uint32_t ip, int p, bool s)
+{
+    struct in_addr addr;
+    addr.s_addr = ip;
+    return Start(inet_ntoa(addr), p, s);
+}
+
 bool IPC::Start(const char* h, int p, bool s)
 {
     if(Running())
@@ -96,7 +103,7 @@ bool IPC::Start(const char* h, int p, bool s)
         if(broken_connections >0)
             printf("%s IPC removed %d broken connections\n", name, broken_connections);
 
-        printf("%s IPC is running! can not start a new one\n", name);
+        //printf("%s IPC is running! can not start a new one\n", name);
         return false;
     }
 

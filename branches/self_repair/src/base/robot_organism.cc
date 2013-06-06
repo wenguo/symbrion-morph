@@ -1009,7 +1009,7 @@ void Robot::Reshaping()
     else if(reshaping_count < 20)
     {
         //reconnect to the new seed
-        commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+        commander_IPC.Start(commander_IP.i32, commander_port, false);
         printf("%d start IPC %s to %s:%d\n", timestamp, commander_IPC.Name(), IPToString(commander_IP), commander_port);
 
         return;

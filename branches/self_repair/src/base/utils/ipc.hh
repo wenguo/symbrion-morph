@@ -69,6 +69,7 @@ class IPC
         ~IPC();
 
         bool Start(const char *host,int port, bool server);
+        bool Start(uint32_t ip, int port, bool server);
         void Stop();
         inline bool Running() {return monitoring_thread_running;}
         bool SendData(const uint8_t type, uint8_t *data, int len);
