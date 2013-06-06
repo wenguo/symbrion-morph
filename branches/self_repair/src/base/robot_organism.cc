@@ -1006,7 +1006,7 @@ void Robot::Reshaping()
     //and reconnected
     if(reshaping_count <10)
         return;
-    else if(reshaping_count < 20)
+    else if(reshaping_count == 10)
     {
         //reconnect to the new seed
         commander_IPC.Start(commander_IP.i32, commander_port, false);
@@ -1014,6 +1014,8 @@ void Robot::Reshaping()
 
         return;
     }
+    else if(reshaping_count < 20)
+        return;
 
     
 
