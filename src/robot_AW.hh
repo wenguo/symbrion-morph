@@ -46,7 +46,6 @@ class RobotAW:public Robot
         virtual void Recover();
         virtual void Docking();
         virtual void Locking();
-        virtual void Undocking();
         virtual void Recruitment();
         virtual void Debugging();
 

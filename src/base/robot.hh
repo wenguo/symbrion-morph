@@ -111,7 +111,7 @@ class Robot
     virtual void Docking()=0;
     virtual void Locking()=0;
     virtual void Recover()=0;
-    virtual void Undocking()=0;
+    virtual void Undocking();
     virtual void InOrganism();
     virtual void Disassembly();
     virtual void Recruitment()=0;
