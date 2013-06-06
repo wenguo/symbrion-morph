@@ -939,6 +939,7 @@ void Robot::Lowering()
             msg_reshaping_start_received = false;
             reshaping_waiting_for_undock = 0xF; // all wait
             reshaping_processed = 0;
+            reshaping_count = 0;
 
             organism_formed = false;
             IP_collection_done = false;
@@ -1000,7 +1001,6 @@ void Robot::Reshaping()
     speed[2] = 0;
 
     reshaping_count++;
-
 
     //delay a while to let socket closed
     //and reconnected
@@ -1088,6 +1088,7 @@ void Robot::Reshaping()
     //send reshaping done message to grigger unwanted robot to disassemble
     if(reshaping_count == 50 && seed)
     {
+        printf("%d: send reshaping_done\n", timestamp);
         IPCSendMessage(IPC_MSG_RESHAPING_DONE, NULL, 0);
     }
 
@@ -1095,6 +1096,7 @@ void Robot::Reshaping()
     //do it once
     if(msg_reshaping_done_received)
     {
+        printf("%d: received reshaping_done\n", timestamp);
         msg_reshaping_done_received = false;
         for(int i=0;i<NUM_DOCKS;i++)
         {
