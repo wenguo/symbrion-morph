@@ -1452,57 +1452,6 @@ void RobotAW::Recruitment()
     }
 }
 
-void RobotAW::Undocking()
-{
-    speed[0] = 0;
-    speed[1] = 0;
-    speed[2] = 0;
-
-    for(int i=0;i<NUM_DOCKS;i++)
-    {
-        if(timestamp % 4 ==0)
-            SetRGBLED(i, 0,0,0,0);
-        else
-            SetRGBLED(i, RED,RED,RED,RED);
-    }
-
-    if( undocking_count == 0 )
-    {
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-    }
-    else if(undocking_count < 100)
-    {
-        // Simply move forward
-        //        speed[0] = 15;
-        //        speed[1] = 15;
-        //        speed[2] = 0;
-    }
-    else
-    {
-        speed[0] = 0;
-        speed[1] = 0;
-        speed[2] = 0;
-
-        // Turn off LEDs
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetRGBLED(i, 0,0,0,0);
-
-        last_state = UNDOCKING;
-        current_state = FORAGING;
-        ResetAssembly(); // reset variables used during assembly
-                
-        current_state = FORAGING;//fsm_state_t(para.init_state);
-
-        for(int i=0; i<SIDE_COUNT; i++)
-            SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
-    }
-
-    undocking_count++;
-
-
-}
-
 void RobotAW::Debugging()
 {
     //speed[0] = 0;

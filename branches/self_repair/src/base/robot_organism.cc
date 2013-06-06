@@ -38,7 +38,7 @@ void Robot::InOrganism()
 
             InitRobotPoseInOrganism();
 
-            //TODO: force to disconnect any unwanted ethernet connections
+            //force to disconnect any unwanted ethernet connections
             std::vector<IPC::Connection*> *connections = master_IPC.Connections();
             for(int i=0;i<connections->size();i++)
             {
@@ -137,6 +137,8 @@ void Robot::InOrganism()
             msg_climbing_start_received =false;
             msg_climbing_stop_received =false;
             */
+            //it is time to stop master_IPC, if I am used to be a seed
+            master_IPC.Stop();
 
             printf("my IP is %s\n", IPToString(my_IP));
             for(int i=0;i<NUM_DOCKS;i++)
@@ -1006,18 +1008,19 @@ void Robot::Reshaping()
     //and reconnected
     if(reshaping_count <10)
         return;
-    else if(reshaping_count == 10)
+    else if(reshaping_count < 20)
     {
-        //reconnect to the new seed
-        commander_IPC.Start(commander_IP.i32, commander_port, false);
-        printf("%d start IPC %s to %s:%d\n", timestamp, commander_IPC.Name(), IPToString(commander_IP), commander_port);
+        if(reshaping_count == 12)
+        {
+            //reconnect to the new seed
+            commander_IPC.Start(commander_IP.i32, commander_port, false);
+            printf("%d start IPC %s to %s:%d\n", timestamp, commander_IPC.Name(), IPToString(commander_IP), commander_port);
 
+        }
         return;
     }
-    else if(reshaping_count < 20)
-        return;
 
-    
+
 
     //send new branches to connected neighbours
     //just do this once
@@ -1297,8 +1300,91 @@ void Robot::Disassembly()
         undocking_count = 0;
         msg_unlocked_received = 0;
 
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+
         current_state = UNDOCKING;
         last_state = DISASSEMBLY;
+    }
+
+}
+
+void Robot::Undocking()
+{
+    undocking_count++;
+
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
+
+    //flashing led
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+        if(timestamp % 4 ==0)
+            SetRGBLED(i, 0,0,0,0);
+        else
+            SetRGBLED(i, RED,RED,RED,RED);
+    }
+
+    //check if front and back are bumped, or any ports are connected
+    if((bumped & 0x5) == 0x5)  
+    {
+        speed[0] = 0;
+        speed[1] = 0;
+        direction = FORWARD;
+    }
+    else
+    {
+        speed[0] = 30;
+        speed[1] = 30;
+
+        if((bumped & 0x5) == 0x1) //front bumped
+            direction = BACKWARD;
+        else if((bumped & 0x5) == 0x4) //back bumped
+            direction = FORWARD;
+    }
+
+    //check left and right
+    if((bumped & 0xA ) == 0xA) //both left and right are bumped
+        speed[2] = 0;
+    else if((bumped & 0xA) == 0x2) //left bumped
+        speed[2] = -60;
+    else if((bumped & 0xA) == 0x8) //right bumped
+        speed[2] = 60;
+    else
+        speed[2] = 0;
+
+    //last check ethernet port just in case
+    if(ethernet_status_hist.Sum(0) >0 || ethernet_status_hist.Sum(2) >0 || 
+            ethernet_status_hist.Sum(3) >0 || ethernet_status_hist.Sum(4) >0)
+    {
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
+    }
+
+   if( undocking_count > 100 )
+    {
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
+
+        // Turn off LEDs
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetRGBLED(i, 0,0,0,0);
+
+        if( last_state ==  FAILED )
+            current_state = RESTING;
+        else
+            current_state = FORAGING;
+
+        last_state = UNDOCKING;
+
+        RemoveFromAllQueues(IR_MSG_TYPE_UNLOCKED);
+        ResetAssembly(); // reset variables used during assembly
+
+        for(int i=0; i<SIDE_COUNT; i++)
+            SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
     }
 
 }
