@@ -42,15 +42,8 @@ class RobotSCOUT:public Robot
         virtual void Recover();
         virtual void Docking();
         virtual void Locking();
-        virtual void _InOrganism();
-        virtual void _Disassembly();
         virtual void Undocking();
         virtual void Recruitment();
-        virtual void _Raising();
-        virtual void _Lowering();
-        virtual void _Reshaping();
-        virtual void _MacroLocomotion();
-        virtual void _Climbing();
         virtual void Debugging();
 
         virtual void Log();
