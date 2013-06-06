@@ -123,6 +123,8 @@ class Robot
     virtual void Debugging()=0;
     virtual void Log()=0;
 
+    virtual void Avoidance();
+
 
     virtual int32_t get_aux_reflective(uint8_t i)=0;
 

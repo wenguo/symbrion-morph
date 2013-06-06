@@ -342,20 +342,8 @@ void RobotSCOUT::UpdateFailures()
 
 void RobotSCOUT::Avoidance()
 {
-
-    //for demo 
-    static bool triggered = false;
-    if(ambient_hist[0].Avg() > 1000 || ambient_hist[1].Avg() > 1000)
-        triggered = true;
-    else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
-        triggered = false;
-    if(!triggered)
-    {
-        speed[0] = 0;
-        speed[1] = 0;
-        speed[2] = 0;
-        return;
-    }
+    //default
+    Robot::Avoidance();
 
     speed[0] = 30;
     speed[1] = 30;
@@ -371,8 +359,6 @@ void RobotSCOUT::Avoidance()
             speed[1] += (para.avoid_weightright[i] * (temp >> 3));
         }
     }
-
-    // printf("direction: %d bumped: %#x speed: %d %d %d\n",direction, bumped, speed[0], speed[1], speed[2]);
 
 }
 
@@ -1475,7 +1461,10 @@ void RobotSCOUT::Recruitment()
     }
 }
 
-
+void RobotSCOUT::Undocking()
+{
+    Robot::Undocking();
+}
 
 void RobotSCOUT::Debugging()
 {

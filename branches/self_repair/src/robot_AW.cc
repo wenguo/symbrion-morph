@@ -362,25 +362,10 @@ void RobotAW::UpdateFailures()
 
 void RobotAW::Avoidance()
 {
-    //for demo 
-    static bool triggered = false;
-    if(ambient_hist[0].Avg() > 1000 || ambient_hist[1].Avg() > 1000)
-        triggered = true;
-    else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
-        triggered = false;
-    if(!triggered)
-    {
-        speed[0] = 0;
-        speed[1] = 0;
-        speed[2] = 0;
-        return;
-    }
+    //default
+    Robot::Avoidance();
 
-    speed[0] = 30;
-    speed[1] = 30;
-    speed[2] = 0;
-
-    if(org_bumped || aux_bumped)
+    if(aux_bumped)
     {
         //front and rear are bumped 
         if(((org_bumped & (1<<0 | 1<<1)) !=0 ||(aux_bumped & (1<<0|1<<6||1<<7))!=0) && ((org_bumped & (1<<4 | 1<< 5))!=0||(aux_bumped & (1<<3|1<<4))!=0))
@@ -400,9 +385,9 @@ void RobotAW::Avoidance()
         if(((org_bumped & (1<<2 | 1<<3)) !=0 || (aux_bumped & (1<<1 | 1<<2))!=0 )&& ((org_bumped & (1<<6 | 1<<7)) !=0 ||(aux_bumped & (1<<5 | 1<<6))!=0 ))
             speed[2] = 0;
         else if((org_bumped & (1<<2 | 1<<3)) !=0 || (aux_bumped & (1<<1 | 1<<2))!=0)
-            speed[2] = -direction * 30;
+            speed[2] = -60;
         else if((org_bumped & (1<<6 | 1<<7)) !=0 || (aux_bumped & (1<<5 | 1<<6))!=0)
-            speed[2] = direction * 30;
+            speed[2] = 60;
     }
 }
 
@@ -1450,6 +1435,11 @@ void RobotAW::Recruitment()
         if(seed)
             commander_IPC.Start(IPToString(commander_IP), commander_port, false);
     }
+}
+
+void RobotAW::Undocking()
+{
+    Robot::Undocking();
 }
 
 void RobotAW::Debugging()

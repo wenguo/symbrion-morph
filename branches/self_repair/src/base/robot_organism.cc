@@ -1313,10 +1313,6 @@ void Robot::Undocking()
 {
     undocking_count++;
 
-    speed[0] = 0;
-    speed[1] = 0;
-    speed[2] = 0;
-
     //flashing led
     for(int i=0;i<NUM_DOCKS;i++)
     {
@@ -1326,44 +1322,7 @@ void Robot::Undocking()
             SetRGBLED(i, RED,RED,RED,RED);
     }
 
-    //check if front and back are bumped, or any ports are connected
-    if((bumped & 0x5) == 0x5)  
-    {
-        speed[0] = 0;
-        speed[1] = 0;
-        direction = FORWARD;
-    }
-    else
-    {
-        speed[0] = 30;
-        speed[1] = 30;
-
-        if((bumped & 0x5) == 0x1) //front bumped
-            direction = BACKWARD;
-        else if((bumped & 0x5) == 0x4) //back bumped
-            direction = FORWARD;
-    }
-
-    //check left and right
-    if((bumped & 0xA ) == 0xA) //both left and right are bumped
-        speed[2] = 0;
-    else if((bumped & 0xA) == 0x2) //left bumped
-        speed[2] = -60;
-    else if((bumped & 0xA) == 0x8) //right bumped
-        speed[2] = 60;
-    else
-        speed[2] = 0;
-
-    //last check ethernet port just in case
-    if(ethernet_status_hist.Sum(0) >0 || ethernet_status_hist.Sum(2) >0 || 
-            ethernet_status_hist.Sum(3) >0 || ethernet_status_hist.Sum(4) >0)
-    {
-        speed[0] = 0;
-        speed[1] = 0;
-        speed[2] = 0;
-    }
-
-   if( undocking_count > 100 )
+    if( undocking_count > 100 )
     {
         speed[0] = 0;
         speed[1] = 0;
@@ -1386,6 +1345,63 @@ void Robot::Undocking()
         for(int i=0; i<SIDE_COUNT; i++)
             SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
     }
+    else
+        Avoidance();
+}
+
+void Robot::Avoidance()
+{
+
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
+    //for demo 
+    static bool triggered = false;
+    if(ambient_hist[0].Avg() > 1000 || ambient_hist[1].Avg() > 1000)
+        triggered = true;
+    else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
+        triggered = false;
+    if(!triggered)
+        return;
+
+    //front and rear are bumped 
+    if((bumped & (1<<0 | 1<<1)) !=0 && (bumped & (1<<4 | 1<< 5))!=0)
+    {
+        speed[0] = 0;
+        speed[1] = 0;
+        direction = FORWARD;
+    }
+    else
+    {
+        speed[0] = 30;
+        speed[1] = 30;
+        //only front is bumped
+        if((bumped & (1<<0 | 1<<1)) !=0) 
+            direction  = BACKWARD;
+        //only rear is bumped
+        else if((bumped & (1<<4 | 1<< 5)) !=0) 
+            direction  = FORWARD;
+    }
+
+    //move sideway if necessary
+    if((bumped & (1<<2 | 1<<3)) !=0 && (bumped & (1<<6 | 1<<7)) !=0)
+        speed[2] = 0;
+    else if((bumped & (1<<2 | 1<<3)) !=0)
+        speed[2] = -60;
+    else if((bumped & (1<<6 | 1<<7)) !=0)
+        speed[2] = 60;
+    else
+        speed[2] = 0;
+
+    //last check ethernet port just in case
+    if(ethernet_status_hist.Sum(0) >0 || ethernet_status_hist.Sum(2) >0 || 
+            ethernet_status_hist.Sum(3) >0 || ethernet_status_hist.Sum(4) >0)
+    {
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
+    }
 
 }
+
 
