@@ -340,37 +340,6 @@ void RobotKIT::UpdateFailures()
 void RobotKIT::Avoidance()
 {
     Robot::Avoidance();
-
-    /*
-    speed[0] = 30;
-    speed[1] = 30;
-    speed[2] = 0;
-
-    if(bumped)
-    {
-        //front and rear are bumped 
-        if((bumped & (1<<0 | 1<<1)) !=0 && (bumped & (1<<4 | 1<< 5))!=0)
-        {
-            speed[0] = 0;
-            speed[1] = 0;
-            direction = FORWARD;
-        }
-        //only front is bumped
-        else if((bumped & (1<<0 | 1<<1)) !=0) 
-            direction  = BACKWARD;
-        //only rear is bumped
-        else if((bumped & (1<<4 | 1<< 5)) !=0) 
-            direction  = FORWARD;
-
-        //move sideway if necessary
-        if((bumped & (1<<2 | 1<<3)) !=0 && (bumped & (1<<6 | 1<<7)) !=0)
-            speed[2] = 0;
-        else if((bumped & (1<<2 | 1<<3)) !=0)
-            speed[2] = -direction * 30;
-        else if((bumped & (1<<6 | 1<<7)) !=0)
-            speed[2] = direction * 30;
-    }*/
-
 }
 
 void RobotKIT::Exploring()
@@ -405,64 +374,7 @@ void RobotKIT::Resting()
     */
 
 }
-void RobotKIT::Seeding()
-{
-    mytree.Clear();
-    //select predefined organism
-    //og = new Organism;
-    //RealDemoOrganism_KAK(og);
-    //og->GraphToSequence(mytree);
-    //std::cout<<*og<<std::endl;
-    if(!para.og_seq_list.empty())
-    {
-        mytree = target = para.og_seq_list[0];
-        std::cout<<mytree<<std::endl;
-    }
-    else
-        printf("Warning: empty organism sequence info\n");
 
-
-    for(int i=0;i<SIDE_COUNT;i++)
-    {
-        recruitment_count[i] = 0;
-        recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
-    }
-
-    //start IPC thread, as a server
-    master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
-    commander_IP = my_IP;
-    commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
-
-    current_state = RECRUITMENT;
-    last_state = SEEDING;
-
-    seed = true;
-    msg_docking_signal_req_received = 0;
-
-
-    //prepare branches sequence
-    rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
-    if(ret.status >= RT_ERROR)
-    {
-        std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
-    }
-
-    std::vector<OrganismSequence>::iterator it;
-
-    //TODO: not to disable all
-    //disable all ir leds first
-    for(int i=0;i<NUM_DOCKS;i++)
-        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0); 
-    //enable the recruiting side
-    for(it = mybranches.begin() ; it != mybranches.end(); it++)
-    {
-        //check the first symbol that indicates the parent and child side of the connection
-        uint8_t branch_side = it->getSymbol(0).side1;
-        //enalbe docking signals
-        SetIRLED(branch_side, IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1); 
-        std::cout<<name<<" branch "<<*it<<std::endl;
-    }
-}
 
 void RobotKIT::Foraging()
 {

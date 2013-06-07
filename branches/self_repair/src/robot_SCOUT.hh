@@ -32,7 +32,6 @@ class RobotSCOUT:public Robot
 
         virtual void Exploring();
         virtual void Resting();
-        virtual void Seeding();
         virtual void Foraging();
         virtual void Assembly();
         virtual void Waiting();

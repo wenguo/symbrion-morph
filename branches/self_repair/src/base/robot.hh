@@ -101,7 +101,7 @@ class Robot
     virtual void Calibrating();
     virtual void Exploring()=0;
     virtual void Resting()=0;
-    virtual void Seeding()=0;
+    virtual void Seeding();
     virtual void Foraging()=0;
     virtual void Assembly()=0;
     virtual void Waiting()=0;
