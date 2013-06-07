@@ -420,68 +420,7 @@ void RobotAW::Resting()
     SendBranchTree(2, mytree);
     }*/
 }
-void RobotAW::Seeding() //the same as in RobotKIT
-{
-    mytree.Clear();
-    //select predefined organism
-    /*
-       og = new Organism;
-       RealDemoOrganism_AKAK(og);
-       og->GraphToSequence(mytree);
-       std::cout<<*og<<std::endl;
-       std::cout<<mytree<<std::endl;*/
 
-    if(!para.og_seq_list.empty())
-    {
-        mytree = target = para.og_seq_list[0];
-        std::cout<<mytree<<std::endl;
-    }
-    else
-        printf("Warning: empty organism sequence info\n");
-
-
-    for(int i=0;i<SIDE_COUNT;i++)
-    {
-        recruitment_count[i] = 0;
-        recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
-    }
-    
-    //start IPC thread, as a server
-    master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
-    commander_IP = my_IP;
-    commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
-
-    current_state = RECRUITMENT;
-    last_state = SEEDING;
-    
-    msg_docking_signal_req_received = 0;
-
-    seed = true;
-
-
-    //prepare branches sequence
-    rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
-    if(ret.status >= RT_ERROR)
-    {
-        std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
-    }
-
-    std::vector<OrganismSequence>::iterator it;
-
-    //TODO: not to disable all
-    //disable all ir leds first
-    for(int i=0;i<NUM_DOCKS;i++)
-        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
-    //enable the recruiting side
-    for(it = mybranches.begin() ; it != mybranches.end(); it++)
-    {
-        //check the first symbol that indicates the parent and child side of the connection
-        uint8_t branch_side = it->getSymbol(0).side1;
-        //enalbe docking signals
-        SetIRLED(branch_side, IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1);
-        std::cout<<name<<" branch "<<*it<<std::endl;
-    }
-}
 void RobotAW::Foraging() //the same as RobotKIT
 {
     speed[0]=0;
