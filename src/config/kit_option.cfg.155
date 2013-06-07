@@ -7,7 +7,7 @@ Foraging
     foraging_time 80
     waiting_time 20
     assembly_time 1200
-    beacon_threshold [2 2 2 2 2 2 2 2]
+    beacon_threshold [2 2 20 2 2 2 2 2]
 )
 
 LocateBeacon
@@ -54,7 +54,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 40
-    locking_motor_enabled [0 0 0 0]
+    locking_motor_enabled [1 0 1 0]
 )
 
 MacroLocomotion

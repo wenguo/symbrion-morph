@@ -113,6 +113,7 @@ void RobotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
     else if(rightspeed < -100)
         rightspeed = -100;
     irobot->Move(direction * para.scout_wheels_direction[0] * leftspeed, direction * para.scout_wheels_direction[1] * rightspeed * para.aw_adjustment_ratio);
+    printf("%d: speed %d %d %d\n", timestamp, leftspeed, rightspeed, speed3);
 }
 
 
@@ -342,9 +343,18 @@ void RobotSCOUT::UpdateFailures()
 
 void RobotSCOUT::Avoidance()
 {
+    //for demo 
+/*    static bool triggered = false;
+    if(ambient_hist[0].Avg() > 1000 || ambient_hist[1].Avg() > 1000)
+        triggered = true;
+    else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
+        triggered = false;
+    if(!triggered)
+        return;
+*/
     //default
     Robot::Avoidance();
-
+/*
     speed[0] = 30;
     speed[1] = 30;
 
@@ -359,7 +369,7 @@ void RobotSCOUT::Avoidance()
             speed[1] += (para.avoid_weightright[i] * (temp >> 3));
         }
     }
-
+*/
 }
 
 void RobotSCOUT::Exploring()

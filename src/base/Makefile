@@ -23,8 +23,8 @@ EXE = morph
 static_LIB = libmorph_base.a
 shared_LIB = libmorph_base.so
 
-CXXFLAGS =-O2 -Wall -Wno-reorder  -mcpu=bf561 -DWIP
-CFLAGS = -O2 -Wall -Wno-reorder -mcpu=bf561 -std=gnu99 -DWIP
+CXXFLAGS =-O2 -Wall -Wno-reorder  -mcpu=bf561 -DWITH_MOTION -DWIP
+CFLAGS = -O2 -Wall -Wno-reorder -mcpu=bf561 -std=gnu99 -DWITH_MOTION -DWIP
 
 
 CXXFLAGS += $(patsubst %, -I%, $(IPATH))

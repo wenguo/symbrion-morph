@@ -52,7 +52,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 40
-    locking_motor_enabled [0 0 0 0]
+    locking_motor_enabled [1 0 1 0]
 )
 
 MacroLocomotion

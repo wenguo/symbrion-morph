@@ -123,6 +123,8 @@ void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
         irobot->MoveScrewFront(speed0 * direction);
         irobot->MoveScrewRear(speed1 * direction);
     }
+
+    printf("%d: speed %d %d %d (%d)\n", timestamp, speed0, speed1, speed2, direction);
 }
 
 
@@ -339,6 +341,15 @@ void RobotKIT::UpdateFailures()
 
 void RobotKIT::Avoidance()
 {
+    /*
+    static bool triggered = false;
+    if(ambient_hist[0].Avg() > 1000 || ambient_hist[1].Avg() > 1000)
+        triggered = true;
+    else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
+        triggered = false;
+    if(!triggered)
+        return;*/
+
     Robot::Avoidance();
 }
 
