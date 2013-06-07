@@ -457,7 +457,8 @@ void Robot::SendSubOrgStr( int channel, uint8_t *seq )
         buf[buf[0]+1] = getNeighbourHeading( docked[channel] );
 
         SendIRMessage(channel, MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, para.ir_msg_repeated_num);
-        SendEthMessage(channel, MSG_TYPE_SUB_OG_STRING, buf, ((int)buf[0])+2, false);
+        //SendEthMessage(channel, MSG_TYPE_SUB_OG_STRING, buf, ((int)buf[0])+2, false);
+        IPCSendMessage(neighbours_IP[channel].i32, MSG_TYPE_SUB_OG_STRING, buf, ((int)buf[0])+2);
 
         printf("%d Sending sub-og string, size: %d\n",timestamp,((int)buf[0])+2);
         PrintSubOGString(buf);
@@ -487,7 +488,8 @@ void Robot::SendScoreStr( int channel, const OrganismSequence& seq, uint8_t scor
         //        std::cout << "sending score: " << (int) score << " and seq: " << seq
         //        		  << " size: " <<  ((int)buf[0])+2 << std::endl;
         SendIRMessage(channel, MSG_TYPE_SCORE_STRING, buf, buf[0]+2, para.ir_msg_repeated_num);
-        SendEthMessage(channel, MSG_TYPE_SCORE_STRING, buf, ((int)buf[0])+2, false);
+        //SendEthMessage(channel, MSG_TYPE_SCORE_STRING, buf, ((int)buf[0])+2, false);
+        IPCSendMessage(neighbours_IP[channel].i32, MSG_TYPE_SCORE_STRING, buf, ((int)buf[0])+2);
 
 
     }
