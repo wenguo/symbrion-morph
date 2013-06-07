@@ -44,7 +44,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
         //msg->data[0] -- reciver
         //msg->data[1] -- sender
 
-        bool ack_required = true;
+        bool ack_required = false;
 
         uint8_t command = msg->command; 
         uint8_t* data = (uint8_t*)msg->data + 2;
@@ -86,30 +86,80 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                         if(branch_IPs.size() > 0)
                             robot->mytree.setBranchIPs(robot_side(channel), branch_IPs);
 
-                        robot->IPCSendMessage(getFullIP(sender).i32,IPC_MSG_ACK, (uint8_t*)&msg->command, 1);
-
+                        ack_required = true;
                     }
                     else
+                        printf("%d: message is not from my neighbour ip %s\n", robot->timestamp, IPToString(getFullIP(sender)));
+                }
+                break;
+                // Note that the indexes are slightly different for ETH than for IR
+            case MSG_TYPE_SUB_OG_STRING:
+                {
+                    uint8_t channel = robot->getEthChannel(getFullIP(sender));
+                    if(channel < SIDE_COUNT)
                     {
+                        robot->msg_subog_seq_expected &= ~(1<<channel);
+                        robot->msg_subog_seq_received |= 1<<channel;
+                        memcpy(robot->subog_str,data,data[0]+1); //???dont' quiet understand as data[0] stores the seq.size()+1 already
+
+                        //printf("%d parent_side: %d type: %d channel: %d\n", timestamp,parent_side,type,channel);
+
+                        // if module has not yet entered a repair state
+                        if(  robot->current_state != REPAIR && robot->current_state != LEADREPAIR )
+                        {
+                            robot->parent_side = channel;
+                            robot->subog_str[robot->subog_str[0]] |= robot->type<<4;     // 4:5
+                            robot->subog_str[robot->subog_str[0]] |= channel<<6;  // 5:6
+                        }
+
+                        int ind = (int)(((uint8_t*)data)[0])+1;	 // get heading index
+                        robot->heading = ((uint8_t*)data)[ind];	 // get heading
+                        printf("%d: My heading is: %d @ %d\n",robot->timestamp,(int)robot->heading,ind);
+
+                        printf("%d Sub-organism string received\n",robot->timestamp);
+                        robot->PrintSubOGString(robot->subog_str);
+
+                        ack_required = true;
+                    }
+                    else
                         printf("%d: message is not from my neighbour ip %s\n", robot->timestamp, IPToString(getFullIP(sender)));
 
+                }
+                break;
+            case MSG_TYPE_SCORE_STRING:
+                {
+                    uint8_t channel = robot->getEthChannel(getFullIP(sender));
+                    if(channel < SIDE_COUNT)
+                    {
+                        robot->msg_score_seq_expected &= ~(1<<channel);
+                        robot->msg_score_seq_received |= 1<<channel;
+
+                        memcpy(robot->subog_str,data,data[0]+1);
+                        robot->best_score = data[(int)(data[0])+1];
+
+                        std::cout << "Score received: " << (int) robot->best_score << std::endl;
+                        robot->PrintSubOGString(robot->subog_str);
+                        
+                        ack_required = true;
                     }
+                    else
+                        printf("%d: message is not from my neighbour ip %s\n", robot->timestamp, IPToString(getFullIP(sender)));
                 }
                 break;
             case IPC_MSG_HINGE_3D_MOTION_REQ:
                 {
                     //followed by speed, count, rotation, angle, [int, int, int, int]
                     memcpy((uint8_t*)robot->hinge_command, data, sizeof(robot->hinge_command));
-                    robot->IPCSendMessage(getFullIP(sender).i32,IPC_MSG_ACK, &command, 1);
                     robot->timestamp_hinge_motor_cmd_received  = robot->timestamp;
+                    ack_required = true;
                 }
                 break;
             case IPC_MSG_LOCOMOTION_2D_REQ:
                 {
                     //followed by speed[0], speed[1], speed[2]
                     memcpy((uint8_t*)robot->locomotion_command, data, sizeof(robot->locomotion_command));
-                    robot->IPCSendMessage(getFullIP(sender).i32,IPC_MSG_ACK, &command, 1);
                     robot->timestamp_locomotion_motors_cmd_received  = robot->timestamp;
+                    ack_required = true;
                     //printf("%d: received [%s] %d %d %d %d\n", robot->timestamp, message_names[msg->command],
                     //        robot->locomotion_command[0],
                     //        robot->locomotion_command[1],
@@ -125,7 +175,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                         uint8_t channel = robot->getEthChannel(getFullIP(sender));
                         int8_t angle = data[0];
                         robot->RotateDockingUnit(channel, angle);
-                        robot->IPCSendMessage(getFullIP(sender).i32, IPC_MSG_ACK, &command, 1);
+                        ack_required = true;
                         printf("%d received request to rotate docking angle %d from side %d\n", robot->timestamp, (int)angle, (int)channel);
                     }
 
@@ -144,7 +194,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                             break;
                         }
                     }
-                    robot->IPCSendMessage(getFullIP(sender).i32, IPC_MSG_ACK, &command, 1);
+                    ack_required = true;
                 }
                 break;
             case IPC_MSG_IRSENSOR_DATA_REQ:
@@ -286,7 +336,9 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                             robot->UpdateOGIRSensors(config, buf, data[1]);
                             break;
                         case MSG_TYPE_IP_ADDR_COLLECTION:
-                            robot->RemoveFromQueue(robot->getEthChannel(getFullIP(sender)),MSG_TYPE_IP_ADDR_COLLECTION);
+                        case MSG_TYPE_SUB_OG_STRING:
+                        case MSG_TYPE_SCORE_STRING:
+                            robot->RemoveFromQueue(robot->getEthChannel(getFullIP(sender)),data[0]);
                             break;
                         default:
                             break;
@@ -297,6 +349,11 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 ack_required = false;
                 printf("unknow command\n");
                 break;
+        }
+
+        if(ack_required)
+        {
+            robot->IPCSendMessage(getFullIP(sender).i32,IPC_MSG_ACK, (uint8_t*)&msg->command, 1);
         }
 
         /*
