@@ -1346,7 +1346,7 @@ void Robot::Undocking()
             SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
     }
     else
-        Avoidance();
+        Robot::Avoidance();
 }
 
 void Robot::Avoidance()
@@ -1355,14 +1355,8 @@ void Robot::Avoidance()
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
-    //for demo 
-    static bool triggered = false;
-    if(ambient_hist[0].Avg() > 1000 || ambient_hist[1].Avg() > 1000)
-        triggered = true;
-    else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
-        triggered = false;
-    if(!triggered)
-        return;
+
+
 
     //front and rear are bumped 
     if((bumped & (1<<0 | 1<<1)) !=0 && (bumped & (1<<4 | 1<< 5))!=0)
@@ -1393,6 +1387,7 @@ void Robot::Avoidance()
     else
         speed[2] = 0;
 
+    /*
     //last check ethernet port just in case
     if(ethernet_status_hist.Sum(0) >0 || ethernet_status_hist.Sum(2) >0 || 
             ethernet_status_hist.Sum(3) >0 || ethernet_status_hist.Sum(4) >0)
@@ -1401,6 +1396,7 @@ void Robot::Avoidance()
         speed[1] = 0;
         speed[2] = 0;
     }
+    */
 
 }
 
