@@ -438,19 +438,21 @@ void Robot::MacroLocomotion()
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
-
-      //      if(!msg_climbing_start_received) //this will prevent the message being sent twice 
-      //      {
-      //          IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
-      //          msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
-      //      }
+#ifdef TEST_CLIMBING
+            if(!msg_climbing_start_received) //this will prevent the message being sent twice 
+            {
+                IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
+                msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
+            }
+#endif
+#ifdef TEST_RESHAPING
             if(!msg_lowering_received)
             {
                 printf("%d: send lowering start\n", timestamp);
                 IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
                 msg_lowering_received = true;
             }
-
+#endif
             IPC_health = true;
             climbing_count =0;
             macrolocomotion_count = 0;

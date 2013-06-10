@@ -96,7 +96,7 @@ Motor
 (
     speed_forward 30
     speed_sideward 2
-    scout_wheels_direction [1 -1]
+    scout_wheels_direction [1 1]
     locomotion_motor_enabled 1     
 )
 
