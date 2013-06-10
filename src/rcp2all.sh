@@ -1,5 +1,6 @@
 #!/bin/bash    
-robotIPs=(155 61 211 56 216 224 52)
+#robotIPs=(155 61 211 56 216 224 52)
+robotIPs=(69 220 72 200)
 
 for i in ${robotIPs[@]}
 do

@@ -124,7 +124,6 @@ void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
         irobot->MoveScrewRear(speed1 * direction);
     }
 
-    printf("%d: speed %d %d %d (%d)\n", timestamp, speed0, speed1, speed2, direction);
 }
 
 
