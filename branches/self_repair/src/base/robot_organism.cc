@@ -1044,10 +1044,12 @@ void Robot::Reshaping()
         {
             bool erase_required = false;
             uint8_t branch_side = it->getSymbol(0).side1;
+            std::cout<<"my branch: "<<*it<<std::endl;
+            printf("docked[%d]: %#x %#x\n", branch_side, docked[branch_side], it->getSymbol(0).data);
             if(docked[branch_side])
             {
                 //if the older neighbour matches with the new require
-                if(it->getSymbol(0) != OrganismSequence::Symbol(0) && it->getSymbol(0) == docked[branch_side])
+                if(it->getSymbol(0) != OrganismSequence::Symbol(0) && it->getSymbol(0).data == docked[branch_side])
                 {
                     docking_done[branch_side] = true;
                     

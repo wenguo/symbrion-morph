@@ -113,7 +113,6 @@ void RobotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
     else if(rightspeed < -100)
         rightspeed = -100;
     irobot->Move(direction * para.scout_wheels_direction[0] * leftspeed, direction * para.scout_wheels_direction[1] * rightspeed * para.aw_adjustment_ratio);
-    printf("%d: speed %d %d %d\n", timestamp, leftspeed, rightspeed, speed3);
 }
 
 
