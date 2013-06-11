@@ -15,7 +15,7 @@ HDMR_PATH=$(MIDDLEWARE_PATH_ROOT)/hdmrplus_install
 SOAP_PATH=$(MIDDLEWARE_PATH_ROOT)/gsoap-2.8
 
 MIDDLEWARE_INCLUDES=-I$(HDMR_PATH)/include -I$(SOAP_PATH)/gsoap
-MIDDLEWARE_LIBS=-L$(HDMR_PATH)/lib -L$(SOAP_PATH)/gsoap -lirobot_app -lirobot_common -lPeer -lUdata -lpthread
+MIDDLEWARE_LIBS=-L$(HDMR_PATH)/lib -L$(SOAP_PATH)/gsoap -lirobot_wrap -lirobot_app -lirobot_common -lPeer -lUdata -lpthread
 
 
 # Change this to your paths
