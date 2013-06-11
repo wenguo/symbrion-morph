@@ -1,12 +1,22 @@
 SRC = robot.cc robot_ircomm.cc robot_ethcomm.cc robot_option.cc robot_self_repair.cc parameter.cc global.cc IRMessage.cc robot_IPC.cc robot_debug.cc robot_organism.cc
 SRC+= organism.cc organism_sequence.cc organism_sample.cc
-SRC+= support.cc worldfile.cc hist.cc ipc.cc
+SRC+= Ethernet.cc
+SRC+= support.cc worldfile.cc hist.cc ipc.cc lolmsg.c 
 
 CC = bfin-linux-uclibc-gcc
 CXX = bfin-linux-uclibc-g++ 
 AR = bfin-linux-uclibc-ar
 OBJDUMP = bfin-linux-uclibc-objdump
 STRIP = bfin-linux-uclibc-strip
+
+MIDDLEWARE_PATH_ROOT=$(HOME)
+
+HDMR_PATH=$(MIDDLEWARE_PATH_ROOT)/hdmrplus_install
+SOAP_PATH=$(MIDDLEWARE_PATH_ROOT)/gsoap-2.8.7
+
+MIDDLEWARE_INCLUDES=-I$(HDMR_PATH)/include -I$(SOAP_PATH)/gsoap
+MIDDLEWARE_LIBS=-L$(HDMR_PATH)/lib -L$(SOAP_PATH)/gsoap -lirobot_app -lirobot_common -lPeer -lUdata -lpthread
+
 
 # Change this to your paths
 #IROBOTPATH = ../../irobot
@@ -27,9 +37,9 @@ CXXFLAGS =-O2 -Wall -Wno-reorder  -mcpu=bf561 -DWITH_MOTION -DWIP -DTEST_CLIMBIN
 CFLAGS = -O2 -Wall -Wno-reorder -mcpu=bf561 -std=gnu99 -DWITH_MOTION -DWIP -DTEST_CLIMBING
 
 
-CXXFLAGS += $(patsubst %, -I%, $(IPATH))
-LDFLAGS = -L$(IROBOTPATH)/lib -lpthread -lirobot
-LDFLAGS_$(shared_LIB) = -shared -Wl -L$(IROBOTPATH)/lib -lirobot
+CXXFLAGS += $(patsubst %, -I%, $(IPATH)) $(MIDDLEWARE_INCLUDES)
+LDFLAGS = $(MIDDLEWARE_LIBS) -lpthread 
+LDFLAGS_$(shared_LIB) = -shared -Wl $(MIDDLEWARE_LIBS)
 
 TOBJECTS = $(SRC:%.cc=objects/%.o)
 OBJECTS = $(TOBJECTS:%.c=objects/%.o)

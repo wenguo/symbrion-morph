@@ -19,9 +19,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include <comm/IRComm.h>
-#include <comm/Ethernet.h>
-#include <comm/switch.h>
+#include <InterfaceTypes.h>
+#include <IRobot.h>
+
+#include "Ethernet.h"
 #include "parameter.hh"
 #include "global.hh"
 #include "og/organism.hh"

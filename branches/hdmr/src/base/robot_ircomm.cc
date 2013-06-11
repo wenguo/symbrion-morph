@@ -1,4 +1,3 @@
-#include <comm/IRComm.h>
 #include "robot.hh"
 #include "utils/support.hh"
 
@@ -9,9 +8,10 @@ void * Robot::IRCommRxThread(void * para)
     while(1)
     {
         pthread_mutex_lock(&robot->ir_rx_mutex);
-        while(IRComm::HasMessage())
+        //while(IRComm::HasMessage())
+        while(1)
         {
-            robot->ProcessIRMessage(IRComm::ReadMessage());
+            //robot->ProcessIRMessage(IRComm::ReadMessage());
         }
         pthread_mutex_unlock(&robot->ir_rx_mutex);
 
@@ -568,7 +568,8 @@ void Robot::SendIRMessage(const IRMessage& msg)
     buf[2]=msg.type;
     for(int i=0;i<msg.data_len;i++)
         buf[i+3]=msg.data[i];
-    IRComm::SendMessage(board_dev_num[msg.channel], buf, std::min(msg.data_len+3, MAX_IR_MESSAGE_SIZE));
+    SendMessage(board_dev_num[msg.channel], buf, std::min(msg.data_len+3, MAX_IR_MESSAGE_SIZE));
+
 
     //flash led briefly
     if(RGBLED_status[msg.channel] ==0)
