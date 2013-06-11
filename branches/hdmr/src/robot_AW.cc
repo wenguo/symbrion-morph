@@ -1,13 +1,13 @@
 #include "robot_AW.hh"
 
-RobotAW::RobotAW(ActiveWheel *robot):Robot()
+robotAW::robotAW(ActiveWheel *robot):Robot()
 {
     if(name)
         free(name);
-    name = strdup("RobotAW");
+    name = strdup("robotAW");
     type = ROBOT_AW;
 
-    SPIVerbose = VERBOSE;
+//    SPIVerbose = VERBOSE;
     irobot = robot;
 
     board_dev_num[::FRONT] = ActiveWheel::RIGHT; 
@@ -25,20 +25,20 @@ RobotAW::RobotAW(ActiveWheel *robot):Robot()
     LED2 = 0x2;
 
     free_move = false;
-    printf("Consctruction RobotAW\n");
+    printf("Consctruction robotAW\n");
 }
 
-RobotAW::~RobotAW()
+robotAW::~robotAW()
 {
-    printf("Desctruction RobotAW\n");
+    printf("Desctruction robotAW\n");
 }
 
 
-void RobotAW::InitHardware()
+void robotAW::InitHardware()
 {
     for(int i=0;i<NUM_DOCKS;i++)
     {
-        irobot->SetPrintEnabled(i, false);
+        //irobot->SetPrintEnabled(i, false);
         irobot->enableAccelerometer(i, true);
     }
 
@@ -48,17 +48,20 @@ void RobotAW::InitHardware()
 
 }
 
-void RobotAW::Reset()
+void robotAW::Reset()
 {
-    irobot->MSPReset();
+    RobotBase::MSPReset();
 }
 
-void RobotAW::EnablePowerSharing(int side, bool on)
+void robotAW::EnablePowerSharing(int side, bool on)
 {
+#ifdef HDMR
     irobot->EnablePowerSharing(ActiveWheel::Side(board_dev_num[side]), on);
+#endif
+
 }
 
-void RobotAW::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
+void robotAW::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
 {
     int board = board_dev_num[channel];
     irobot->SetIRLED(ActiveWheel::Side(board), led);
@@ -87,14 +90,14 @@ void RobotAW::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_l
 
 }
 
-void RobotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br)
+void robotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br)
 {
     int board = board_dev_num[channel];
     irobot->SetLED(ActiveWheel::Side(board), tl, br, bl, tr);
     RGBLED_status[channel] = tl|tr|bl|br;
 }
 
-void RobotAW::SetSpeed(int left, int right, int side)
+void robotAW::SetSpeed(int left, int right, int side)
 {
     if(!para.locomotion_motor_enabled)
         return;
@@ -144,13 +147,13 @@ void RobotAW::SetSpeed(int left, int right, int side)
 
 }
 
-bool RobotAW::SetDockingMotor(int channel, int status)
+bool robotAW::SetDockingMotor(int channel, int status)
 {
     printf("ActiveWheel has no docking motors\n");
     return true;
 }
 
-bool RobotAW::SetHingeMotor(int status)
+bool robotAW::SetHingeMotor(int status)
 {
     if(status !=STOP && status !=UP && status !=DOWN)
         return false;
@@ -187,7 +190,7 @@ bool RobotAW::SetHingeMotor(int status)
     return true;
 }
 
-bool RobotAW::MoveHingeMotor(int command[4])
+bool robotAW::MoveHingeMotor(int command[4])
 {
     if(!para.hinge_motor_enabled)
         return false;
@@ -205,21 +208,29 @@ bool RobotAW::MoveHingeMotor(int command[4])
     return true;
 }
 
-bool RobotAW::RotateDockingUnit(int channel, int8_t angle)
+bool robotAW::RotateDockingUnit(int channel, int8_t angle)
 {
     bool ret = true;
 
     if(channel == FRONT)
+#ifdef HDMR
         irobot->MoveDockingSideDToAngle(angle);
+#else
+    ;
+#endif
     else if(channel == BACK)
+#ifdef HDMR
         irobot->MoveDockingSideBToAngle(angle);
+#else
+    ;
+#endif
     else
         ret = false;
 
     return ret;
 }
 
-void RobotAW::UpdateSensors()
+void robotAW::UpdateSensors()
 {
     IRValues ret_A = irobot->GetIRValues(ActiveWheel::RIGHT);
     IRValues ret_B = irobot->GetIRValues(ActiveWheel::FRONT);
@@ -321,14 +332,14 @@ void RobotAW::UpdateSensors()
     PrintAuxReflective();
 }
 
-void RobotAW::UpdateActuators()
+void robotAW::UpdateActuators()
 {
     //CheckHingeMotor();
     SetSpeed(speed[0], speed[1], speed[2]); 
 }
 
 // for self-repair
-void RobotAW::UpdateFailures()
+void robotAW::UpdateFailures()
 {
 
     static int failure_delay = 0;
@@ -360,7 +371,7 @@ void RobotAW::UpdateFailures()
     }
 }
 
-void RobotAW::Avoidance()
+void robotAW::Avoidance()
 {
     //default
     Robot::Avoidance();
@@ -392,11 +403,11 @@ void RobotAW::Avoidance()
 }
 
 
-void RobotAW::Exploring()
+void robotAW::Exploring()
 {
     Avoidance();
 }
-void RobotAW::Resting()
+void robotAW::Resting()
 {
     /*
        if(timestamp == 40)
@@ -421,7 +432,7 @@ void RobotAW::Resting()
     }*/
 }
 
-void RobotAW::Foraging() //the same as RobotKIT
+void robotAW::Foraging() //the same as RobotKIT
 {
     speed[0]=0;
     speed[1]=0;
@@ -470,7 +481,7 @@ void RobotAW::Foraging() //the same as RobotKIT
 
     }
 }
-void RobotAW::Waiting()//same as RobotKIT
+void robotAW::Waiting()//same as RobotKIT
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -508,7 +519,7 @@ void RobotAW::Waiting()//same as RobotKIT
         last_state = WAITING;
     }
 }
-void RobotAW::Assembly()
+void robotAW::Assembly()
 {
     speed[0]=0;
     speed[1]=0;
@@ -561,7 +572,7 @@ void RobotAW::Assembly()
     else
         Avoidance();
 }
-void RobotAW::LocateEnergy()//same as RobotKIT
+void robotAW::LocateEnergy()//same as RobotKIT
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -574,7 +585,7 @@ void RobotAW::LocateEnergy()//same as RobotKIT
         return;
     }
 }
-void RobotAW::LocateBeacon()
+void robotAW::LocateBeacon()
 {
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
@@ -689,7 +700,7 @@ void RobotAW::LocateBeacon()
 
 }
 
-void RobotAW::Alignment()
+void robotAW::Alignment()
 {
 
     int id0 = docking_approaching_sensor_id[0];
@@ -814,7 +825,7 @@ void RobotAW::Alignment()
 
 }
 
-void RobotAW::Recover()
+void robotAW::Recover()
 {
     recover_count++;
 
@@ -912,7 +923,7 @@ void RobotAW::Recover()
 
 #define MOVE_LEFT 5
 #define MOVE_RIGHT 6
-void RobotAW::Docking()
+void robotAW::Docking()
 {
     const char *docking_status_name[] ={"turn left", "turn right", "move forward", "move backward", "check" };
 
@@ -1109,7 +1120,7 @@ void RobotAW::Docking()
 
 }
 
-void RobotAW::Locking()
+void robotAW::Locking()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1139,7 +1150,7 @@ void RobotAW::Locking()
         commander_IPC.Start(IPToString(commander_IP), commander_port, false);
     }
 }
-void RobotAW::Recruitment()
+void robotAW::Recruitment()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1376,12 +1387,12 @@ void RobotAW::Recruitment()
     }
 }
 
-void RobotAW::Undocking()
+void robotAW::Undocking()
 {
     Robot::Undocking();
 }
 
-void RobotAW::Debugging()
+void robotAW::Debugging()
 {
     //speed[0] = 0;
     //speed[1] = 0;
@@ -1519,26 +1530,6 @@ void RobotAW::Debugging()
             }
             break;
         case 13:
-            if(timestamp==40)
-            {
-                for(int i=0;i<NUM_DOCKS;i++)
-                {
-                    printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, irobot->isEthernetPortConnected(ActiveWheel::Side(board_dev_num[i])) ? "true":"false",irobot->isSwitchActivated()?"true":"false" );
-                }
-            }
-#define NEIGHBOUR_IP "192.168.0.7"
-            if(timestamp % 10 ==0)
-            {
-                uint8_t data[9]={'h','e','l','l','o','-','A','W',0};
-                irobot->SendEthMessage(StringToIP(NEIGHBOUR_IP), data, sizeof(data));
-            }
-            while (irobot->HasEthMessage() > 0)
-            {
-                uint8_t rx[32];
-                auto_ptr<Message> m = irobot->ReceiveEthMessage();
-                memcpy(rx, m->GetData(), m->GetDataLength());
-                printf("%d -- received data: %s\n", timestamp, rx);
-            }
             break;
         case 14: //as recruting robot for measuring
             if(timestamp ==32)
@@ -1785,14 +1776,15 @@ void RobotAW::Debugging()
         case 27:
             {
                 acceleration_t acc = irobot->GetAcceleration();
-                hingeData hd = irobot->GetHingeStatus();
                 if(timestamp <= 100 )
                 {
                     irobot->MoveHingeToAngle(para.debug.para[9],40);
                 }
                 else if(timestamp <= 150)
                 {
+#ifdef HDMR
                     irobot->MoveHingeToAngle(para.hinge_motor_default_pos/10, para.hinge_motor_default_pos%10, 40);
+#endif
                 }
                 /*
                 else if(timestamp == 160)
@@ -1806,7 +1798,6 @@ void RobotAW::Debugging()
                     irobot->MoveDockingRight(0);
                 }*/
                 double angle = 360 * atan((acc.x * 1.0) / (-acc.z * 1.0)) /2 *M_PI;
-                printf("Hinge: %d %d acc: %d %d %d \ncurrent angle %f\n", hd.currentAngle, hd.targetAngle, acc.x, acc.y, acc.z, angle);
             }
             break;
 
@@ -1928,7 +1919,7 @@ void RobotAW::Debugging()
 
 }
 
-void RobotAW::Calibrating()
+void robotAW::Calibrating()
 {
     memset(speed, 0, 3 * sizeof(int));
 
@@ -1998,7 +1989,7 @@ void RobotAW::Calibrating()
 
 }
 
-void RobotAW::PrintAuxReflective()
+void robotAW::PrintAuxReflective()
 {
     if(!para.print_reflective)
         return;
@@ -2009,7 +2000,7 @@ void RobotAW::PrintAuxReflective()
     printf("\n");
 }
 
-void RobotAW::PrintAuxAmbient()
+void robotAW::PrintAuxAmbient()
 {
     if(!para.print_ambient)
         return;
@@ -2022,7 +2013,7 @@ void RobotAW::PrintAuxAmbient()
 
 
 
-void RobotAW::Log()
+void robotAW::Log()
 {
     int id0=para.debug.para[7];
     int id1=para.debug.para[8];

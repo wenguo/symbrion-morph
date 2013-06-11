@@ -3,13 +3,12 @@
 
 #include <robot.hh>
 #include <IRobot.h>
-#include <comm/IRComm.h>
 
-class RobotSCOUT:public Robot
+class robotSCOUT:public Robot
 {
     public:
-        RobotSCOUT(ScoutBot * robot);
-        virtual ~RobotSCOUT();
+        robotSCOUT(ScoutBot * robot);
+        virtual ~robotSCOUT();
 
     protected:
         virtual void InitHardware();

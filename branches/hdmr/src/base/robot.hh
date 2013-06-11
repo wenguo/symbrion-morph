@@ -33,7 +33,6 @@
 #include "utils/support.hh"
 #include "IRMessage.hh"
 
-
 class Robot
 {
     typedef void(*robot_callback_t)(Robot * robot);
