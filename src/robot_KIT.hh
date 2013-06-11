@@ -3,13 +3,12 @@
 
 #include <robot.hh>
 #include <IRobot.h>
-#include <comm/IRComm.h>
 
-class RobotKIT:public Robot
+class robotKIT:public Robot
 {
     public:
-        RobotKIT(KaBot * r);
-        virtual ~RobotKIT();
+        robotKIT(KaBot * r);
+        virtual ~robotKIT();
 
     protected:
         virtual void InitHardware();

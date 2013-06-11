@@ -1,7 +1,7 @@
 SRC = robot.cc robot_ircomm.cc robot_ethcomm.cc robot_option.cc robot_self_repair.cc parameter.cc global.cc IRMessage.cc robot_IPC.cc robot_debug.cc robot_organism.cc
 SRC+= organism.cc organism_sequence.cc organism_sample.cc
 SRC+= Ethernet.cc
-SRC+= support.cc worldfile.cc hist.cc ipc.cc lolmsg.c 
+SRC+= support.cc worldfile.cc hist.cc ipc.cc lolmsg.c crc8.c bytequeue.c
 
 CC = bfin-linux-uclibc-gcc
 CXX = bfin-linux-uclibc-g++ 
@@ -12,7 +12,7 @@ STRIP = bfin-linux-uclibc-strip
 MIDDLEWARE_PATH_ROOT=$(HOME)
 
 HDMR_PATH=$(MIDDLEWARE_PATH_ROOT)/hdmrplus_install
-SOAP_PATH=$(MIDDLEWARE_PATH_ROOT)/gsoap-2.8.7
+SOAP_PATH=$(MIDDLEWARE_PATH_ROOT)/gsoap-2.8
 
 MIDDLEWARE_INCLUDES=-I$(HDMR_PATH)/include -I$(SOAP_PATH)/gsoap
 MIDDLEWARE_LIBS=-L$(HDMR_PATH)/lib -L$(SOAP_PATH)/gsoap -lirobot_app -lirobot_common -lPeer -lUdata -lpthread

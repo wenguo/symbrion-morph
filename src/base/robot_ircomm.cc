@@ -568,7 +568,8 @@ void Robot::SendIRMessage(const IRMessage& msg)
     buf[2]=msg.type;
     for(int i=0;i<msg.data_len;i++)
         buf[i+3]=msg.data[i];
-    SendMessage(board_dev_num[msg.channel], buf, std::min(msg.data_len+3, MAX_IR_MESSAGE_SIZE));
+    
+    //SendMessage(board_dev_num[msg.channel], buf, std::min(msg.data_len+3, MAX_IR_MESSAGE_SIZE));
 
 
     //flash led briefly

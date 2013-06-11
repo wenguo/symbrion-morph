@@ -3,13 +3,12 @@
 
 #include <robot.hh>
 #include <IRobot.h>
-#include <comm/IRComm.h>
 
-class RobotAW:public Robot
+class robotAW:public Robot
 {
     public:
-        RobotAW(ActiveWheel * r);
-        virtual ~RobotAW();
+        robotAW(ActiveWheel * r);
+        virtual ~robotAW();
 
         void PrintAuxReflective();
         void PrintAuxAmbient();

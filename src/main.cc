@@ -42,10 +42,9 @@ int main(int argc, char * argv[])
     }
 
     printf("Robot Initialize\n");
-    RobotBase::RobotType robot_type = RobotBase::Initialize("morph");
+    IRobotFactory factory;
+    RobotBase::RobotType robot_type = factory.GetType();
 
-    printf("Init IRComm\n");
-    IRComm::Initialize();
 
     //create robot object
     Robot * robot = NULL;
@@ -59,17 +58,17 @@ int main(int argc, char * argv[])
 
     if(robot_type == RobotBase::KABOT)
     {
-        robot = new RobotKIT((KaBot*)RobotBase::Instance());
+        robot = new robotKIT((KaBot*)RobotBase::Instance());
         sprintf(cf_name,"%s/kit_option.cfg", cf_path);
     }
     else if(robot_type == RobotBase::ACTIVEWHEEL)
     {
-        robot = new RobotAW((ActiveWheel*)RobotBase::Instance());
+        robot = new robotAW((ActiveWheel*)RobotBase::Instance());
         sprintf(cf_name,"%s/aw_option.cfg", cf_path);
     }
     else if(robot_type == RobotBase::SCOUTBOT)
     {
-        robot = new RobotSCOUT((ScoutBot *)RobotBase::Instance());
+        robot = new robotSCOUT((ScoutBot *)RobotBase::Instance());
         sprintf(cf_name,"%s/scout_option.cfg", cf_path);
     }
     else

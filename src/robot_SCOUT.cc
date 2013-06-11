@@ -1,14 +1,11 @@
 #include "robot_SCOUT.hh"
 #include "og/organism_sample.hh"
 
-RobotSCOUT::RobotSCOUT(ScoutBot * robot):Robot()
+robotSCOUT::robotSCOUT(ScoutBot * robot):Robot()
 {
-
-    SPIVerbose = QUIET;
-
     if(name)
         free(name);
-    name = strdup("RobotSCOUT");
+    name = strdup("robotSCOUT");
     type = ROBOT_SCOUT;
 
     irobot = robot;
@@ -28,19 +25,18 @@ RobotSCOUT::RobotSCOUT(ScoutBot * robot):Robot()
     LED1 = 0x2;
     LED2 = 0x4;
 
-    printf("Consctruction RobotSCOUT\n");
+    printf("Consctruction robotSCOUT\n");
 }
 
-RobotSCOUT::~RobotSCOUT()
+robotSCOUT::~robotSCOUT()
 {
-    printf("Desctruction RobotSCOUT\n");
+    printf("Desctruction robotSCOUT\n");
 }
 
-void RobotSCOUT::InitHardware()
+void robotSCOUT::InitHardware()
 {
     for(int i=0;i<NUM_DOCKS;i++)
     {
-        irobot->SetPrintEnabled(i, false); 
         irobot->enableDockingSense(i, true);
     }
 
@@ -50,17 +46,17 @@ void RobotSCOUT::InitHardware()
     //   Ethernet::disableSwitch();
 }
 
-void RobotSCOUT::Reset()
+void robotSCOUT::Reset()
 {
     irobot->MSPReset();
 }
 
-void RobotSCOUT::EnablePowerSharing(int side, bool on)
+void robotSCOUT::EnablePowerSharing(int side, bool on)
 {
     irobot->EnablePowerSharing(ScoutBot::Side(board_dev_num[side]), on);
 }
 
-void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
+void robotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
 {
     int board = board_dev_num[channel];
     irobot->SetIRLED(ScoutBot::Side(board), led);
@@ -90,7 +86,7 @@ void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t puls
 
 }
 
-void RobotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br)
+void robotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br)
 {
     int board = board_dev_num[channel];
     irobot->SetLED(ScoutBot::Side(board), tr, bl, br, tl);
@@ -98,7 +94,7 @@ void RobotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint
 
 }
 
-void RobotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
+void robotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
 {
     if(!para.locomotion_motor_enabled)
         return;
@@ -117,7 +113,7 @@ void RobotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
 
 
 
-bool RobotSCOUT::SetDockingMotor(int channel, int status)
+bool robotSCOUT::SetDockingMotor(int channel, int status)
 {
     CPrintf4(SCR_BLUE,"%d -- side %d set motor %#x, (status: %#x)", timestamp, channel, status, locking_motors_status[channel]);
 
@@ -168,7 +164,7 @@ bool RobotSCOUT::SetDockingMotor(int channel, int status)
     return true;
 }
 
-bool RobotSCOUT::SetHingeMotor(int status)
+bool robotSCOUT::SetHingeMotor(int status)
 {
     if(status !=STOP && status !=UP && status !=DOWN)
         return false;
@@ -209,13 +205,13 @@ bool RobotSCOUT::SetHingeMotor(int status)
     return true;
 }
 
-bool RobotSCOUT::MoveHingeMotor(int command[4])
+bool robotSCOUT::MoveHingeMotor(int command[4])
 {
    // printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
     return true;
 }
 
-void RobotSCOUT::UpdateSensors()
+void robotSCOUT::UpdateSensors()
 {
     //sensor no
     //0 -- front right
@@ -300,7 +296,7 @@ void RobotSCOUT::UpdateSensors()
     stalled_hist.Push2(stalled);
 }
 
-void RobotSCOUT::UpdateActuators()
+void robotSCOUT::UpdateActuators()
 {
     CheckDockingMotor();
     //CheckHingeMotor();
@@ -308,7 +304,7 @@ void RobotSCOUT::UpdateActuators()
 }
 
 // for self-repair
-void RobotSCOUT::UpdateFailures()
+void robotSCOUT::UpdateFailures()
 {
     static int failure_delay = 0;
     if( !module_failed )
@@ -340,7 +336,7 @@ void RobotSCOUT::UpdateFailures()
     }
 }
 
-void RobotSCOUT::Avoidance()
+void robotSCOUT::Avoidance()
 {
     //for demo 
 /*    static bool triggered = false;
@@ -371,17 +367,17 @@ void RobotSCOUT::Avoidance()
 */
 }
 
-void RobotSCOUT::Exploring()
+void robotSCOUT::Exploring()
 {
     Avoidance();
 }
 
 
-void RobotSCOUT::Resting()
+void robotSCOUT::Resting()
 {
 }
 
-void RobotSCOUT::Foraging()
+void robotSCOUT::Foraging()
 {
     speed[0]=0;
     speed[1]=0;
@@ -428,7 +424,7 @@ void RobotSCOUT::Foraging()
 
 
 }
-void RobotSCOUT::Waiting()
+void robotSCOUT::Waiting()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -466,7 +462,7 @@ void RobotSCOUT::Waiting()
     }
 }
 
-void RobotSCOUT::Assembly()
+void robotSCOUT::Assembly()
 {
     speed[0]=0;
     speed[1]=0;
@@ -519,7 +515,7 @@ void RobotSCOUT::Assembly()
         Avoidance();
 }
 
-void RobotSCOUT::LocateEnergy()
+void robotSCOUT::LocateEnergy()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -533,7 +529,7 @@ void RobotSCOUT::LocateEnergy()
 }
 
 
-void RobotSCOUT::LocateBeacon()
+void robotSCOUT::LocateBeacon()
 {
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
@@ -663,7 +659,7 @@ void RobotSCOUT::LocateBeacon()
 }
 
 //TODO: cleanup the code
-void RobotSCOUT::Alignment()
+void robotSCOUT::Alignment()
 {
     speed[0] = para.aligning_forward_speed[0];
     speed[1] = para.aligning_forward_speed[1];
@@ -925,7 +921,7 @@ void RobotSCOUT::Alignment()
     }
 }
 
-void RobotSCOUT::Recover()
+void robotSCOUT::Recover()
 {
     recover_count++;
 
@@ -1054,7 +1050,7 @@ void RobotSCOUT::Recover()
     }
 }
 
-void RobotSCOUT::Docking()
+void robotSCOUT::Docking()
 {
     speed[0] = para.docking_forward_speed[0];
     speed[1] = para.docking_forward_speed[1];  
@@ -1077,7 +1073,7 @@ void RobotSCOUT::Docking()
 
 }
 
-void RobotSCOUT::Locking()
+void robotSCOUT::Locking()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1112,7 +1108,7 @@ void RobotSCOUT::Locking()
 
 }
 
-void RobotSCOUT::Recruitment()
+void robotSCOUT::Recruitment()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1390,12 +1386,12 @@ void RobotSCOUT::Recruitment()
     }
 }
 
-void RobotSCOUT::Undocking()
+void robotSCOUT::Undocking()
 {
     Robot::Undocking();
 }
 
-void RobotSCOUT::Debugging()
+void robotSCOUT::Debugging()
 {
     // speed[0] = 0;
     // speed[1] = 0;
@@ -1582,26 +1578,6 @@ void RobotSCOUT::Debugging()
             }
             break;
         case 13: //testing ethernet
-            if(timestamp==40)
-            {
-                for(int i=0;i<NUM_DOCKS;i++)
-                {
-                    printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, irobot->isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])) ? "true":"false",irobot->isSwitchActivated()?"true":"false" );
-                }
-            }
-#define NEIGHBOUR_IP "192.168.0.4"
-            if(timestamp % 10 ==0)
-            {
-                uint8_t data[10]={'h','e','l','l','o','-','K','I','T',0};
-                irobot->SendEthMessage(StringToIP(NEIGHBOUR_IP), data, sizeof(data));
-            }
-            while (irobot->HasEthMessage() > 0)
-            {
-                uint8_t rx[32];
-                auto_ptr<Message> m = irobot->ReceiveEthMessage();
-                memcpy(rx, m->GetData(), m->GetDataLength());
-                printf("%d -- received data: %s\n", timestamp, rx);
-            }
             break;
         case 14: //as docking robot for measureing
             if(timestamp ==32)
@@ -1969,7 +1945,7 @@ void RobotSCOUT::Debugging()
 
 }
 
-void RobotSCOUT::Log()
+void robotSCOUT::Log()
 {
     int id0=para.debug.para[7];
     int id1=para.debug.para[8];

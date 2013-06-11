@@ -1,13 +1,13 @@
 #include "robot_KIT.hh"
 #include "og/organism_sample.hh"
 
-RobotKIT::RobotKIT(KaBot * robot):Robot()
+robotKIT::robotKIT(KaBot * robot):Robot()
 {
-    SPIVerbose = QUIET;
+//    SPIVerbose = QUIET;
 
     if(name)
         free(name);
-    name = strdup("RobotKIT");
+    name = strdup("robotKIT");
     type = ROBOT_KIT;
 
     irobot = robot;
@@ -27,19 +27,19 @@ RobotKIT::RobotKIT(KaBot * robot):Robot()
     LED1 = 0x2;
     LED2 = 0x4;
 
-    printf("Consctruction RobotKIT\n");
+    printf("Consctruction robotKIT\n");
 }
 
-RobotKIT::~RobotKIT()
+robotKIT::~robotKIT()
 {
-    printf("Desctruction RobotKIT\n");
+    printf("Desctruction robotKIT\n");
 }
 
-void RobotKIT::InitHardware()
+void robotKIT::InitHardware()
 {
     for(int i=0;i<NUM_DOCKS;i++)
     {
-        irobot->SetPrintEnabled(i, false); 
+//        irobot->SetPrintEnabled(i, false); 
         irobot->enableDockingSense(i, true);
     }
 
@@ -48,17 +48,20 @@ void RobotKIT::InitHardware()
 
 }
 
-void RobotKIT::Reset()
+void robotKIT::Reset()
 {
-    irobot->MSPReset();
+    RobotBase::MSPReset();
 }
 
-void RobotKIT::EnablePowerSharing(int side, bool on)
+void robotKIT::EnablePowerSharing(int side, bool on)
 {
+
+#ifdef HDMR
     irobot->EnablePowerSharing(KaBot::Side(board_dev_num[side]), on);
+#endif
 }
 
-void RobotKIT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
+void robotKIT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
 {
     KaBot::Side board = (KaBot::Side)board_dev_num[channel];
     irobot->SetIRLED(board, led);
@@ -86,7 +89,7 @@ void RobotKIT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_
 
 }
 
-void RobotKIT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br)
+void robotKIT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t br)
 {
     int board = board_dev_num[channel];
     irobot->SetLED(KaBot::Side(board), tl, tr, bl, br);
@@ -94,7 +97,7 @@ void RobotKIT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_
 
 }
 
-void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
+void robotKIT::SetSpeed(int speed0, int speed1, int speed2)
 {
 
     if(!para.locomotion_motor_enabled)
@@ -128,7 +131,7 @@ void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
 
 
 
-bool RobotKIT::SetDockingMotor(int channel, int status)
+bool robotKIT::SetDockingMotor(int channel, int status)
 {
     CPrintf4(SCR_BLUE,"%d -- side %d set motor %#x, (status: %#x)", timestamp, channel, status, locking_motors_status[channel]);
 
@@ -140,7 +143,9 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
             //change status to be opening
             locking_motors_status[channel] = OPENING; //clear first
             if(para.locking_motor_enabled[channel])
+#ifdef HMDR
                 irobot->OpenDocking(KaBot::Side(board_dev_num[channel]));
+#endif
             printf("open docking\n");
         }
         //or open -> close
@@ -149,7 +154,9 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
             //change status to be closing
             locking_motors_status[channel] = CLOSING; //clear first
             if(para.locking_motor_enabled[channel])
+#ifdef HMDR
                 irobot->CloseDocking(KaBot::Side(board_dev_num[channel]));
+#endif
             printf("close docking\n");
         }
         else
@@ -170,7 +177,10 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
         {
             locking_motors_status[channel] = CLOSED;
         }
+#ifdef HMDR
         irobot->MoveDocking(KaBot::Side(board_dev_num[channel]), 0);        
+#endif
+
         SetRGBLED((channel+1)%4, 0, 0, 0, 0);
     }
 
@@ -178,7 +188,7 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
     return true;
 }
 
-bool RobotKIT::SetHingeMotor(int status)
+bool robotKIT::SetHingeMotor(int status)
 {
     if(status !=STOP && status !=UP && status !=DOWN)
         return false;
@@ -219,13 +229,13 @@ bool RobotKIT::SetHingeMotor(int status)
     return true;
 }
 
-bool RobotKIT::MoveHingeMotor(int command[4])
+bool robotKIT::MoveHingeMotor(int command[4])
 {
 //    printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
     return true;
 }
 
-void RobotKIT::UpdateSensors()
+void robotKIT::UpdateSensors()
 {
     //sensor no
     //0 -- front right
@@ -281,8 +291,10 @@ void RobotKIT::UpdateSensors()
         if(irobot->isEthernetPortConnected(KaBot::Side(board_dev_num[i])))
             ethernet_status |= 1<<i;
 
+#ifdef HDMR
         if(irobot->GetDScrewISense(KaBot::Side(board_dev_num[i])) > para.locking_motor_isense_threshold)
             isense |= 1<<i;
+#endif
 
                //     printf("%d\t", irobot->GetDScrewISense(KaBot::Side(board_dev_num[i])));
     }
@@ -298,7 +310,7 @@ void RobotKIT::UpdateSensors()
     }
 }
 
-void RobotKIT::UpdateActuators()
+void robotKIT::UpdateActuators()
 {
     CheckDockingMotor();
     //CheckHingeMotor();
@@ -306,7 +318,7 @@ void RobotKIT::UpdateActuators()
 }
 
 // for self-repair
-void RobotKIT::UpdateFailures()
+void robotKIT::UpdateFailures()
 {
     static int failure_delay = 0;
     if( !module_failed )
@@ -338,7 +350,7 @@ void RobotKIT::UpdateFailures()
     }
 }
 
-void RobotKIT::Avoidance()
+void robotKIT::Avoidance()
 {
     /*
     static bool triggered = false;
@@ -352,13 +364,13 @@ void RobotKIT::Avoidance()
     Robot::Avoidance();
 }
 
-void RobotKIT::Exploring()
+void robotKIT::Exploring()
 {
     Avoidance();
 }
 
 
-void RobotKIT::Resting()
+void robotKIT::Resting()
 {
     /*
        if(timestamp == 30)
@@ -386,7 +398,7 @@ void RobotKIT::Resting()
 }
 
 
-void RobotKIT::Foraging()
+void robotKIT::Foraging()
 {
     speed[0]=0;
     speed[1]=0;
@@ -434,7 +446,7 @@ void RobotKIT::Foraging()
 
 
 }
-void RobotKIT::Waiting()
+void robotKIT::Waiting()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -472,7 +484,7 @@ void RobotKIT::Waiting()
     }
 }
 
-void RobotKIT::Assembly()
+void robotKIT::Assembly()
 {
     speed[0]=0;
     speed[1]=0;
@@ -523,7 +535,7 @@ void RobotKIT::Assembly()
         Avoidance();
 }
 
-void RobotKIT::LocateEnergy()
+void robotKIT::LocateEnergy()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -536,7 +548,7 @@ void RobotKIT::LocateEnergy()
     }
 }
 
-void RobotKIT::LocateBeacon()
+void robotKIT::LocateBeacon()
 {
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
@@ -673,7 +685,7 @@ void RobotKIT::LocateBeacon()
 
 }
 
-void RobotKIT::Alignment()
+void robotKIT::Alignment()
 {
     speed[0] =  para.aligning_forward_speed[0];
     speed[1] =  para.aligning_forward_speed[1];
@@ -794,7 +806,7 @@ void RobotKIT::Alignment()
     }
 }
 
-void RobotKIT::Recover()
+void robotKIT::Recover()
 {
     recover_count++;
 
@@ -903,7 +915,7 @@ void RobotKIT::Recover()
 
 #define MOVE_LEFT 5
 #define MOVE_RIGHT 6
-void RobotKIT::Docking()
+void robotKIT::Docking()
 {
     const char *docking_status_name[] ={"turn left", "turn right", "move forward", "move backward", "check", "move left", "move right" };
 
@@ -1128,7 +1140,7 @@ void RobotKIT::Docking()
     }
 }
 
-void RobotKIT::Locking()
+void robotKIT::Locking()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1163,7 +1175,7 @@ void RobotKIT::Locking()
     }
 }
 
-void RobotKIT::Recruitment()
+void robotKIT::Recruitment()
 {
     speed[0] = 0;
     speed[1] = 0;
@@ -1443,12 +1455,12 @@ void RobotKIT::Recruitment()
 
 }
 
-void RobotKIT::Undocking()
+void robotKIT::Undocking()
 {
     Robot::Undocking();
 }
 
-void RobotKIT::Debugging()
+void robotKIT::Debugging()
 {
     // speed[0] = 0;
     // speed[1] = 0;
@@ -1595,12 +1607,16 @@ void RobotKIT::Debugging()
             //            else
             if(timestamp == 2 )
             {
+#ifdef HDMR
                 ((KaBot*)irobot)->OpenDocking(KaBot::Side(para.debug.para[9]));
+#endif
 
             }
             else if( timestamp == para.locking_motor_opening_time + 2 || (timestamp > 12 && locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
             {
+#ifdef HDMR
                 ((KaBot*)irobot)->MoveDocking((KaBot::Side(para.debug.para[9])),0);
+#endif
             }
             break;
             // For testing self-repair - starting from MacroLocomotion
@@ -1639,26 +1655,6 @@ void RobotKIT::Debugging()
             }
             break;
         case 13: //testing ethernet
-            if(timestamp==40)
-            {
-                for(int i=0;i<NUM_DOCKS;i++)
-                {
-                    printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, irobot->isEthernetPortConnected(KaBot::Side(board_dev_num[i])) ? "true":"false",irobot->isSwitchActivated()?"true":"false" );
-                }
-            }
-#define NEIGHBOUR_IP "192.168.0.4"
-            if(timestamp % 10 ==0)
-            {
-                uint8_t data[10]={'h','e','l','l','o','-','K','I','T',0};
-                irobot->SendEthMessage(StringToIP(NEIGHBOUR_IP), data, sizeof(data));
-            }
-            while (irobot->HasEthMessage() > 0)
-            {
-                uint8_t rx[32];
-                auto_ptr<Message> m = irobot->ReceiveEthMessage();
-                memcpy(rx, m->GetData(), m->GetDataLength());
-                printf("%d -- received data: %s\n", timestamp, rx);
-            }
             break;
         case 14: //as docking robot for measureing
             if(timestamp ==32)
@@ -1792,7 +1788,7 @@ void RobotKIT::Debugging()
             }
             else if(timestamp == 30)
             {
-                ((KaBot*)irobot)->CalibrateDocking(KaBot::Side(para.debug.para[9]));
+                //((KaBot*)irobot)->CalibrateDocking(KaBot::Side(para.debug.para[9]));
                 printf("start to calibrate docking unit %d\n", para.debug.para[9]);
             }
             break;
@@ -1805,18 +1801,19 @@ void RobotKIT::Debugging()
                 }
                 else if(timestamp == 30)
                 {
+#ifdef HMDR
                     ((KaBot*)irobot)->OpenDocking(KaBot::Side(para.debug.para[9]));
+#endif
                     printf("open docking unit %d\n", para.debug.para[9]);
                 }
                 else if(timestamp ==70 || (timestamp > 40 &&locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
                 {
+#ifdef HMDR
                     ((KaBot*)irobot)->MoveDocking(KaBot::Side(para.debug.para[9]), 0);
+#endif
                     printf("stop docking unit %d\n", para.debug.para[9]);
                 }
 
-                uint8_t rev = ((KaBot*)irobot)->GetDScrewRevolutions(KaBot::Side(para.debug.para[9]));
-                uint8_t ise = ((KaBot*)irobot)->GetDScrewISense(KaBot::Side(para.debug.para[9]));
-                printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
             }
             break;
         case 24://close docking units
@@ -1828,17 +1825,18 @@ void RobotKIT::Debugging()
                 }
                 else if(timestamp == 30)
                 {
+#ifdef HMDR
                     ((KaBot*)irobot)->CloseDocking(KaBot::Side(para.debug.para[9]));
+#endif
                     printf("close docking unit %d\n", para.debug.para[9]);
                 }
                 else if(timestamp ==70 || (timestamp > 40 &&locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
                 {
+#ifdef HMDR
                     ((KaBot*)irobot)->MoveDocking(KaBot::Side(para.debug.para[9]), 0);
+#endif
                     printf("stop docking unit %d\n", para.debug.para[9]);
                 }
-                uint8_t rev = ((KaBot*)irobot)->GetDScrewRevolutions(KaBot::Side(para.debug.para[9]));
-                uint8_t ise = ((KaBot*)irobot)->GetDScrewISense(KaBot::Side(para.debug.para[9]));
-                printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
             }
             break;
         case 25:
@@ -1965,7 +1963,7 @@ void RobotKIT::Debugging()
 
 }
 
-void RobotKIT::Log()
+void robotKIT::Log()
 {
     int id0=para.debug.para[7];
     int id1=para.debug.para[8];
