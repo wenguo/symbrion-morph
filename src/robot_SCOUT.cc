@@ -41,22 +41,30 @@ void RobotSCOUT::InitHardware()
     for(int i=0;i<NUM_DOCKS;i++)
     {
         irobot->SetPrintEnabled(i, false); 
+        irobot->enableDockingSense(i, true);
     }
 
     irobot->EnableMotors(true);
+    irobot->EnableHallSensors(true);
 
- //   Ethernet::disableSwitch();
+    //   Ethernet::disableSwitch();
 }
 
 void RobotSCOUT::Reset()
 {
-    RobotBase::MSPReset();
+    irobot->MSPReset();
+}
+
+void RobotSCOUT::EnablePowerSharing(int side, bool on)
+{
+    irobot->EnablePowerSharing(ScoutBot::Side(board_dev_num[side]), on);
 }
 
 void RobotSCOUT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
 {
     int board = board_dev_num[channel];
     irobot->SetIRLED(ScoutBot::Side(board), led);
+   // irobot->SetIRPulse(ScoutBot::Side(board), 0);
     irobot->SetIRPulse(ScoutBot::Side(board), pulse_led|IRPULSE2);
     irobot->SetIRMode(ScoutBot::Side(board), mode);
 
@@ -90,8 +98,12 @@ void RobotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint
 
 }
 
-void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t speed3)
+void RobotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
 {
+    if(!para.locomotion_motor_enabled)
+        return;
+
+    //note that the leftspeed is in fact set to the right motor of scouts, rightspeed is on the left motor
     if(leftspeed > 100)
         leftspeed = 100;
     else if(leftspeed < -100)
@@ -100,31 +112,31 @@ void RobotSCOUT::SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t speed3)
         rightspeed = 100;
     else if(rightspeed < -100)
         rightspeed = -100;
-    irobot->Move(para.scout_wheels_direction[0]*leftspeed, para.scout_wheels_direction[1]*rightspeed);
+    irobot->Move(direction * para.scout_wheels_direction[0] * leftspeed, direction * para.scout_wheels_direction[1] * rightspeed * para.aw_adjustment_ratio);
 }
 
 
 
 bool RobotSCOUT::SetDockingMotor(int channel, int status)
 {
-    CPrintf4(SCR_BLUE,"%d -- side %d set motor %#x, (status: %#x)", timestamp, channel, status, docking_motors_status[channel]);
+    CPrintf4(SCR_BLUE,"%d -- side %d set motor %#x, (status: %#x)", timestamp, channel, status, locking_motors_status[channel]);
 
     if(status != STOP)
     {
         //closed -> open?
-        if(docking_motors_status[channel] == CLOSED  && status == OPEN)
+        if(locking_motors_status[channel] == CLOSED  && status == OPEN)
         {
             //change status to be opening
-            docking_motors_status[channel] = OPENING; //clear first
+            locking_motors_status[channel] = OPENING; //clear first
             if(para.locking_motor_enabled[channel])
                 irobot->OpenDocking(ScoutBot::Side(board_dev_num[channel]));
             printf("open docking\n");
         }
         //or open -> close
-        else if(docking_motors_status[channel]== OPENED &&  status == CLOSE )
+        else if(locking_motors_status[channel]== OPENED &&  status == CLOSE )
         {
             //change status to be closing
-            docking_motors_status[channel] = CLOSING; //clear first
+            locking_motors_status[channel] = CLOSING; //clear first
             if(para.locking_motor_enabled[channel])
                 irobot->CloseDocking(ScoutBot::Side(board_dev_num[channel]));
             printf("close docking\n");
@@ -132,25 +144,26 @@ bool RobotSCOUT::SetDockingMotor(int channel, int status)
         else
             return false;
 
+        SetRGBLED((channel+1)%4, GREEN, GREEN, RED, RED);
     }
     else
     {
         // opeing/open -->stop
-        if(docking_motors_status[channel] == OPENED || 
-                docking_motors_status[channel] == OPENING )
+        if(locking_motors_status[channel] == OPENED || 
+                locking_motors_status[channel] == OPENING )
         {
-            docking_motors_status[channel]=OPENED;
+            locking_motors_status[channel]=OPENED;
         }
         // closing/closed -> stop ?
         else
         {
-            docking_motors_status[channel] = CLOSED;
+            locking_motors_status[channel] = CLOSED;
         }
+        irobot->MoveDocking(ScoutBot::Side(board_dev_num[channel]), 0);
+
+        SetRGBLED((channel+1)%4, 0, 0, 0, 0);
     }
 
-    //TODO: checking this
-    //MoveDocking(ScoutBot::Side(board_dev_num[channel]), status);
-    SetRGBLED(1, GREEN, GREEN, RED, RED);
     printf("\n------ moving docking motor ----\n");
     return true;
 }
@@ -196,7 +209,11 @@ bool RobotSCOUT::SetHingeMotor(int status)
     return true;
 }
 
-
+bool RobotSCOUT::MoveHingeMotor(int command[4])
+{
+   // printf("%d: hinge command: %d %d %d %d\n", timestamp, command[0], command[1], command[2], command[3]);
+    return true;
+}
 
 void RobotSCOUT::UpdateSensors()
 {
@@ -247,62 +264,111 @@ void RobotSCOUT::UpdateSensors()
     beacon[7] = ret_D.sensor[1].docking;
 
     uint8_t ethernet_status=0;
+    uint8_t isense=0;
+    //    printf("Isense: ");
     for(int i=0;i<NUM_DOCKS;i++)
     {
-    //    color[i] = GetRGB(ScoutBot::Side(i));
         if(irobot->isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])))
             ethernet_status |= 1<<i;
+
+        if(irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])) > para.locking_motor_isense_threshold)
+            isense |= 1<<i;
+
+        //        printf("%d\t", irobot->GetDScrewISense(ScoutBot::Side(board_dev_num[i])));
     }
+    //    printf("\n");
+
     ethernet_status_hist.Push2(ethernet_status);
+    locking_motor_isense_hist.Push2(isense);
 
     for(int i=0;i<NUM_IRS;i++)
     {
         reflective_hist[i].Push(reflective[i]-para.reflective_calibrated[i]);
         ambient_hist[i].Push(para.ambient_calibrated[i] - ambient[i]);
     }
+
+    last_encoders = encoders;
+    encoders = irobot->GetHallSensorValues2D();
+
+    uint8_t stalled = 0;
+    if(speed[0] !=0 && abs(encoders.right - last_encoders.right) < 2)
+        stalled |= 0x1;
+
+    if(speed[1] !=0 && abs(encoders.left - last_encoders.left) < 2)
+        stalled |= 0x2;
+
+    stalled_hist.Push2(stalled);
 }
 
 void RobotSCOUT::UpdateActuators()
 {
     CheckDockingMotor();
-    CheckHingeMotor();
+    //CheckHingeMotor();
     SetSpeed(speed[0], speed[1],speed[2]); 
 }
 
 // for self-repair
 void RobotSCOUT::UpdateFailures()
 {
+    static int failure_delay = 0;
     if( !module_failed )
     {
-        if( current_state == MACROLOCOMOTION )
+        if( current_state == para.fail_in_state  )
         {
-            if( para.debug.para[0] > 0 && macrolocomotion_count > (unsigned) para.debug.para[0] )
+            if( failure_delay++ > para.fail_after_delay )
+            {
+                // For testing - send spoof IR message to self
+                //                msg_failed_received |= 1<<para.debug.para[0]; // side received on
+                //                subog_id = para.debug.para[1];				  // side sent from
+                //                parent_side = para.debug.para[0];
+                //                heading = (parent_side + 2) % 4;
+                //
+                //                // Propagate lowering messages
+                //                PropagateIRMessage(IR_MSG_TYPE_LOWERING);
+                //
+                //                last_state = MACROLOCOMOTION;
+                //                current_state = LOWERING;
+                //                lowering_count = 0;
+                //
+                //                msg_unlocked_received |= 1<<para.debug.para[0];
+                /////////////////////////////////////////////
+
                 module_failed = true;
+                failure_delay = 0;
+            }
         }
     }
 }
 
 void RobotSCOUT::Avoidance()
 {
-    speed[0] = 40;
-    speed[1] = 40;
+    //for demo 
+/*    static bool triggered = false;
+    if(ambient_hist[0].Avg() > 1000 || ambient_hist[1].Avg() > 1000)
+        triggered = true;
+    else if(ambient_hist[4].Avg() > 1000 || ambient_hist[5].Avg() > 1000)
+        triggered = false;
+    if(!triggered)
+        return;
+*/
+    //default
+    Robot::Avoidance();
+/*
+    speed[0] = 30;
+    speed[1] = 30;
 
+    uint32_t temp=0;
 
     for(int i=0;i<NUM_IRS;i++)
     {
-           speed[0] +=(para.avoid_weightleft[i] * (reflective_hist[i]).Avg())>>3;
-           speed[1] += (para.avoid_weightleft[i] * (reflective_hist[i]).Avg())>>3;
+        if(reflective_hist[i].Avg() > 0)
+        {
+            temp =  reflective_hist[i].Avg();
+            speed[0] +=(para.avoid_weightleft[i] * (temp>>3));
+            speed[1] += (para.avoid_weightright[i] * (temp >> 3));
+        }
     }
-
-    if(reflective_hist[1].Avg() > para.avoidance_threshold || reflective_hist[0].Avg()>para.avoidance_threshold)
-        direction = BACKWARD;
-    else if(reflective_hist[4].Avg() > para.avoidance_threshold || reflective_hist[5].Avg()>para.avoidance_threshold)
-        direction = FORWARD;
-
-    speed[0] = 0;
-    speed[1] = 0;
-
-
+*/
 }
 
 void RobotSCOUT::Exploring()
@@ -313,102 +379,31 @@ void RobotSCOUT::Exploring()
 
 void RobotSCOUT::Resting()
 {
-    /*
-       if(timestamp == 30)
-       {
-       mytree.Clear();
-       if(og)
-       delete og;
-    //select predefined organism
-    og = new Organism;
-    RealDemoOrganism_KAK(og);
-    og->GraphToSequence(mytree);
-    std::cout<<*og<<std::endl;
-    std::cout<<mytree<<std::endl;
-    //prepare branches sequence
-    rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
-    if(ret.status >= RT_ERROR)
-    {
-    std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
-    }
-
-    SendBranchTree(2, mytree);
-    }
-    */
-
 }
-void RobotSCOUT::Seeding()
-{
-    mytree.Clear();
-    //select predefined organism
-    //og = new Organism;
-    //RealDemoOrganism_KAK(og);
-    //og->GraphToSequence(mytree);
-    //std::cout<<*og<<std::endl;
-    if(!para.og_seq_list.empty())
-    {
-        mytree = target = para.og_seq_list[0];
-        std::cout<<mytree<<std::endl;
-    }
-    else
-        printf("Warning: empty organism sequence info\n");
 
-
-    for(int i=0;i<SIDE_COUNT;i++)
-    {
-        recruitment_count[i] = 0;
-        recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
-    }
-
-    current_state = RECRUITMENT;
-    last_state = SEEDING;
-
-    seed = true;
-
-
-    //prepare branches sequence
-    rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
-    if(ret.status >= RT_ERROR)
-    {
-        std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
-    }
-
-    std::vector<OrganismSequence>::iterator it;
-
-    //TODO: not to disable all
-    //disable all ir leds first
-    for(int i=0;i<NUM_DOCKS;i++)
-        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0); 
-    //enable the recruiting side
-    for(it = mybranches.begin() ; it != mybranches.end(); it++)
-    {
-        //check the first symbol that indicates the parent and child side of the connection
-        uint8_t branch_side = it->getSymbol(0).side1;
-        //enalbe docking signals
-        SetIRLED(branch_side, IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1); 
-        std::cout<<name<<" branch "<<*it<<std::endl;
-    }
-}
 void RobotSCOUT::Foraging()
 {
+    speed[0]=0;
+    speed[1]=0;
+    foraging_count++;
     /*
     //time up?
-    if(foraging_count--<=0)
+    if(foraging_count >= para.foraging_time)
     {
-        foraging_count = DEFAULT_FORAGING_COUNT;
-        waiting_count=DEFAULT_WAITING_COUNT;
+    foraging_count = 0;//DEFAULT_FORAGING_COUNT;
+    waiting_count = 0;//DEFAULT_WAITING_COUNT;
 
-        //switch off all ir leds
-        for(uint8_t i=0; i< NUM_DOCKS; i++)
-        {
-            SetIRLED(i, IRLEDOFF, LED1, 0x0);
-            SetRGBLED(i, 0,0,0,0);
-        }
-        current_state = WAITING;
-        last_state = FORAGING;
+    //switch off all ir leds
+    for(uint8_t i=0; i< NUM_DOCKS; i++)
+    {
+    SetIRLED(i, IRLEDOFF, LED1, 0x0);
+    SetRGBLED(i, 0,0,0,0);
+    }
+    current_state = WAITING;
+    last_state = FORAGING;
 
-        speed[0] = 0;
-        speed[1] = 0;
+    speed[0] = 0;
+    speed[1] = 0;
     }
     else*/
     {
@@ -419,11 +414,12 @@ void RobotSCOUT::Foraging()
             current_state = LOCATEENERGY;
             last_state = FORAGING;
         }
-        else if(organism_found)
+        else if(organism_found || beacon_signals_detected)
         {
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
 
+            assembly_count = 0;
             current_state = ASSEMBLY;
             last_state = WAITING;
         }
@@ -441,10 +437,12 @@ void RobotSCOUT::Waiting()
     msg_locked_received = 0;
     msg_lockme_received = 0;
 
-    if(waiting_count--<=0)
+    waiting_count++;
+
+    if(waiting_count >= (uint32_t)para.waiting_time)
     {
-        waiting_count=DEFAULT_WAITING_COUNT;
-        foraging_count=DEFAULT_FORAGING_COUNT;
+        waiting_count = 0;//DEFAULT_WAITING_COUNT;
+        foraging_count = 0;//DEFAULT_FORAGING_COUNT;
 
         for(int i=0;i< NUM_IRS;i++)
             reflective_hist[i].Reset();
@@ -456,21 +454,30 @@ void RobotSCOUT::Waiting()
         current_state = FORAGING;
         last_state = WAITING;
     }
-    else if(organism_found)
+    else if(organism_found || beacon_signals_detected)
     {
         for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
 
         current_state = ASSEMBLY;
         last_state = WAITING;
+
+        assembly_count = 0;
     }
 }
 
 void RobotSCOUT::Assembly()
 {
-    if(assembly_count--<=0)
+    speed[0]=0;
+    speed[1]=0;
+
+    assembly_count++;
+
+    if(assembly_count >= (uint32_t)para.assembly_time)
     {
         organism_found = false;
+
+        assembly_count = 0;
 
         current_state = FORAGING;
         last_state = ASSEMBLY;
@@ -495,6 +502,18 @@ void RobotSCOUT::Assembly()
 
         current_state = LOCATEBEACON;
         last_state = FORAGING;
+
+        locatebeacon_count = 0;
+    }
+    else if(assembly_info == OrganismSequence::Symbol(0) )
+    {
+        printf("beacon_signals_detected: %d\n", beacon_signals_detected);
+        for(uint8_t i=0;i<NUM_DOCKS;i++)
+        {
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+            if(timestamp % 12 == 3 * i && (beacon_signals_detected & (0x3 << (2*i)))!=0)
+                BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING_REQ,0); 
+        }
     }
     else
         Avoidance();
@@ -522,29 +541,32 @@ void RobotSCOUT::LocateBeacon()
     speed[0] = 0;
     speed[1] = 0;
 
+    locatebeacon_count++;
+
     int turning = 0;
     if(beacon_signals_detected)
     {
-        speed[0] = direction *para.locatebeacon_forward_speed[0];
-        speed[1] = direction *para.locatebeacon_forward_speed[1];
+        speed[0] = para.locatebeacon_forward_speed[0];
+        speed[1] = para.locatebeacon_forward_speed[1];
 
         if(id0==0)
         {
-            if((beacon_signals_detected & 0x3) != 0)
+            if((beacon_signals_detected & 0x3) != 0 && (beacon_signals_detected & 0xCC)==0)
                 turning = 0;
-            //no signals on side 1, turn left 
+            //no signals on side 1, turn right 
             else if((beacon_signals_detected & 0xC) ==0)
                 turning = -1;
-            //no signals on side 3, turn right 
+            //no signals on side 3, turn left 
             else if((beacon_signals_detected & 0xC0) ==0)
                 turning = 1;
             else 
                 turning = 0;
+                printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
         }
         else
         {
 
-            if((beacon_signals_detected & 0x30) != 0)
+            if((beacon_signals_detected & 0x30) != 0 && (beacon_signals_detected & 0xCC)==0)
                 turning = 0;
             //no signals on side 1, turn right
             else if((beacon_signals_detected & 0xC) ==0)
@@ -554,97 +576,107 @@ void RobotSCOUT::LocateBeacon()
                 turning = -1;
             else 
                 turning = 0;
-            printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],
-                    beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
+            printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tturning: %d\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, turning);
         }
 
-        //printf("max_beacon: %d %d %d %d\tturning: %d\n", max_beacon[0], max_beacon[1], max_beacon[2], max_beacon[3], turning);
-        if(turning != 0)
+        if(turning ==-1)
         {
-            speed[0] = turning * 30;
-            speed[1] = -turning * 30;
+            speed[0] = -direction * 30;
+            speed[1] = direction * 30;
+        }
+        else if(turning == 1)
+        {
+            speed[0] = direction *  30;
+            speed[1] = -direction *  30;
         }
         else
         {
-            if((beacon_signals_detected & (1<<id0 | 1<<id1)) != 0)
+            //using hist will filter out the noise from IRComm
+            if(beacon_signals_detected_hist.Sum(id0) > 2 || beacon_signals_detected_hist.Sum(id1) > 2)
             {
+                int shift_factor = 1;
                 for(int i=0;i<NUM_IRS;i++)
                 {
-                    speed[0] += (beacon[i] * direction * para.locatebeacon_weightleft[i]) >>1;
-                    speed[1] += (beacon[i] * direction * para.locatebeacon_weightright[i]) >>1;
+                    speed[0] += (beacon[i] * para.locatebeacon_weightleft[i]) >>shift_factor;
+                    speed[1] += (beacon[i] * para.locatebeacon_weightright[i]) >>shift_factor;
                 }
             }
             else
             {
-                speed[0] = 0;
-                speed[1] = 0;
+                speed[0] = 20;
+                speed[1] = 20;
+            }
+
+            printf("%d: speed %d %d\n", timestamp, speed[0], speed[1]);
+        }
+    }
+
+    //checking
+    if((beacon_signals_detected_hist.Sum(id0) >= 6 || beacon_signals_detected_hist.Sum(id1) >=6) && ethernet_status_hist.Sum(assembly_info.side2) > 4) 
+    {
+        SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+        docking_count = 0;
+        docking_failed_reverse_count = 0;
+
+        docking_blocked = false;
+
+        current_state = ALIGNMENT;
+        last_state = LOCATEBEACON;
+
+        SetRGBLED(0,0,0,0,0);
+    }
+    else if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 30 && beacon[id1] >= 30)  
+    {
+        current_state = ALIGNMENT;
+        last_state = LOCATEBEACON;
+
+        docking_blocked_hist.Reset();
+        //using reflective signals if not set
+        for(int i=0; i< NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1);
+
+    } 
+    else if (beacon_signals_detected ==0 )
+    {
+        if(locatebeacon_count >= (uint32_t)para.locatebeacon_time)
+        {
+            current_state = ASSEMBLY;
+            last_state = LOCATEBEACON;
+
+            locatebeacon_count = 0;
+
+            organism_found = false;
+            assembly_count = 0;
+            assembly_info = OrganismSequence::Symbol(0);
+
+            for(int i=0;i<NUM_DOCKS;i++)
+            {
+                SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1);
+                SetRGBLED(i, 0, 0, 0, 0);
             }
         }
+        else
+            printf("%d: no signals\n", timestamp);
+
     }
-
-    printf("beacon: (%d %d) -- speed: (%d %d %d %d)\n", beacon[id0], beacon[id1], speed[0], speed[1], para.locatebeacon_forward_speed[0], para.locatebeacon_forward_speed[1]);
-    //switch on ir led at 64Hz so the recruitment robot can sensing it
-    //and turn on its docking signals, the robot need to switch off ir 
-    //led for a while to check if it receives docking signals
-    static int flag=0;
-    if(timestamp % 5 ==0)
-    {
-        flag++;
-        switch (flag % 6)
-        {
-            case 3:
-            case 4:
-                {
-                    //switch off all ir led, 
-                    for(int i=0;i<NUM_DOCKS;i++)
-                    {
-                        SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-                        SetRGBLED(i, 0,0,0,0);
-                    }
-                }
-                break;
-            case 0:
-            case 1:
-            case 2:
-            case 5:
-                {
-                    if((beacon_signals_detected == (1<<id0| 1<<id1)) && beacon[id0] >= 30 && beacon[id1] >= 30)  
-                    {
-                        current_state = ALIGNMENT;
-                        last_state = LOCATEBEACON;
-
-                        //using reflective signals if not set
-                        for(int i=0; i< NUM_DOCKS;i++)
-                            SetIRLED(i, IRLEDOFF, LED1, IRPULSE0 | IRPULSE1);
-
-                    } 
-                    else if (beacon_signals_detected ==0 )
-                    {
-                        //then swith on all ir led at 64Hz frequency
-                        for(int i=0;i<NUM_DOCKS;i++)
-                            SetIRLED(i, IRLEDPROXIMITY, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-                    }
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
 
 }
 
 //TODO: cleanup the code
 void RobotSCOUT::Alignment()
 {
-    speed[0] = direction * para.aligning_forward_speed[0];
-    speed[1] = direction * para.aligning_forward_speed[1];
+    speed[0] = para.aligning_forward_speed[0];
+    speed[1] = para.aligning_forward_speed[1];
 
     int id0 = docking_approaching_sensor_id[0];
     int id1 = docking_approaching_sensor_id[1];
 
     int reflective_diff = abs(reflective_hist[id0].Avg() - reflective_hist[id1].Avg());
     int reflective_max = std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+    int reflective_min = std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+    int beacon_diff = abs(beacon[id0] - beacon[id1]);
+    int beacon_max = std::max(beacon[id0], beacon[id1]);
+    int beacon_min = std::min(beacon[id0], beacon[id1]);
 
     if(docking_region_detected)
     {
@@ -662,9 +694,12 @@ void RobotSCOUT::Alignment()
 
             if(assembly_info == OrganismSequence::Symbol(0))
             {
+                printf("%d:Assembly_info doesn't match, move away! direction: %d\n", timestamp, direction);
+                for(int i=0;i<NUM_DOCKS;i++)
+                    SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
                 current_state = RECOVER;
                 last_state = ALIGNMENT;
-                recover_count = para.aligning_reverse_count;
+                recover_count = 0;
             }
             else
             {
@@ -683,7 +718,7 @@ void RobotSCOUT::Alignment()
             }
         }
 
-     } 
+    } 
     else
     {
         //check if it is aligned well and also closed enough for docking
@@ -694,7 +729,7 @@ void RobotSCOUT::Alignment()
             docking_region_detected = true;
             in_docking_region_hist.Reset();
             for(int i=0;i<NUM_DOCKS;i++)
-                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0);
             SetRGBLED(assembly_info.side2, WHITE,WHITE,WHITE,WHITE);
 
             msg_assembly_info_expected |= 1 << assembly_info.side2;
@@ -706,17 +741,80 @@ void RobotSCOUT::Alignment()
             // define the bad case
             // case 1: difference between two front reflective_calibrated reading is significant 
             // case 2: some reflective_calibrated readings but two beacon readings are diff
-            if(reflective_hist[id0].Avg() > 300 && reflective_hist[id1].Avg() > 300)
+            int blocked_threshold = 200;
+            if(assembly_info.type1 == ROBOT_SCOUT)
+                blocked_threshold = 400;
+            else if(assembly_info.type1 == ROBOT_AW)
+                blocked_threshold = 150;
+            else
+                blocked_threshold = 400;
+
+            //keep ticking if getting very close to something
+            if(reflective_max > blocked_threshold && reflective_min > 0)
+            {
                 blocking_count++;
+                printf("%d ticking: %d %d %d\n", timestamp, blocking_count, reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+            }
+
+            //added for scout --> aw docking 
+            if((reflective_hist[id0].Avg() > 100 || reflective_hist[id1].Avg() > 100 ) && (reflective_hist[id1 + 1].Avg()  > 100 || reflective_hist[id1+2].Avg() > 100))
+            {
+                blocking_count += 4 * reflective_hist[id1 + 1].Avg() / 60;
+                blocking_count += 4 * reflective_hist[id1 + 2].Avg() / 60;
+                printf("my left side is bumping to something, %d %d\n", reflective_hist[id1 + 1].Avg(), reflective_hist[id1 + 2].Avg());
+            }
+
+            if(reflective_diff > 300 && reflective_diff > reflective_max * 0.7 && reflective_min > 20)
+            {
+                //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
+                printf("reflective is significant different, %d %d, blocked\n", reflective_hist[id0].Avg(), reflective_hist[id1].Avg());
+                blocking_count += 4;
+            }
+            else if(reflective_min > 300 && beacon_diff > beacon_max * 0.7 && beacon_min > 20)
+            {
+                printf("robot is close, but beacon signals is significant different, %d %d, blocked\n", beacon[id0], beacon[id1]);
+                blocking_count += 4;
+            }
+
+            //sometimes, both reflective give negative values
+            if(reflective_diff > 700 && reflective_max < 0)
+            {
+                printf("something unusal happens, give up and retry\n");
+                blocking_count +=10;
+            }
+
+            //sometimes, scout blocked to the corner of another one
+            if((beacon_signals_detected == (1<<id0) || beacon_signals_detected == (1<<id1)) && beacon_diff > 40)
+            {
+                printf("blocked to one corner of another robot, give up and retry\n");
+                blocking_count +=10;
+            }
+
+
+            /*
+            //TODO: the readings from hall sensor seems not reliable, sometime it fail to update
+            //stalled
+            printf("encoders: %d %d\n", encoders.left, encoders.right);
+            if(reflective_max > 100 && reflective_max < 1000&& (stalled_hist.Sum(0) > 2 || stalled_hist.Sum(1) > 2))
+            {
+                printf("robot get stalled\n");
+                blocking_count +=10;
+            }
+            */
+
 
             //3 second is allowed until fully docked, otherwise, treated as blocked.
-            if((reflective_diff > 300 && reflective_diff > reflective_max * 0.5) || blocking_count > 30)
-                //if((reflective_diff > 1000 && reflective_diff > reflective_max * 0.7) ||blocking_count > 30)
+            if(blocking_count > 40)
+            {
+                printf("blocked for 4 seconds, treated as blocked\n");
                 docking_blocked = true;
+            }
+
 
             if(docking_blocked || beacon_signals_detected == 0)
             {
                 docking_blocked = false;
+                docking_blocked_hist.Reset();
                 blocking_count=0;
                 speed[0] = 0;
                 speed[1] = 0;
@@ -725,18 +823,103 @@ void RobotSCOUT::Alignment()
 
                 current_state = RECOVER;
                 last_state = ALIGNMENT;
-                recover_count = para.aligning_reverse_count;
+                recover_count = 0;
                 printf("reflective (%d %d) beacon (%d %d)\n", reflective_diff, reflective_max, beacon[id0], beacon[id1]);
                 printf("blocking_count %d reflective: %d %d\t beacon:%d %d\n",blocking_count, reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), beacon[id0], beacon[id1]);
             }
             else
             {
-                for(int i=id0;i<=id1;i++)
+                int shift_factor = 4;
+
+                if(assembly_info.type1 == ROBOT_SCOUT)
                 {
-                    speed[0] += (beacon[i] * para.aligning_weightleft[i]) >>4;
-                    speed[1] += (beacon[i] * para.aligning_weightright[i]) >>4;
+                    shift_factor = 5;
                 }
-                printf("\tbeacon: %d %d\tat speed (%d %d)\n", beacon[id0], beacon[id1], speed[0], speed[1]);
+                else if(assembly_info.type1 == ROBOT_KIT)
+                {
+                    shift_factor = 4;
+                    if(beacon_max < 30 && reflective_max < 200)
+                        shift_factor = 3;
+                }
+                else if(assembly_info.type1 == ROBOT_AW)
+                {
+                    if(abs(beacon[id0] - beacon[id1]) < 50)
+                        shift_factor = 3;
+                }
+
+                for(int i=0;i<NUM_IRS;i++)
+                {
+                    speed[0] += (beacon[i] * para.aligning_weightleft[i]) >> shift_factor;
+                    speed[1] += (beacon[i] * para.aligning_weightright[i]) >> shift_factor;
+                }
+
+                //move less agressively when bumping to something;
+                int divisor = 200;
+                if(assembly_info.type1 == ROBOT_SCOUT)
+                    divisor = 3000;
+                else if(assembly_info.type1 == ROBOT_AW)
+                    divisor = 200;
+                else
+                    divisor = 1000;
+
+                printf("%d: reflective %d %d %d %d %d %d %d %d, speed %d %d\n", timestamp, reflective_hist[0].Avg(), reflective_hist[1].Avg(), reflective_hist[2].Avg(),reflective_hist[3].Avg(),reflective_hist[4].Avg(),reflective_hist[5].Avg(),reflective_hist[6].Avg(),reflective_hist[7].Avg(),speed[0], speed[1]);
+                //take the reflect into accout
+                if(assembly_info.type1 == ROBOT_SCOUT)
+                {
+                    if(reflective_max > 30 && beacon_max > 30)
+                    {
+                        speed[0] += -1 * (reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
+                        speed[1] += 1 *(reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
+
+                        //cap
+                        if(speed[0] < 20)
+                            speed[0]=20;
+                        if(speed[0] > 50)
+                            speed[0]=50;
+                        if(speed[1] < 20)
+                            speed[1]=20;
+                        if(speed[1] > 50)
+                            speed[1]=50;
+                    }
+                    printf("new speed: %d %d\n", speed[0], speed[1]);
+
+                }
+                else if(assembly_info.type1 == ROBOT_KIT)
+                {
+                    if(reflective_max > 30 && reflective_min < 1000 && beacon_max > 30)
+                    {
+                        speed[0] += -2 * (reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
+                        speed[1] += 2 *(reflective_hist[id0].Avg() - reflective_hist[id1].Avg())/30; 
+
+                        //cap
+                        if(speed[0] < 20)
+                            speed[0]=20;
+                        if(speed[0] > 50)
+                            speed[0]=50;
+                        if(speed[1] < 20)
+                            speed[1]=20;
+                        if(speed[1] > 50)
+                            speed[1]=50;
+                    }
+                    printf("new speed: %d %d\n", speed[0], speed[1]);
+
+                }
+
+
+                if(reflective_min > 0)
+                {
+                 //   speed[0] -= 6 * (reflective_max / divisor);
+                 //   speed[1] -= 6 * (reflective_max / divisor);
+                }
+
+                //added
+                if(reflective_hist[id1 + 1].Avg()  > 100 || reflective_hist[id1+2].Avg() > 100)
+                {
+                   // speed[0] -= 0;
+                   // speed[1] -= 0;
+                }
+
+                printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\n", beacon[0], beacon[1], beacon[2], beacon[3],beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0);
             }
         }
     }
@@ -744,7 +927,7 @@ void RobotSCOUT::Alignment()
 
 void RobotSCOUT::Recover()
 {
-    recover_count--;
+    recover_count++;
 
     //flasing RGB LEDs
     if(timestamp % 4 ==0)
@@ -762,73 +945,100 @@ void RobotSCOUT::Recover()
 
     speed[0] = 0;
     speed[1] = 0;
+    int id0 = docking_approaching_sensor_id[0];
+    int id1 = docking_approaching_sensor_id[1];
 
     if(last_state == ALIGNMENT)
     {
         //turn left/right according to reflective value;
         //robot will stop there for 1 seconds
-        if(recover_count >=10)
+        if(recover_count < (uint32_t) para.aligning_reverse_time + docking_trials * 3)
         {
             //docked to the wrong robots
             if(assembly_info == OrganismSequence::Symbol(0))
             {
                 //just reverse
-                if(reflective_hist[0].Avg() + reflective_hist[1].Avg() >
-                reflective_hist[3].Avg() + reflective_hist[4].Avg() )
-                {
-                    speed[0] = para.aligning_reverse_speed[0];
-                    speed[1] = para.aligning_reverse_speed[1];
-                }
-                else
-                {
-                    speed[0] = -para.aligning_reverse_speed[0];
-                    speed[1] = -para.aligning_reverse_speed[1];
-                }
-
-
+                speed[0] = para.aligning_reverse_speed[0];
+                speed[1] = para.aligning_reverse_speed[1];
             }
             //blocked
             else
             {
-                speed[0] = direction * para.aligning_reverse_speed[0];
-                speed[1] = direction * para.aligning_reverse_speed[1];
+                speed[0] = para.aligning_reverse_speed[0];
+                speed[1] = para.aligning_reverse_speed[1];
 
                 if(timestamp % 5 ==0)
                     Robot::BroadcastIRMessage(assembly_info.side2, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
 
                 //TODO: test reverse behaviour with new robots
-                const int weight_left[8] = {-3,3, 0,0,0,0,0,0};
-                const int weight_right[8] = {3,-3,0,0,0,0,0,0};
-                for(int i=0;i<0;i++)
+                const int weight_left[8] = {-3,3, 5,3,-3,3,5,3};
+                const int weight_right[8] = {3,-3,-5,-3,3,-3,-5,-3};
+
+                int shift_factor = 6;
+
+                if(recover_count < 15) //only do a small turn if necessary
                 {
-                    speed[0] += reflective_hist[i].Avg() * weight_left[i]>>8;
-                    speed[1] += reflective_hist[i].Avg() * weight_right[i]>>8;
+                    if(assembly_info.type1 != ROBOT_AW)
+                        shift_factor = 8;
+                    printf("reflective: (");
+                    for(int i=id0;i<=id1+2;i++)
+                    {
+                        speed[0] += weight_left[i] * (reflective_hist[i].Avg() >> shift_factor);
+                        speed[1] += weight_right[i] * (reflective_hist[i].Avg() >> shift_factor);
+                        printf("%d ", reflective_hist[i].Avg());
+                    }
+                    printf(") speed: (%d %d)\n", speed[0], speed[1]);
+                }
+                else
+                {
+                    shift_factor = std::max(beacon[id0], beacon[id1]) / 10;
+                    if(shift_factor >5)
+                        shift_factor = 5;
+                    //try not straight them, need more test
+                    speed[0] += -1 * (beacon[id0] - beacon[id1]) >> shift_factor;
+                    speed[1] += 1 * (beacon[id0] - beacon[id1]) >> shift_factor;
+                    printf("beacon: (%d %d) speed: (%d %d)\n", beacon[id0], beacon[id1],speed[0], speed[1]);
+
                 }
             }
         }
-        else if(recover_count <=0)
+        else if( recover_count == (uint32_t)para.aligning_reverse_time + docking_trials * 5 )
+        {
+            for(int i=0; i<SIDE_COUNT; i++)
+                SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,0);
+        }
+        else
         {
             SetRGBLED(1, 0, 0, 0, 0);
             SetRGBLED(3, 0, 0, 0, 0);
             if(assembly_info == OrganismSequence::Symbol(0))
             {
                 ResetAssembly();
+
+                for(int i=0; i<SIDE_COUNT; i++)
+                    SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
+
                 current_state = FORAGING;
                 last_state = RECOVER;
             }
             else
             {
-                int id0 = docking_approaching_sensor_id[0];
-                int id1 = docking_approaching_sensor_id[1];
-                
+
                 if(docking_trials >= para.docking_trials)
                 {
                     ResetAssembly();
+                    docking_trials = 0;
+
+                    for(int i=0; i<SIDE_COUNT; i++)
+                        SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
+
                     current_state = FORAGING;
                     last_state = RECOVER;
                 }
                 else if(beacon_signals_detected_hist.Sum(id0) >= 5 && beacon_signals_detected_hist.Sum(id1) >= 5)
                 {
+                    for(int i=0; i<SIDE_COUNT; i++)
+                        SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
 
                     current_state = ALIGNMENT;
                     last_state = RECOVER;
@@ -846,13 +1056,15 @@ void RobotSCOUT::Recover()
 
 void RobotSCOUT::Docking()
 {
-    speed[0] = direction * para.docking_forward_speed[0];
-    speed[1] = direction * para.docking_forward_speed[1];  
+    speed[0] = para.docking_forward_speed[0];
+    speed[1] = para.docking_forward_speed[1];  
 
     docking_count++;
 
-    if(ethernet_status_hist.Sum(assembly_info.side2) > 8) 
+    if(ethernet_status_hist.Sum(assembly_info.side2) > 4) 
     {
+        speed[0] = 0;
+        speed[1]= 0;  
         SetRGBLED(assembly_info.side2, WHITE, WHITE, WHITE, WHITE);
         SetIRLED(assembly_info.side2, IRLEDOFF, LED0|LED2, 0);
         irobot->SetIRRX(ScoutBot::Side(board_dev_num[assembly_info.side2]), false);
@@ -875,7 +1087,7 @@ void RobotSCOUT::Locking()
     SetRGBLED(docking_side, WHITE, WHITE, WHITE, WHITE);//sometimes, rgb leds are switched off for unknow reason
 
     //docking motor is done?
-    if(docking_motors_status[docking_side] == CLOSED)
+    if(locking_motors_status[docking_side] == CLOSED)
     {
         if(docked[docking_side]==0)
         {
@@ -889,6 +1101,12 @@ void RobotSCOUT::Locking()
             msg_subog_seq_expected |= 1<<docking_side;
             current_state = INORGANISM;
             last_state = LOCKING;
+
+
+            EnablePowerSharing(docking_side, true);
+
+            //start IPC thread, as a client 
+            commander_IPC.Start(IPToString(commander_IP), commander_port, false);
         }
     }
 
@@ -906,15 +1124,23 @@ void RobotSCOUT::Recruitment()
         bool erase_required = false;
         if(recruitment_stage[i]==STAGE0)
         {
-            if(robots_in_range_detected_hist.Sum(2*i) > 14 || robots_in_range_detected_hist.Sum(2*i+1) >14)
+            if( robots_in_range_detected_hist.Sum(2*i) > 14 ||
+                    robots_in_range_detected_hist.Sum(2*i+1) >14 ||
+                    (msg_docking_signal_req_received & (1<<i)) || (msg_assembly_info_req_received & (1<<i)))
             {
+                msg_docking_signal_req_received &= ~(1<<i);
+
                 msg_assembly_info_req_expected |= 1<<i;
                 recruitment_stage[i]=STAGE1;
                 SetIRLED(i, IRLEDDOCKING, LED1, 0); 
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+                printf("robots_in_range %d %d, msg_docking_signals_req %#x\n", robots_in_range_detected_hist.Sum(2*i), robots_in_range_detected_hist.Sum(2*i+1), msg_docking_signal_req_received);
             }
             else
             {
+                if(ethernet_status_hist.Sum(i) > 1)
+                    msg_assembly_info_req_expected |= 1<<i;
+
                 //or send recruitment message
                 SetIRLED(i, IRLEDOFF, LED1, 0);
                 SetRGBLED(i, 0,0,0,0);
@@ -926,13 +1152,29 @@ void RobotSCOUT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE1)
         {
-            if(msg_docking_signal_req_received & (1<<i))
+            if(msg_recruiting_req_received & (1<<i))
             {
+                msg_recruiting_req_received &= ~(1<<i);
+                Robot::BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING, it1->getSymbol(0).data, 0);
+            }
+
+            if( recruitment_count[i]++ > (uint32_t)para.recruiting_beacon_signals_time )
+            {
+                recruitment_count[i]=0;
+                recruitment_stage[i]=STAGE0;
+                SetIRLED(i,IRLEDOFF,LED1,0);
+                printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
+
+            }
+            else if(msg_docking_signal_req_received & (1<<i))
+            {
+                recruitment_count[i]=0;
                 msg_docking_signal_req_received &= ~(1<<i);
                 SetIRLED(i, IRLEDDOCKING, LED1, 0); 
             }
             else if(msg_assembly_info_req_received & (1<<i))
             {
+                recruitment_count[i]=0;
                 if(it1->getSymbol(0).type2 != ROBOT_AW)
                     msg_locked_expected |= 1<<i;
                 SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
@@ -947,14 +1189,14 @@ void RobotSCOUT::Recruitment()
             }
             else if(msg_guideme_received & (1<<i))
             {
-                if(it1->getSymbol(0).type2 == ROBOT_SCOUT)
+                if(it1->getSymbol(0).type2 == ROBOT_SCOUT || it1->getSymbol(0).type2 == ROBOT_KIT)
                     msg_locked_expected |= 1<<i;
                 else if(it1->getSymbol(0).type2 == ROBOT_AW)
                     msg_lockme_expected |= 1<<i;
                 msg_guideme_received &= ~(1<<i);
-                msg_guideme_received &= ~(1<<i);
                 guiding_signals_count[i]=0;
                 recruitment_stage[i]=STAGE2;
+                recruitment_count[i]=0;
                 SetIRLED(i, IRLEDPROXIMITY, LED0|LED2, 0); //switch docking signals 2 on left and right leds
                 printf("%d -- Recruitment: channel %d  switch to Stage%d\n\n", timestamp,i, recruitment_stage[i]);
             }
@@ -983,12 +1225,15 @@ void RobotSCOUT::Recruitment()
                     msg_locked_expected |= 1<<i;
                 else
                     msg_lockme_expected |= 1<<i;
-                SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch docking signals 2 on left and right leds
+                SetIRLED(i, IRLEDOFF, LED0|LED2, 0); //switch left and right leds
                 //wait for ack
                 if(!MessageWaitingAck(i, IR_MSG_TYPE_ASSEMBLY_INFO))
                 {
                     msg_assembly_info_req_received &= ~(1<<i);
                 }
+
+                //reset the clock as it happens that another robot just docked before it gives up recruiting
+                guiding_signals_count[i] = 0;
             }
 
             //received docking_signals req, back to stage 1
@@ -1050,7 +1295,7 @@ void RobotSCOUT::Recruitment()
         }
         else if(recruitment_stage[i]==STAGE4)
         {
-            if(docking_motors_status[i] == CLOSED && docked[i]==0)
+            if(locking_motors_status[i] == CLOSED && docked[i]==0)
             {
                 unlocking_required[i] = true;
                 msg_subog_seq_expected |= 1<<i;
@@ -1094,20 +1339,27 @@ void RobotSCOUT::Recruitment()
                 //request IP addr
                 uint8_t data[5];
                 data[0] = it1->getSymbol(0).data; //TODO: remove this as it is already included when using SendIRMessage
-                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP.i32, 4);
                 Robot::SendIRMessage(i, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, 0);
             }
             //get new ip address?
             else if(msg_ip_addr_received & (1<<i))
             {
-                //prepare the newrobot_joined messages
-                if(!seed)
-                    PropagateIRMessage(IR_MSG_TYPE_NEWROBOT_JOINED, NULL, 0, i);
+                msg_ip_addr_received &= ~(1<<i);
 
-                //    msg_ip_addr_received &= ~(1<<i);
+                std::vector<uint8_t> root_IPs;
+                root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
+                root_IPs.push_back(uint8_t((neighbours_IP[i].i32>>24) & 0xFF));
+                mytree.setBranchRootIPs(robot_side(i),root_IPs);
+                printf("%d: set root IPs %d %d\n", timestamp,root_IPs[0], root_IPs[1]);
 
                 //remove branches since it has been sent to newly joined robot
                 erase_required = true;
+
+                EnablePowerSharing(i, true);
+
+                // Reset stage variable
+                recruitment_stage[i] = STAGE0;
             }
         }
 
@@ -1126,505 +1378,21 @@ void RobotSCOUT::Recruitment()
         memset(docking_done, 0, NUM_DOCKS);
         robot_in_range_replied = 0;
 
-        printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-                my_IP & 0xFF,
-                (my_IP >> 8) & 0xFF,
-                (my_IP >> 16) & 0xFF,
-                (my_IP >> 24) & 0xFF);
+        printf("my IP is %s\n", IPToString(my_IP));
         for(int i=0;i<NUM_DOCKS;i++)
         {
-            printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-                    neighbours_IP[i] & 0xFF,
-                    (neighbours_IP[i] >> 8) & 0xFF,
-                    (neighbours_IP[i] >> 16) & 0xFF,
-                    (neighbours_IP[i] >> 24) & 0xFF);
+            printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
             SetRGBLED(i, 0, 0, 0, 0);
         }
+        
+        if(seed)
+            commander_IPC.Start(IPToString(commander_IP), commander_port, false);
     }
-}
-
-
-void RobotSCOUT::InOrganism()
-{
-    speed[0] = 0;
-    speed[1] = 0;
-
-    //seed robot monitoring total number of robots in the organism
-    if(seed)
-    {
-        if( mytree.Edges() + 1 == (unsigned int)num_robots_inorganism)
-        {
-            organism_formed = true;
-
-            textcolor(BRIGHT, SCR_RED, SCR_BLACK);  
-            printf("%d -- organism formed !!\n", timestamp);
-            textcolor(RESET, SCR_WHITE, SCR_BLACK); 
-            for(int i=0;i<NUM_DOCKS;i++)
-                SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
-
-            //prepare organism_formed_messages
-            PropagateIRMessage(IR_MSG_TYPE_ORGANISM_FORMED);
-
-            macrolocomotion_count = 0;
-            raising_count = 0;
-            current_state = RAISING;
-            last_state = INORGANISM;
-
-            printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-                    my_IP & 0xFF,
-                    (my_IP >> 8) & 0xFF,
-                    (my_IP >> 16) & 0xFF,
-                    (my_IP >> 24) & 0xFF);
-            for(int i=0;i<NUM_DOCKS;i++)
-            {
-                printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-                        neighbours_IP[i] & 0xFF,
-                        (neighbours_IP[i] >> 8) & 0xFF,
-                        (neighbours_IP[i] >> 16) & 0xFF,
-                        (neighbours_IP[i] >> 24) & 0xFF);
-            }
-
-        }
-    }
-    //otherwise check if new info received
-    else
-    {
-        if(msg_organism_seq_expected && msg_organism_seq_received)
-        {
-            msg_organism_seq_received = 0;
-            msg_organism_seq_expected = false;
-
-            for(int i=0;i<NUM_DOCKS;i++)
-                SetRGBLED(i, 0,0,0,0);
-
-            //check if  need to recruit new robots
-            std::vector<OrganismSequence>::iterator it = mybranches.begin();
-            bool recruiting_required = false;
-            while(it!=mybranches.end())
-            {
-                //check the first symbol that indicates the parent and child side of the connection
-                uint8_t branch_side = it->getSymbol(0).side1;
-                std::cout<<name<<" branch "<<*it<<std::endl;
-
-                recruitment_count[branch_side] = 0;
-                recruitment_signal_interval_count[branch_side] = DEFAULT_RECRUITMENT_COUNT;
-
-                ++it;
-                recruiting_required = true;
-            }
-
-            if(recruiting_required)
-            {
-                current_state = RECRUITMENT;
-                last_state = INORGANISM;
-            }
-        }
-        else if(organism_formed)
-        {
-            textcolor(BRIGHT, SCR_RED, SCR_BLACK);  
-            printf("%d -- organism formed !!\n", timestamp);
-            textcolor(RESET, SCR_WHITE, SCR_BLACK); 
-            for(int i=0;i<NUM_DOCKS;i++)
-                SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
-
-            macrolocomotion_count = 0;
-            raising_count = 0;
-            current_state = RAISING;
-            last_state = INORGANISM;
-
-            printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-                    my_IP & 0xFF,
-                    (my_IP >> 8) & 0xFF,
-                    (my_IP >> 16) & 0xFF,
-                    (my_IP >> 24) & 0xFF);
-            for(int i=0;i<NUM_DOCKS;i++)
-            {
-                printf("neighbour %d's IP is %#x (%d.%d.%d.%d)\n", i, neighbours_IP[i],
-                        neighbours_IP[i] & 0xFF,
-                        (neighbours_IP[i] >> 8) & 0xFF,
-                        (neighbours_IP[i] >> 16) & 0xFF,
-                        (neighbours_IP[i] >> 24) & 0xFF);
-            }
-
-        }
-    }
-
-}
-
-void RobotSCOUT::Disassembly()
-{
-    speed[0] = 0;
-    speed[1] = 0;
-
-    if(!MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
-    {
-        //check if need to unlocking docking faces which is connected to Activewheel
-        int num_docked = 0;
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            if(docked[i])
-            {
-                num_docked++;
-                if(unlocking_required[i])
-                {
-                    SetDockingMotor(i, OPEN);
-                    unlocking_required[i]=false;
-                }
-                //TODO: how about two Scout robots docked to each other
-                else if(docking_motors_status[i]==OPENED)
-                {
-                    Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
-                    docked[i]=0;
-                    num_docked--;
-                }
-            }
-
-        }
-
-        //only one  or less 
-        if(num_docked ==0)
-        {
-            undocking_count = 0;
-            current_state = UNDOCKING;
-            last_state = DISASSEMBLY;
-
-            // for demo only - turn on back proximity sensors
-            SetIRLED(2, IRLEDPROXIMITY, LED0|LED2, 0);
-
-        }
-
-    }
-
-
 }
 
 void RobotSCOUT::Undocking()
 {
-    speed[0] = 0;
-    speed[1] = 0;
-
-    for(int i=0;i<NUM_DOCKS;i++)
-    {
-        if(timestamp % 4 ==0)
-            SetRGBLED(i, 0,0,0,0);
-        else
-            SetRGBLED(i, RED,RED,RED,RED);
-    }
-
-    undocking_count++;
-
-    // move
-    if(undocking_count >= 120)
-    {
-        // move back
-        if( undocking_count < 150 && proximity[4] < 175 && proximity[5] < 175 )
-        {
-            speed[0] = -30;
-            speed[1] = -30;
-        }
-        else if( undocking_count < 300  )
-        {
-            speed[0] = 0;//para.debug.para[1];   // was 18
-            speed[1] = 0;//para.debug.para[2]; // was -35
-        }
-        else
-        {
-            speed[0] = 0;
-            speed[1] = 0;
-
-            for( int i=0;i<NUM_DOCKS; i++)
-                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
-
-            last_state = UNDOCKING;
-            current_state = FORAGING;
-            ResetAssembly(); // reset variables used during assembly
-        }
-    }
-
-
-}
-
-
-void RobotSCOUT::Lowering()
-{
-    lowering_count++;
-
-    if( lowering_count <= 30 )
-    {
-
-    }
-    else if( StartRepair()  )
-    {
-        last_state = LOWERING;
-        lowering_count = 0;
-        seed = false;
-        ResetAssembly();
-    }
-
-    return; // for testing - do not allow to enter disassembly
-
-    //else if(seed && lowering_count >= 150)
-    if(seed && lowering_count >= 150)
-    {
-        PropagateIRMessage(IR_MSG_TYPE_DISASSEMBLY);
-
-        current_state = DISASSEMBLY;
-        last_state = LOWERING;
-        lowering_count = 0;
-
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            SetRGBLED(i, 0, 0, 0, 0);
-            if(docked[i])
-                msg_unlocked_expected |=1<<i;
-        }
-    }
-    else if(msg_disassembly_received)
-    {
-        current_state = DISASSEMBLY;
-        last_state = LOWERING;
-        lowering_count = 0;
-
-        msg_disassembly_received = 0;
-
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            SetRGBLED(i, 0, 0, 0, 0);
-            if(docked[i])
-                msg_unlocked_expected |=1<<i;
-        }
-    }
-
-}
-
-void RobotSCOUT::Raising()
-{
-    speed[0] = 0;
-    speed[1] = 0;
-    static bool flag=false;
-
-    //temp solution, force KIT4 as the coordinator
- //   if(para.debug.para[9]==3)
-
-    if((ambient_hist[2].Avg() > 1000 && ambient_hist[3].Avg() > 1000)
-     ||(ambient_hist[6].Avg() > 1000 && ambient_hist[7].Avg() > 1000))
-        flag = true;
-    if(flag)
-    {
-        raising_count++;
-
-        if(raising_count ==20)
-        {
-            for(int i=0;i<NUM_DOCKS;i++)
-                SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
-            PropagateIRMessage(IR_MSG_TYPE_RAISING);
-        }
-    }
-    else if(msg_raising_received)
-        raising_count++;
-
-    if(raising_count >=2)
-    {
-        //flashing RGB leds
-        static int index = 0;
-        index = (timestamp / 2) % 4;
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            switch (index)
-            {
-                case 0:
-                    SetRGBLED(i, YELLOW, YELLOW, 0, 0);
-                    break;
-                case 1:
-                    SetRGBLED(i, 0, 0, 0, 0);
-                    break;
-                case 2:
-                    SetRGBLED(i, 0, 0, YELLOW, YELLOW);
-                    break;
-                case 3:
-                    SetRGBLED(i, 0, 0, 0, 0);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    if(raising_count > 30 && !MessageWaitingAck(IR_MSG_TYPE_PROPAGATED))
-    {
-        current_state = MACROLOCOMOTION;
-        last_state = RAISING;
-    }
-
-}
-
-/*
- * Can be used outside of self-repair too. To convert an organism to another shape just make
- *  sure that only one robot is the seed and that that robot's tree (mytree) reflects the
- *  desired shape. Can also be used to initiate disassembly if the seed robot's tree is empty.
- */
-void RobotSCOUT::Reshaping()
-{
-
-    // If this is the seed or branch received from other module
-    if( seed || msg_organism_seq_received )
-    {
-        // Prepare branch sequences
-        rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
-        if(ret.status >= RT_ERROR)
-        {
-            std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
-        }
-
-        // disable all LEDs
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, 0x0);
-
-        for(int i=0; i<SIDE_COUNT; i++)
-        {
-            recruitment_stage[i]=STAGE0;
-            recruitment_count[i] = 0;
-            recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
-
-            // unless this is the seed do not
-            // send messages to parent_side
-            if( !seed && i == parent_side )
-                continue;
-
-            // check if branch needs to be sent
-            uint8_t branch_side = SIDE_COUNT;
-            OrganismSequence next_branch;
-            std::vector<OrganismSequence>::iterator it;
-            for(it = mybranches.begin() ; it != mybranches.end(); it++)
-            {
-                if( it->getSymbol(0).side1 == i )
-                {
-                    branch_side = it->getSymbol(0).side1;
-                    next_branch = (*it);
-                    break;
-                }
-            }
-
-            // TODO: Check that neighbour is correct type and orientation!
-
-            // if there is a neighbour and there should be
-            if( docked[i] && branch_side == i )
-            {
-                // send branch
-                SendBranchTree(i, next_branch);
-                recruitment_stage[i]=STAGE4;
-                docking_done[i] = true; 		// may not be necessary
-                printf("%d Sending branch to side %d\n",timestamp, i);
-            }
-            // if there is a neighbour but there shouldn't be
-            else if( docked[i] && branch_side == SIDE_COUNT )
-            {
-                // send disassembly
-                PropagateSingleIRMessage(IR_MSG_TYPE_DISASSEMBLY,i);
-                printf("%d Instructing module on side %d to disassemble\n",timestamp, i);
-            }
-            // if there isn't a neighbour but there should be
-            else if( docked[i]==0 && branch_side == i )
-            {
-                // start recruiting
-                SetIRLED(branch_side, IRLEDDOCKING, LED1, IRPULSE0|IRPULSE1);
-                printf("%d Preparing to recruit upon side %d\n",timestamp,i);
-            }
-
-        }
-
-        // If there is no new tree - disassemble
-        if( seed && mytree.Size() <= 0 )
-        {
-            current_state = DISASSEMBLY;
-            printf("%d No new tree to assemble, entering disassembly\n",timestamp);
-        }
-        else
-        {
-            current_state = RECRUITMENT;
-
-            // turn off LEDs
-            for(int i=0; i<NUM_DOCKS; i++)
-                SetRGBLED(i, 0, 0, 0, 0);
-
-        }
-
-        last_state = RESHAPING;
-
-    }
-    else if( msg_disassembly_received )
-    {
-        current_state = DISASSEMBLY;
-        last_state = RESHAPING;
-
-        msg_disassembly_received = 0;
-
-        for(int i=0;i<NUM_DOCKS;i++)
-        {
-            SetRGBLED(i, 0, 0, 0, 0);
-            if( docked[i] )
-                msg_unlocked_expected |=1<<i;
-        }
-    }
-
-}
-
-void RobotSCOUT::MacroLocomotion()
-{
-    speed[0] = 0;
-    speed[1] = 0;
-
-    macrolocomotion_count++;
-    //flashing RGB leds
-    static int index = 0;
-    index = (timestamp / 2) % 4;
-    for(int i=0;i<NUM_DOCKS;i++)
-    {
-        switch (index)
-        {
-            case 0:
-                SetRGBLED(i, RED, GREEN, 0, 0);
-                break;
-            case 1:
-                SetRGBLED(i, 0, RED, 0, GREEN);
-                break;
-            case 2:
-                SetRGBLED(i, 0, 0, GREEN, RED);
-                break;
-            case 3:
-                SetRGBLED(i, GREEN, 0, RED, 0);
-                break;
-            default:
-                break;
-        }
-    }
-
-    if( module_failed ) //|| (seed && macrolocomotion_count >= 300 ))
-    {
-        // Stop moving
-        speed[0] = 0;
-        speed[1] = 0;
-
-        // Propagate lowering messages
-        PropagateIRMessage(IR_MSG_TYPE_LOWERING);
-
-        last_state = MACROLOCOMOTION;
-        current_state = LOWERING;
-        lowering_count = 0;
-        seed = true;
-    }
-    else if( msg_lowering_received )
-    {
-        // Stop moving
-        speed[0] = 0;
-        speed[1] = 0;
-
-        last_state = MACROLOCOMOTION;
-        current_state = LOWERING;
-        lowering_count = 0;
-        seed = false;
-    }
-
+    Robot::Undocking();
 }
 
 void RobotSCOUT::Debugging()
@@ -1662,7 +1430,7 @@ void RobotSCOUT::Debugging()
         case 2: // simulate recruitment, stage 1, 32Hz guiding signals
             if(timestamp == 2)
             {
-              //  SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, 0);
+                //  SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, 0);
                 SetIRLED(para.debug.para[9], IRLEDDOCKING, LED1, 0);
             }
             printf("%d %d %d %d\n", reflective[4]-para.reflective_calibrated[4], reflective[5] - para.reflective_calibrated[5], para.ambient_calibrated[4]-ambient[4], para.ambient_calibrated[4]-ambient[5]);
@@ -1698,12 +1466,8 @@ void RobotSCOUT::Debugging()
                     SetIRLED(i, IRLEDOFF, LED0|LED2, 0);
                     irobot->SetIRRX(ScoutBot::Side(board_dev_num[i]), false);
                 }
-        
-                printf("my IP is %#x (%d.%d.%d.%d)\n", my_IP,
-                my_IP & 0xFF,
-                (my_IP >> 8) & 0xFF,
-                (my_IP >> 16) & 0xFF,
-                (my_IP >> 24) & 0xFF);
+
+                printf("my IP is %s\n", IPToString(my_IP));
 
                 OrganismSequence::Symbol sym;
                 sym.type1 = ROBOT_SCOUT;
@@ -1713,7 +1477,7 @@ void RobotSCOUT::Debugging()
                 uint8_t data[5];
                 data[0] = sym.data;
                 docked[0]=sym.data;
-                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP.i32, 4);
                 Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, para.ir_msg_repeated_num);
             }
 
@@ -1762,19 +1526,24 @@ void RobotSCOUT::Debugging()
         case 9:
             if(timestamp > 40)
             {
-                Robot::SendIRMessage(::FRONT, IR_MSG_TYPE_SCORE, para.ir_msg_repeated_num);
+                Robot::SendIRMessage(::FRONT, MSG_TYPE_SCORE, para.ir_msg_repeated_num);
             }
             break;
         case 10:
-            if(timestamp == (uint32_t)para.debug.para[8])
+            //            if(timestamp == (uint32_t)para.debug.para[8])
+            //            {
+            //                printf("lock motor\n");
+            //                SetDockingMotor(para.debug.para[0], CLOSE);
+            //            }
+            //            else
+            if(timestamp == 2 )
             {
-                printf("lock motor\n");
-                SetDockingMotor(0, CLOSE);
+                ((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[9]));
+
             }
-            else if(timestamp == (uint32_t)para.debug.para[9])
+            else if( timestamp == (uint32_t)para.locking_motor_opening_time + 2 || (timestamp > 12 && locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
             {
-                printf("unlock motor\n");
-                SetDockingMotor(0, OPEN);
+                ((ScoutBot*)irobot)->MoveDocking((ScoutBot::Side(para.debug.para[9])),0);
             }
             break;
             // For testing self-repair - starting from MacroLocomotion
@@ -1815,16 +1584,16 @@ void RobotSCOUT::Debugging()
         case 13: //testing ethernet
             if(timestamp==40)
             {
-            for(int i=0;i<NUM_DOCKS;i++)
-            {
-                printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, irobot->isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])) ? "true":"false",irobot->isSwitchActivated()?"true":"false" );
-            }
+                for(int i=0;i<NUM_DOCKS;i++)
+                {
+                    printf("%d - Side %d connected: %s activated: %s\n", timestamp, i, irobot->isEthernetPortConnected(ScoutBot::Side(board_dev_num[i])) ? "true":"false",irobot->isSwitchActivated()?"true":"false" );
+                }
             }
 #define NEIGHBOUR_IP "192.168.0.4"
             if(timestamp % 10 ==0)
             {
                 uint8_t data[10]={'h','e','l','l','o','-','K','I','T',0};
-                irobot->SendEthMessage(Ethernet::StringToIP(NEIGHBOUR_IP), data, sizeof(data));
+                irobot->SendEthMessage(StringToIP(NEIGHBOUR_IP), data, sizeof(data));
             }
             while (irobot->HasEthMessage() > 0)
             {
@@ -1847,7 +1616,7 @@ void RobotSCOUT::Debugging()
                 SetRGBLED(2, RED,RED,RED,RED);
                 //SetRGBLED(0, WHITE,WHITE,WHITE,WHITE);
             }
-           
+
             //send synchronisation signals, using ip_req
             if(msg_ip_addr_received==0)
             {
@@ -1855,7 +1624,7 @@ void RobotSCOUT::Debugging()
                 {
                     uint8_t data[5];
                     data[0] = docked[0]; //TODO: remove this as it is already included when using SendIRMessage
-                    memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP, 4);
+                    memcpy((uint8_t*)&data[1], (uint8_t*)&my_IP.i32, 4);
                     Robot::SendIRMessage(0, IR_MSG_TYPE_IP_ADDR_REQ, data, 5, 0);
                 }
             }
@@ -1958,31 +1727,246 @@ void RobotSCOUT::Debugging()
                 SetRGBLED(para.debug.para[4], para.debug.para[0] * BLUE, para.debug.para[1]*BLUE, para.debug.para[2]*BLUE, para.debug.para[3]*BLUE);
             break;
 
+        case 22://calibrate docking units
+            if(timestamp ==2)
+            {
+                SetIRLED(para.debug.para[9], IRLEDOFF, 0, IRPULSE0|IRPULSE1);
+                irobot->enableDockingSense(para.debug.para[9], true);
+            }
+            else if(timestamp == 30)
+            {
+                ((ScoutBot*)irobot)->CalibrateDocking(ScoutBot::Side(para.debug.para[9]));
+                printf("start to calibrate docking unit %d\n", para.debug.para[9]);
+            }
+            break;
+        case 23://open docking units
+            {
+                if(timestamp ==2)
+                {
+                    //SetIRLED(para.debug.para[9], IRLEDOFF, 0, IRPULSE0|IRPULSE1);
+                    irobot->enableDockingSense(para.debug.para[9], true);
+                }
+                else if(timestamp == 30)
+                {
+                    ((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[9]));
+                    //SetDockingMotor(para.debug.para[9], OPEN);
+                    printf("open docking unit %d\n", para.debug.para[9]);
+                }
+                uint8_t rev = ((ScoutBot*)irobot)->GetDScrewRevolutions(ScoutBot::Side(para.debug.para[9]));
+                uint8_t ise = ((ScoutBot*)irobot)->GetDScrewISense(ScoutBot::Side(para.debug.para[9]));
+                printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
+            }
+            break;
+        case 24://close docking units
+            {
+                if(timestamp ==2)
+                {
+                    //SetIRLED(para.debug.para[9], IRLEDOFF, 0, IRPULSE0|IRPULSE1);
+                    irobot->enableDockingSense(para.debug.para[9], true);
+                }
+                else if(timestamp == 30)
+                {
+                    ((ScoutBot*)irobot)->CloseDocking(ScoutBot::Side(para.debug.para[9]));
+                    //SetDockingMotor(para.debug.para[9], CLOSE);
+                    printf("close docking unit %d\n", para.debug.para[9]);
+                }
+                uint8_t rev = ((ScoutBot*)irobot)->GetDScrewRevolutions(ScoutBot::Side(para.debug.para[9]));
+                uint8_t ise = ((ScoutBot*)irobot)->GetDScrewISense(ScoutBot::Side(para.debug.para[9]));
+                printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
+            }
+            break;
+        case 25:
+            if(timestamp == 2)
+            {
+                OrganismSequence::Symbol sym;
+                sym.reBuild("SFAB");
+                docked[0] = sym.data;
+                sym.reBuild("SBAF");
+                docked[2] = sym.data;
+                neighbours_IP[0]=StringToIP("192.168.2.56");
+                neighbours_IP[1]=StringToIP("0.0.0.0");
+                neighbours_IP[2]=StringToIP("192.168.2.52");
+                neighbours_IP[3]=StringToIP("0.0.0.0");
+            }
+            break;
+        case 26:
+            if(timestamp ==2)
+            {
+                OrganismSequence tree_a, tree_b;
+                tree_a.reBuild("KFKBKFAF0000KBAB00000000KBKF0000KRKF0000");
+                tree_b.reBuild("KFAF0000KBAB0000");
+                std::vector<uint8_t> IPs;
+                std::vector<uint8_t> root_IPs;
+                std::vector<uint8_t> IPs2;
+                IPs.push_back(11);
+                IPs.push_back(12);
+                IPs.push_back(11);
+                IPs.push_back(13);
+                root_IPs.push_back(10);
+                root_IPs.push_back(11);
+                tree_a.setBranchIPs(FRONT, IPs);
+                std::cout<<tree_a<<std::endl;
+
+                tree_a.setBranchIPs(BACK, IPs);
+                std::cout<<tree_a<<std::endl;
+                
+                tree_a.setBranchIPs(RIGHT, IPs);
+                std::cout<<tree_a<<std::endl;
+
+                tree_a.setBranchIPs(LEFT, IPs);
+                std::cout<<tree_a<<std::endl;
+
+                tree_a.setBranchRootIPs(FRONT, IPs);
+                std::cout<<tree_a<<std::endl;
+                tree_a.setBranchRootIPs(BACK, IPs);
+                std::cout<<tree_a<<std::endl;
+                tree_a.setBranchRootIPs(RIGHT, IPs);
+                std::cout<<tree_a<<std::endl;
+                tree_a.setBranchRootIPs(LEFT, IPs);
+                std::cout<<tree_a<<std::endl;
+                tree_b.setBranchRootIPs(FRONT, root_IPs);
+                std::cout<<tree_b<<std::endl;
+                tree_b.setBranchRootIPs(BACK, root_IPs);
+                std::cout<<tree_b<<std::endl;
+                tree_b.getAllIPs(IPs2);
+                std::cout<<tree_b<<std::endl;
+                tree_a.setBranchIPs(FRONT, IPs2);
+                std::cout<<tree_a<<std::endl;
+
+            }
+
+            break;
+        case 30:
+            {
+                fd_set fds;
+                FD_ZERO(&fds);
+                FD_SET(fileno(stdin), &fds); 
+                char buf[256];
+
+                if(select(fileno(stdin)+1, &fds, NULL, NULL, NULL)>0)
+                {
+                    if (FD_ISSET(fileno(stdin), &fds))
+                    {
+                        if(fgets(buf,256,stdin)!=NULL)
+                        {
+                            ParseCMD(buf); 
+                            fprintf(stderr,"cmd>");
+                        }
+                    }
+                }
+            }
+            break;
+        case 31:
+            {
+                if(timestamp ==7)
+                {
+                    IP_collection_done = false;
+
+                    printf("Set neighbour's IP\n");
+                    neighbours_IP[0] = getFullIP(para.debug.para[0]);
+                    neighbours_IP[1] = getFullIP(para.debug.para[1]);
+                    neighbours_IP[2] = getFullIP(para.debug.para[2]);
+                    neighbours_IP[3] = getFullIP(para.debug.para[3]);
+
+
+                    //fill tree and branches
+                    printf("Set mytree and all recruiting side ip\n");
+                    
+                    if(!para.og_seq_list.empty())
+                    {
+                        mytree = target = para.og_seq_list[0];
+                        std::cout<<mytree<<std::endl;
+
+                        for(int i=0;i<para.og_seq_list.size();i++)
+                            std::cout<<i<<" : "<<para.og_seq_list[i]<<std::endl;
+                    }
+                    
+                    rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
+                    if(ret.status >= RT_ERROR)
+                    {
+                        std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
+                    }
+
+                    //set all recruiting side
+                    std::vector<OrganismSequence>::iterator it;
+                    for(it = mybranches.begin() ; it != mybranches.end(); it++)
+                    {
+                        //check the first symbol that indicates the parent and child side of the connection
+                        uint8_t branch_side = it->getSymbol(0).side1;
+                        //enalbe docking signals
+                        std::cout<<name<<" branch "<<*it<<std::endl;
+
+                        docked[branch_side]= it->getSymbol(0).data;
+
+                        std::vector<uint8_t> root_IPs;
+                        root_IPs.push_back(uint8_t((my_IP.i32 >>24) & 0xFF));
+                        root_IPs.push_back(uint8_t((neighbours_IP[branch_side].i32>>24) & 0xFF));
+                        mytree.setBranchRootIPs(robot_side(branch_side),root_IPs);
+                        
+                        unlocking_required[branch_side] = true;
+                        locking_motors_status[branch_side] = CLOSED;
+
+
+                    }
+
+                    seed = para.debug.para[7];
+
+                    //set parent side;
+                    if(!seed)
+                    {
+                        printf("Set parent side\n");
+                        parent_side = para.debug.para[4];
+                        docked[parent_side] = type| parent_side <<2| para.debug.para[5] << 4 | para.debug.para[6] << 6;
+                        msg_organism_seq_received = true;
+
+                        commander_IP = getFullIP(para.debug.para[8]);
+                        commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
+                        
+                        commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+                        
+                        unlocking_required[parent_side] = true;
+                        locking_motors_status[parent_side] = CLOSED;
+                        
+                    }
+                    else
+                        master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+                }
+                else if(timestamp == 9)
+                {
+                    if(seed)
+                    {
+                        commander_IP = my_IP;
+                        commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
+                        commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+                    }
+                }
+                else if(timestamp == 10)
+                {
+                    current_state = INORGANISM;
+                    last_state = DEBUGGING;
+                }
+
+            }
+            break;
+        case 32:
+            if(timestamp ==2)
+            {
+                for(int i=0;i<organism_actions.size();i++)
+                {
+                    action_sequence &oas = organism_actions[i];
+                    printf("action sequence: %d\n", oas.sequence_index);
+                    printf("       cmd_type: %d\n", oas.cmd_type);
+                    printf("       duration: %d\n", oas.duration);
+                    for(int j=0;j< oas.robots_in_action.size();j++)
+                        printf("           robots_in_action: %d [%d %d %d]\n", oas.robots_in_action[j].index,oas.robots_in_action[j].cmd_data[0],oas.robots_in_action[j].cmd_data[1],oas.robots_in_action[j].cmd_data[2]);
+
+                }
+            }
+            break;
         default:
             break;
     }
 
-}
-
-int RobotSCOUT::in_docking_region(int x[4])
-{
-    if(   x[0] > para.docking_reflective_offset1 
-            && x[1] > para.docking_reflective_offset2) 
-        return 1;
-    else
-        return 0;
-}
-
-int RobotSCOUT::in_locking_region(int x[4])
-{
-
-    if( x[0] > para.locking_proximity_offset1 
-            && x[0] < para.locking_proximity_offset1 + para.locking_proximity_diff1
-            && x[1] > para.locking_proximity_offset2 
-            && x[1] < para.locking_proximity_offset2 + para.locking_proximity_diff2)
-        return 1;
-    else 
-        return 0;
 }
 
 void RobotSCOUT::Log()

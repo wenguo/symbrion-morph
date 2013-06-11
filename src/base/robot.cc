@@ -14,30 +14,15 @@ Robot::Robot()
     name = strdup("Robot");
     timestamp = 0;
     timestamp_propagated_msg_received=0;
+    timestamp_hinge_motor_cmd_received =0;
+    timestamp_locomotion_motors_cmd_received =0;
+    timestamp_user_input_received = 0;
     type = ROBOT_KIT;
 
-    bumped=0;
-    assembly_info_checked=false;
-    num_robots_inorganism=1;
-    organism_found=false;
-    powersource_found=false;
-    seed=false;
-    organism_formed=false;
-    module_failed=false;
-    wait_side = FRONT;
-    parent_side = SIDE_COUNT;
-    repair_stage = STAGE0;
-    repair_start = 0;
-    repair_duration = 50;
-    move_start = 0;
-    move_duration = 50;
-    broadcast_start = 0;
-    broadcast_duration = 200;
-    broadcast_period = 50;
-
-    hinge_motor_status = LOWED;
-    RGBLED_flashing = 0;
-
+    LED0 = 0x1;
+    LED1 = 0x2;
+    LED2 = 0x4;
+ 
     RegisterBehaviour(&Robot::Calibrating, CALIBRATING);
     RegisterBehaviour(&Robot::Exploring, EXPLORING);
     RegisterBehaviour(&Robot::Resting, RESTING);
@@ -59,6 +44,7 @@ Robot::Robot()
     RegisterBehaviour(&Robot::Lowering, LOWERING);
     RegisterBehaviour(&Robot::Reshaping, RESHAPING);
     RegisterBehaviour(&Robot::MacroLocomotion, MACROLOCOMOTION);
+    RegisterBehaviour(&Robot::Climbing, CLIMBING);
     RegisterBehaviour(&Robot::Debugging, DEBUGGING);
     // for self-repair
     RegisterBehaviour(&Robot::Failed, FAILED);
@@ -66,12 +52,52 @@ Robot::Robot()
     RegisterBehaviour(&Robot::LeadRepair, LEADREPAIR);
     RegisterBehaviour(&Robot::Repair, REPAIR);
 
+    pthread_mutex_init(&ir_rx_mutex, NULL);
+    pthread_mutex_init(&ir_txqueue_mutex, NULL);
+    pthread_mutex_init(&eth_rx_mutex, NULL);
+    pthread_mutex_init(&eth_txqueue_mutex, NULL);
+    pthread_mutex_init(&IPC_data_mutex, NULL);
+
+    ResetAssembly();
+
+    master_IPC.Name("master");
+    commander_IPC.Name("commander");
+
+}
+
+// Reset variables used during assembly
+void Robot::ResetAssembly()
+{
+    printf("%d: Reset Assembly\n", timestamp);
+    bumped=0;
+    assembly_info_checked=false;
+    num_robots_inorganism=1;
+    organism_found=false;
+    powersource_found=false;
+    seed=false;
+    organism_formed=false;
+    module_failed=false;
+    heading = 0;
+    wait_side = FRONT;
+    parent_side = SIDE_COUNT;
+    repair_stage = STAGE0;
+    repair_start = 0;
+    repair_duration = 50;
+    move_start = 0;
+    move_duration = 50;
+    broadcast_start = 0;
+    broadcast_duration = 200;
+    broadcast_period = 50;
+
+    hinge_motor_status = LOWED;
+    RGBLED_flashing = 0;
+
     for (int i = 0; i < NUM_IRS; i++)
     {
         reflective[i]=0;
         proximity[i]=0;
-       // reflective_calibrated[i]=0;
-       // ambient_calibrated[i]=4000;
+        // reflective_calibrated[i]=0;
+        // ambient_calibrated[i]=4000;
         // reflective_avg[i]=0;
         beacon[i]=0;
     }
@@ -82,26 +108,29 @@ Robot::Robot()
         docked[i] = 0;
         docking_done[i] = false;
         unlocking_required[i] = false;
-        recruitment_signal_interval_count[i]=0;//DEFAULT_RECRUITMENT_COUNT;
+        recruitment_signal_interval_count[i]=DEFAULT_RECRUITMENT_COUNT; //what is this for?
         recruitment_count[i]=0;
         neighbours[i]=NULL;
         IRLED_status[i] = 0;
         RGBLED_status[i] = 1;
         recruitment_stage[i] = STAGE0;
-        docking_motor_operating_count[i]=0;
-        docking_motors_status[i] = OPENED;
+        locking_motor_operating_count[i]=0;
+        locking_motors_status[i] = OPENED;
         neighbours_IP[i] = 0;
         new_id[i] = SIDE_COUNT;
         new_score[i] = 0;
         guiding_signals_count[i]=0;
+
+        //SetRGBLED(i, 0, 0, 0, 0);
+        //SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
     }
 
 
     hinge_motor_operating_count=0;
     seeding_count=0;
     foraging_blind_count=0;
-    waiting_count = DEFAULT_WAITING_COUNT;
-    foraging_count = DEFAULT_FORAGING_COUNT;
+    waiting_count = 0;
+    foraging_count =0;
     docking_count = 0;
     docking_failed_reverse_count = 0;
     recover_count = 0;
@@ -110,12 +139,16 @@ Robot::Robot()
     undocking_count = 0;
     raising_count = 0;
     lowering_count = 0;
+    locatebeacon_count = 0;
+    climbing_count = 0;
+    reshaping_count = 0;
+    disassembly_count = 0;
 
     beacon_signals_detected=0;
     robot_in_range_replied=0;
     robot_in_range_detected=0;
     expelling_signals_detected=0;
-    
+
     msg_locked_received = 0;
     msg_locked_expected = 0;
     msg_unlocked_received = 0;
@@ -124,10 +157,16 @@ Robot::Robot()
     msg_unlockme_expected = 0;
     msg_lockme_received = 0;
     msg_lockme_expected = 0;
-    msg_disassembly_received = 0;
+    msg_disassembly_received = false;
     msg_reshaping_received=0;
     msg_raising_received = 0;
-    msg_lowering_received = 0;
+    msg_raising_start_received = false;
+    msg_raising_stop_received = false;
+    msg_lowering_received = false;
+    msg_climbing_start_received = false;
+    msg_climbing_stop_received = false;
+    msg_reshaping_start_received = false;
+    msg_reshaping_done_received = false;
     msg_guideme_received = 0;
     msg_docking_signal_req_received = 0;
     msg_organism_seq_received = false;
@@ -147,11 +186,17 @@ Robot::Robot()
     msg_score_seq_expected = 0;
     msg_score_received = 0;
 
+    msg_retreat_received = false;
+    msg_stop_received = false;
+
+    pruning_required = 0;
+
     docking_failed = false;
     docking_trials=0;
     docking_blocked = false;
 
     //clear just in case 
+    target.Clear();
     mytree.Clear();
     subog.Clear();
     og = NULL;
@@ -163,16 +208,13 @@ Robot::Robot()
     best_id = SIDE_COUNT;
     own_score = 0;
 
-    pthread_mutex_init(&ir_rx_mutex, NULL);
-    pthread_mutex_init(&ir_txqueue_mutex, NULL);
-    pthread_mutex_init(&eth_rx_mutex, NULL);
-    pthread_mutex_init(&eth_txqueue_mutex, NULL);
 
     robots_in_range_detected_hist.Resize(15);
     ethernet_status_hist.Resize(15);
+    locking_motor_isense_hist.Resize(8);
 
     direction = FORWARD;
-    memset(speed, 0, 3);
+    memset(speed, 0, 3 * sizeof(int));
 
     docking_approaching_sensor_id[0] = 0; 
     docking_approaching_sensor_id[1] = 1; 
@@ -184,46 +226,30 @@ Robot::Robot()
 
     assembly_info = 0;
 
-    LED0 = 0x1;
-    LED1 = 0x2;
-    LED2 = 0x4;
-}
+    IP_collection_done = false;
 
-// Reset variables used during assembly
-void Robot::ResetAssembly()
-{
-    powersource_found = false;
-    organism_found = false;
-    organism_formed = false;
-    msg_raising_received = 0;
-    msg_lowering_received = 0;
-    msg_score_received = 0;
-    msg_unlocked_received = 0;
-    msg_assembly_info_received = 0;
-    msg_assembly_info_expected = 0;
-    msg_assembly_info_req_received = 0;
-    msg_assembly_info_req_expected = 0;
-    num_robots_inorganism=1;
-    seed = false;
+    commander_acks.clear();
+    broken_eth_connections = 0;
+    IPC_health = true;
 
-    for(int i=0; i<SIDE_COUNT; i++)
-    {
-        recruitment_stage[i]=STAGE0;
-        recruitment_count[i] = 0;
-        recruitment_signal_interval_count[i] = DEFAULT_RECRUITMENT_COUNT;
-    }
+    memset(hinge_command, 0, sizeof(hinge_command));
+    memset(locomotion_command, 0, sizeof(locomotion_command));
+    memset(og_front_aux_reflective_sensors, 0, sizeof(og_front_aux_reflective_sensors));
 
-    docking_approaching_sensor_id[0] = 0; 
-    docking_approaching_sensor_id[1] = 1; 
+    current_action_sequence_index = 0;
+    front_aw_ip = 0;
+    user_input = 0;
 
-    docking_blocked = false;
-    docking_region_detected = false;
-    aligning_region_detected = false;
-    blocking_count = 0;
+    commander_IPC.Stop();
+    master_IPC.Stop();
 
-    assembly_info = 0;
+    reshaping_waiting_for_undock = 0xF;
+    reshaping_unlock_sent = 0;
+    reshaping_seed = false;
+    reshaping_processed = 0;
 
-    ethernet_status_hist.Reset();
+    disassembly_waiting_for_undock = 0xF;
+
 }
 
 Robot::~Robot()
@@ -236,6 +262,7 @@ Robot::~Robot()
 bool Robot::Init(const char * optionfile)
 {
 
+    printf("Robot::Init\n");
     if(!LoadParameters(optionfile))
     {
         return false;
@@ -244,12 +271,23 @@ bool Robot::Init(const char * optionfile)
     current_state = fsm_state_t(para.init_state);
     last_state = fsm_state_t(para.init_state);
 
+
+    // For self-repair - make sure every robot knows the target
+    if(!para.og_seq_list.empty()) target = para.og_seq_list[0];
+
+    SPIVerbose = QUIET;
+
     InitLog();
 
     InitHardware();
 
     my_IP = Ethernet::GetLocalIP();
+    commander_IP = my_IP;
+    commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
 
+    id = (my_IP.i32 >> 24) & 0xFF;
+
+    printf("Create threads\n");
     pthread_attr_t attributes;
     pthread_attr_init(&attributes);
     int ret_tx = pthread_create(&ircomm_tx_thread, NULL, IRCommTxThread, this);
@@ -260,17 +298,31 @@ bool Robot::Init(const char * optionfile)
         return false;
     }
 
+    ret_tx = pthread_create(&ethcomm_tx_thread, NULL, EthCommTxThread, this);
+    ret_rx = pthread_create(&ethcomm_rx_thread, NULL, EthCommRxThread, this);
+    if (ret_tx != 0 || ret_rx!=0)
+    {
+        printf("Error: Cannot create EthComm Thread.\n");
+        return false;
+    }
+
 
     //turn off all RGB led
     //turn off all IR pulse
+    // Set motor opening thresholds
     for(int i=0;i<NUM_DOCKS;i++)
     {
         SetRGBLED(i, 0, 0, 0, 0);
         SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1|IRPULSE2);
+
+        locking_motor_opening_threshold[i] = para.locking_motor_opening_time;
     }
-    
+
     robots_in_range_detected_hist.Reset();
     beacon_signals_detected_hist.Reset();
+
+    commander_IPC.SetCallback(Process_Organism_command, this);
+    master_IPC.SetCallback(Relay_Organism_command, this);
 
     return true;
 }
@@ -283,7 +335,7 @@ bool Robot::InitLog()
     struct tm * timeinfo;
     timeinfo = localtime (&time_now);
     time_string = datetime_to_string(*timeinfo, "%Y%m%d%H%M%S");
-    if(para.logtofile)
+    if(para.logtofile > 1)
     {
         std::ostringstream oss;
         oss << "./log/";
@@ -293,17 +345,27 @@ bool Robot::InitLog()
 
         std::ostringstream oss1;
         oss1 << "./log/";
-        mkdir(oss.str().c_str(), 0777);
         oss1 << (char *)name <<"_"<< time_string<< ".state";
         logstateFile.open(oss1.str().c_str());
- 
+
     }    
+    else if(para.logtofile == 1)
+    {
+        std::ostringstream oss1;
+        oss1 << "./log/";
+        mkdir(oss1.str().c_str(), 0777);
+        oss1 << (char *)name <<"_"<< time_string<< ".state";
+        logstateFile.open(oss1.str().c_str());
+    }
+
 
     return true;
 }
 
 void Robot::Stop()
 {
+    master_IPC.Stop();
+    commander_IPC.Stop();
     SetSpeed(0,0,0);
     Reset();
 }
@@ -319,24 +381,25 @@ void Robot::Update(const uint32_t& ts)
     //update Sensors
     UpdateSensors();
 
-    //check for failures
+    //update simulated failures
     UpdateFailures();
+
+    //check for failures and respond
+    CheckForFailures();
 
     //update status variable
     beacon_signals_detected = 0;
+    robot_in_range_detected = 0;
+    bumped = 0;
     for(int i=0;i<NUM_IRS;i++)
     {
-        if(beacon[i] > BEACON_SIGNAL_DETECTED_THRESHOLD && beacon[i] > proximity[i])
+        if(beacon[i] > para.beacon_threshold[i] && beacon[i] > proximity[i])
             beacon_signals_detected |= 1<<i;
-        else
-            beacon_signals_detected &=~(1<<i);
 
         if(proximity[i]> PROXIMITY_SIGNAL_DETECTED_THRESHOLD  && proximity[i] > beacon[i])
             robot_in_range_detected |=1<<i;
-        else
-            robot_in_range_detected &=~(1<<i);
 
-        if(reflective[i] > BUMPED_THRESHOLD ||( proximity[i]>BUMPED_THRESHOLD && proximity[i] > beacon[i]))
+        if(reflective_hist[i].Avg() > para.avoid_threshold[i])
             bumped |= 1<<i;
     }
     beacon_signals_detected_hist.Push2(beacon_signals_detected);
@@ -396,15 +459,17 @@ void Robot::Update(const uint32_t& ts)
 
     timestamp = ts;
 
-   // if(para.logtofile)
-   //     Log();
+    // if(para.logtofile)
+    //     Log();
     LogState();
 
+    //remove any broken ethernet communication connections
+    broken_eth_connections = master_IPC.BrokenConnections();
 }
 
 void Robot::Calibrating()
 {
-    memset(speed, 0, 3);
+    memset(speed, 0, 3 * sizeof(int));
 
     static int32_t temp1[8]={0,0,0,0,0,0,0,0};
     static int32_t temp2[8]={0,0,0,0,0,0,0,0};
@@ -427,8 +492,8 @@ void Robot::Calibrating()
         }
 
         printf("\n");
-    //    current_state = (fsm_state_t) para.init_state;
-    //    last_state = CALIBRATING;
+        //    current_state = (fsm_state_t) para.init_state;
+        //    last_state = CALIBRATING;
 
         if(optionfile)
         {
@@ -511,27 +576,49 @@ void Robot::CheckDockingMotor()
     for(int i=0;i<NUM_DOCKS;i++)
     {
         //closing
-        if(docking_motors_status[i] == CLOSING)
+        if(locking_motors_status[i] == CLOSING)
         {
-            if(docking_motor_operating_count[i]++ >= para.docking_motor_closing_time)
+            locking_motor_isense_hist.Print2();
+            locking_motor_operating_count[i]++ ;   
+            if(locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=4)
             {
                 SetDockingMotor(i, STOP);
-                CPrintf1(SCR_RED, "Stop docking motor, after closing -- %d", docking_motor_operating_count[i]);
+                CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", locking_motor_operating_count[i]);
+
+                // Add small amount to ensure that lock opens fully
+                locking_motor_opening_threshold[i] = locking_motor_operating_count[i]+5;
+            }
+            else if(locking_motor_operating_count[i] >= para.locking_motor_closing_time)
+            {
+                SetDockingMotor(i, STOP);
+                CPrintf1(SCR_RED, "Stop docking motor, after closing -- %d", locking_motor_operating_count[i]);
+
+                // Add small amount to ensure that lock opens fully
+                locking_motor_opening_threshold[i] = locking_motor_operating_count[i]+5;
             }
 
         }
         //opeing
-        else if(docking_motors_status[i] == OPENING)
+        else if(locking_motors_status[i] == OPENING)
         {
-            if(docking_motor_operating_count[i]++ >= para.docking_motor_opening_time)
+            locking_motor_operating_count[i]++ ;   
+            locking_motor_isense_hist.Print2();
+            if(locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=4)
             {
                 SetDockingMotor(i, STOP);
-                CPrintf1(SCR_RED,"Stop docking motor, after opening -- %d", docking_motor_operating_count[i]);
+                CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", locking_motor_operating_count[i]);
+                locking_motor_opening_threshold[i] = para.locking_motor_opening_time;
+            }
+            else if(locking_motor_operating_count[i] >= locking_motor_opening_threshold[i] )
+            {
+                SetDockingMotor(i, STOP);
+                CPrintf1(SCR_RED,"Stop docking motor, after opening -- %d", locking_motor_operating_count[i]);
+                locking_motor_opening_threshold[i] = para.locking_motor_opening_time;
             }
         }
         else
         {
-            docking_motor_operating_count[i] = 0;
+            locking_motor_operating_count[i] = 0;
         }
     }
 }
@@ -688,6 +775,8 @@ void Robot::LogState()
     if (logstateFile.is_open())
     {
         logstateFile << timestamp << "\t" << current_state << "\t"<< last_state<<"\t" ;
+        logstateFile << "("<<speed[0] <<"\t" << speed[1] <<"\t" << speed[2]<<")\t";
+        logstateFile << beacon[docking_approaching_sensor_id[0]] <<"\t" << beacon[docking_approaching_sensor_id[1]]<<"\t";
         logstateFile <<"[";
         logstateFile << (int)(recruitment_stage[0])<<"\t";
         logstateFile << (int)(recruitment_stage[1])<<"\t";
@@ -699,27 +788,303 @@ void Robot::LogState()
 
 void Robot::PrintSubOGString( uint8_t *seq)
 {
-	printf("%d length of sequence: %d\n",timestamp, (int)seq[0]);
+    printf("%d length of sequence: %d\n",timestamp, (int)seq[0]);
 
-	// Print bitstring
-	printf("%d bitstring: ",timestamp);
-	for( int i=0; i<(int)seq[0]+1; i++ )
-	{
-		for( int j=7; j>=0; j-- )
-		{
-			if( (seq[i] & 1<<j) != 0 )
-				printf("1");
-			else
-				printf("0");
-		}
-		printf(" ");
-	}
-	printf("\n");
+    // Print bitstring
+    printf("%d bitstring: ",timestamp);
+    for( int i=0; i<(int)seq[0]+1; i++ )
+    {
+        for( int j=7; j>=0; j-- )
+        {
+            if( (seq[i] & 1<<j) != 0 )
+                printf("1");
+            else
+                printf("0");
+        }
+        printf(" ");
+    }
+    printf("\n");
 
-	printf("%d Sequence: ",timestamp);
-	for( int i=1; i<(int)seq[0]+1; i++ )
-		std::cout << OrganismSequence::Symbol(seq[i]) << " ";
-        std::cout << std::endl;
+    printf("%d Sequence: ",timestamp);
+    for( int i=1; i<(int)seq[0]+1; i++ )
+        std::cout << OrganismSequence::Symbol(seq[i]) << " ";
+    std::cout << std::endl;
+
+}
+
+const char * Robot::IPToString(Ethernet::IP ip)
+{
+    struct in_addr addr = { ip.i32 };
+    return inet_ntoa(addr);
+
+}
+Ethernet::IP Robot::StringToIP(const char *str)
+{
+    return Ethernet::ip_t::parse(str);
+}
+Ethernet::IP Robot::getFullIP(const uint8_t addr)
+{
+    if(addr == 0)
+        return Ethernet::ip_t(0);
+    else
+        return Ethernet::ip_t(uint32_t(addr)<<24 | 52 << 16 | 168 <<8 | 192);
+}
+
+void Robot::UpdateOGIRSensors(uint8_t config[2], int data[8], int sensor_type)
+{
+    uint32_t robot_ip = getFullIP(config[0]).i32;
+    int robot_direction =  robot_pose_in_organism[robot_ip].direction;
+    int robot_og_irsensor_index =  robot_pose_in_organism[robot_ip].og_irsensor_index;
+
+    if(sensor_type == IR_AUX_REFLECTIVE_DATA)
+    {
+        if(robot_direction == 1)
+        {
+            og_front_aux_reflective_sensors[0] = data[6];
+            og_front_aux_reflective_sensors[1] = data[7];
+            og_front_aux_reflective_sensors[2] = data[0];
+            og_front_aux_reflective_sensors[3] = data[1];
+        }
+        else
+        {
+            og_front_aux_reflective_sensors[0] = data[2];
+            og_front_aux_reflective_sensors[1] = data[3];
+            og_front_aux_reflective_sensors[2] = data[4];
+            og_front_aux_reflective_sensors[3] = data[5];
+        }
+
+    }
+    else
+    {
+        OG_IRsensor * ir_sensors;
+        if(sensor_type == IR_REFLECTIVE_DATA)
+            ir_sensors = &og_reflective_sensors;
+        else if(sensor_type == IR_AMBIENT_DATA)
+            ir_sensors= &og_ambient_sensors;
+        else if(sensor_type == IR_PROXIMITY_DATA)
+            ir_sensors = &og_proximity_sensors;
+        else if(sensor_type == IR_BEACON_DATA)
+            ir_sensors = &og_beacon_sensors;
+        else
+            return;
+
+        //header
+        pthread_mutex_lock(&IPC_data_mutex);
+        if(robot_pose_in_organism[robot_ip].tail_header == -1)
+        {
+            //  printf("%d: update sensor data [%d] og from %s, as a header (%d) \n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_direction);
+            ir_sensors->front[0] = robot_direction == 1 ? data[0] : data[4];//front right 
+            ir_sensors->front[1] = robot_direction == 1 ? data[1] : data[5];//front left
+        }
+
+        //tail
+        if(robot_pose_in_organism[robot_ip].tail_header == 1)
+        {
+            // printf("%d: update sensor data [%d] og from %s, as a tail (%d)\n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_direction);
+            ir_sensors->back[0] = robot_direction == 1 ? data[4] : data[0]; ;//back left 
+            ir_sensors->back[1] = robot_direction == 1 ? data[5] : data[1] ;//back right 
+        }
+
+        //left and right
+        if(robot_pose_in_organism[robot_ip].og_irsensor_index != -1)
+        {
+            // printf("%d: update sensor data [%d] og from %s, push into og_irsensor[%d]\n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_og_irsensor_index);
+            ir_sensors->left[2 * robot_og_irsensor_index]       = robot_direction == 1? data[2] : data[6];
+            ir_sensors->left[2 * robot_og_irsensor_index + 1]   = robot_direction == 1? data[3] : data[7];
+            ir_sensors->right[2 * robot_og_irsensor_index]      = robot_direction == 1? data[7] : data[3];
+            ir_sensors->right[2 * robot_og_irsensor_index + 1]  = robot_direction == 1? data[6] : data[2];
+        }
+
+        pthread_mutex_unlock(&IPC_data_mutex);
+    }
+
+}
+
+void Robot::RequestOGIRSensors(uint8_t sensor_type)
+{
+    std::map<uint32_t, robot_pose>::iterator it;
+    for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
+    {
+        if(it->second.og_irsensor_index >=0 || it->second.tail_header !=0)
+            RequestOGIRSensors(it->first, sensor_type);
+    }
+
+}
+
+void Robot::RequestOGIRSensors(uint32_t addr, uint8_t sensor_type)
+{
+
+    IPCSendMessage(addr, IPC_MSG_IRSENSOR_DATA_REQ, (uint8_t*)&sensor_type, 1);
+}
+
+
+//only works for the snake like organism, connected using only front and back sides
+void Robot::InitRobotPoseInOrganism()
+{
+    //clear the existing data
+    robot_pose_in_organism.clear();
+    robot_in_organism_index_sorted.clear();
+    
+    //init the client list and the acks
+    int pos_index = 0;
+    int dir = 1;
+    bool new_branch = true;
+    robot_pose pose;
+    pthread_mutex_lock(&IPC_data_mutex);
+    int index_min = 0;
+    int index_max = 0;
+
+    //insert myself
+    pose.direction = 1;
+    pose.index = 0;
+    pose.type = type;
+    robot_pose_in_organism[my_IP.i32] = pose;
+
+    //insert all other robots
+    for(unsigned int i=0;i<mytree.Encoded_Seq().size();i++)
+    {
+        if(mytree.Encoded_Seq()[i] != OrganismSequence::Symbol(0))
+        {
+            if(new_branch)
+            {
+                new_branch = false;
+                if(mytree.Encoded_Seq()[i].side1 == BACK)
+                    dir = 1;
+                else
+                    dir = -1;
+            }
+
+            pos_index += dir;
+            pose.index = pos_index;
+            pose.direction = (mytree.Encoded_Seq()[i].side2 == FRONT ? 1 : -1) * dir;
+            pose.type = mytree.Encoded_Seq()[i].type2;
+            robot_pose_in_organism[getFullIP(mytree.Encoded_Seq()[i].child_IP).i32] = pose;
+          //  printf("%d : %s direction %d\n", mytree.Encoded_Seq()[i].child_IP, IPToString(getFullIP(mytree.Encoded_Seq()[i].child_IP).i32), pose.direction);
+        }
+        else
+        {
+            pos_index = 0;
+            new_branch = true;
+       //     printf("new branches\n");
+        }
+
+        if(index_min < pos_index)
+            index_min = pos_index;
+
+        if(index_max > pos_index)
+            index_max = pos_index;
+    }
+
+   // printf("min: %d\nmax: %d\n", index_min, index_max);
+
+
+    std::map<uint32_t, robot_pose>::iterator it;
+    for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
+    {
+        robot_in_organism_index_sorted[it->second.index] = it->first;
+    }
+
+    //fill in og_irsensor_index
+    int og_irsensor_index = 0;
+    std::map<int, uint32_t>::iterator it1=robot_in_organism_index_sorted.begin();
+    //set tail_header
+    robot_pose_in_organism[it1->second].tail_header = -1;
+    for(it1 = robot_in_organism_index_sorted.begin(); it1 != robot_in_organism_index_sorted.end(); it1++)
+    {
+        robot_pose &p = robot_pose_in_organism[it1->second];
+  //      printf("inside: %s's index: %d pose: %d type: %c\n", IPToString(it1->second), p.index,p.direction, robottype_names[p.type]);
+        //set og_irsensor_index if it is AW
+        if(robot_pose_in_organism[it1->second].type == ROBOT_AW)
+            robot_pose_in_organism[it1->second].og_irsensor_index = og_irsensor_index++;
+    }
+    //set tail_header
+    it1--;
+    robot_pose_in_organism[it1->second].tail_header = 1;
+
+
+    //init the OGIRsensor, to make them the right size for easy access later
+    og_reflective_sensors.left.clear();
+    og_reflective_sensors.right.clear();
+    og_proximity_sensors.left.clear();
+    og_proximity_sensors.right.clear();
+    og_beacon_sensors.left.clear();
+    og_beacon_sensors.right.clear();
+    og_ambient_sensors.left.clear();
+    og_ambient_sensors.right.clear();
+    for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
+    {
+        if(it->second.type == ROBOT_AW)
+        {
+            //increase the size of left and right for 2
+            og_reflective_sensors.left.push_back(0);
+            og_reflective_sensors.left.push_back(0);
+            og_reflective_sensors.right.push_back(0);
+            og_reflective_sensors.right.push_back(0);
+            og_proximity_sensors.left.push_back(0);
+            og_proximity_sensors.left.push_back(0);
+            og_proximity_sensors.right.push_back(0);
+            og_proximity_sensors.right.push_back(0);
+            og_beacon_sensors.left.push_back(0);
+            og_beacon_sensors.left.push_back(0);
+            og_beacon_sensors.right.push_back(0);
+            og_beacon_sensors.right.push_back(0);
+            og_ambient_sensors.left.push_back(0);
+            og_ambient_sensors.left.push_back(0);
+            og_ambient_sensors.right.push_back(0);
+            og_ambient_sensors.right.push_back(0);
+
+        }
+    }
+
+    pthread_mutex_unlock(&IPC_data_mutex);
+}
+
+void Robot::PrintOGIRSensor(uint8_t sensor_type)
+{
+    if(sensor_type ==IR_AUX_REFLECTIVE_DATA)
+    {
+        printf("IR aux reflective: %d %d %d %d\n", og_front_aux_reflective_sensors[0],og_front_aux_reflective_sensors[1],og_front_aux_reflective_sensors[2],og_front_aux_reflective_sensors[3]);
+        return;
+    }
+
+    OG_IRsensor * ir_sensors;
+    char str[10];
+    if(sensor_type == IR_REFLECTIVE_DATA)
+    {
+        ir_sensors = &og_reflective_sensors;
+        sprintf(str, "Reflective");
+    }
+    else if(sensor_type == IR_AMBIENT_DATA)
+    {
+        ir_sensors= &og_ambient_sensors;
+        sprintf(str, "Ambient");
+    }
+    else if(sensor_type == IR_PROXIMITY_DATA)
+    {
+        ir_sensors = &og_proximity_sensors;
+        sprintf(str, "Proximity");
+    }
+    else if(sensor_type == IR_BEACON_DATA)
+    {
+        ir_sensors = &og_beacon_sensors;
+        sprintf(str, "Beacon");
+    }
+    else
+        return;
+
+    printf("IR %s Data\n", str);
+    printf("\tFront: %d\t%d\n", ir_sensors->front[0], ir_sensors->front[1]);
+    printf("\tLeft: ");
+    for(int i=0;i<ir_sensors->left.size();i++)
+        printf("%d\t", ir_sensors->left[i]);
+    printf("\n");
+    printf("\tRight: ");
+    for(int i=0;i<ir_sensors->right.size();i++)
+        printf("%d\t", ir_sensors->right[i]);
+    printf("\n");
+    printf("\tBack: %d\t%d\n", ir_sensors->back[0], ir_sensors->back[1]);
+
+
 
 }
 

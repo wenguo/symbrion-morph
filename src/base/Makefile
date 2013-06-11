@@ -1,6 +1,6 @@
-SRC = robot.cc robot_ircomm.cc robot_ethcomm.cc robot_option.cc robot_self_repair.cc parameter.cc global.cc IRMessage.cc
+SRC = robot.cc robot_ircomm.cc robot_ethcomm.cc robot_option.cc robot_self_repair.cc parameter.cc global.cc IRMessage.cc robot_IPC.cc robot_debug.cc robot_organism.cc
 SRC+= organism.cc organism_sequence.cc organism_sample.cc
-SRC+= support.cc worldfile.cc hist.cc
+SRC+= support.cc worldfile.cc hist.cc ipc.cc
 
 CC = bfin-linux-uclibc-gcc
 CXX = bfin-linux-uclibc-g++ 
@@ -9,9 +9,9 @@ OBJDUMP = bfin-linux-uclibc-objdump
 STRIP = bfin-linux-uclibc-strip
 
 # Change this to your paths
-IROBOTPATH = ../../irobot
+#IROBOTPATH = ../../irobot
 IPATH = .
-IPATH += $(IROBOTPATH)/include
+#IPATH += $(IROBOTPATH)/include
 
 VPATH = .
 VPATH += og
@@ -23,8 +23,8 @@ EXE = morph
 static_LIB = libmorph_base.a
 shared_LIB = libmorph_base.so
 
-CXXFLAGS =-O2 -Wall -Wno-reorder  -mcpu=bf561 
-CFLAGS = -O2 -Wall -Wno-reorder -mcpu=bf561 -std=gnu99 
+CXXFLAGS =-O2 -Wall -Wno-reorder  -mcpu=bf561 -DWITH_MOTION -DWIP -DTEST_CLIMBING
+CFLAGS = -O2 -Wall -Wno-reorder -mcpu=bf561 -std=gnu99 -DWITH_MOTION -DWIP -DTEST_CLIMBING
 
 
 CXXFLAGS += $(patsubst %, -I%, $(IPATH))
