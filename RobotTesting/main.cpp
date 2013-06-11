@@ -511,7 +511,27 @@ int main(int argc, char** argv) {
 				}
 				break;
 			case RobotBase::SCOUTBOT:
-				// TODO: MISSING
+                                				// Front Board
+				std::cout << red;
+				std::cout << "---------------------------------------" << std::endl;
+				std::cout << "Left Board:" << std::endl;
+				std::cout << normal;
+				std::cout << std::endl;
+
+				if (testSPI(ScoutBot::LEFT)) {
+					testRGBLEDs(ScoutBot::LEFT);
+					//testRGBSensor(ScoutBot::FRONT);
+					testIRDst(ScoutBot::LEFT);
+					testIRLED(ScoutBot::LEFT);
+					testAmbientLight(ScoutBot::LEFT);
+					testAccelerometer(ScoutBot::LEFT);
+					testMicrophone(ScoutBot::LEFT);
+				} else {
+					std::cout << purple;
+					std::cout << "NO SPI" << std::endl;
+					std::cout << normal;
+				}
+				break;
 			default:
 				break;
 		}
