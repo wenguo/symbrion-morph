@@ -275,7 +275,7 @@ bool Robot::Init(const char * optionfile)
     // For self-repair - make sure every robot knows the target
     if(!para.og_seq_list.empty()) target = para.og_seq_list[0];
 
-    SPIVerbose = QUIET;
+    //SPIVerbose = QUIET;
 
     InitLog();
 
