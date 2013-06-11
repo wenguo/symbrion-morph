@@ -9,9 +9,9 @@ OBJDUMP = bfin-linux-uclibc-objdump
 STRIP = bfin-linux-uclibc-strip
 
 # Change this to your paths
-#IROBOTPATH = ../../irobot
+IROBOTPATH = ../../irobot
 IPATH = .
-#IPATH += $(IROBOTPATH)/include
+IPATH += $(IROBOTPATH)/include
 
 VPATH = .
 VPATH += og

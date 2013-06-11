@@ -1,6 +1,6 @@
 #ifndef GLOBAL_HH
 #define GLOBAL_HH
-//#include <IRobot.h>
+#include <IRobot.h>
 
 #define COMMANDER_PORT 254    //the actual port will be 10254
 #define COMMANDER_PORT_BASE 10000   
