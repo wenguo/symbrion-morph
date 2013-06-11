@@ -438,21 +438,24 @@ void Robot::MacroLocomotion()
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
-#ifdef TEST_CLIMBING
-            if(!msg_climbing_start_received) //this will prevent the message being sent twice 
+            
+            if(demo_count == 0)
             {
-                IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
-                msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
+                if(!msg_climbing_start_received) //this will prevent the message being sent twice 
+                {
+                    IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
+                    msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
+                }
             }
-#endif
-#ifdef TEST_RESHAPING
-            if(!msg_lowering_received)
+            else if(demo_count ==1)
             {
-                printf("%d: send lowering start\n", timestamp);
-                IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
-                msg_lowering_received = true;
+                if(!msg_lowering_received)
+                {
+                    printf("%d: send lowering start\n", timestamp);
+                    IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+                    msg_lowering_received = true;
+                }
             }
-#endif
             IPC_health = true;
             climbing_count =0;
             macrolocomotion_count = 0;
@@ -495,6 +498,8 @@ void Robot::MacroLocomotion()
         current_state = LOWERING;
         lowering_count = 0;
         macrolocomotion_count=0;
+
+        demo_count++;
     }
     else if (msg_climbing_start_received)
     {
@@ -509,6 +514,8 @@ void Robot::MacroLocomotion()
         climbing_count = 0;
         macrolocomotion_count=0;
         hinge_motor_operating_count = 0;
+
+        demo_count++;
     }
 
     if(locomotion_command[0] != 0)
@@ -716,12 +723,12 @@ void Robot::Climbing()
             memset(locomotion_command, 0, sizeof(locomotion_command));
 
             front_aw_ip = 0; //reset it to the right value 
-            
-            if(!msg_lowering_received)
+
+            if(!msg_raising_start_received) //this will prevent the message being sent twice 
             {
-                printf("%d: send lowering start\n", timestamp);
-                IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
-                msg_lowering_received = true;
+                printf("%d: send raising start\n", timestamp);
+                IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
+                msg_raising_start_received = true;
             }
         }
     }
@@ -742,6 +749,24 @@ void Robot::Climbing()
         macrolocomotion_count=0;
         hinge_motor_operating_count = 0;
     }
+    else if(msg_raising_start_received)
+    {
+        printf("%d: received raising start\n", timestamp);
+        // Stop moving
+        memset(hinge_command, 0, sizeof(hinge_command));
+        memset(locomotion_command, 0, sizeof(locomotion_command));
+
+        msg_raising_start_received = false;
+        current_action_sequence_index =0;
+        climbing_count =0;
+        raising_count = 0;
+        macrolocomotion_count=0;
+        hinge_motor_operating_count = 0;
+
+        current_state = RAISING;
+        last_state = CLIMBING;
+    }
+
 
     //2d locomotion will be called automatially
     if(locomotion_command[0] != 0)
@@ -831,36 +856,38 @@ void Robot::Lowering()
             {
                 hinge_motor_operating_count = 0;
 
-#ifdef WIP
-                if(!msg_reshaping_start_received)
+                if(demo_count ==2)
                 {
-                    //prepare the buffer for new shaping + new seed
-                    OrganismSequence::OrganismSequence &seq = para.og_seq_list[1];
-                    int size = seq.Size() + 3;
-                    uint8_t buf[size];
-                    buf[0] = para.debug.para[9];
-                    buf[1] = COMMANDER_PORT;
-                    buf[2] = seq.Size();
-                    for(unsigned int i=0; i < buf[2];i++)
-                        buf[i+3] =seq.Encoded_Seq()[i].data;
+                    if(!msg_reshaping_start_received)
+                    {
+                        //prepare the buffer for new shaping + new seed
+                        OrganismSequence::OrganismSequence &seq = para.og_seq_list[1];
+                        int size = seq.Size() + 3;
+                        uint8_t buf[size];
+                        buf[0] = para.debug.para[9];
+                        buf[1] = COMMANDER_PORT;
+                        buf[2] = seq.Size();
+                        for(unsigned int i=0; i < buf[2];i++)
+                            buf[i+3] =seq.Encoded_Seq()[i].data;
 
-                    IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
-                    printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
-                    seed = false;
+                        IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
+                        printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
+                        seed = false;
+                    }
                 }
-#else
-                if(!msg_raising_start_received) //this will prevent the message being sent twice 
+                else
                 {
-                    IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
-                    msg_raising_start_received = true;
+                    if(!msg_raising_start_received) //this will prevent the message being sent twice 
+                    {
+                        IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
+                        msg_raising_start_received = true;
+                    }
                 }
-
                 //if(!msg_disassembly_received) //this will prevent the message being sent twice 
                // {
                //     IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
                //     msg_disassembly_received = true;
                // }
-#endif           
                 
                 lowering_count = 0;
             }

@@ -77,7 +77,7 @@ Global
 (
 	logtofile 0
 #refer to robot.hh for a full list of states
-	init_state 26 
+	init_state 4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0

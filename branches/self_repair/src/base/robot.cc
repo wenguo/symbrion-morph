@@ -63,6 +63,7 @@ Robot::Robot()
     master_IPC.Name("master");
     commander_IPC.Name("commander");
 
+    demo_count = 0;
 }
 
 // Reset variables used during assembly

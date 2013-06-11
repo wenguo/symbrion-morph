@@ -557,6 +557,8 @@ class Robot
     uint8_t reshaping_processed;
     
     uint8_t disassembly_waiting_for_undock;
+
+    int demo_count;
 };
 
 #endif
