@@ -1,0 +1,35 @@
+p1a -- KIT --> AW, at position 1, (left --> middle --> right),  each repeated 10 times
+p2a -- KIT --> AW, at position 2, (left --> middle --> right),  each repeated 10 times
+p3a -- KIT --> AW, at position 3, (left --> middle --> right),  each repeated 10 times
+p4a -- KIT --> AW, at position 2, (left --> middle --> right),  but heading varies (45, 135, -45, -135)
+p5a -- KIT --> AW, at position 3, (left --> middle --> right),  but heading varies (45, 135, -45, -135)
+p1b -- Scout --> AW, at position 1, (left --> middle --> right),  each repeated 10 times
+p2b -- Scout --> AW, at position 2, (left --> middle --> right),  each repeated 10 times
+p3b -- Scout --> AW, at position 3, (left --> middle --> right),  each repeated 10 times
+p4b -- Scout --> AW, at position 2, (left --> middle --> right),  but heading varies (45, 135, -45, -135)
+p5b -- Scout --> AW, at position 3, (left --> middle --> right),  but heading varies (45, 135, -45, -135)
+p1c -- AW --> Scout, at position 1, (left --> middle --> right),  each repeated 10 times
+p2c -- AW --> Scout, at position 2, (left --> middle --> right),  each repeated 10 times
+p3c -- AW --> Scout, at position 3, (left --> middle --> right),  each repeated 10 times
+p4c -- AW --> Scout, at position 2, (left --> middle --> right),  but heading varies (45, 135, -45, -135)
+p5c -- AW --> Scout, at position 3, (left --> middle --> right),  but heading varies (45, 135, -45, -135)
+p1d -- Scout --> Scout, at position 1, (left --> middle --> right), each repeated 10 times
+p2d -- Scout --> Scout, at position 2, (left --> middle --> right),  each repeated 10 times
+p3d -- Scout --> Scout, at position 3, (left --> middle --> right),  each repeated 10 times
+p4d -- Scout --> Scout, at position 2, (left --> middle --> right),  but heading varies (45, 135, -45, -135)
+p5d -- Scout --> Scout, at position 3, (left --> middle --> right),  but heading varies (45, 135, -45, -135)
+p1e -- Scout --> KIT, at position 1, (left --> middle --> right), KIT free for first 5 times, fixed for another 5
+p2e -- Scout --> KIT, at position 2, (left --> middle --> right), KIT free for first 5 times, fixed for another 5
+p3e -- Scout --> KIT, at position 3, (left --> middle --> right), KIT free for first 5 times, fixed for another 5
+p4e -- Scout --> KIT, at position 2, (left --> middle --> right), but heading varies (45, 135, -45, -135), KIT is free
+p5e -- Scout --> KIT, at position 3, (left --> middle --> right), but heading varies (45, 135, -45, -135), KIT is free
+p1f -- KIT --> Scout, at position 1, (left --> middle --> right), each repeated 10 times
+p2f -- KIT --> Scout, at position 2, (left --> middle --> right),  each repeated 10 times
+p3f -- KIT --> Scout, at position 3, (left --> middle --> right),  each repeated 10 times
+p4f -- KIT --> Scout, at position 2, (left --> middle --> right),  but heading varies (45, 135, -45, -135)
+p5f -- KIT --> Scout, at position 3, (left --> middle --> right),  but heading varies (45, 135, -45, -135)
+p1g -- AW --> KIT, at position 1, (left --> middle --> right), KIT free for first 5 times, fixed for another 5
+p2g -- AW --> KIT, at position 2, (left --> middle --> right), KIT free for first 5 times, fixed for another 5
+p3g -- AW --> KIT, at position 3, (left --> middle --> right), KIT free for first 5 times, fixed for another 5
+p4g -- AW --> KIT, at position 2, (left --> middle --> right), but heading varies (45, 135, -45, -135), KIT is free
+p5g -- AW --> KIT, at position 3, (left --> middle --> right), but heading varies (45, 135, -45, -135), KIT is free

@@ -1,0 +1,34 @@
+KIT4 moves backward starting from the following point for 16 seconds
+origin @ AW02's BACK side TOPIRLED
+KIT4 start at 7cm (x), y various from -14cm to 14cm with interval 1cm
+KIT4 stops at 86-87cm (x), y is the same as starting point
+kk
+./RobotKIT_20070101001536.log.gz
+./RobotKIT_20070101001707.log.gz
+./RobotKIT_20070101001819.log.gz
+./RobotKIT_20070101001905.log.gz
+./RobotKIT_20070101002017.log.gz
+./RobotKIT_20070101002124.log.gz
+./RobotKIT_20070101002202.log.gz
+./RobotKIT_20070101002251.log.gz
+./RobotKIT_20070101002349.log.gz
+./RobotKIT_20070101002422.log.gz
+./RobotKIT_20070101002504.log.gz
+./RobotKIT_20070101002549.log.gz
+./RobotKIT_20070101002644.log.gz
+./RobotKIT_20070101002734.log.gz
+./RobotKIT_20070101002838.log.gz
+./RobotKIT_20070101002927.log.gz
+./RobotKIT_20070101003024.log.gz
+./RobotKIT_20070101003128.log.gz
+./RobotKIT_20070101003214.log.gz
+./RobotKIT_20070101003301.log.gz
+./RobotKIT_20070101003345.log.gz
+./RobotKIT_20070101003439.log.gz
+./RobotKIT_20070101003541.log.gz
+./RobotKIT_20070101003654.log.gz
+./RobotKIT_20070101003747.log.gz
+./RobotKIT_20070101003827.log.gz
+./RobotKIT_20070101003912.log.gz
+./RobotKIT_20070101003952.log.gz
+./RobotKIT_20070101004042.log.gz
