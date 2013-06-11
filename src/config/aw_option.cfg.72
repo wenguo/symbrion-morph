@@ -67,14 +67,14 @@ MacroLocomotion
 Debugging
 (
     mode 31 
-    para [200 0 220 0 0 0 0 1 0 220]
+    para [200 0 220 0 0 0 0 1 0 72]
 )
 
 Global
 (
 	logtofile 0
 #refer to global.hh for a full list of states
-	init_state  26 
+	init_state  3 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -154,8 +154,14 @@ ShapeInfo
 
 ShapeInfo
 (
+ seq "ABSFSBAB00000000"
+)
+
+ShapeInfo
+(
  seq "SFABAFSF00000000SBAB0000"
 )
+
 
 
 
