@@ -52,7 +52,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 35
-    locking_motor_enabled [0 0 0 0]
+    locking_motor_enabled [1 0 1 0]
 )
 
 MacroLocomotion
@@ -60,7 +60,7 @@ MacroLocomotion
     hinge_motor_lifting_time 50 
     hinge_motor_lowing_time 30
     hinge_motor_speed 40
-    hinge_motor_angle 25
+    hinge_motor_angle 37
     hinge_motor_default_pos 75
     hinge_motor_enabled 1
 )
