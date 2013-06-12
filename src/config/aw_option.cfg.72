@@ -51,7 +51,7 @@ Locking
 (
     locking_motor_opening_time 30
     locking_motor_closing_time 40
-    locking_motor_enabled [0 0 0 0]
+    locking_motor_enabled [1 0 1 0]
 )
 
 MacroLocomotion
@@ -59,9 +59,9 @@ MacroLocomotion
     hinge_motor_lifting_time 70 
     hinge_motor_lowing_time 30
     hinge_motor_speed 40
-    hinge_motor_angle 35
+    hinge_motor_angle 37
     hinge_motor_default_pos 75
-    hinge_motor_enabled 0
+    hinge_motor_enabled 1
 )
 
 Debugging
@@ -96,7 +96,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     aw_adjustment_ratio 1.5
-    locomotion_motor_enabled 0
+    locomotion_motor_enabled 1
 )
 
 Climbing

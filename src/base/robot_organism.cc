@@ -368,8 +368,8 @@ void Robot::MacroLocomotion()
             cmd_speed[2] = 0;
 
         //only moves when user_input ==1
-        if(user_input != 1)
-            memset(cmd_speed, 0, sizeof(cmd_speed));
+      //  if(user_input != 1)
+      //      memset(cmd_speed, 0, sizeof(cmd_speed));
 
         if(user_input <= -2)
         {
@@ -391,8 +391,8 @@ void Robot::MacroLocomotion()
         {
             if(!msg_climbing_start_received) //this will prevent the message being sent twice 
             {
-                //       IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
-                //       msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
+                IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
+                msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
 
                 IPC_health = true;
                 climbing_count =0;
@@ -404,42 +404,13 @@ void Robot::MacroLocomotion()
 
         //printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
 
-
-        /*
-        if(macrolocomotion_count < 50)
-        {
-            cmd_speed[0] = 30;
-            cmd_speed[1] = 30;
-            cmd_speed[2] = 0;
-        }
-        else if(macrolocomotion_count < 100)
-        {
-            cmd_speed[0] = 0;
-            cmd_speed[1] = 0;
-            cmd_speed[2] = 60;
-        }
-        else if(macrolocomotion_count < 150)
-        {
-            cmd_speed[0] = -30;
-            cmd_speed[1] = -30;
-            cmd_speed[2] = 0;
-        }
-        else if(macrolocomotion_count < 200)
-        {
-            cmd_speed[0] = 0;
-            cmd_speed[1] = 0;
-            cmd_speed[2] = -60;
-        }
-        else
-        */
-#ifdef WIP
-        if(macrolocomotion_count > 50)
+         if(macrolocomotion_count > 50)
         {
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
             
-            if(demo_count == 0)
+            /*if(demo_count == 0 && user_input == -1)
             {
                 if(!msg_climbing_start_received) //this will prevent the message being sent twice 
                 {
@@ -447,7 +418,8 @@ void Robot::MacroLocomotion()
                     msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
                 }
             }
-            else if(demo_count ==1)
+            else */
+            if(demo_count ==1)
             {
                 if(!msg_lowering_received)
                 {
@@ -462,7 +434,6 @@ void Robot::MacroLocomotion()
             hinge_motor_operating_count = 0;
         }
 
-#endif
         //set the speed of all AW robots in the organism
         std::map<uint32_t, robot_pose>::iterator it;
         for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
@@ -571,13 +542,6 @@ void Robot::MacroLocomotion()
                 break;
         }
     }
-
-#ifndef WITH_MOTION
-    speed[0]=0;
-    speed[1]=0;
-    speed[2]=0;
-#endif
-
 
 }
 
