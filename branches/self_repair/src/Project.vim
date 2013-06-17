@@ -62,19 +62,20 @@ badd +173 ./base/robot_option.cc
 badd +22 ./robot_KIT.hh
 badd +23 ./robot_AW.hh
 badd +1 ./main.cc
-badd +263 ./robot_KIT.cc
+badd +1799 ./robot_KIT.cc
 badd +2401 ./robot_AW.cc
 badd +12 base/IRMessage.hh
 badd +4 base/IRMessage.cc
 badd +15 base/Makefile
 badd +631 base/robot_ircomm.cc
 badd +255 base/robot_ethcomm.cc
-badd +696 base/robot_self_repair.cc
+badd +459 base/robot_self_repair.cc
 badd +1 robot_SCOUT.hh
 badd +119 robot_SCOUT.cc
 badd +15 base/robot_IPC.cc
+badd +0 base/robot_organism.cc
 args \[BufExplorer]
-edit ./base/robot_debug.cc
+edit base/robot_organism.cc
 set splitbelow splitright
 set nosplitbelow
 set nosplitright
@@ -183,12 +184,12 @@ setlocal nowinfixwidth
 setlocal wrap
 setlocal wrapmargin=0
 silent! normal! zE
-let s:l = 22 - ((12 * winheight(0) + 23) / 46)
+let s:l = 1 - ((0 * winheight(0) + 24) / 48)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-22
-normal! 016l
+1
+normal! 0
 tabnext 1
 if exists('s:wipebuf')
   silent exe 'bwipe ' . s:wipebuf

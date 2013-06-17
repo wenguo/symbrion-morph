@@ -512,7 +512,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         {
                             printf("propagated message size: %d\n", size);
                             PropagateIRMessage(data[2], (uint8_t*)&data[8], data[7], channel);
-                            PropagateEthMessage(data[2], (uint8_t*)&data[8], data[7], neighbours_IP[channel]);
+                          //  PropagateEthMessage(data[2], (uint8_t*)&data[8], data[7], neighbours_IP[channel]);
                         }
                     }
                 }
@@ -707,6 +707,7 @@ void Robot::SendFailureMsg( int channel )
     buf[0] = channel;
 
     SendIRMessage(channel, MSG_TYPE_FAILED, buf, 1, para.ir_msg_repeated_num);
+    IPCSendMessage(neighbours_IP[channel].i32, MSG_TYPE_FAILED, buf, 1);
 
     printf("%d Sending failure message %d %#x\n",timestamp,(int)buf[0],docked[channel]);
 }
@@ -809,7 +810,6 @@ void Robot::RemoveFromQueue(int channel, uint8_t type, uint8_t subtype)
     pthread_mutex_lock(&ir_txqueue_mutex);
     while(it!=IR_TXMsgQueue[channel].end())
     {
-        
         std::cout<<*it<<std::endl;
         if((*it).type == type && (subtype == MSG_TYPE_UNKNOWN || subtype == (*it).data[0]))
         {

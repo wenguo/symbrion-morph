@@ -87,7 +87,7 @@ class Robot
     bool MessageWaitingAck(uint8_t type);
 
     // reset variables required for self-assembly
-    void ResetAssembly();
+    void ResetAssembly(bool reset_ipc = true);
 
     protected:    
     virtual void InitHardware()=0;
