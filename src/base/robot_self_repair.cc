@@ -79,7 +79,9 @@ void Robot::CheckForFailures()
                     speed[2] = 0;
 
                     // Propagate lowering messages
-                    PropagateIRMessage(MSG_TYPE_LOWERING);
+                    //PropagateIRMessage(MSG_TYPE_LOWERING);
+                    IPCSendMessage(0, MSG_TYPE_LOWERING,NULL, 0);
+                    msg_lowering_received = true;
 
                     last_state = current_state;
                     current_state = LOWERING;
@@ -241,7 +243,7 @@ void Robot::CheckForFailures()
     {
         lowering_count = 0;
         seed = false;
-        ResetAssembly();
+        ResetAssembly(false);
     }
 }
 

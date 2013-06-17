@@ -404,7 +404,7 @@ void Robot::MacroLocomotion()
 
         //printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
 
-         if(macrolocomotion_count > 50)
+         if(macrolocomotion_count > 10000)
         {
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
@@ -503,14 +503,14 @@ void Robot::MacroLocomotion()
     //check ambient light to catch up some user input
     if(type != ROBOT_AW &&timestamp - timestamp_user_input_received > 10)
     {
-        if(ambient_hist[2].Avg() > 1000 || ambient_hist[3].Avg() > 1000) //left
+        if(ambient_hist[2].Avg() > 3000 || ambient_hist[3].Avg() > 3000) //left
         {
             uint8_t command = 2;
             IPCSendMessage(commander_IP.i32, IPC_MSG_OPAQUE, &command, 1);
             timestamp_user_input_received = timestamp;
 
         }
-        else if(ambient_hist[6].Avg() > 1000 || ambient_hist[5].Avg() > 1000)//right
+        else if(ambient_hist[6].Avg() > 3000 || ambient_hist[5].Avg() > 3000)//right
         {
             uint8_t command = 0;
             IPCSendMessage(commander_IP.i32, IPC_MSG_OPAQUE, &command, 1);
@@ -820,31 +820,39 @@ void Robot::Lowering()
             {
                 hinge_motor_operating_count = 0;
 
-                if(demo_count ==2)
+                //if no msg_failed received
+//                if(!msg_failed_received)
+#if 0
                 {
-                    if(!msg_reshaping_start_received)
+                    if(demo_count ==2)
                     {
-                        //prepare the buffer for new shaping + new seed
-                        OrganismSequence::OrganismSequence &seq = para.og_seq_list[1];
-                        int size = seq.Size() + 3;
-                        uint8_t buf[size];
-                        buf[0] = para.debug.para[9];
-                        buf[1] = COMMANDER_PORT;
-                        buf[2] = seq.Size();
-                        for(unsigned int i=0; i < buf[2];i++)
-                            buf[i+3] =seq.Encoded_Seq()[i].data;
+                        if(!msg_reshaping_start_received)
+                        {
+                            if(para.debug.para[9] !=0)
+                            {
+                                //prepare the buffer for new shaping + new seed
+                                OrganismSequence::OrganismSequence &seq = para.og_seq_list[1];
+                                int size = seq.Size() + 3;
+                                uint8_t buf[size];
+                                buf[0] = para.debug.para[9];
+                                buf[1] = COMMANDER_PORT;
+                                buf[2] = seq.Size();
+                                for(unsigned int i=0; i < buf[2];i++)
+                                    buf[i+3] =seq.Encoded_Seq()[i].data;
 
-                        IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
-                        printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
-                        seed = false;
+                                IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
+                                printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
+                                seed = false;
+                            }
+                        }
                     }
-                }
-                else
-                {
-                    if(!msg_raising_start_received) //this will prevent the message being sent twice 
+                    else
                     {
-                        IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
-                        msg_raising_start_received = true;
+                        if(!msg_raising_start_received) //this will prevent the message being sent twice 
+                        {
+                            IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
+                            msg_raising_start_received = true;
+                        }
                     }
                 }
                 //if(!msg_disassembly_received) //this will prevent the message being sent twice 
@@ -853,6 +861,7 @@ void Robot::Lowering()
                //     msg_disassembly_received = true;
                // }
                 
+#endif
                 lowering_count = 0;
             }
             //check if all robot 
@@ -884,6 +893,7 @@ void Robot::Lowering()
 
     if(msg_disassembly_received)
     {
+        printf("%d: disassembly received\n", timestamp);
         current_state = DISASSEMBLY;
         last_state = LOWERING;
         lowering_count = 0;
@@ -901,6 +911,7 @@ void Robot::Lowering()
     }
     else if(msg_raising_start_received)
     {
+        printf("%d: raising start received\n", timestamp);
         msg_raising_start_received = false;
         macrolocomotion_count = 0;
         raising_count = 0;

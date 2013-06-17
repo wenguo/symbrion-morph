@@ -67,7 +67,7 @@ Robot::Robot()
 }
 
 // Reset variables used during assembly
-void Robot::ResetAssembly()
+void Robot::ResetAssembly(bool reset_ipc)
 {
     printf("%d: Reset Assembly\n", timestamp);
     bumped=0;
@@ -229,9 +229,6 @@ void Robot::ResetAssembly()
 
     IP_collection_done = false;
 
-    commander_acks.clear();
-    broken_eth_connections = 0;
-    IPC_health = true;
 
     memset(hinge_command, 0, sizeof(hinge_command));
     memset(locomotion_command, 0, sizeof(locomotion_command));
@@ -241,8 +238,14 @@ void Robot::ResetAssembly()
     front_aw_ip = 0;
     user_input = 0;
 
-    commander_IPC.Stop();
-    master_IPC.Stop();
+    if(reset_ipc)
+    {
+        commander_IPC.Stop();
+        master_IPC.Stop();
+        commander_acks.clear();
+        broken_eth_connections = 0;
+        IPC_health = true;
+    }
 
     reshaping_waiting_for_undock = 0xF;
     reshaping_unlock_sent = 0;

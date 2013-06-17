@@ -56,7 +56,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case MSG_TYPE_LOWERING:
                 {
-                    if(!robot->seed)
+                    if(sender != ((robot->my_IP.i32 >> 24)& 0xFF))
                     {
                         printf("%d: received lowering\n", robot->timestamp);
                         robot->msg_lowering_received = true;
@@ -65,7 +65,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case MSG_TYPE_DISASSEMBLY:
                 {
-                    if(!robot->seed)
+                    if(sender != ((robot->my_IP.i32 >> 24)& 0xFF))
                         robot->msg_disassembly_received = true;
                 }
                 break;
@@ -92,7 +92,17 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                         printf("%d: message is not from my neighbour ip %s\n", robot->timestamp, IPToString(getFullIP(sender)));
                 }
                 break;
-                // Note that the indexes are slightly different for ETH than for IR
+            case MSG_TYPE_FAILED:
+                {
+                    uint8_t channel = robot->getEthChannel(getFullIP(sender));
+                    robot->msg_failed_received |= 1<<channel;
+                    robot->subog_id = data[0];
+                    robot->parent_side = channel;
+                    robot->heading = (robot->parent_side + 2) % 4;
+                    ack_required = true;
+                }
+                break;
+
             case MSG_TYPE_SUB_OG_STRING:
                 {
                     uint8_t channel = robot->getEthChannel(getFullIP(sender));
@@ -233,13 +243,13 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case IPC_MSG_RAISING_START:
                 {
-                    if(!robot->seed)
+                    if(sender != ((robot->my_IP.i32 >> 24)& 0xFF))
                         robot->msg_raising_start_received = true;
                 }
                 break;
             case IPC_MSG_RAISING_STOP:
                 {
-                    if(!robot->seed)
+                    if(sender != ((robot->my_IP.i32 >> 24)& 0xFF))
                         robot->msg_raising_stop_received = true;
                 }
                 break;
@@ -251,13 +261,13 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case IPC_MSG_CLIMBING_START:
                 {
-                    if(!robot->seed)
+                    if(sender != ((robot->my_IP.i32 >> 24)& 0xFF))
                         robot->msg_climbing_start_received = true;
                 }
                 break;
             case IPC_MSG_CLIMBING_STOP:
                 {
-                    if(!robot->seed)
+                    if(sender != ((robot->my_IP.i32 >> 24)& 0xFF))
                         robot->msg_climbing_stop_received = true;
                 }
                 break;
@@ -318,6 +328,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case IPC_MSG_ACK:
                 {
+//                    printf("%d: received [%s - %s]\n", robot->timestamp, message_names[msg->command], message_names[data[0]] );
                     ack_required = false;
                     pthread_mutex_lock(&robot->IPC_data_mutex);
                     robot->commander_acks[getFullIP(sender).i32]++;
@@ -336,9 +347,13 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                             robot->UpdateOGIRSensors(config, buf, data[1]);
                             break;
                         case MSG_TYPE_IP_ADDR_COLLECTION:
+                        case MSG_TYPE_FAILED:
                         case MSG_TYPE_SUB_OG_STRING:
                         case MSG_TYPE_SCORE_STRING:
-                            robot->RemoveFromQueue(robot->getEthChannel(getFullIP(sender)),data[0]);
+                            if(robot->getEthChannel(getFullIP(sender)) == SIDE_COUNT)
+                                robot->RemoveFromAllQueues(data[0],MSG_TYPE_UNKNOWN);
+                            else
+                                robot->RemoveFromQueue(robot->getEthChannel(getFullIP(sender)),data[0],MSG_TYPE_UNKNOWN);
                             break;
                         default:
                             break;
@@ -358,7 +373,6 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
 
         /*
         if(msg->command == IPC_MSG_ACK)
-            printf("%d: received [%s - %s]\n", robot->timestamp, message_names[msg->command], message_names[msg->data[2]] );
         else
         {
             printf("%d: received [%s]\n", robot->timestamp, message_names[msg->command]);
