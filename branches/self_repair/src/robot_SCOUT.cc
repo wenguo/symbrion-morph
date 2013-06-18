@@ -1903,8 +1903,11 @@ void RobotSCOUT::Debugging()
                         root_IPs.push_back(uint8_t((neighbours_IP[branch_side].i32>>24) & 0xFF));
                         mytree.setBranchRootIPs(robot_side(branch_side),root_IPs);
                         
-                        unlocking_required[branch_side] = true;
-                        locking_motors_status[branch_side] = CLOSED;
+                        if(it->getSymbol(0).type2 == ROBOT_AW)
+                        {
+                            unlocking_required[branch_side] = true;
+                            locking_motors_status[branch_side] = CLOSED;
+                        }
 
 
                     }

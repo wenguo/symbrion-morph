@@ -206,7 +206,7 @@ void Robot::CheckForFailures()
                     }
 
 
-                    msg_subog_seq_received = 0;
+                   // msg_subog_seq_received = 0;
 
                     repair_stage = STAGE0;
                     best_score = 0;
@@ -230,7 +230,7 @@ void Robot::CheckForFailures()
 
                     msg_subog_seq_expected = 1<<wait_side;
 
-                    printf("%d Detected subog_seq, entering REPAIR\n",timestamp);
+                    printf("%d Detected subog_seq, entering REPAIR %d\n",timestamp, wait_side);
                     start_recovery = true;
                 }
                 break;
@@ -243,7 +243,10 @@ void Robot::CheckForFailures()
     {
         lowering_count = 0;
         seed = false;
-        ResetAssembly(false);
+//        ResetAssembly(false);
+        msg_score_received = 0;
+        msg_stop_received = false;
+        msg_retreat_received = false;
     }
 }
 
@@ -514,6 +517,7 @@ void Robot::LeadRepair()
                 // not waiting for Ack from the previous message
                 if( !MessageWaitingAck(wait_side, MSG_TYPE_SUB_OG_STRING) )
                 {
+                    //printf("%d: wait_side %d msg_subog_seq_received %#x\n", timestamp, wait_side, msg_subog_seq_received);
                     if( msg_subog_seq_received & 1<<wait_side )
                     {
                         wait_side = getNextMobileNeighbour(++wait_side);
@@ -807,6 +811,7 @@ void Robot::Repair()
                 // not waiting for Ack from the previous message
                 if( !MessageWaitingAck(wait_side,MSG_TYPE_SUB_OG_STRING) )
                 {
+                    printf("%d: wait_side %d msg_subog_seq_received %#x\n", timestamp, wait_side, msg_subog_seq_received);
                     if( msg_subog_seq_received & 1<<wait_side )
                     {
                         wait_side = getNextMobileNeighbour(++wait_side);

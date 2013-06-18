@@ -112,7 +112,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                         robot->msg_subog_seq_received |= 1<<channel;
                         memcpy(robot->subog_str,data,data[0]+1); //???dont' quiet understand as data[0] stores the seq.size()+1 already
 
-                        //printf("%d parent_side: %d type: %d channel: %d\n", timestamp,parent_side,type,channel);
+                        printf("%d parent_side: %d type: %d channel: %d\n", robot->timestamp, robot->parent_side,robot->type,channel);
 
                         // if module has not yet entered a repair state
                         if(  robot->current_state != REPAIR && robot->current_state != LEADREPAIR )
@@ -350,9 +350,6 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                         case MSG_TYPE_FAILED:
                         case MSG_TYPE_SUB_OG_STRING:
                         case MSG_TYPE_SCORE_STRING:
-                            if(robot->getEthChannel(getFullIP(sender)) == SIDE_COUNT)
-                                robot->RemoveFromAllQueues(data[0],MSG_TYPE_UNKNOWN);
-                            else
                                 robot->RemoveFromQueue(robot->getEthChannel(getFullIP(sender)),data[0],MSG_TYPE_UNKNOWN);
                             break;
                         default:
