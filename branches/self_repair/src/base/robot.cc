@@ -159,6 +159,8 @@ void Robot::ResetAssembly(bool reset_ipc)
     msg_lockme_expected = 0;
     msg_disassembly_received = false;
     msg_reshaping_received=0;
+    msg_reshaping_expected=0;
+    msg_reshaping_score_received=0;
     msg_raising_received = 0;
     msg_raising_start_received = false;
     msg_raising_stop_received = false;
