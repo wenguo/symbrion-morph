@@ -117,7 +117,6 @@ void Robot::ResetAssembly(bool reset_ipc)
         recruitment_stage[i] = STAGE0;
         locking_motor_operating_count[i]=0;
         locking_motors_status[i] = OPENED;
-        neighbours_IP[i] = 0;
         new_id[i] = SIDE_COUNT;
         new_score[i] = 0;
         guiding_signals_count[i]=0;
@@ -238,14 +237,14 @@ void Robot::ResetAssembly(bool reset_ipc)
     front_aw_ip = 0;
     user_input = 0;
 
-    if(reset_ipc)
-    {
-        commander_IPC.Stop();
-        master_IPC.Stop();
-        commander_acks.clear();
-        broken_eth_connections = 0;
-        IPC_health = true;
-    }
+    commander_IPC.Stop();
+    master_IPC.Stop();
+    commander_acks.clear();
+    broken_eth_connections = 0;
+    IPC_health = true;
+
+    for (int i = 0; i < NUM_DOCKS; i++)
+        neighbours_IP[i] = 0;
 
     reshaping_waiting_for_undock = 0xF;
     reshaping_unlock_sent = 0;
@@ -253,7 +252,6 @@ void Robot::ResetAssembly(bool reset_ipc)
     reshaping_processed = 0;
 
     disassembly_waiting_for_undock = 0xF;
-
 }
 
 Robot::~Robot()

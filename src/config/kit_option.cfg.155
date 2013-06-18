@@ -54,7 +54,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 40
-    locking_motor_enabled [1 0 1 0]
+    locking_motor_enabled [0 0 0 0]
 )
 
 MacroLocomotion
@@ -88,8 +88,8 @@ Global
 	ir_msg_ack_delay 3
         reflective_calibrated [89 123 263 1206 174 220 180 114]
         ambient_calibrated [3785 3876 3885 3889 3606 3758 3628 3735]
-	#fail_in_state 20
-	#fail_after_delay 100
+	fail_in_state 20
+	fail_after_delay 100
 )
 
 Motor
@@ -97,7 +97,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     scout_wheels_direction [1 -1]
-    locomotion_motor_enabled 1                       
+    locomotion_motor_enabled 0                       
         
 )
 

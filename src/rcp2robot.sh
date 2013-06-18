@@ -5,9 +5,11 @@ if [ $# -ne 2 ] ; then
 	exit 1
 fi
 
-FILES="bin/morph \
-    base/lib/libmorph_base.so \
-    ../irobot/lib/libirobot.so"
+SRC_DIR=/home/wliu/workspace/symbrion-morph/branches/self_repair/src 
+
+FILES="${SRC_DIR}/bin/morph \
+    ${SRC_DIR}/base/lib/libmorph_base.so \
+    ${SRC_DIR}/../irobot/lib/libirobot.so"
 counter=0
 for f in $FILES
 do

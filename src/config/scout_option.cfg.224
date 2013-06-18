@@ -54,7 +54,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 40
-    locking_motor_enabled [1 0 1 0]
+    locking_motor_enabled [0 0 0 0]
 )
 
 MacroLocomotion
@@ -97,7 +97,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     scout_wheels_direction [1 -1]
-    locomotion_motor_enabled 1                       
+    locomotion_motor_enabled 0                       
         
 )
 
