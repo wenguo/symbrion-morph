@@ -88,8 +88,8 @@ Global
 	ir_msg_ack_delay 3
         reflective_calibrated [89 123 263 1206 174 220 180 114]
         ambient_calibrated [3785 3876 3885 3889 3606 3758 3628 3735]
-	fail_in_state 20
-	fail_after_delay 100
+#fail_in_state 20
+#	fail_after_delay 100
 )
 
 Motor

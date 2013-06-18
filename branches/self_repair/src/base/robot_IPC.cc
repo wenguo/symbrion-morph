@@ -52,7 +52,11 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
         switch(msg->command)
         {       
             case MSG_TYPE_ORGANISM_FORMED:
-                robot->organism_formed = true;
+                {
+                    robot->organism_formed = true;
+                    rt_status ret = robot->target.reBuild((uint8_t*)&(data[1]), data[0]);
+                    std::cout<<"target seq: "<<robot->target<<std::endl;
+                }
                 break;
             case MSG_TYPE_LOWERING:
                 {
@@ -124,7 +128,9 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
 
                         int ind = (int)(((uint8_t*)data)[0])+1;	 // get heading index
                         robot->heading = ((uint8_t*)data)[ind];	 // get heading
-                        printf("%d: My heading is: %d @ %d\n",robot->timestamp,(int)robot->heading,ind);
+                        robot->commander_IP = getFullIP(data[data[0] + 2]);
+                        robot->commander_port = COMMANDER_PORT_BASE + (uint8_t)data[data[0]+3];
+                        printf("%d My heading is: %d @ %d, commander_ip is: %s:%d\n",robot->timestamp,(int)robot->heading,ind, IPToString(robot->commander_IP), robot->commander_port);
 
                         printf("%d Sub-organism string received\n",robot->timestamp);
                         robot->PrintSubOGString(robot->subog_str);

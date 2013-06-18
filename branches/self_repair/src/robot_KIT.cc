@@ -1919,7 +1919,9 @@ void RobotKIT::Debugging()
                             unlocking_required[branch_side] = true;
                             locking_motors_status[branch_side] = CLOSED;
                         }
-                            
+
+                        msg_subog_seq_expected |= 1<<branch_side;
+
                     }
 
                     seed = para.debug.para[7];
@@ -1939,6 +1941,7 @@ void RobotKIT::Debugging()
                         
                         unlocking_required[parent_side] = true;
                         locking_motors_status[parent_side] = CLOSED;
+                        msg_subog_seq_expected |= 1<<parent_side;
 
                     }
                     else
