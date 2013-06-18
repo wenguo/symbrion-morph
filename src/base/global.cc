@@ -46,6 +46,7 @@ const char * message_names[MSG_TYPE_COUNT]={
     "Sub_OG_String",
     "Sub_OG_Score_String",
     "Sub_OG_Score",
+    "Reshaping_Score",
     "Retreat",
     "Stop",
     "IP_Addr_Collection",

@@ -363,6 +363,7 @@ class Robot
     uint8_t robot_in_range_replied;
     uint8_t msg_reshaping_received;
     uint8_t msg_reshaping_expected;
+    uint8_t msg_reshaping_score_received;
     uint8_t msg_raising_received;
     bool msg_raising_start_received;
     bool msg_raising_stop_received;

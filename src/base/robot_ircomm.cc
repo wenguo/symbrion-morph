@@ -484,10 +484,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                                     CPrintf1(SCR_GREEN,"%d -- start to lower !", timestamp);
                                 }
                                 break;
-                            case MSG_TYPE_RESHAPING:
+                            case MSG_TYPE_RESHAPING_SCORE:
                                 {
-                                    msg_reshaping_received |= 1<<channel;
-                                    CPrintf1(SCR_GREEN,"%d -- start to reshaping !", timestamp);
+                                    msg_reshaping_score_received |= 1<<channel;
                                 }
                                 break;
                             case MSG_TYPE_RETREAT:
@@ -724,7 +723,7 @@ void Robot::PropagateReshapeScore( uint8_t score, int ignore_side )
     buf[0] = score;
 
     printf("%d Propagating reshaping score: %d\n",timestamp, score);
-    PropagateIRMessage(MSG_TYPE_RESHAPING,buf,1,ignore_side);
+    PropagateIRMessage(MSG_TYPE_RESHAPING_SCORE,buf,1,ignore_side);
 
     //    for( int i=0; i<SIDE_COUNT; i++ )
     //    {
