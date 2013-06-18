@@ -1909,6 +1909,7 @@ void RobotSCOUT::Debugging()
                             locking_motors_status[branch_side] = CLOSED;
                         }
 
+                        msg_subog_seq_expected |= 1<<branch_side;
 
                     }
 
@@ -1929,6 +1930,7 @@ void RobotSCOUT::Debugging()
                         
                         unlocking_required[parent_side] = true;
                         locking_motors_status[parent_side] = CLOSED;
+                        msg_subog_seq_expected |= 1<<parent_side;
                         
                     }
                     else

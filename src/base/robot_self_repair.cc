@@ -118,6 +118,10 @@ void Robot::CheckForFailures()
                     best_score = 0;
                     subog_str[0] = 0;
 
+                    commander_IP = my_IP;
+                    commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
+
+
                     if( type == ROBOT_SCOUT && (heading == 1 || heading == 3) )
                     {
                         heading = 4;
@@ -165,6 +169,9 @@ void Robot::CheckForFailures()
 
                     printf("%d Detected failed module, entering LEADREPAIR, sub-organism ID:%d\n",timestamp,subog_id);
                     start_recovery = true;
+
+
+
                 }
                 break;
             default:
@@ -436,10 +443,10 @@ void Robot::SendSubOrgStr( int channel, uint8_t *seq )
         buf[0] = seq[0]+1;
 
         // TODO: if message too long, only send via Ethernet
-        if( buf[0] > MAX_IR_MESSAGE_SIZE-3 )
+        if( buf[0] > MAX_IR_MESSAGE_SIZE-5 )
         {
             printf("Warning: only %d of %d bytes will be sent (SendSubOGStr)\n", MAX_IR_MESSAGE_SIZE-2, (int) buf[0] );
-            buf[0] = MAX_IR_MESSAGE_SIZE - 3;
+            buf[0] = MAX_IR_MESSAGE_SIZE - 5;
         }
 
         // copy previous string
@@ -461,11 +468,14 @@ void Robot::SendSubOrgStr( int channel, uint8_t *seq )
         // Send the direction that the neighbour should move in
         buf[buf[0]+1] = getNeighbourHeading( docked[channel] );
 
-        SendIRMessage(channel, MSG_TYPE_SUB_OG_STRING, buf, buf[0]+2, para.ir_msg_repeated_num);
-        //SendEthMessage(channel, MSG_TYPE_SUB_OG_STRING, buf, ((int)buf[0])+2, false);
-        IPCSendMessage(neighbours_IP[channel].i32, MSG_TYPE_SUB_OG_STRING, buf, ((int)buf[0])+2);
+        buf[buf[0] + 2] = (commander_IP.i32 >> 24 ) & 0xFF;
+        buf[buf[0] + 3] = COMMANDER_PORT;
 
-        printf("%d Sending sub-og string, size: %d\n",timestamp,((int)buf[0])+2);
+        SendIRMessage(channel, MSG_TYPE_SUB_OG_STRING, buf, buf[0]+4, para.ir_msg_repeated_num);
+        //SendEthMessage(channel, MSG_TYPE_SUB_OG_STRING, buf, ((int)buf[0])+4, false);
+        IPCSendMessage(neighbours_IP[channel].i32, MSG_TYPE_SUB_OG_STRING, buf, ((int)buf[0])+4);
+
+        printf("%d Sending sub-og string, size: %d\n",timestamp,((int)buf[0])+4);
         PrintSubOGString(buf);
     }
 }
@@ -506,6 +516,30 @@ void Robot::LeadRepair()
 {
 
     static uint8_t unlock_sent = 0; // Temporary solution
+    static int lead_repair_count = 0;
+    lead_repair_count++;
+    if(lead_repair_count == 1)
+    {
+        //start the new server and stop the client 
+        if(!master_IPC.Running())
+            master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+        
+        return;
+    }
+    else if(lead_repair_count == 4)
+    {
+        if(commander_IPC.Running())
+            commander_IPC.Stop();
+        return;
+    }
+    else if(lead_repair_count == 10)
+    {
+        commander_IPC.Start(commander_IP.i32, commander_port, false);
+
+        return;
+    }
+
+
 
     switch(repair_stage)
     {
@@ -775,7 +809,7 @@ void Robot::LeadRepair()
                             std::cout<<"new target: "<<target<<std::endl;
 
                             //prepare the buffer for new shaping + new seed
-                            OrganismSequence::OrganismSequence &seq = target;
+                            OrganismSequence::OrganismSequence &seq = mytree;
                             int size = seq.Size() + 3;
                             uint8_t buf[size];
                             buf[0] = (my_IP.i32 >> 24 ) & 0xFF;
@@ -803,7 +837,19 @@ void Robot::LeadRepair()
 
                         printf("%d This is NOT the winning organism\n", timestamp );
 
-                        changeState(RESHAPING);
+                        //prepare the buffer for new shaping + new seed
+                        OrganismSequence::OrganismSequence &seq = mytree;
+                        int size = seq.Size() + 3;
+                        uint8_t buf[size];
+                        buf[0] = (my_IP.i32 >> 24 ) & 0xFF;
+                        buf[1] = COMMANDER_PORT;
+                        buf[2] = seq.Size();
+                        for(unsigned int i=0; i < buf[2];i++)
+                            buf[i+3] =seq.Encoded_Seq()[i].data;
+
+                        IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
+                        printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
+                        seed = false;
                     }
                 }
 
@@ -861,6 +907,22 @@ void Robot::LeadRepair()
 void Robot::Repair()
 {
     static uint8_t unlock_sent = 0; // Temporary solution
+    static int repair_count = 0;
+    repair_count++;
+    if(repair_count == 1)
+    {
+        //stop the client 
+        if(commander_IPC.Running())
+            commander_IPC.Stop();
+        
+        return;
+    }
+    else if(repair_count == 5)
+    {
+        //start the new client to leader
+        commander_IPC.Start(commander_IP.i32, commander_port, false);
+        return;
+    }
 
     switch(repair_stage)
     {

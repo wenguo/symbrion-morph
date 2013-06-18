@@ -323,9 +323,12 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         subog_str[subog_str[0]] |= channel<<6;  // 5:6
                     }
 
+
                     int ind = (int)(((uint8_t*)data)[2])+3;	 // get heading index
                     heading = ((uint8_t*)data)[ind];	 	// get heading
-                    printf("%d My heading is: %d @ %d\n",timestamp,(int)heading,ind);
+                    commander_IP = getFullIP(data[data[2] + 4]);
+                    commander_port = COMMANDER_PORT_BASE + (uint8_t)data[data[2]+5];
+                    printf("%d My heading is: %d @ %d, commander_ip is: %s:%d\n",timestamp,(int)heading,ind, IPToString(commander_IP), commander_port);
 
                     printf("%d Sub-organism string received\n",timestamp);
                     PrintSubOGString(subog_str);

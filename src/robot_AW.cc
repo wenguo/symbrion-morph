@@ -1874,6 +1874,7 @@ void RobotAW::Debugging()
                         root_IPs.push_back(uint8_t((neighbours_IP[branch_side].i32>>24) & 0xFF));
                         mytree.setBranchRootIPs(robot_side(branch_side),root_IPs);
 
+                        msg_subog_seq_expected |= 1<<branch_side;
 
                     }
 
@@ -1891,6 +1892,7 @@ void RobotAW::Debugging()
                         commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;
                         
                         commander_IPC.Start(IPToString(commander_IP), commander_port, false);
+                        msg_subog_seq_expected |= 1<<parent_side;
                     }
                     else
                         master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);

@@ -21,9 +21,10 @@ void Robot::InOrganism()
             for(int i=0;i<NUM_DOCKS;i++)
                 SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
 
-            uint8_t buf[target.Encoded_Seq().size()];
+            uint8_t buf[target.Encoded_Seq().size()+1];
+            buf[0] = target.Encoded_Seq().size();
             for(uint32_t i = 0; i< target.Encoded_Seq().size(); i++)
-                buf[i] = target.Encoded_Seq()[i].data;
+                buf[i + 1] = target.Encoded_Seq()[i].data;
             IPCSendMessage(MSG_TYPE_ORGANISM_FORMED, buf, sizeof(buf));
 
             
