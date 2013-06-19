@@ -504,9 +504,21 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                                     CPrintf1(SCR_RED,"%d -- stopping !", timestamp);
                                 }
                                 break;
+                            case MSG_TYPE_SCORE:
+                                {
+                                    msg_score_received |= 1<<channel;
+
+                                    new_id[channel] = data[8];
+                                    new_score[channel] = data[9];
+
+                                    printf("%d: side %d(%#x) received id score %d %d\n",timestamp,channel, docked[channel],new_id[channel],new_score[channel]);
+
+                                }
+                                break;
+
                             default:
                                 valid = false;
-                                CPrintf1(SCR_GREEN, "%d -- received unknow message", timestamp);
+                                CPrintf2(SCR_GREEN, "%d -- received unknow message %#x", timestamp, data[2]);
                                 break;
                         }
 
@@ -727,6 +739,8 @@ void Robot::PropagateReshapeScore( uint8_t score, int ignore_side )
 
     printf("%d Propagating reshaping score: %d\n",timestamp, score);
     PropagateIRMessage(MSG_TYPE_RESHAPING_SCORE,buf,1,ignore_side);
+    IPCPropagateMessage(MSG_TYPE_RESHAPING_SCORE,buf,1,neighbours_IP[ignore_side]);
+
 
     //    for( int i=0; i<SIDE_COUNT; i++ )
     //    {
@@ -749,6 +763,9 @@ void Robot::PropagateSubOrgScore( uint8_t id, uint8_t score, int ignore_side )
     buf[1] = score;
 
     PropagateIRMessage(MSG_TYPE_SCORE, buf, 2, ignore_side);
+   IPCPropagateMessage(MSG_TYPE_SCORE,buf,2,neighbours_IP[ignore_side]);
+    //IPCSendMessage(0, MSG_TYPE_SCORE, buf, 2);
+
     printf("%d Propagating id score: %d %d\n",timestamp,id,score);
 
     //    for( int i=0; i<SIDE_COUNT; i++ )
@@ -815,7 +832,10 @@ void Robot::RemoveFromQueue(int channel, uint8_t type, uint8_t subtype)
         std::cout<<*it<<std::endl;
         if((*it).type == type && (subtype == MSG_TYPE_UNKNOWN || subtype == (*it).data[0]))
         {
-            printf("%d Ack no longer needed for message %s, removing it from queue.\n", timestamp, message_names[(*it).type]);
+            if((*it).type == MSG_TYPE_PROPAGATED)
+                printf("%d Ack no longer needed for message %s [%s], removing it from queue.\n", timestamp, message_names[(*it).type], message_names[(*it).data[0]]);
+            else
+                printf("%d Ack no longer needed for message %s, removing it from queue.\n", timestamp, message_names[(*it).type]);
             it = IR_TXMsgQueue[channel].erase(it);
         }
         else

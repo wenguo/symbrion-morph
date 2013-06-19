@@ -88,7 +88,7 @@ Global
 	ir_msg_ack_delay 3
         reflective_calibrated [1168 97 258 83 977 980 1075 1005]
         ambient_calibrated [3646 3880 3755 3797 3883 3959 3649 3686]
-	fail_in_state 20
+fail_in_state 20
 	fail_after_delay 100
 )
 
