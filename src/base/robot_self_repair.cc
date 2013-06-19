@@ -213,7 +213,7 @@ void Robot::CheckForFailures()
                     }
 
 
-                   // msg_subog_seq_received = 0;
+                    msg_subog_seq_received = 0;
 
                     repair_stage = STAGE0;
                     best_score = 0;
@@ -792,50 +792,18 @@ void Robot::LeadRepair()
                         PropagateSubOrgScore( best_id, best_score, new_score_side );
                 }
             }
-            else
+            else if( timestamp == broadcast_start+broadcast_duration )
             {
-                if(msg_reshaping_score_received == 0)
+                // If  this is the winning organism
+                if( best_id == subog_id )
                 {
-                    msg_reshaping_score_received = 1;
-                    // If  this is the winning organism
-                    if( best_id == subog_id )
+                    PropagateReshapeScore( best_score, parent_side );
+
+                    if( best_score == own_score )
                     {
-                        PropagateReshapeScore( best_score, parent_side );
-
-                        if( best_score == own_score )
-                        {
-                            seed = true;
-                            mytree = target;
-                            std::cout<<"new target: "<<target<<std::endl;
-
-                            //prepare the buffer for new shaping + new seed
-                            OrganismSequence::OrganismSequence &seq = mytree;
-                            int size = seq.Size() + 3;
-                            uint8_t buf[size];
-                            buf[0] = (my_IP.i32 >> 24 ) & 0xFF;
-                            buf[1] = COMMANDER_PORT;
-                            buf[2] = seq.Size();
-                            for(unsigned int i=0; i < buf[2];i++)
-                                buf[i+3] =seq.Encoded_Seq()[i].data;
-
-                            IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
-                            printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
-                            seed = false;
-                        }
-                        else
-                            msg_organism_seq_expected = true;
-
-                        printf("%d This is the winning organism\n", timestamp );
-                    }
-                    else
-                    {
-                        // add one to the best score so that no module will
-                        // accidently believe itself to be the new seed.
-                        PropagateReshapeScore( best_score+1, parent_side );
-                        mytree.Clear();
                         seed = true;
-
-                        printf("%d This is NOT the winning organism\n", timestamp );
+                        mytree = target;
+                        std::cout<<"new target: "<<target<<std::endl;
 
                         //prepare the buffer for new shaping + new seed
                         OrganismSequence::OrganismSequence &seq = mytree;
@@ -851,53 +819,81 @@ void Robot::LeadRepair()
                         printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
                         seed = false;
                     }
-                }
-
-                else if(msg_reshaping_start_received)
-                {
-                    //start the new master_IPC if necessary
-                    if(reshaping_seed)
-                    {
-                        //if it is not the older seed, then start a new
-                        master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
-
-                        seed = reshaping_seed;
-                        reshaping_seed = false;
-
-                        msg_organism_seq_received = true;
-                    }
-
-                    //stop all commander IPCs
-                    if(commander_IPC.Running())
-                    {
-                        commander_IPC.Stop();
-                    }
                     else
-                    {
-                        msg_subog_seq_received = 0;
-                        msg_subog_seq_expected = 0;
-                        msg_failed_received = 0;
-                        repair_stage = STAGE0;
-                        best_score = 0;
-                        own_score = 0;
-                        subog.Clear();
+                        msg_organism_seq_expected = true;
 
-                        msg_reshaping_start_received = false;
-                        reshaping_waiting_for_undock = 0xF; // all wait
-                        reshaping_processed = 0;
-                        reshaping_count = 0;
+                    printf("%d This is the winning organism\n", timestamp );
+                }
+                else
+                {
+                    // add one to the best score so that no module will
+                    // accidently believe itself to be the new seed.
+                    PropagateReshapeScore( best_score+1, parent_side );
+                    mytree.Clear();
+                    seed = true;
 
-                        organism_formed = false;
-                        IP_collection_done = false;
+                    printf("%d This is NOT the winning organism\n", timestamp );
 
-                        commander_acks.clear();
+                    //prepare the buffer for new shaping + new seed
+                    OrganismSequence::OrganismSequence &seq = mytree;
+                    int size = seq.Size() + 3;
+                    uint8_t buf[size];
+                    buf[0] = (my_IP.i32 >> 24 ) & 0xFF;
+                    buf[1] = COMMANDER_PORT;
+                    buf[2] = seq.Size();
+                    for(unsigned int i=0; i < buf[2];i++)
+                        buf[i+3] =seq.Encoded_Seq()[i].data;
 
-                        current_state = RESHAPING;
-                        last_state = REPAIR;
-                    }
+                    IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
+                    printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
+                    seed = false;
+                }
+            }
+            else if(msg_reshaping_start_received)
+            {
+                //start the new master_IPC if necessary
+                if(reshaping_seed)
+                {
+                    //if it is not the older seed, then start a new
+                    master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+
+                    seed = reshaping_seed;
+                    reshaping_seed = false;
+
+                    msg_organism_seq_received = true;
                 }
 
+                //stop all commander IPCs
+                if(commander_IPC.Running())
+                {
+                    commander_IPC.Stop();
+                }
+                else
+                {
+                    msg_subog_seq_received = 0;
+                    msg_subog_seq_expected = 0;
+                    msg_failed_received = 0;
+                    repair_stage = STAGE0;
+                    best_score = 0;
+                    own_score = 0;
+                    subog.Clear();
+
+                    msg_reshaping_start_received = false;
+                    reshaping_waiting_for_undock = 0xF; // all wait
+                    reshaping_processed = 0;
+                    reshaping_count = 0;
+
+                    organism_formed = false;
+                    IP_collection_done = false;
+
+                    commander_acks.clear();
+
+                    current_state = RESHAPING;
+                    last_state = REPAIR;
+                }
             }
+
+
             break;
     }
 
@@ -1150,7 +1146,7 @@ void Robot::Repair()
                 }
             }
             // until a reshaping score message is received
-            //	- listen for sub-organism scores
+            //	- listen for sub-organism scores TODO: this may be moved below
             else if((msg_reshaping_score_received & (1<<parent_side)) == 0 )
             {
                 int new_score_side = -1;
@@ -1217,7 +1213,93 @@ void Robot::Repair()
     }
 }
 
+void Robot::Failed()
+{
+    speed[0] = 0;
+    speed[1] = 0;
+    speed[2] = 0;
 
+    static int failed_count=0;
+
+    if(MessageWaitingAck(MSG_TYPE_FAILED))
+        return;
+
+    failed_count++;
+
+    if(failed_count == 1)
+    {
+        //disconnect if there is any
+        master_IPC.Stop();
+        commander_IPC.Stop();
+
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            if(docked[i]) //docked but not processed
+            {
+                disassembly_waiting_for_undock |= 1<<i;
+                //open motor if its locking motor is closed
+                if(unlocking_required[i])
+                {
+                    SetDockingMotor(i, OPEN);
+                }
+                else  
+                    msg_unlocked_expected |= 1<<i; //waiting for undocked message
+
+                //no need to send unlock me request, just wait for unlocked
+                EnablePowerSharing(i, false);//this may be sent multiple times
+
+            }
+            else
+                disassembly_waiting_for_undock &= ~(1<<i);
+
+        }
+    }
+
+    //waiting for undock
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+        if(disassembly_waiting_for_undock & (1<<i))
+        {
+            //received unlocked message
+            if( (msg_unlocked_received & 1<<i) || ethernet_status_hist.Sum(i) < 1 )
+            {
+                msg_unlocked_received &= ~(1<<i);
+                docked[i]=0;
+                neighbours_IP[i]=0;
+                disassembly_waiting_for_undock &= ~(1<<i);
+            }
+
+            //motor fully opened
+            if(unlocking_required[i] && locking_motors_status[i]==OPENED)
+            {
+                Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
+                docked[i]=0;
+                neighbours_IP[i]=0;
+                unlocking_required[i] = false;
+
+                disassembly_waiting_for_undock &= ~(1<<i);
+            }
+        }
+    }
+
+    if(disassembly_waiting_for_undock ==0)
+    {
+        disassembly_waiting_for_undock = 0xF;
+        failed_count = 0;
+        undocking_count = 0;
+        msg_unlocked_received = 0;
+
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+
+        current_state = UNDOCKING;
+        last_state = FAILED;
+    }
+
+}
+
+
+#if 0
 void Robot::Failed()
 {
 
@@ -1285,7 +1367,7 @@ void Robot::Failed()
     }
 
 }
-
+#endif
 // TODO: Initial repair state of the robot nearest
 // to the failed module - not currently implemented
 void Robot::Support()

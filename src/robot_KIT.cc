@@ -360,28 +360,13 @@ void RobotKIT::Exploring()
 
 void RobotKIT::Resting()
 {
-    /*
-       if(timestamp == 30)
-       {
-       mytree.Clear();
-       if(og)
-       delete og;
-    //select predefined organism
-    og = new Organism;
-    RealDemoOrganism_KAK(og);
-    og->GraphToSequence(mytree);
-    std::cout<<*og<<std::endl;
-    std::cout<<mytree<<std::endl;
-    //prepare branches sequence
-    rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
-    if(ret.status >= RT_ERROR)
+    resting_count++;
+    if(resting_count > 100)
     {
-    std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
+        current_state = FORAGING;
+        last_state = RESTING;
+        resting_count = 0;
     }
-
-    SendBranchTree(2, mytree);
-    }
-    */
 
 }
 

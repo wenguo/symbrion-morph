@@ -379,6 +379,13 @@ void RobotSCOUT::Exploring()
 
 void RobotSCOUT::Resting()
 {
+    resting_count++;
+    if(resting_count > 100)
+    {
+        current_state = FORAGING;
+        last_state = RESTING;
+        resting_count = 0;
+    }
 }
 
 void RobotSCOUT::Foraging()

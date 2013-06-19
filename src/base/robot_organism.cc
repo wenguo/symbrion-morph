@@ -372,7 +372,7 @@ void Robot::MacroLocomotion()
       //  if(user_input != 1)
       //      memset(cmd_speed, 0, sizeof(cmd_speed));
 
-        if(user_input <= -2)
+        if(user_input <= -6)
         {
             if(!msg_lowering_received)
             {
@@ -509,6 +509,7 @@ void Robot::MacroLocomotion()
             uint8_t command = 2;
             IPCSendMessage(commander_IP.i32, IPC_MSG_OPAQUE, &command, 1);
             timestamp_user_input_received = timestamp;
+            para.print_ambient = 1;
 
         }
         else if(ambient_hist[6].Avg() > 3000 || ambient_hist[5].Avg() > 3000)//right
@@ -516,7 +517,11 @@ void Robot::MacroLocomotion()
             uint8_t command = 0;
             IPCSendMessage(commander_IP.i32, IPC_MSG_OPAQUE, &command, 1);
             timestamp_user_input_received = timestamp;
+            para.print_ambient = 1;
         }
+        else
+            para.print_ambient = 0;
+
     }
 
 

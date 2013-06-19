@@ -354,6 +354,7 @@ class Robot
     uint32_t climbing_count;
     uint32_t reshaping_count;
     uint32_t disassembly_count;
+    uint32_t resting_count;
 
     uint8_t docking_trials;
 

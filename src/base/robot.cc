@@ -143,6 +143,7 @@ void Robot::ResetAssembly(bool reset_ipc)
     climbing_count = 0;
     reshaping_count = 0;
     disassembly_count = 0;
+    resting_count = 0;
 
     beacon_signals_detected=0;
     robot_in_range_replied=0;
