@@ -34,6 +34,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
 
     uint8_t receiver = msg->data[0];
     uint8_t sender = msg->data[1];
+    uint8_t channel = robot->getEthChannel(getFullIP(sender));
 
     if(receiver != 0 && receiver != ((robot->my_IP.i32 >> 24)&0xFF))
     {
@@ -54,6 +55,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
             case MSG_TYPE_ORGANISM_FORMED:
                 {
                     robot->organism_formed = true;
+                    robot->target.Clear();
                     rt_status ret = robot->target.reBuild((uint8_t*)&(data[1]), data[0]);
                     std::cout<<"target seq: "<<robot->target<<std::endl;
                 }
@@ -75,7 +77,6 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case MSG_TYPE_IP_ADDR_COLLECTION:
                 {
-                    uint8_t channel = robot->getEthChannel(getFullIP(sender));
                     if(channel < SIDE_COUNT)
                     {
                         //first fill in the ip_list in the right position of 'mytree' using received data
@@ -98,7 +99,6 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case MSG_TYPE_FAILED:
                 {
-                    uint8_t channel = robot->getEthChannel(getFullIP(sender));
                     robot->msg_failed_received |= 1<<channel;
                     robot->subog_id = data[0];
                     robot->parent_side = channel;
@@ -109,7 +109,6 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
 
             case MSG_TYPE_SUB_OG_STRING:
                 {
-                    uint8_t channel = robot->getEthChannel(getFullIP(sender));
                     if(channel < SIDE_COUNT)
                     {
                         robot->msg_subog_seq_expected &= ~(1<<channel);
@@ -144,7 +143,6 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 break;
             case MSG_TYPE_SCORE_STRING:
                 {
-                    uint8_t channel = robot->getEthChannel(getFullIP(sender));
                     if(channel < SIDE_COUNT)
                     {
                         robot->msg_score_seq_expected &= ~(1<<channel);
@@ -188,7 +186,6 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                 {
                     if(robot->type == ROBOT_AW)
                     {
-                        uint8_t channel = robot->getEthChannel(getFullIP(sender));
                         int8_t angle = data[0];
                         robot->RotateDockingUnit(channel, angle);
                         ack_required = true;
@@ -300,6 +297,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
 
                     robot->parent_side = robot->getEthChannel(getFullIP(sender));
                     robot->reshaping_processed |= 1<<robot->parent_side;
+                    robot->msg_subog_seq_expected != (1<<robot->parent_side);
                     printf("%d: received msg_organism_seq from %s\n", robot->timestamp, IPToString(getFullIP(sender)));
                     std::cout<<"new seq: "<<robot->mytree<<std::endl;
                 }
@@ -332,9 +330,62 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                     robot->msg_reshaping_done_received = true;
                 }
                 break;
+            case MSG_TYPE_PROPAGATED:
+                {
+                    bool valid = true;
+                    int data_size=0;
+                    switch(data[0])
+                    {
+                        case MSG_TYPE_RETREAT:
+                            {
+                                robot->msg_retreat_received = true;
+                                // Robot no longer needs to send sub_og_string
+                                robot->RemoveFromQueue(channel,MSG_TYPE_SUB_OG_STRING, 0);
+                                CPrintf1(SCR_GREEN,"%d -- retreating !", robot->timestamp);
+                            }
+                            break;
+                        case MSG_TYPE_STOP:
+                            {
+                                robot->msg_stop_received = true;
+                                CPrintf1(SCR_GREEN,"%d -- stopping !", robot->timestamp);
+                            }
+                            break;
+
+                        case MSG_TYPE_RESHAPING_SCORE:
+                            {
+                                robot->msg_reshaping_score_received |= 1<<channel;
+                                data_size = 0;
+                                CPrintf1(SCR_GREEN,"%d -- reshaping score!", robot->timestamp);
+                            }
+                            break;
+                        case MSG_TYPE_SCORE:
+                            {
+                                robot->msg_score_received |= 1<<channel;
+
+                                robot->new_id[channel] = data[1];
+                                robot->new_score[channel] = data[2];
+
+                                CPrintf1(SCR_GREEN,"%d -- score !", robot->timestamp);
+                                data_size = 2;
+                                printf("%d: side %d(%#x) received id score %d %d\n",robot->timestamp,channel, robot->docked[channel],robot->new_id[channel],robot->new_score[channel]);
+                            }
+                            break;
+                        default:
+                            valid = false;
+                            break;
+                    }
+
+                    if(valid)
+                    {
+                        robot->PropagateIRMessage(data[0], data+1, data_size, channel);
+                        robot->IPCPropagateMessage(data[0], data+1, data_size, getFullIP(sender));
+                        robot->IPCSendMessage(getFullIP(sender).i32,IPC_MSG_ACK, (uint8_t*)&(data[0]), 1);
+                    }
+                }
+                break;
             case IPC_MSG_ACK:
                 {
-//                    printf("%d: received [%s - %s]\n", robot->timestamp, message_names[msg->command], message_names[data[0]] );
+                    //                    printf("%d: received [%s - %s]\n", robot->timestamp, message_names[msg->command], message_names[data[0]] );
                     ack_required = false;
                     pthread_mutex_lock(&robot->IPC_data_mutex);
                     robot->commander_acks[getFullIP(sender).i32]++;
@@ -356,7 +407,14 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
                         case MSG_TYPE_FAILED:
                         case MSG_TYPE_SUB_OG_STRING:
                         case MSG_TYPE_SCORE_STRING:
-                                robot->RemoveFromQueue(robot->getEthChannel(getFullIP(sender)),data[0],MSG_TYPE_UNKNOWN);
+                            robot->RemoveFromQueue(channel,data[0],MSG_TYPE_UNKNOWN);
+                            break;
+                        case MSG_TYPE_RETREAT:
+                        case MSG_TYPE_STOP:
+                        case MSG_TYPE_SCORE:
+                        case MSG_TYPE_RESHAPING_SCORE:
+                            CPrintf2(SCR_RED,"%d received message ack for %s\n", robot->timestamp, message_names[data[0]]);
+                            robot->RemoveFromQueue(channel,MSG_TYPE_PROPAGATED, data[0]);
                             break;
                         default:
                             break;
@@ -401,5 +459,21 @@ void Robot::IPCSendMessage(uint8_t type, const uint8_t *data, int size)
 {
     IPCSendMessage(0, type, data, size);
 }
+
+void Robot::IPCPropagateMessage(uint8_t type, uint8_t *data, uint32_t size, Ethernet::IP sender)
+{
+    uint8_t buf[size+1];
+    buf[0] = type;
+    memcpy(buf+1, data, size);
+    for(int i=0;i<NUM_DOCKS;i++)
+    {
+        if(docked[i] && neighbours_IP[i] != sender)
+        {
+            CPrintf2(SCR_RED,"%d propagate IPC message %s\n", timestamp, message_names[type]);
+            IPCSendMessage(neighbours_IP[i].i32, MSG_TYPE_PROPAGATED, buf, size + 1);
+        }
+    }
+}
+
 
 

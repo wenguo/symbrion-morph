@@ -1063,6 +1063,8 @@ void Robot::Reshaping()
                 {
                     docking_done[branch_side] = true;
                     
+                    msg_subog_seq_expected = 1<<branch_side;
+
                     //prepare the buffer for new shaping + new seed
                     OrganismSequence::OrganismSequence &seq = *it;
                     int size = seq.Size() + 3;
@@ -1147,6 +1149,7 @@ void Robot::Reshaping()
             msg_unlocked_received &= ~(1<<i);
             docked[i]=0;
             reshaping_waiting_for_undock &= ~(1<<i);
+            msg_subog_seq_expected &= ~(1<<i);
             
           //  EnablePowerSharing(i, false);//this may be sent multiple times
         }
@@ -1160,6 +1163,7 @@ void Robot::Reshaping()
             unlocking_required[i] = false;
 
             reshaping_waiting_for_undock &= ~(1<<i);
+            msg_subog_seq_expected &= ~(1<<i);
         }
     }
 
@@ -1179,17 +1183,7 @@ void Robot::Reshaping()
             it++;
         }
 
-        if(reshaping_processed == 0)
-        {
-            reshaping_waiting_for_undock = 0xF;
-            reshaping_count = 0;
-            msg_unlocked_received = 0;
-
-
-            current_state = DISASSEMBLY;
-            last_state = RESHAPING;
-        }
-        else if(recruiting_required)
+        if(recruiting_required)
         {
             msg_docking_signal_req_received = 0;
             msg_unlocked_received = 0;
@@ -1200,6 +1194,17 @@ void Robot::Reshaping()
             current_state = RECRUITMENT;
             last_state = RESHAPING;
         }
+        else if(reshaping_processed == 0)
+        {
+            reshaping_waiting_for_undock = 0xF;
+            reshaping_count = 0;
+            msg_unlocked_received = 0;
+
+
+            current_state = DISASSEMBLY;
+            last_state = RESHAPING;
+        }
+
         else
         {
             reshaping_waiting_for_undock = 0xF;

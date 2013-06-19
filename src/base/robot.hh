@@ -180,6 +180,7 @@ class Robot
 
     void IPCSendMessage(uint32_t dst,  uint8_t type, const uint8_t *data, int size);
     void IPCSendMessage(uint8_t type, const uint8_t *data, int size);
+    void IPCPropagateMessage(uint8_t type, uint8_t *data=NULL, uint32_t size=0, Ethernet::IP sender=0);
     
     //for organism control
     void RequestOGIRSensors(uint8_t sensor_type);

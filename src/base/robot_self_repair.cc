@@ -213,7 +213,7 @@ void Robot::CheckForFailures()
                     }
 
 
-                    msg_subog_seq_received = 0;
+                    //msg_subog_seq_received = 0;
 
                     repair_stage = STAGE0;
                     best_score = 0;
@@ -518,23 +518,26 @@ void Robot::LeadRepair()
     static uint8_t unlock_sent = 0; // Temporary solution
     static int lead_repair_count = 0;
     lead_repair_count++;
-    if(lead_repair_count == 1)
+    if(lead_repair_count < 15)
     {
-        //start the new server and stop the client 
-        if(!master_IPC.Running())
-            master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
-        
-        return;
-    }
-    else if(lead_repair_count == 4)
-    {
-        if(commander_IPC.Running())
-            commander_IPC.Stop();
-        return;
-    }
-    else if(lead_repair_count == 10)
-    {
-        commander_IPC.Start(commander_IP.i32, commander_port, false);
+        if(lead_repair_count == 1)
+        {
+            //if(master_IPC.Running())
+                master_IPC.Stop();
+        }
+        else if(lead_repair_count == 4)
+        {
+                master_IPC.Start("localhost", COMMANDER_PORT_BASE + COMMANDER_PORT, true);
+        }
+        else if(lead_repair_count == 7)
+        {
+           // if(commander_IPC.Running())
+                commander_IPC.Stop();
+        }
+        else if(lead_repair_count == 10)
+        {
+            commander_IPC.Start(commander_IP.i32, commander_port, false);
+        }
 
         return;
     }
@@ -551,7 +554,7 @@ void Robot::LeadRepair()
                 // not waiting for Ack from the previous message
                 if( !MessageWaitingAck(wait_side, MSG_TYPE_SUB_OG_STRING) )
                 {
-                    //printf("%d: wait_side %d msg_subog_seq_received %#x\n", timestamp, wait_side, msg_subog_seq_received);
+                    printf("%d: wait_side %d msg_subog_seq_received %#x\n", timestamp, wait_side, msg_subog_seq_received);
                     if( msg_subog_seq_received & 1<<wait_side )
                     {
                         wait_side = getNextMobileNeighbour(++wait_side);
@@ -569,6 +572,7 @@ void Robot::LeadRepair()
             // Prune sub-structures
             else if( pruning_required )
             {
+                printf("%d: wait_side %d pruning_required %#x parent_side: %d msg_unlocked_received: %#x\n", timestamp, wait_side, pruning_required, parent_side, msg_unlocked_received);
                 for(int i=0;i<NUM_DOCKS;i++)
                 {
                     if(!MessageWaitingAck(i,MSG_TYPE_FAILED))
@@ -600,18 +604,17 @@ void Robot::LeadRepair()
             // Un-dock from parent
             else if( !(unlock_sent & 1<<parent_side) )
             {
-                if( msg_unlocked_received & 1<<parent_side )
+                printf("-- %d: wait_side %d unlock_sent %#x parent_side: %d unlocked_required: %#x\n", timestamp, wait_side, unlock_sent, parent_side, unlocking_required[parent_side]);
+                if(unlocking_required[parent_side])
                 {
-                    if(unlocking_required[parent_side])
-                    {
-                        SetDockingMotor(parent_side, OPEN);
-                        unlocking_required[parent_side]=false;
-                    }
-                    else if( locking_motors_status[parent_side]==OPENED )
-                    {
-                        BroadcastIRMessage(parent_side, IR_MSG_TYPE_UNLOCKED, 0);
-                        unlock_sent |= 1<<parent_side;
-                    }
+                    SetDockingMotor(parent_side, OPEN);
+                    unlocking_required[parent_side]=false;
+                }
+                else if( locking_motors_status[parent_side]==OPENED )
+                {
+                    BroadcastIRMessage(parent_side, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
+                    unlock_sent |= 1<<parent_side;
+                    docked[parent_side]=0;
                 }
             }
             else
@@ -623,8 +626,10 @@ void Robot::LeadRepair()
                 msg_unlocked_received = 0;
                 msg_unlocked_expected = 0;
 
-                PropagateEthMessage(MSG_TYPE_RETREAT);
+                //PropagateEthMessage(MSG_TYPE_RETREAT);
                 PropagateIRMessage(MSG_TYPE_RETREAT);
+                //IPCSendMessage(0, MSG_TYPE_RETREAT, NULL, 0);
+                IPCPropagateMessage(MSG_TYPE_RETREAT);
 
                 move_start = timestamp;
 
@@ -667,8 +672,10 @@ void Robot::LeadRepair()
                 speed[1] = 0;
                 speed[2] = 0;
 
-                PropagateEthMessage(MSG_TYPE_STOP);
+                //PropagateEthMessage(MSG_TYPE_STOP);
                 PropagateIRMessage(MSG_TYPE_STOP);
+                //IPCSendMessage(0, MSG_TYPE_STOP, NULL, 0);
+                IPCPropagateMessage(MSG_TYPE_STOP);
 
                 // Set LEDs
                 for( int i=0; i<NUM_DOCKS; i++ )
@@ -882,9 +889,11 @@ void Robot::LeadRepair()
                     reshaping_waiting_for_undock = 0xF; // all wait
                     reshaping_processed = 0;
                     reshaping_count = 0;
+                    lead_repair_count = 0;
 
                     organism_formed = false;
                     IP_collection_done = false;
+
 
                     commander_acks.clear();
 
@@ -905,18 +914,23 @@ void Robot::Repair()
     static uint8_t unlock_sent = 0; // Temporary solution
     static int repair_count = 0;
     repair_count++;
-    if(repair_count == 1)
+    if(repair_count < 10)
     {
-        //stop the client 
-        if(commander_IPC.Running())
+        if(repair_count == 1)
+        {
+            //stop the client 
             commander_IPC.Stop();
-        
-        return;
-    }
-    else if(repair_count == 5)
-    {
-        //start the new client to leader
-        commander_IPC.Start(commander_IP.i32, commander_port, false);
+        }
+        else if(repair_count == 4)
+        {
+            //if I used to be a seed, then stop the master
+            master_IPC.Stop();
+        }
+        else if(repair_count == 7)
+        {
+            //start the new client to leader
+            commander_IPC.Start(commander_IP.i32, commander_port, false);
+        }
         return;
     }
 
@@ -1135,6 +1149,7 @@ void Robot::Repair()
                     reshaping_waiting_for_undock = 0xF; // all wait
                     reshaping_processed = 0;
                     reshaping_count = 0;
+                    repair_count = 0;
 
                     organism_formed = false;
                     IP_collection_done = false;
@@ -1288,6 +1303,7 @@ void Robot::Failed()
         failed_count = 0;
         undocking_count = 0;
         msg_unlocked_received = 0;
+        module_failed = false;
 
         for(int i=0;i<NUM_DOCKS;i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
