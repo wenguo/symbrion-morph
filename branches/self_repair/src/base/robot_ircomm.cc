@@ -363,7 +363,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                 new_id[channel] = data[2];
                 new_score[channel] = data[3];
 
-                printf("%d Received id score %d %d\n",timestamp,new_id[channel],new_score[channel]);
+                printf("%d: side %d(%#x) received id score %d %d\n",timestamp,channel, docked[channel],new_id[channel],new_score[channel]);
 
                 // only acknowledge messages sent by
                 // other members of the sub-organism
@@ -529,7 +529,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
 
     if(valid_message)
     {
-        printf("%d: channel %d docked %#x recevied message %s", timestamp, channel, data[0], message_names[data[1]]);
+        printf("%d: channel %d docked %#x [%#x] recevied message %s", timestamp, channel, docked[channel], data[0], message_names[data[1]]);
         if(data[1]==MSG_TYPE_ACK || data[1]==MSG_TYPE_PROPAGATED)
             printf("(%s)\n", message_names[data[2]]);
         else

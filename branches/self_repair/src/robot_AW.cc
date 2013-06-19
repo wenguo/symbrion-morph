@@ -398,27 +398,15 @@ void RobotAW::Exploring()
 }
 void RobotAW::Resting()
 {
-    /*
-       if(timestamp == 40)
-       {
-       mytree.Clear();
-       if(og)
-       delete og;
-    //select predefined organism
-    og = new Organism;
-    RealDemoOrganism_AKAK(og);
-    og->GraphToSequence(mytree);
-    std::cout<<*og<<std::endl;
-    std::cout<<mytree<<std::endl;
-    //prepare branches sequence
-    rt_status ret=OrganismSequence::fillBranches(mytree, mybranches);
-    if(ret.status >= RT_ERROR)
+    resting_count++;
+    if(resting_count > 100)
     {
-    std::cout<<ClockString()<<" : "<<name<<" : ERROR in filling branches !!!!!!!!!!!!!!!!!!!!"<<std::endl;
+        current_state = FORAGING;
+        last_state = RESTING;
+        resting_count = 0;
     }
 
-    SendBranchTree(2, mytree);
-    }*/
+
 }
 
 void RobotAW::Foraging() //the same as RobotKIT
