@@ -176,6 +176,17 @@ bool Robot::LoadParameters(const char * filename)
                 for(int i=0;i<4;i++)
                     para.locking_motor_enabled[i] =  atoi(optionfile->GetPropertyValue(prop, i));
             }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "locking_motor_nonreg" ) )
+            {
+                for(int i=0;i<4;i++)
+                    para.locking_motor_nonreg[i] =  atoi(optionfile->GetPropertyValue(prop, i));
+            }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "locking_motor_opening_offset" ) )
+            {
+                for(int i=0;i<4;i++)
+                    para.locking_motor_opening_offset[i] =  atoi(optionfile->GetPropertyValue(prop, i));
+            }
+
         }
         else if( strcmp( typestr, "MacroLocomotion" ) == 0 )
         {

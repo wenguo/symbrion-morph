@@ -60,6 +60,8 @@ Parameter::Parameter():
     memset(aux_reflective_calibrated, 0, NUM_IRS * sizeof(int));
     memset(aux_ambient_calibrated, 0, NUM_IRS * sizeof(int));
     memset(locking_motor_enabled, 0, NUM_DOCKS * sizeof(bool));
+    memset(locking_motor_nonreg, 0, NUM_DOCKS * sizeof(bool));
+    memset(locking_motor_opening_offset, 0, NUM_DOCKS * sizeof(int));
     memset(docking_turn_left_speed, 0, 3 * sizeof(int));
     memset(docking_turn_right_speed, 0, 3 * sizeof(int));
     memset(docking_forward_speed, 0, 3 * sizeof(int));

@@ -388,7 +388,8 @@ void Robot::MacroLocomotion()
             user_input = 0;
 
         }
-        else if(user_input >= 5)
+        else
+        //else if(user_input >= 5)
         {
             if(!msg_climbing_start_received) //this will prevent the message being sent twice 
             {
@@ -471,7 +472,6 @@ void Robot::MacroLocomotion()
         lowering_count = 0;
         macrolocomotion_count=0;
 
-        demo_count++;
     }
     else if (msg_climbing_start_received)
     {
@@ -487,7 +487,6 @@ void Robot::MacroLocomotion()
         macrolocomotion_count=0;
         hinge_motor_operating_count = 0;
 
-        demo_count++;
     }
 
     if(locomotion_command[0] != 0)
@@ -693,13 +692,23 @@ void Robot::Climbing()
             memset(locomotion_command, 0, sizeof(locomotion_command));
 
             front_aw_ip = 0; //reset it to the right value 
-
+#if 0
             if(!msg_raising_start_received) //this will prevent the message being sent twice 
             {
                 printf("%d: send raising start\n", timestamp);
                 IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
                 msg_raising_start_received = true;
             }
+#endif
+            if(!msg_lowering_received)
+            {
+                printf("%d: send lowering start\n", timestamp);
+                IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+                msg_lowering_received = true;
+
+                demo_count++;
+            }
+
         }
     }
 
@@ -861,13 +870,13 @@ void Robot::Lowering()
                         }
                     }
                 }
-                //if(!msg_disassembly_received) //this will prevent the message being sent twice 
-               // {
-               //     IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
-               //     msg_disassembly_received = true;
-               // }
-                
 #endif
+                if(!msg_disassembly_received) //this will prevent the message being sent twice 
+                {
+                    IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
+                    msg_disassembly_received = true;
+                }
+                
                 lowering_count = 0;
             }
             //check if all robot 
@@ -1254,7 +1263,10 @@ void Robot::Disassembly()
 
     disassembly_count++;
 
-    if(disassembly_count == 1)
+    //delay a while until all robots get disassembly message
+    if(disassembly_count < 10)
+        return;
+    else if(disassembly_count == 10)
     {
         //disconnect if there is any
         master_IPC.Stop();
@@ -1282,46 +1294,48 @@ void Robot::Disassembly()
 
         }
     }
-
-    //waiting for undock
-    for(int i=0;i<NUM_DOCKS;i++)
+    else
     {
-        if(disassembly_waiting_for_undock & (1<<i))
+        //waiting for undock
+        for(int i=0;i<NUM_DOCKS;i++)
         {
-            //received unlocked message
-            if( (msg_unlocked_received & 1<<i) || ethernet_status_hist.Sum(i) < 1 )
+            if(disassembly_waiting_for_undock & (1<<i))
             {
-                msg_unlocked_received &= ~(1<<i);
-                docked[i]=0;
-                neighbours_IP[i]=0;
-                disassembly_waiting_for_undock &= ~(1<<i);
-            }
+                //received unlocked message
+                if( (msg_unlocked_received & 1<<i) || ethernet_status_hist.Sum(i) < 1 )
+                {
+                    msg_unlocked_received &= ~(1<<i);
+                    docked[i]=0;
+                    neighbours_IP[i]=0;
+                    disassembly_waiting_for_undock &= ~(1<<i);
+                }
 
-            //motor fully opened
-            if(unlocking_required[i] && locking_motors_status[i]==OPENED)
-            {
-                Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
-                docked[i]=0;
-                neighbours_IP[i]=0;
-                unlocking_required[i] = false;
+                //motor fully opened
+                if(unlocking_required[i] && locking_motors_status[i]==OPENED)
+                {
+                    Robot::SendIRMessage(i, IR_MSG_TYPE_UNLOCKED, para.ir_msg_repeated_num);
+                    docked[i]=0;
+                    neighbours_IP[i]=0;
+                    unlocking_required[i] = false;
 
-                disassembly_waiting_for_undock &= ~(1<<i);
+                    disassembly_waiting_for_undock &= ~(1<<i);
+                }
             }
         }
-    }
 
-    if(disassembly_waiting_for_undock ==0)
-    {
-        disassembly_waiting_for_undock = 0xF;
-        disassembly_count = 0;
-        undocking_count = 0;
-        msg_unlocked_received = 0;
+        if(disassembly_waiting_for_undock ==0)
+        {
+            disassembly_waiting_for_undock = 0xF;
+            disassembly_count = 0;
+            undocking_count = 0;
+            msg_unlocked_received = 0;
 
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+            for(int i=0;i<NUM_DOCKS;i++)
+                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
 
-        current_state = UNDOCKING;
-        last_state = DISASSEMBLY;
+            current_state = UNDOCKING;
+            last_state = DISASSEMBLY;
+        }
     }
 
 }
@@ -1339,7 +1353,7 @@ void Robot::Undocking()
             SetRGBLED(i, RED,RED,RED,RED);
     }
 
-    if( undocking_count > 100 )
+    if( undocking_count > 30 )
     {
         speed[0] = 0;
         speed[1] = 0;
@@ -1352,7 +1366,16 @@ void Robot::Undocking()
         if( last_state ==  FAILED )
             current_state = RESTING;
         else
-            current_state = FORAGING;
+        {
+            //this will enable the seed to switch to forager, forager switch to seed
+            if( demo_count > 0)
+            {
+                demo_count = 0;
+                current_state = FORAGING;
+            }
+            else
+                current_state = SEEDING;
+        }
 
         last_state = UNDOCKING;
 

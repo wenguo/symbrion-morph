@@ -585,13 +585,13 @@ void Robot::CheckDockingMotor()
         {
             locking_motor_isense_hist.Print2();
             locking_motor_operating_count[i]++ ;   
-            if(locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=4)
+            if(!para.locking_motor_nonreg[i] && locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=4)
             {
                 SetDockingMotor(i, STOP);
                 CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", locking_motor_operating_count[i]);
 
                 // Add small amount to ensure that lock opens fully
-                locking_motor_opening_threshold[i] = locking_motor_operating_count[i]+5;
+                locking_motor_opening_threshold[i] = locking_motor_operating_count[i]+para.locking_motor_opening_offset[i];
             }
             else if(locking_motor_operating_count[i] >= para.locking_motor_closing_time)
             {
@@ -599,7 +599,7 @@ void Robot::CheckDockingMotor()
                 CPrintf1(SCR_RED, "Stop docking motor, after closing -- %d", locking_motor_operating_count[i]);
 
                 // Add small amount to ensure that lock opens fully
-                locking_motor_opening_threshold[i] = locking_motor_operating_count[i]+5;
+                locking_motor_opening_threshold[i] = locking_motor_operating_count[i]+para.locking_motor_opening_offset[i];
             }
 
         }
@@ -608,7 +608,7 @@ void Robot::CheckDockingMotor()
         {
             locking_motor_operating_count[i]++ ;   
             locking_motor_isense_hist.Print2();
-            if(locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=4)
+            if(!para.locking_motor_nonreg[i] && locking_motor_operating_count[i] > 10 && locking_motor_isense_hist.Sum(i) >=4)
             {
                 SetDockingMotor(i, STOP);
                 CPrintf1(SCR_RED, "Stop docking motor, as docking motor overloaded-- %d", locking_motor_operating_count[i]);

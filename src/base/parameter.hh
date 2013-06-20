@@ -51,6 +51,8 @@ class Parameter
         int locking_motor_closing_time;
         bool locking_motor_enabled[NUM_DOCKS];
         int locking_motor_isense_threshold;
+        int locking_motor_opening_offset[NUM_DOCKS];
+        bool locking_motor_nonreg[NUM_DOCKS];
 
         int avoid_weightleft[NUM_IRS];
         int avoid_weightright[NUM_IRS];
