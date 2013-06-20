@@ -112,17 +112,22 @@ void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
         speed2 = 100;
     if(speed2 < -100)
         speed2 = -100;
+    
+    printf("Move motors at speed: (%d %d %d) direction: %d ", speed[0], speed[1], speed[2], direction);
 
     if(fabs(speed2) > 10)
     {
+        printf("1: real value: %d %d\n ",para.speed_sideward * speed2 * direction, -para.speed_sideward* speed2 * direction);
         irobot->MoveScrewFront(para.speed_sideward * speed2 * direction);
         irobot->MoveScrewRear(-para.speed_sideward* speed2 * direction);
     }
     else
     {
+        printf("2: real value: %d %d\n", speed0 * direction, speed1 * direction);
         irobot->MoveScrewFront(speed0 * direction);
         irobot->MoveScrewRear(speed1 * direction);
     }
+
 
 }
 
@@ -140,8 +145,18 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
             //change status to be opening
             locking_motors_status[channel] = OPENING; //clear first
             if(para.locking_motor_enabled[channel])
-                irobot->OpenDocking(KaBot::Side(board_dev_num[channel]));
-            printf("open docking\n");
+            {
+                if(para.locking_motor_nonreg[channel])
+                {
+                    CPrintf1(SCR_RED,"%d: open docking motor -- non regulated\n", timestamp);
+                    irobot->MoveDocking(KaBot::Side(board_dev_num[channel]), -1);        
+                }
+                else
+                {
+                    CPrintf1(SCR_RED,"%d: open docking motor -- regulated\n",timestamp);
+                    irobot->OpenDocking(KaBot::Side(board_dev_num[channel]));
+                }
+            }
         }
         //or open -> close
         else if(locking_motors_status[channel]== OPENED &&  status == CLOSE )
@@ -149,8 +164,18 @@ bool RobotKIT::SetDockingMotor(int channel, int status)
             //change status to be closing
             locking_motors_status[channel] = CLOSING; //clear first
             if(para.locking_motor_enabled[channel])
-                irobot->CloseDocking(KaBot::Side(board_dev_num[channel]));
-            printf("close docking\n");
+            {
+                if(para.locking_motor_nonreg[channel])
+                {
+                    CPrintf1(SCR_RED,"%d: close docking motor -- non regulated\n", timestamp);
+                    irobot->MoveDocking(KaBot::Side(board_dev_num[channel]), 1);        
+                }
+                else
+                {
+                    CPrintf1(SCR_RED,"%d: close docking motor -- regulated\n",timestamp);
+                    irobot->CloseDocking(KaBot::Side(board_dev_num[channel]));
+                }
+            }
         }
         else
             return false;
@@ -530,6 +555,9 @@ void RobotKIT::LocateBeacon()
     int turning = 0;
     if(beacon_signals_detected)
     {
+        //set the direction in case it is changed in Avoidance
+        direction = assembly_info.side2 == FRONT ? FORWARD : BACKWARD;
+
         if(id0==0)
         {
             //no signals on other 3 side, except the docking side
@@ -593,8 +621,8 @@ void RobotKIT::LocateBeacon()
             }
             else
             {
-                speed[0] = 35;
-                speed[1] = 35;
+                speed[0] = 25;
+                speed[1] = 25;
                 speed[2] = 0;
             }
         }
@@ -686,8 +714,8 @@ void RobotKIT::Alignment()
             }
             else
             {
-                speed[0] = 35;
-                speed[1] = 35;
+                speed[0] =  para.aligning_forward_speed[0];
+                speed[1] =  para.aligning_forward_speed[1];
                 speed[2] = 0;
             }
         }
@@ -777,6 +805,8 @@ void RobotKIT::Alignment()
 
         locatebeacon_count = 0;
     }
+
+    printf("speed: %d %d %d\n", speed[0], speed[1], speed[2]);
 }
 
 void RobotKIT::Recover()
@@ -1757,12 +1787,34 @@ void RobotKIT::Debugging()
             }
             break;
         case 20://testing motors
-            // if(timestamp  == 2)
+            if(timestamp <= 20 )
             { 
-                speed[0] = para.debug.para[4];
-                speed[1] = para.debug.para[5];
-                //  printf("Move motors at speed (%d %d)\n", para.debug.para[4], para.debug.para[5]);
+                speed[0] = 0;//para.debug.para[4];
+                speed[1] = 0;//para.debug.para[5];
+                speed[2] = -20;//para.debug.para[6];
             }
+            else if(timestamp <=22)
+            { 
+                speed[0] = -20;//para.debug.para[4];
+                speed[1] = -20;//para.debug.para[5];
+                speed[2] = 0;//para.debug.para[6];
+            }
+            else if(timestamp <=40)
+            { 
+                speed[0] = 0;//para.debug.para[4];
+                speed[1] = 0;//para.debug.para[5];
+                speed[2] = 20;//para.debug.para[6];
+            }
+            else if(timestamp <=42)
+            {
+                speed[0] = 20;//para.debug.para[4];
+                speed[1] = 20;//para.debug.para[5];
+                speed[2] = 0;//para.debug.para[6];
+            }
+            else
+                timestamp = 0;
+
+
             break;
         case 21://test RGB
             if(timestamp==2)
@@ -1830,8 +1882,19 @@ void RobotKIT::Debugging()
             {
                 if(timestamp ==2)
                 {
+                    irobot->enableDockingSense(para.debug.para[9], true);
                     SetDockingMotor(KaBot::Side(para.debug.para[9]), CLOSE);
                 }
+                else if(timestamp == 100)
+                {
+                    irobot->enableDockingSense(para.debug.para[9], true);
+                    SetDockingMotor(KaBot::Side(para.debug.para[9]), OPEN);
+                }
+                
+                uint8_t rev = ((KaBot*)irobot)->GetDScrewRevolutions(KaBot::Side(para.debug.para[9]));
+                uint8_t ise = ((KaBot*)irobot)->GetDScrewISense(KaBot::Side(para.debug.para[9]));
+                printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
+
             }
             break;
 

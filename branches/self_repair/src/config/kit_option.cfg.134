@@ -14,22 +14,22 @@ LocateBeacon
 (
    weight_left [-1 1 1 2 1 -1 -2 -1]
    weight_right [1 -1 -1 -2 -1 1 2 1]
-   forward_speed [35 35 0]
+   forward_speed [25 25 0]
    locatebeacon_time 200
 )
 
 Alignment
 (
-   weight_left [-2 2 4 5 2 -2 -4 -5]
-   weight_right [2 -2 -4 -5 -2 2 4 5]
-   forward_speed [35 35 0]
-   reverse_speed [-35 -35 0]
-   reverse_time 30
+   weight_left [-1 1 0 0 -1 1 0 0]
+   weight_right [1 -1 0 0 1 -1 0 0]
+   forward_speed [25 25 0]
+   reverse_speed [-25 -25 0]
+   reverse_time 10 
 )
 Avoidance
 (
-   weight_left [3 -3 -1 -1 -3 3 1 1]
-   weight_right [-3 3 1 1 3 -3 -1 -1]
+   weight_left [0 0 0 0 0 0 0 0]
+   weight_right [0 0 0 0 0 0 0 0]
    weight_side [0 0 -1 -1 0 0 1 1]
    threshold [100 100 100 100 100 100 100 100]
 )
@@ -43,18 +43,21 @@ Recruitment
 Docking
 (
     docking_trials 15 
-    docking_time 200
-    turn_right_speed [0 0 0]
-    turn_left_speed [0 0 0]
-    forward_speed [20 20 0]
-    backward_speed [0 0 0]
+    docking_time 400
+    turn_right_speed [10 -40 0]
+    turn_left_speed [40 -10 0]
+    forward_speed [30 30 0]
+    backward_speed [15 -45 0]
 )
 
 Locking
 (
-    locking_motor_opening_time 35
-    locking_motor_closing_time 40
-    locking_motor_enabled [0 0 0 0]
+    locking_motor_opening_time 30
+    locking_motor_closing_time 30
+    locking_motor_enabled [1 0 1 0]
+    locking_motor_opening_offset [0 0 0 0]
+    locking_motor_nonreg [1 0 1 0]
+
 )
 
 MacroLocomotion
@@ -70,14 +73,14 @@ MacroLocomotion
 Debugging
 (
     mode 31 
-    para [136 0 155 0 0 1 2 0 136 0]
+    para [136 0 155 0 0 1 2 0 136 136]
 )
 
 Global
 (
 	logtofile 0
 #refer to robot.hh for a full list of states
-	init_state 26 
+	init_state 4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -95,9 +98,9 @@ Global
 Motor
 (
     speed_forward 30
-    speed_sideward 2
+    speed_sideward 1
     scout_wheels_direction [1 -1]
-    locomotion_motor_enabled 0                      
+    locomotion_motor_enabled 1                      
         
 )
 
@@ -108,62 +111,50 @@ Climbing
     action_seq 
     (
         sequence_id 0 
-        cmd_type    0 #push_drag
-        duration    50 
-        robot_in_action (index 0 cmd_data [30 30 0])
-        robot_in_action (index 1 cmd_data [30 30 0])
-        robot_in_action (index 3 cmd_data [30 30 0])
-        robot_in_action (index 5 cmd_data [30 30 0])
+        cmd_type    0 #forward
+        duration    20 
+        robot_in_action (index 0 cmd_data [20 20 0])
+        robot_in_action (index -1 cmd_data [20 20 0])
     )
     action_seq 
     (
         sequence_id 1 
-        cmd_type    1 #lift
-        duration    50 
-        robot_in_action (index 1 cmd_data [2 30 0])
+        cmd_type    0 #backward
+        duration    20 
+        robot_in_action (index 0 cmd_data [-20 -20 0])
+        robot_in_action (index -1 cmd_data [-20 -20 0])
     )
     action_seq 
     (
         sequence_id 2 
-        cmd_type    0 #push_drag
-        duration    90 
-        robot_in_action (index 0 cmd_data [30 30 0])
-        robot_in_action (index 2 cmd_data [30 30 0])
-        robot_in_action (index 3 cmd_data [30 30 0])
-        robot_in_action (index 5 cmd_data [30 30 0])
+        cmd_type    0 #left
+        duration    50 
+        robot_in_action (index 0 cmd_data [30 -30 0])
+        robot_in_action (index -1 cmd_data [30 -30 0])
     )
     action_seq 
     (
         sequence_id 3 
-        cmd_type    1 #lift
+        cmd_type    0 #right
         duration    50 
-        robot_in_action(index 3 cmd_data [2 30 0])
+        robot_in_action (index 0 cmd_data [-30 30 0])
+        robot_in_action (index -1 cmd_data [-30 30 0])
     )
     action_seq 
     (
         sequence_id 4 
-        cmd_type    0 #push_drag
-        duration    90 
-        robot_in_action (index 0 cmd_data [30 30 0])
-        robot_in_action (index 2 cmd_data [30 30 0])
-        robot_in_action (index 4 cmd_data [30 30 0])
-        robot_in_action (index 5 cmd_data [30 30 0])
+        cmd_type    0 #rotate left
+        duration    50 
+        robot_in_action (index 0 cmd_data [30 60 0])
+        robot_in_action (index -1 cmd_data [-10 20 0])
     )
     action_seq 
     (
         sequence_id 5 
-        cmd_type    1  #lift
+        cmd_type    0 #rotate right
         duration    50 
-        robot_in_action (index 5 cmd_data [2 30 0])
-    )
-    action_seq 
-    (
-        sequence_id 6 
-        cmd_type    0  #push_drag
-        duration    90 
-        robot_in_action (index 0 cmd_data [30 30 0])
-        robot_in_action (index 2 cmd_data [30 30 0])
-        robot_in_action (index 4 cmd_data [30 30 0])
+        robot_in_action (index 0 cmd_data [20 -10 0])
+        robot_in_action (index -1 cmd_data [60 30 0])
     )
 
  )
@@ -171,14 +162,10 @@ Climbing
 
 ShapeInfo
 (
-#    seq "KBABAFSBSFAFABSFSBABAFSB000000000000000000000000"
-    seq "KBKFKBSF00000000"
+    seq "KFKB0000"
 )
 
 ShapeInfo
 (
-    seq "AFSFSBAF00000000ABSFSBAB00000000"
+    seq "KBKF0000"
 )
-
-
-
