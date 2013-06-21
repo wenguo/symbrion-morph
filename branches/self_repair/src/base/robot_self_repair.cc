@@ -808,7 +808,14 @@ void Robot::LeadRepair()
 
                     if( best_score == own_score )
                     {
-                        seed = true;
+#if 1
+                        if(para.debug.para[9] != 0 )
+                        {
+                            target.Clear();
+                            target = para.og_seq_list[1];
+                        }
+#endif
+                //        seed = true;
                         mytree = target;
                         std::cout<<"new target: "<<target<<std::endl;
 
@@ -816,7 +823,14 @@ void Robot::LeadRepair()
                         OrganismSequence::OrganismSequence &seq = mytree;
                         int size = seq.Size() + 3;
                         uint8_t buf[size];
-                        buf[0] = (my_IP.i32 >> 24 ) & 0xFF;
+                        //new seed
+                        if(para.debug.para[9] != 0 )
+                        {
+                            buf[0] = para.debug.para[9];
+                        }
+                        else
+                            buf[0] = (my_IP.i32 >> 24 ) & 0xFF;
+
                         buf[1] = COMMANDER_PORT;
                         buf[2] = seq.Size();
                         for(unsigned int i=0; i < buf[2];i++)
@@ -837,6 +851,7 @@ void Robot::LeadRepair()
                     // accidently believe itself to be the new seed.
                     PropagateReshapeScore( best_score+1, parent_side );
                     mytree.Clear();
+                    target.Clear();
                     seed = true;
 
                     printf("%d This is NOT the winning organism\n", timestamp );
@@ -1197,7 +1212,15 @@ void Robot::Repair()
 
                 if( best_score == own_score )
                 {
-                    seed = true;
+                    //      seed = true;
+#if 1
+                    if(para.debug.para[9] != 0 )
+                    {
+                        target.Clear();
+                        target = para.og_seq_list[1];
+                    }
+
+#endif
                     mytree = target;
                     std::cout<<"new target: "<<target<<std::endl;
                     //num_robots_in_organism = 0;
@@ -1206,7 +1229,12 @@ void Robot::Repair()
                     OrganismSequence::OrganismSequence &seq = target;
                     int size = seq.Size() + 3;
                     uint8_t buf[size];
-                    buf[0] = (my_IP.i32 >> 24 ) & 0xFF;
+
+                    if(para.debug.para[9] !=0)
+                        buf[0] = para.debug.para[9];
+                    else
+                        buf[0] = (my_IP.i32 >> 24 ) & 0xFF;
+
                     buf[1] = COMMANDER_PORT;
                     buf[2] = seq.Size();
                     for(unsigned int i=0; i < buf[2];i++)

@@ -61,7 +61,7 @@ MacroLocomotion
     hinge_motor_speed 40
     hinge_motor_angle 25
     hinge_motor_default_pos 75
-    hinge_motor_enabled 0
+    hinge_motor_enabled 1
 )
 
 Debugging
@@ -106,61 +106,42 @@ Climbing
     action_seq 
     (
         sequence_id 0 
-        cmd_type    0 #push_drag
+        cmd_type    1 #lift
         duration    50 
-        robot_in_action (index -4 cmd_data [30 30 0])
-        robot_in_action (index -2 cmd_data [30 30 0])
-        robot_in_action (index 0 cmd_data [30 30 0])
+        robot_in_action (index 0 cmd_data [40 30 0])
+        robot_in_action (index -2 cmd_data [40 30 0])
     )
     action_seq 
     (
         sequence_id 1 
-        cmd_type    1 #lift
-        duration    50 
-        robot_in_action (index -4 cmd_data [2 30 0])
+        cmd_type    0 #move
+        duration    90 
+        robot_in_action (index 0 cmd_data [30 30 0])
+        robot_in_action (index -2 cmd_data [30 30 0])
     )
     action_seq 
     (
         sequence_id 2 
-        cmd_type    0 #push_drag
+        cmd_type    0 #move
         duration    90 
-        robot_in_action (index -5 cmd_data [30 30 0])
-        robot_in_action (index -3 cmd_data [30 30 0])
-        robot_in_action (index -2 cmd_data [30 30 0])
-        robot_in_action (index 0 cmd_data [30 30 0])
+        robot_in_action (index 0 cmd_data [-30 -30 0])
+        robot_in_action (index -2 cmd_data [-30 -30 0])
     )
     action_seq 
     (
         sequence_id 3 
-        cmd_type    1 #lift
-        duration    50 
-        robot_in_action(index -2 cmd_data [2 30 0])
+        cmd_type    0 #move
+        duration    90 
+        robot_in_action (index 0 cmd_data [0 0 60])
+        robot_in_action (index -2 cmd_data [0 0 60])
     )
     action_seq 
     (
         sequence_id 4 
-        cmd_type    0 #push_drag
+        cmd_type    0 #move
         duration    90 
-        robot_in_action (index -5 cmd_data [30 30 0])
-        robot_in_action (index -3 cmd_data [30 30 0])
-        robot_in_action (index -1 cmd_data [30 30 0])
-        robot_in_action (index 0 cmd_data [30 30 0])
-    )
-    action_seq 
-    (
-        sequence_id 5 
-        cmd_type    1  #lift
-        duration    50 
-        robot_in_action (index 0 cmd_data [2 30 0])
-    )
-    action_seq 
-    (
-        sequence_id 6 
-        cmd_type    0  #push_drag
-        duration    90 
-        robot_in_action (index -5 cmd_data [30 30 0])
-        robot_in_action (index -3 cmd_data [30 30 0])
-        robot_in_action (index -1 cmd_data [30 30 0])
+        robot_in_action (index 0 cmd_data [0 0 -60])
+        robot_in_action (index -2 cmd_data [0 0 -60])
     )
 
  )
