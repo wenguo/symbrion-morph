@@ -1,0 +1,173 @@
+Seeding
+(
+)
+
+Foraging
+(
+    foraging_time 80
+    waiting_time 20
+    assembly_time 1200
+    beacon_threshold [2 2 20 2 2 2 2 2]
+)
+
+LocateBeacon
+(
+   weight_left [-1 1 1 2 1 -1 -2 -1]
+   weight_right [1 -1 -1 -2 -1 1 2 1]
+   forward_speed [25 25 0]
+   locatebeacon_time 200
+)
+
+Alignment
+(
+   weight_left [-1 1 0 0 -1 1 0 0]
+   weight_right [1 -1 0 0 1 -1 0 0]
+   forward_speed [25 25 0]
+   reverse_speed [-25 -25 0]
+   reverse_time 10 
+)
+Avoidance
+(
+   weight_left [0 0 0 0 0 0 0 0]
+   weight_right [0 0 0 0 0 0 0 0]
+   weight_side [0 0 -1 -1 0 0 1 1]
+   threshold [100 100 100 100 100 100 100 100]
+)
+
+Recruitment
+(
+    recruiting_beacon_signals_time 500
+    recruiting_guiding_signals_time 200
+)
+
+Docking
+(
+    docking_trials 15 
+    docking_time 400
+    turn_right_speed [10 -40 0]
+    turn_left_speed [40 -10 0]
+    forward_speed [30 30 0]
+    backward_speed [15 -45 0]
+)
+
+Locking
+(
+    locking_motor_opening_time 30
+    locking_motor_closing_time 40
+    locking_motor_enabled [1 0 1 0]
+    locking_motor_opening_offset [-2 -2 -2 -2]
+    locking_motor_nonreg [0 0 0 0]
+)
+
+MacroLocomotion
+(
+    hinge_motor_lifting_time 50 
+    hinge_motor_lowing_time 30
+    hinge_motor_speed 40
+    hinge_motor_angle 25
+    hinge_motor_default_pos 75
+    hinge_motor_enabled 1
+)
+
+Debugging
+(
+    mode 31 
+    para [0 0 134 0 0 0 0 1 134 134]
+)
+
+Global
+(
+	logtofile 0
+#refer to robot.hh for a full list of states
+	init_state 3 
+	print_proximity 0
+        print_beacon 0
+        print_reflective 0
+        print_ambient 0
+        print_status 1
+    	ir_msg_repeated_delay 20
+    	ir_msg_repeated_num 10
+	ir_msg_ack_delay 3
+        reflective_calibrated [157 55 230 209 63 271 418 1838]
+        ambient_calibrated [3816 3917 3786 3843 3496 3631 3735 3948]
+	#fail_in_state 20
+	#fail_after_delay 100
+)
+
+Motor
+(
+    speed_forward 30
+    speed_sideward 1
+    scout_wheels_direction [1 -1]
+    locomotion_motor_enabled 1                       
+        
+)
+
+Climbing
+(
+#cmd (sequence_id cmd_type duration robot(index_in_og speed[0 1 2]))
+#cmd_type 0 -- push_drat, 1 -- lift
+    action_seq 
+    (
+        sequence_id 0 
+        cmd_type    0 #forward
+        duration    20 
+        robot_in_action (index 0 cmd_data [20 20 0])
+        robot_in_action (index 1 cmd_data [20 20 0])
+    )
+    action_seq 
+    (
+        sequence_id 1 
+        cmd_type    0 #backward
+        duration    20 
+        robot_in_action (index 0 cmd_data [-20 -20 0])
+        robot_in_action (index 1 cmd_data [-20 -20 0])
+    )
+    action_seq 
+    (
+        sequence_id 2 
+        cmd_type    0 #left
+        duration    50 
+        robot_in_action (index 0 cmd_data [40 -40 0])
+        robot_in_action (index 1 cmd_data [40 -40 0])
+    )
+    action_seq 
+    (
+        sequence_id 3 
+        cmd_type    0 #right
+        duration    50 
+        robot_in_action (index 0 cmd_data [-40 40 0])
+        robot_in_action (index 1 cmd_data [-40 40 0])
+    )
+    action_seq 
+    (
+        sequence_id 4 
+        cmd_type    0 #rotate left
+        duration    50 
+        robot_in_action (index 0 cmd_data [60 30 0])
+        robot_in_action (index 1 cmd_data [20 -10 0])
+    )
+    action_seq 
+    (
+        sequence_id 5 
+        cmd_type    0 #rotate right
+        duration    50 
+        robot_in_action (index 0 cmd_data [-10 20 0])
+        robot_in_action (index 1 cmd_data [30 60 0])
+    )
+
+ )
+
+
+ShapeInfo
+(
+    seq "KBKF0000"
+)
+
+ShapeInfo
+(
+    seq "KFKB0000"
+)
+
+
+
