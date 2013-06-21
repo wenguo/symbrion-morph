@@ -27,12 +27,33 @@ const char* state_names[STATE_COUNT]={
     "LeadRepair",
     "Repair",
     "BroadcastScore",
-    "Debugging"
+    "Debugging",
+    "Climbing",
 };
 
-const char * irmessage_names[IR_MSG_TYPE_COUNT]={
+const char * message_names[MSG_TYPE_COUNT]={
     "UnKnown",
+    "Propagated",
+    "Disassembling",
+    "NewRobot_Joined",
+    "Organism_Formed",
+    "Raising",
+    "Raising Start",
+    "Raising Stop",
+    "Lowering",
+    "Reshaping",
+    "Failed",
+    "Sub_OG_String",
+    "Sub_OG_Score_String",
+    "Sub_OG_Score",
+    "Reshaping_Score",
+    "Retreat",
+    "Stop",
+    "IP_Addr_Collection",
+    "ACK",
+    "Remote Debug message",
     "Recruiting",
+    "Recruiting_REQ",
     "Expelling",
     "Powersource_Found",
     "GuideMe",
@@ -47,20 +68,27 @@ const char * irmessage_names[IR_MSG_TYPE_COUNT]={
     "Assembly_Info_REQ",
     "IP_Addr",
     "IP_Addr_REQ",
-    "Propagated",
-    "Disassembling",
-    "NewRobot_Joined",
-    "Organism_Formed",
-    "Raising",
-    "Lowering",
-    "Reshaping",
-    "Failed",
-    "Sub_OG_String",
-    "Sub_OG_Score_String",
-    "Sub_OG_Score",
-    "ACK"
+    "IPC_Hinge_3D_Motion_REQ",
+    "IPC_Locomotion_2D_REQ",
+    "IPC_Docking_rotation_REQ",
+    "IPC_Reset_Pose_REQ",
+    "IPC_IRSensor_data_REQ",
+    "IPC_Raising_start",
+    "IPC_Raising_stop",
+    "IPC_Lowering_start",
+    "IPC_Lowering_stop",
+    "IPC_Climbing_start",
+    "IPC_Climbing_stop",
+    "IPC_Opaque",
+    "IPC_Reshaping_start",
+    "IPC_Reshaping_done",
+    "IPC_Organism_Sequence",
+    "IPC_ACK"
 };
 
-
-
-
+const char * remote_cmd_names[REMOTE_CMD_COUNT] = {
+    "NONE",
+    "locking motor cmd",
+    "2d locomotion cmd",
+    "3d hinge cmd"
+};

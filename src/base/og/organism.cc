@@ -89,9 +89,9 @@ void OrganismNode::GetNewGeomFromParent(const OrganismNode& parent, const robot_
 
     // distance of two units depends on the docking sides
     float dist =   (fabs (parent.geom.width * cos(DTOR(rotation_angle[parentSide])) +
-                    parent.geom.height * sin(DTOR(rotation_angle[parentSide]))) +
-                    fabs( geom.width * cos(DTOR(rotation_angle[mySide])) +
-                    geom.height * sin(DTOR(rotation_angle[mySide])))) /2.0;
+                parent.geom.height * sin(DTOR(rotation_angle[parentSide]))) +
+            fabs( geom.width * cos(DTOR(rotation_angle[mySide])) +
+                geom.height * sin(DTOR(rotation_angle[mySide])))) /2.0;
 
     float angle = parent.geom.pa + rotation_angle[parentSide];
     geom.px = parent.geom.px + dist * cos (DTOR(angle));
@@ -156,7 +156,7 @@ void Organism::DFSTraversal(OrganismNode &node, OrganismSequence &seq)
     {
         if(!node.visited[i].status && node.connection[i]!=NULL)
         {
-          //  node.visited[i] = true;
+            //  node.visited[i] = true;
             if(node.connection[i]->FindConnectionSide(s, node))
             {
                 node.connection[i]->visited[s].status = true;
@@ -461,6 +461,12 @@ std::ostream& operator<<(std::ostream& os, const OrganismSequence& seq)
     {
         for(unsigned int i=0;i<seq.encoded_seq.size();i++)
             os<<seq.encoded_seq[i];
+        os<<std::endl;
+        for(unsigned int i=0;i<seq.encoded_seq.size();i++)
+        {
+            if(seq.encoded_seq[i].parent_IP != 0)
+                os<<int(seq.encoded_seq[i].parent_IP)<<":"<<int(seq.encoded_seq[i].child_IP)<<"-";
+        }
     }
     return os;
 }

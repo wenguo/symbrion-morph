@@ -11,18 +11,24 @@
 #include <locale>
 #include <stdexcept>
 #include <sys/stat.h>
+#include <map>
 
 //#include <IRobot.h>
 #include <pthread.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <comm/IRComm.h>
 #include <comm/Ethernet.h>
+#include <comm/switch.h>
 #include "parameter.hh"
 #include "global.hh"
 #include "og/organism.hh"
 #include "og/organism_sample.hh"
 #include "utils/worldfile.hh"
 #include "utils/hist.hh"
+#include "utils/ipc.hh"
 #include "utils/support.hh"
 #include "IRMessage.hh"
 
@@ -51,13 +57,16 @@ class Robot
     void PrintRGB();
     void PrintStatus();
     void PrintSubOGString( uint8_t* );
+    void PrintOGIRSensor(uint8_t type);
     void LogState();
 
     uint32_t CheckIRLEDStatus(int channel, int led);
     void CheckDockingMotor();
     void CheckHingeMotor();
-    
+
     void SendEthMessage(int channel, uint8_t type, const uint8_t *data, int size=1, bool ack_required = false);
+    void SendEthAckMessage(int channel, uint8_t type);
+    void SendEthAckMessage(int channel, uint8_t type, uint8_t *data, int size=1);
     void PropagateEthMessage(uint8_t type, uint8_t *data = NULL, uint32_t size = 0, Ethernet::IP = 0);
 
     //send to specified receiver (defined in docked[i]), ack may be required
@@ -78,20 +87,21 @@ class Robot
     bool MessageWaitingAck(uint8_t type);
 
     // reset variables required for self-assembly
-    void ResetAssembly();
+    void ResetAssembly(bool reset_ipc = true);
 
     protected:    
     virtual void InitHardware()=0;
     virtual void UpdateSensors()=0;
     virtual void UpdateActuators()=0;
     virtual void Reset()=0;
+    virtual void EnablePowerSharing(int side, bool on)=0;
     // for self-repair
     virtual void UpdateFailures()=0;
 
     virtual void Calibrating();
     virtual void Exploring()=0;
     virtual void Resting()=0;
-    virtual void Seeding()=0;
+    virtual void Seeding();
     virtual void Foraging()=0;
     virtual void Assembly()=0;
     virtual void Waiting()=0;
@@ -101,25 +111,47 @@ class Robot
     virtual void Docking()=0;
     virtual void Locking()=0;
     virtual void Recover()=0;
-    virtual void Undocking()=0;
-    virtual void InOrganism()=0;
-    virtual void Disassembly()=0;
+    virtual void Undocking();
+    virtual void InOrganism();
+    virtual void Disassembly();
     virtual void Recruitment()=0;
-    virtual void Raising()=0;
-    virtual void Lowering()=0;
-    virtual void Reshaping()=0;
-    virtual void MacroLocomotion()=0;
+    virtual void Raising();
+    virtual void Lowering();
+    virtual void Reshaping();
+    virtual void MacroLocomotion();
+    virtual void Climbing();
     virtual void Debugging()=0;
     virtual void Log()=0;
 
+    virtual void Avoidance();
+
+
+    virtual int32_t get_aux_reflective(uint8_t i)=0;
+
     // for self-repair
+    void CheckForFailures();
     bool StartRepair();
     void Failed();
     void Support();
     void LeadRepair();
     void Repair();
 
+    uint8_t getNextNeighbour(int);
+    uint8_t getNextMobileNeighbour( int last );
+    uint8_t getNeighbourHeading( int8_t );
+    bool isNeighbourConnected(int i);
+    void changeState(fsm_state_t);
+    void moveTowardsHeading(int);
+    uint8_t recruitmentProgress();
+    uint8_t getEthChannel(Ethernet::IP);
+
+    void RemoveFromQueue(int channel, uint8_t type, uint8_t subtype = MSG_TYPE_UNKNOWN);
+    void RemoveFromAllQueues(uint8_t type, uint8_t subtype = MSG_TYPE_UNKNOWN);
+
     std::string ClockString();
+    static const char * IPToString(Ethernet::IP ip);
+    static Ethernet::IP StringToIP(const char *);
+    static Ethernet::IP getFullIP(const uint8_t addr);
 
     //  void BroadcastMessage(Message); //broadcast message via wired communication bus
     //  void SendMessage(int i, Message*);
@@ -139,13 +171,25 @@ class Robot
 
     virtual void SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)=0;
     virtual void SetRGBLED(int channel, uint8_t tl=LED_BLUE, uint8_t tr=0, uint8_t bl=0, uint8_t br=0)=0; 
-    virtual void SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed)=0;
+    virtual void SetSpeed(int leftspeed, int rightspeed, int sidespeed)=0;
 
     virtual bool SetDockingMotor(int channel, int status)=0;
     virtual bool SetHingeMotor(int status)=0;
+    virtual bool MoveHingeMotor(int command[4])=0;
+    virtual bool RotateDockingUnit(int channel, int8_t angle)=0;
 
-    virtual int in_docking_region(int x[4])=0;
-    virtual int in_locking_region(int x[4])=0;
+    void IPCSendMessage(uint32_t dst,  uint8_t type, const uint8_t *data, int size);
+    void IPCSendMessage(uint8_t type, const uint8_t *data, int size);
+    void IPCPropagateMessage(uint8_t type, uint8_t *data=NULL, uint32_t size=0, Ethernet::IP sender=0);
+    
+    //for organism control
+    void RequestOGIRSensors(uint8_t sensor_type);
+    void RequestOGIRSensors(uint32_t addr, uint8_t sensor_type);
+    void InitRobotPoseInOrganism();
+    
+    //for remote debugging
+    void RemoteDebugging(char *data);
+    bool ParseCMD(char *buff);
 
     private:
     static void Calibrating(Robot *robot){robot->Calibrating();}
@@ -169,7 +213,9 @@ class Robot
     static void Lowering(Robot * robot){robot->Lowering();}
     static void Reshaping(Robot * robot){robot->Reshaping();}
     static void MacroLocomotion(Robot * robot){robot->MacroLocomotion();}
+    static void Climbing(Robot * robot){robot->Climbing();}
     static void Debugging(Robot * robot){robot->Debugging();}
+
     // for self-repair
     static void Failed(Robot * robot){robot->Failed();}
     static void Support(Robot * robot){robot->Support();}
@@ -189,11 +235,18 @@ class Robot
     void ProcessIRMessage(std::auto_ptr<Message>);
     void ProcessEthMessage(std::auto_ptr<Message>);
 
+    //for organism control
+    static void Relay_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
+    static void Process_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
+    void UpdateOGIRSensors(uint8_t config[2], int data[NUM_IRS], int sensor_type);//config: 0 -- position in og, 1-- orientation related to seed
+
     protected:
 
     uint32_t timestamp;
     uint32_t timestamp_propagated_msg_received;
-    uint32_t id;
+    uint32_t timestamp_hinge_motor_cmd_received; //the last time motor command received from the commander
+    uint32_t timestamp_locomotion_motors_cmd_received; //the last time motor command received from the commander
+    uint8_t id;
     robot_type type;
     char *name;
 
@@ -219,6 +272,7 @@ class Robot
     int32_t beacon[NUM_IRS];
     rgb_t   color[NUM_DOCKS];
     float comm_status[NUM_IRCOMMS];
+    int32_t locking_motor_isense[NUM_DOCKS];
 
     //windowed sensor array
     Hist reflective_hist[NUM_IRS];
@@ -230,6 +284,8 @@ class Robot
     Hist ambient_avg_threshold_hist;
     Hist proximity_hist[NUM_IRS];
     Hist ethernet_status_hist;
+    Hist locking_motor_isense_hist;
+    Hist docking_blocked_hist;
 
     //status
     uint8_t bumped;
@@ -254,7 +310,7 @@ class Robot
     //IR_Pulse0, bits 9
     //IR_Pulse1, bits 10
     uint32_t RGBLED_status[NUM_DOCKS];
-    uint8_t docking_motors_status[NUM_DOCKS]; //each two bits, 0b00 -- open, 0b01 -- opening, 0b10 -- closed, 0b11 -- closing
+    uint8_t locking_motors_status[NUM_DOCKS]; //each two bits, 0b00 -- open, 0b01 -- opening, 0b10 -- closed, 0b11 -- closing
     uint8_t hinge_motor_status;
 
     bool organism_found;
@@ -263,6 +319,7 @@ class Robot
 
     // for self-repair
     bool module_failed;
+    uint8_t heading;
     uint8_t wait_side;
     uint8_t parent_side;
     uint8_t repair_stage;
@@ -288,11 +345,17 @@ class Robot
     uint32_t foraging_count;
     uint32_t seeding_count;
     uint32_t foraging_blind_count;
-    uint32_t docking_motor_operating_count[NUM_DOCKS];
+    uint32_t locking_motor_operating_count[NUM_DOCKS];
+    uint32_t locking_motor_opening_threshold[NUM_DOCKS];
     uint32_t docking_failed_reverse_count;
     uint32_t hinge_motor_operating_count;
     uint32_t guiding_signals_count[NUM_DOCKS];
     uint32_t blocking_count;
+    uint32_t locatebeacon_count;
+    uint32_t climbing_count;
+    uint32_t reshaping_count;
+    uint32_t disassembly_count;
+    uint32_t resting_count;
 
     uint8_t docking_trials;
 
@@ -302,9 +365,16 @@ class Robot
     uint8_t robot_in_range_replied;
     uint8_t msg_reshaping_received;
     uint8_t msg_reshaping_expected;
+    uint8_t msg_reshaping_score_received;
     uint8_t msg_raising_received;
-    uint8_t msg_lowering_received;
-    uint8_t msg_disassembly_received;
+    bool msg_raising_start_received;
+    bool msg_raising_stop_received;
+    bool msg_lowering_received;
+    bool msg_disassembly_received;
+    bool msg_climbing_start_received;
+    bool msg_climbing_stop_received;
+    bool msg_reshaping_start_received;
+    bool msg_reshaping_done_received;
     uint8_t msg_locked_received;
     uint8_t msg_locked_expected;
     uint8_t msg_unlocked_received;
@@ -321,6 +391,7 @@ class Robot
     uint8_t msg_assembly_info_expected;
     uint8_t msg_assembly_info_req_received;
     uint8_t msg_assembly_info_req_expected;
+    uint8_t msg_recruiting_req_received;
     // for self-repair
     uint8_t msg_failed_received;
     uint8_t msg_subog_seq_received;
@@ -330,6 +401,9 @@ class Robot
     uint8_t msg_score_received;
     uint8_t msg_ip_addr_received;
     uint8_t msg_ip_addr_expected;
+    bool msg_retreat_received;
+    bool msg_stop_received;
+    uint8_t pruning_required;
 
 
 
@@ -343,7 +417,7 @@ class Robot
     bool assembly_info_checked;
 
     int32_t direction;
-    int8_t speed[3];
+    int speed[3];
 
     uint32_t num_robots_inorganism;
 
@@ -351,7 +425,8 @@ class Robot
     //organism related
     OrganismSequence mytree;
     OrganismSequence subog;
-    OrganismSequence target;
+    OrganismSequence target; //the complete organism
+
     std::vector<OrganismSequence> mybranches;
     Organism * og;
     OrganismSequence::Symbol assembly_info; //information for which types of robot and which side is required by recruiting robots
@@ -380,11 +455,113 @@ class Robot
 
     Ethernet::IP my_IP;
     Ethernet::IP neighbours_IP[SIDE_COUNT];
+    bool IP_collection_done;
     
-
     uint8_t LED0;
     uint8_t LED1;
     uint8_t LED2;
+
+    //for macrolomotion control
+    IPC::IPC  master_IPC;
+    Ethernet::IP master_IP;
+    int          master_port;
+    IPC::IPC  commander_IPC;
+    Ethernet::IP commander_IP;
+    int          commander_port;
+    std::map<uint32_t, int> commander_acks; //store all ips in the organism, except itself, and the acks from them.
+    pthread_mutex_t IPC_data_mutex;
+    int broken_eth_connections;
+    bool IPC_health;
+
+    class robot_pose
+    {
+        public: 
+            robot_pose()
+            {
+                index = 0;
+                direction = 1;
+                og_irsensor_index = -1;
+                type = ROBOT_NONE;
+                tail_header = 0;
+            }
+            robot_pose & operator= (const robot_pose& rhs)
+            {
+                index = rhs.index;
+                direction = rhs.direction;
+                type = rhs.type;
+                og_irsensor_index = rhs.og_irsensor_index;
+                tail_header = rhs.tail_header;
+                return *this;
+            }
+            int index; //relative postion to the seed, 
+            int og_irsensor_index; //index used for og_irsenosr vector, only valid for AW robot, as Scout and KIT will be in the middle
+            int direction;
+            int type;
+            int tail_header; // -1 -- header, 1 -- tail
+    };
+
+    class action_sequence
+    {
+        public: 
+            action_sequence()
+            {
+                sequence_index  = 0;
+                counter = 0;
+                duration = 0;
+                cmd_type = CMD_PUSH_DRAG;
+            }
+
+            typedef struct
+            {
+                int index;
+                int cmd_data[3];
+            } robot_in_action_t;
+            enum cmd_type_t {CMD_PUSH_DRAG = 0, CMD_LIFT_ONE = 1};
+            int sequence_index;
+            int cmd_type;
+            uint32_t duration;
+            uint32_t counter; //timer to count how many step have already been spent on this action
+            std::vector<robot_in_action_t> robots_in_action;
+    };
+
+    std::map<uint32_t, robot_pose> robot_pose_in_organism;
+    std::map<int, uint32_t>robot_in_organism_index_sorted; //helper variable for fast access to robot_pose_in_organism
+
+    int hinge_command[4];
+    int locomotion_command[4];//direction, speed[0], speed[1], speed[2]
+
+    //sensors 
+    typedef struct
+    {
+        int front[2];
+        int back[2];
+        std::vector<int> left;
+        std::vector<int> right;
+    } OG_IRsensor;
+
+
+    OG_IRsensor og_reflective_sensors;
+    OG_IRsensor og_ambient_sensors;
+    OG_IRsensor og_proximity_sensors;
+    OG_IRsensor og_beacon_sensors;
+    int32_t og_front_aux_reflective_sensors[4]; //the 'front' 4 aux sensors located in the first AW robots, front right to left 
+    
+
+    std::vector<action_sequence> organism_actions;
+    int current_action_sequence_index; //index for the action sequence of organism
+    uint32_t front_aw_ip; //ip of the front AW when executing the push-drag behaviour
+
+    int user_input;
+    uint32_t timestamp_user_input_received;
+
+    uint8_t reshaping_waiting_for_undock;
+    uint8_t reshaping_unlock_sent;
+    bool reshaping_seed;
+    uint8_t reshaping_processed;
+    
+    uint8_t disassembly_waiting_for_undock;
+
+    int demo_count;
 };
 
 #endif

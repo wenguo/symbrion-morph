@@ -41,12 +41,14 @@ int main(int argc, char * argv[])
         return -1;
     }
 
+    printf("Robot Initialize\n");
     RobotBase::RobotType robot_type = RobotBase::Initialize("morph");
 
+    printf("Init IRComm\n");
     IRComm::Initialize();
 
     //create robot object
-    Robot * robot;
+    Robot * robot = NULL;
     char cf_path[64];
     char cf_name[128];
     if(argc == 2)
@@ -62,9 +64,7 @@ int main(int argc, char * argv[])
     }
     else if(robot_type == RobotBase::ACTIVEWHEEL)
     {
-        printf("create new robots\n");
-        robot = new RobotAW ((ActiveWheel *)RobotBase::Instance());
-        printf("create new robots done\n");
+        robot = new RobotAW((ActiveWheel*)RobotBase::Instance());
         sprintf(cf_name,"%s/aw_option.cfg", cf_path);
     }
     else if(robot_type == RobotBase::SCOUTBOT)
@@ -77,7 +77,7 @@ int main(int argc, char * argv[])
         printf("unknow robot type, quit\n");
         return -1;
     }
-    
+
     if(!robot->Init(cf_name))
         return -1;
 
