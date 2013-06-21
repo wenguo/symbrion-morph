@@ -67,14 +67,14 @@ MacroLocomotion
 Debugging
 (
     mode 31 
-    para [211 0 216 0 0 2 0 0 211 211]
+    para [224 0 216 0 0 2 2 0 224 0]
 )
 
 Global
 (
 	logtofile 0
 #refer to global.hh for a full list of states
-	init_state  26 
+	init_state  4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -96,12 +96,12 @@ Motor
     speed_forward 30
     speed_sideward 2
     aw_adjustment_ratio 1.5
-    locomotion_motor_enabled 1
+    locomotion_motor_enabled 0
 )
 
 ShapeInfo
 (
-    seq "ABSFSBABAFSB000000000000"
+    seq "ABSF0000"
 )
 
 ShapeInfo
