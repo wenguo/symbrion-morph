@@ -55,7 +55,7 @@ void RobotKIT::Reset()
 
 void RobotKIT::EnablePowerSharing(int side, bool on)
 {
-    irobot->EnablePowerSharing(KaBot::Side(board_dev_num[side]), on);
+   // irobot->EnablePowerSharing(KaBot::Side(board_dev_num[side]), on);
 }
 
 void RobotKIT::SetIRLED(int channel, IRLEDMode mode, uint8_t led, uint8_t pulse_led)
@@ -1787,34 +1787,12 @@ void RobotKIT::Debugging()
             }
             break;
         case 20://testing motors
-            if(timestamp <= 20 )
+            if(timestamp > 2 )
             { 
-                speed[0] = 0;//para.debug.para[4];
-                speed[1] = 0;//para.debug.para[5];
-                speed[2] = -20;//para.debug.para[6];
+                speed[0] = para.debug.para[4];
+                speed[1] = para.debug.para[5];
+                speed[2] = para.debug.para[6];
             }
-            else if(timestamp <=22)
-            { 
-                speed[0] = -20;//para.debug.para[4];
-                speed[1] = -20;//para.debug.para[5];
-                speed[2] = 0;//para.debug.para[6];
-            }
-            else if(timestamp <=40)
-            { 
-                speed[0] = 0;//para.debug.para[4];
-                speed[1] = 0;//para.debug.para[5];
-                speed[2] = 20;//para.debug.para[6];
-            }
-            else if(timestamp <=42)
-            {
-                speed[0] = 20;//para.debug.para[4];
-                speed[1] = 20;//para.debug.para[5];
-                speed[2] = 0;//para.debug.para[6];
-            }
-            else
-                timestamp = 0;
-
-
             break;
         case 21://test RGB
             if(timestamp==2)
