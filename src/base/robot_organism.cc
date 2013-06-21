@@ -40,6 +40,39 @@ void Robot::InOrganism()
             InitRobotPoseInOrganism();
 
             //force to disconnect any unwanted ethernet connections
+            std::vector<IPC::Connection*>::iterator it = master_IPC.Connections()->begin();
+            while(it != master_IPC.Connections()->end())
+            {
+                bool erase_required = false;
+
+                uint32_t ip = (*it)->addr.sin_addr.s_addr;
+                std::map<uint32_t, robot_pose>::iterator it1;
+                it1=robot_pose_in_organism.find(ip);
+                if(it1!= robot_pose_in_organism.end())
+                {
+                    if((*it)->connected)
+                        printf("organism ip list: %d\n", ip>>24 & 0xFF);
+                    else
+                    {
+                        erase_required = true;
+                        printf("organism ip list: %d (dead connection) -- removed\n", ip>>24 & 0xFF);
+                    }
+                }
+                else 
+                {
+                    (*it)->Disconnect();
+                    erase_required = true;
+                    // printf("\tnot in organism ip list: %d\n", ip>>24 & 0xFF);
+                }
+
+                if(erase_required)
+                    it = master_IPC.Connections()->erase(it);
+                else
+                    it++;
+
+            }
+
+            /*
             std::vector<IPC::Connection*> *connections = master_IPC.Connections();
             for(int i=0;i<connections->size();i++)
             {
@@ -47,13 +80,19 @@ void Robot::InOrganism()
                 std::map<uint32_t, robot_pose>::iterator it;
                 it=robot_pose_in_organism.find(ip);
                 if(it!= robot_pose_in_organism.end())
-                    printf("organism ip list: %d\n", ip>>24 & 0xFF);
+                {
+                    if((*connections)[i]->connected)
+                        printf("organism ip list: %d\n", ip>>24 & 0xFF);
+                    else
+                        printf("organism ip list: %d (dead connection)\n", ip>>24 & 0xFF);
+                }
                 else 
                 {
                     (*connections)[i]->Disconnect();
                    // printf("\tnot in organism ip list: %d\n", ip>>24 & 0xFF);
                 }
-            }
+            }*/
+
 
 
             macrolocomotion_count = 0;
@@ -408,22 +447,23 @@ void Robot::MacroLocomotion()
         }
 #endif
         //printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
+        //go to climbing for york scenario2
+        if(macrolocomotion_count > 50 && demo_count ==1)
+        { 
+            if(!msg_climbing_start_received) //this will prevent the message being sent twice 
+            {
+                IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
+                msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
+            }
 
-         if(macrolocomotion_count > 10000)
+        }
+
+        if(macrolocomotion_count > 100000)
         {
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
             cmd_speed[0] = 0;
-            
-            /*if(demo_count == 0 && user_input == -1)
-            {
-                if(!msg_climbing_start_received) //this will prevent the message being sent twice 
-                {
-                    IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
-                    msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
-                }
-            }
-            else */
+        
             if(demo_count ==1)
             {
                 if(!msg_lowering_received)
@@ -433,6 +473,16 @@ void Robot::MacroLocomotion()
                     msg_lowering_received = true;
                 }
             }
+    
+            /*if(demo_count == 0 && user_input == -1)
+            {
+                if(!msg_climbing_start_received) //this will prevent the message being sent twice 
+                {
+                    IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
+                    msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
+                }
+            }
+            else */
             IPC_health = true;
             climbing_count =0;
             macrolocomotion_count = 0;
@@ -709,7 +759,6 @@ void Robot::Climbing()
                 IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
                 msg_lowering_received = true;
 
-                demo_count++;
             }
 
         }
@@ -769,11 +818,11 @@ void Robot::Climbing()
     if(timestamp - timestamp_locomotion_motors_cmd_received > 3)
         memset(locomotion_command, 0, sizeof(locomotion_command));
 
+    static int index = 0;
+    index = (timestamp / 2) % 6;
     if(flash_leds)
     {
         //flashing RGB leds
-        static int index = 0;
-        index = (timestamp / 2) % 6;
         for(int i=0;i<NUM_DOCKS;i++)
         {
             switch (index)
@@ -796,6 +845,33 @@ void Robot::Climbing()
                     break;
             }
         }
+    }
+    else
+    {
+        //flashing RGB leds
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            switch (index)
+            {
+                case 0:
+                    SetRGBLED(i, GREEN, GREEN, 0, 0);
+                    break;
+                case 1:
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                case 2:
+                    SetRGBLED(i, 0, 0, GREEN, GREEN);
+                    break;
+                case 3: //
+                case 4: // short delay to better symbolise raising
+                case 5: //
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                default:
+                    break;
+            }
+        }
+
     }
 }
 
@@ -1229,6 +1305,8 @@ void Robot::Reshaping()
             current_state = INORGANISM;
             last_state = RESHAPING;
         }
+
+        demo_count++;
 
     }
 
