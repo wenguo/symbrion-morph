@@ -31,7 +31,7 @@ Avoidance
    weight_left [0 0 0 0 0 0 0 0]
    weight_right [0 0 0 0 0 0 0 0]
    weight_side [0 0 -1 -1 0 0 1 1]
-   threshold [100 100 100 100 100 100 100 100]
+   threshold [200 200 200 200 200 200 200 200]
 )
 
 Recruitment
@@ -145,16 +145,16 @@ Climbing
         sequence_id 4 
         cmd_type    0 #rotate left
         duration    50 
-        robot_in_action (index 0 cmd_data [30 60 0])
-        robot_in_action (index -1 cmd_data [-10 20 0])
+        robot_in_action (index 0 cmd_data [-10 10 0])
+        robot_in_action (index -1 cmd_data [60 -10 0])
     )
     action_seq 
     (
         sequence_id 5 
         cmd_type    0 #rotate right
         duration    50 
-        robot_in_action (index 0 cmd_data [20 -10 0])
-        robot_in_action (index -1 cmd_data [60 30 0])
+        robot_in_action (index 0 cmd_data [-60 10 0])
+        robot_in_action (index -1 cmd_data [10 -10 0])
     )
 
  )
