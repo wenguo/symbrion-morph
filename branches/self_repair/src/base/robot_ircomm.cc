@@ -591,7 +591,7 @@ void Robot::SendIRMessage(const IRMessage& msg)
         RGBLED_flashing |=1<<msg.channel;
     }
 
-    if(msg.type == MSG_TYPE_PROPAGATED)
+    if(msg.type == MSG_TYPE_PROPAGATED || msg.type == MSG_TYPE_ACK)
         printf("%d-%d: %s send message %s (%s) via channel %d (%#x)\n",timestamp, msg.timestamp, name, message_names[msg.type],message_names[msg.data[0]],msg.channel, board_dev_num[msg.channel]);
     else
         printf("%d-%d: %s send message %s via channel %d (%#x)\n",timestamp, msg.timestamp, name, message_names[msg.type],msg.channel, board_dev_num[msg.channel]);

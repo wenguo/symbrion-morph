@@ -129,8 +129,18 @@ bool RobotSCOUT::SetDockingMotor(int channel, int status)
             //change status to be opening
             locking_motors_status[channel] = OPENING; //clear first
             if(para.locking_motor_enabled[channel])
-                irobot->OpenDocking(ScoutBot::Side(board_dev_num[channel]));
-            printf("open docking\n");
+            {
+                if(para.locking_motor_nonreg[channel])
+                {
+                    CPrintf1(SCR_RED,"%d: open docking motor -- non regulated\n", timestamp);
+                    irobot->MoveDocking(ScoutBot::Side(board_dev_num[channel]), -1);        
+                }
+                else
+                {
+                    CPrintf1(SCR_RED,"%d: open docking motor -- regulated\n",timestamp);
+                    irobot->OpenDocking(ScoutBot::Side(board_dev_num[channel]));
+                }
+            }
         }
         //or open -> close
         else if(locking_motors_status[channel]== OPENED &&  status == CLOSE )
@@ -138,8 +148,19 @@ bool RobotSCOUT::SetDockingMotor(int channel, int status)
             //change status to be closing
             locking_motors_status[channel] = CLOSING; //clear first
             if(para.locking_motor_enabled[channel])
-                irobot->CloseDocking(ScoutBot::Side(board_dev_num[channel]));
-            printf("close docking\n");
+            {
+                if(para.locking_motor_nonreg[channel])
+                {
+                    CPrintf1(SCR_RED,"%d: open docking motor -- non regulated\n", timestamp);
+                    irobot->MoveDocking(ScoutBot::Side(board_dev_num[channel]), 1);        
+                }
+                else
+                {
+                    CPrintf1(SCR_RED,"%d: open docking motor -- regulated\n",timestamp);
+                    irobot->CloseDocking(ScoutBot::Side(board_dev_num[channel]));
+                }
+
+            }
         }
         else
             return false;
@@ -553,6 +574,9 @@ void RobotSCOUT::LocateBeacon()
     int turning = 0;
     if(beacon_signals_detected)
     {
+        //set the direction in case it is changed in Avoidance
+        direction = assembly_info.side2 == FRONT ? FORWARD : BACKWARD;
+
         speed[0] = para.locatebeacon_forward_speed[0];
         speed[1] = para.locatebeacon_forward_speed[1];
 

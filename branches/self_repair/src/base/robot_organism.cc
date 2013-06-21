@@ -66,6 +66,9 @@ void Robot::InOrganism()
             {
                 printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
                 EnablePowerSharing(i, true);
+                
+              //  if(docked[i])
+              //      msg_subog_seq_expected |= i<<branch_side;
             }
         }
     }
@@ -75,7 +78,7 @@ void Robot::InOrganism()
         if(msg_organism_seq_expected && msg_organism_seq_received)
         {
             msg_organism_seq_expected = false;
-
+              
             for(int i=0;i<NUM_DOCKS;i++)
                 SetRGBLED(i, 0,0,0,0);
 
@@ -372,6 +375,7 @@ void Robot::MacroLocomotion()
       //  if(user_input != 1)
       //      memset(cmd_speed, 0, sizeof(cmd_speed));
 
+#if 0
         if(user_input <= -6)
         {
             if(!msg_lowering_received)
@@ -388,8 +392,7 @@ void Robot::MacroLocomotion()
             user_input = 0;
 
         }
-        else
-        //else if(user_input >= 5)
+        else if(user_input >= 5)
         {
             if(!msg_climbing_start_received) //this will prevent the message being sent twice 
             {
@@ -403,7 +406,7 @@ void Robot::MacroLocomotion()
             }
             user_input = 0;
         }
-
+#endif
         //printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
 
          if(macrolocomotion_count > 10000)
@@ -508,7 +511,7 @@ void Robot::MacroLocomotion()
             uint8_t command = 2;
             IPCSendMessage(commander_IP.i32, IPC_MSG_OPAQUE, &command, 1);
             timestamp_user_input_received = timestamp;
-            para.print_ambient = 1;
+            //para.print_ambient = 1;
 
         }
         else if(ambient_hist[6].Avg() > 3000 || ambient_hist[5].Avg() > 3000)//right
@@ -516,7 +519,7 @@ void Robot::MacroLocomotion()
             uint8_t command = 0;
             IPCSendMessage(commander_IP.i32, IPC_MSG_OPAQUE, &command, 1);
             timestamp_user_input_received = timestamp;
-            para.print_ambient = 1;
+            //para.print_ambient = 1;
         }
         else
             para.print_ambient = 0;
@@ -1072,7 +1075,7 @@ void Robot::Reshaping()
                 {
                     docking_done[branch_side] = true;
                     
-                    msg_subog_seq_expected = 1<<branch_side;
+                    msg_subog_seq_expected |= 1<<branch_side;
 
                     //prepare the buffer for new shaping + new seed
                     OrganismSequence::OrganismSequence &seq = *it;

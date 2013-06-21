@@ -297,7 +297,7 @@ void Robot::Process_Organism_command(const LolMessage*msg, void* connection, voi
 
                     robot->parent_side = robot->getEthChannel(getFullIP(sender));
                     robot->reshaping_processed |= 1<<robot->parent_side;
-                    robot->msg_subog_seq_expected != (1<<robot->parent_side);
+                    robot->msg_subog_seq_expected |= (1<<robot->parent_side);
                     printf("%d: received msg_organism_seq from %s\n", robot->timestamp, IPToString(getFullIP(sender)));
                     std::cout<<"new seq: "<<robot->mytree<<std::endl;
                 }
