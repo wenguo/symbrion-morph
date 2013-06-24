@@ -59,7 +59,7 @@ MacroLocomotion
     hinge_motor_lifting_time 50 
     hinge_motor_lowing_time 30
     hinge_motor_speed 40
-    hinge_motor_angle 25
+    hinge_motor_angle 18
     hinge_motor_default_pos 75
     hinge_motor_enabled 1
 )
@@ -74,7 +74,7 @@ Global
 (
 	logtofile 0
 #refer to global.hh for a full list of states
-	init_state  26 
+	init_state  4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -96,7 +96,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     aw_adjustment_ratio 1.5
-    locomotion_motor_enabled 0
+    locomotion_motor_enabled 1
 )
 
 Climbing
@@ -108,8 +108,8 @@ Climbing
         sequence_id 0 
         cmd_type    1 #lift
         duration    50 
-        robot_in_action (index 0 cmd_data [40 30 0])
-        robot_in_action (index -2 cmd_data [40 30 0])
+        robot_in_action (index 0 cmd_data [30 30 0])
+        robot_in_action (index -2 cmd_data [30 30 0])
     )
     action_seq 
     (
@@ -120,32 +120,32 @@ Climbing
     action_seq 
     (
         sequence_id 2 
-        cmd_type    0 #move
-        duration    90 
+        cmd_type    0 #move forward
+        duration    50 
         robot_in_action (index 0 cmd_data [30 30 0])
         robot_in_action (index -2 cmd_data [30 30 0])
     )
     action_seq 
     (
         sequence_id 3 
-        cmd_type    0 #move
-        duration    90 
+        cmd_type    0 #move backward
+        duration    50 
         robot_in_action (index 0 cmd_data [-30 -30 0])
         robot_in_action (index -2 cmd_data [-30 -30 0])
     )
     action_seq 
     (
         sequence_id 4 
-        cmd_type    0 #move
-        duration    90 
+        cmd_type    0 #move left
+        duration    50 
         robot_in_action (index 0 cmd_data [0 0 60])
         robot_in_action (index -2 cmd_data [0 0 60])
     )
     action_seq 
     (
         sequence_id 5 
-        cmd_type    0 #move
-        duration    90 
+        cmd_type    0 #move right
+        duration    50 
         robot_in_action (index 0 cmd_data [0 0 -60])
         robot_in_action (index -2 cmd_data [0 0 -60])
     )
@@ -154,8 +154,8 @@ Climbing
         sequence_id 6 
         cmd_type    1 #lift
         duration    50 
-        robot_in_action (index 0 cmd_data [20 30 0])
-        robot_in_action (index -2 cmd_data [20 30 0])
+        robot_in_action (index 0 cmd_data [15 30 0])
+        robot_in_action (index -2 cmd_data [15 30 0])
     )
     action_seq 
     (

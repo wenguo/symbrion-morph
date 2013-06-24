@@ -457,6 +457,10 @@ void RobotAW::Foraging() //the same as RobotKIT
         }
 
     }
+
+    speed[0]=0;
+    speed[1]=0;
+    speed[2]=0;
 }
 void RobotAW::Waiting()//same as RobotKIT
 {

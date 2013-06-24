@@ -454,6 +454,10 @@ void RobotSCOUT::Foraging()
 
     }
 
+    speed[0]=0;
+    speed[1]=0;
+    speed[2]=0;
+
 
 }
 void RobotSCOUT::Waiting()
