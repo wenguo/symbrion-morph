@@ -48,7 +48,7 @@ void Robot::CheckForFailures()
             case INORGANISM:
                 {
 
-                    if( current_state == LOWERING &&  lowering_count <= 30 ) break;
+                    if( current_state == LOWERING &&  lowering_count <= 20) break;
                     if( current_state == RECRUITMENT && recruitmentProgress() > STAGE3 ) break;
                     // TODO: check that IP addresses successfully exchanged
                     if( current_state == INORGANISM && (msg_organism_seq_expected && !msg_organism_seq_received) ) break;
@@ -105,7 +105,7 @@ void Robot::CheckForFailures()
             case INORGANISM:
                 {
 
-                    if( current_state == LOWERING &&  lowering_count <= 30 ) break;
+                    if( current_state == LOWERING &&  lowering_count <= 20 ) break;
                     if( current_state == RECRUITMENT && recruitmentProgress() > STAGE3 ) break;
                     // TODO: check that IP addresses successfully exchanged
                     if( current_state == INORGANISM && (msg_organism_seq_expected && !msg_organism_seq_received) ) break;

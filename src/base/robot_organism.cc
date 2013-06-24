@@ -643,7 +643,6 @@ void Robot::Climbing()
             {
                 current_action_sequence_index++;
                 as_ptr->counter = 0; //reset the counter
-                printf("%d the finished command is %s (%d)\n", timestamp, as_ptr->cmd_type == 0 ? "PUSH_DRAG":"LIFT_ONE", as_ptr->sequence_index);
                 if( as_ptr->cmd_type ==0)
                     printf("%d the finished command is %s (%d)\n", timestamp, "PUSH_DRAG", as_ptr->sequence_index);
                 else if(as_ptr->cmd_type ==1)
@@ -967,8 +966,9 @@ void Robot::Lowering()
                         }
                     }
                 }
+
 #endif
-                if(!msg_disassembly_received) //this will prevent the message being sent twice 
+                if(!msg_disassembly_received && demo_count ==1) //this will prevent the message being sent twice 
                 {
                     IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
                     msg_disassembly_received = true;

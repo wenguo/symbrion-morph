@@ -224,27 +224,7 @@ bool Robot::LoadParameters(const char * filename)
         }
         else if( strcmp( typestr, "Climbing" ) == 0 )
         {
-            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "action_seq" ) )
-            {
-                printf("read action_in sequence\n");
-                action_sequence as;
-                as.sequence_index = optionfile->ReadInt(entity, "sequence_id", 0);
-                as.cmd_type = optionfile->ReadInt(entity, "cmd_type", action_sequence::CMD_PUSH_DRAG);
-                as.duration = (uint32_t)optionfile->ReadInt(entity, "duration", 10);
-                if( Morph::CProperty* prop1 = optionfile->GetProperty( entity, "robot_in_action" ) )
-                {
-                    action_sequence::robot_in_action_t ra;
-                    ra.index = optionfile->ReadInt(entity, "index", 0);
-                    if( Morph::CProperty* prop2 = optionfile->GetProperty( entity, "cmd_data" ) )
-                    {
-                        for(int i=0;i<sizeof(ra.cmd_data);i++)
-                            ra.cmd_data[i] = atoi(optionfile->GetPropertyValue(prop2, i));
-                    }
-                    as.robots_in_action.push_back(ra);
-                }
 
-                organism_actions.push_back(as);
-            }
         }
         else if( strcmp( typestr, "Global" ) == 0 )
         {        
@@ -310,7 +290,24 @@ bool Robot::LoadParameters(const char * filename)
         }
         else if(strcmp( typestr, "action_seq") ==0)
         {
+                printf("read action_in sequence\n");
+                action_sequence as;
+                as.sequence_index = optionfile->ReadInt(entity, "sequence_id", 0);
+                as.cmd_type = optionfile->ReadInt(entity, "cmd_type", action_sequence::CMD_PUSH_DRAG);
+                as.duration = (uint32_t)optionfile->ReadInt(entity, "duration", 10);
+                if( Morph::CProperty* prop1 = optionfile->GetProperty( entity, "robot_in_action" ) )
+                {
+                    action_sequence::robot_in_action_t ra;
+                    ra.index = optionfile->ReadInt(entity, "index", 0);
+                    if( Morph::CProperty* prop2 = optionfile->GetProperty( entity, "cmd_data" ) )
+                    {
+                        for(int i=0;i<sizeof(ra.cmd_data);i++)
+                            ra.cmd_data[i] = atoi(optionfile->GetPropertyValue(prop2, i));
+                    }
+                    as.robots_in_action.push_back(ra);
+                }
 
+                organism_actions.push_back(as);
         }
         else if(strcmp( typestr, "robot_in_action")==0)
         {
