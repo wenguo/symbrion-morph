@@ -64,7 +64,7 @@ MacroLocomotion
     hinge_motor_lifting_time 50 
     hinge_motor_lowing_time 30
     hinge_motor_speed 40
-    hinge_motor_angle 25
+    hinge_motor_angle 20
     hinge_motor_default_pos 75
     hinge_motor_enabled 0
 )
@@ -79,7 +79,7 @@ Global
 (
 	logtofile 0
 #refer to robot.hh for a full list of states
-	init_state 3 
+	init_state 26 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
