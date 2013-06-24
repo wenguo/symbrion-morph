@@ -1784,7 +1784,7 @@ void RobotAW::Debugging()
                 }
                 else if(timestamp <= 150)
                 {
-                    irobot->MoveHingeToAngle(para.hinge_motor_default_pos/10, para.hinge_motor_default_pos%10, 40);
+                    irobot->MoveHingeToAngle(para.hinge_motor_default_pos/10, para.hinge_motor_default_pos%10, 30);
                 }
                 /*
                 else if(timestamp == 160)

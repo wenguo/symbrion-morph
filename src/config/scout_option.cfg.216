@@ -51,10 +51,11 @@ Docking
 Locking
 (
     locking_motor_opening_time 35
-    locking_motor_closing_time 40
+    locking_motor_closing_time 35
     locking_motor_enabled [1 0 1 0]
     locking_motor_opening_offset [0 0 0 0]
-    locking_motor_nonreg [0 0 0 0]
+    locking_motor_nonreg [1 0 1 0]
+    locking_motor_isense_threshold 240
 )
 
 MacroLocomotion
@@ -71,7 +72,7 @@ MacroLocomotion
 Debugging
 (
     mode 31 
-    para [56 0 0 0 0 3 2 0 224 0]
+    para [56 0 0 0 0 3 2 0 211 0]
 )
 
 Global
@@ -99,7 +100,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     scout_wheels_direction [1 -1]
-    locomotion_motor_enabled 1                       
+    locomotion_motor_enabled 1
         
 )
 

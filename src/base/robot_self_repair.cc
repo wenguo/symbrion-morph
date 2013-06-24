@@ -328,6 +328,7 @@ void Robot::moveTowardsHeading( int h )
 {
     // TODO: check that sidespeed set correctly
 
+    direction = FORWARD;
     speed[0] = 0;
     speed[1] = 0;
     speed[2] = 0;
@@ -348,7 +349,7 @@ void Robot::moveTowardsHeading( int h )
     }
     else
     {
-        speed[2] = -10;
+        speed[2] = -20;
     }
 }
 
@@ -1269,33 +1270,40 @@ void Robot::Failed()
 
     failed_count++;
 
-    if(failed_count == 1)
+    if(failed_count <=10)
     {
-        //disconnect if there is any
-        master_IPC.Stop();
-        commander_IPC.Stop();
-
-        for(int i=0;i<NUM_DOCKS;i++)
+        if(failed_count == 1)
         {
-            if(docked[i]) //docked but not processed
-            {
-                disassembly_waiting_for_undock |= 1<<i;
-                //open motor if its locking motor is closed
-                if(unlocking_required[i])
-                {
-                    SetDockingMotor(i, OPEN);
-                }
-                else  
-                    msg_unlocked_expected |= 1<<i; //waiting for undocked message
+            //disconnect if there is any
+            master_IPC.Stop();
+            commander_IPC.Stop();
+        }
+        else if(failed_count==9) //delay a while
+        {
 
-                //no need to send unlock me request, just wait for unlocked
-                EnablePowerSharing(i, false);//this may be sent multiple times
+            for(int i=0;i<NUM_DOCKS;i++)
+            {
+                if(docked[i]) //docked but not processed
+                {
+                    disassembly_waiting_for_undock |= 1<<i;
+                    //open motor if its locking motor is closed
+                    if(unlocking_required[i])
+                    {
+                        SetDockingMotor(i, OPEN);
+                    }
+                    else  
+                        msg_unlocked_expected |= 1<<i; //waiting for undocked message
+
+                    //no need to send unlock me request, just wait for unlocked
+                    EnablePowerSharing(i, false);//this may be sent multiple times
+
+                }
+                else
+                    disassembly_waiting_for_undock &= ~(1<<i);
 
             }
-            else
-                disassembly_waiting_for_undock &= ~(1<<i);
-
         }
+        return;
     }
 
     //waiting for undock

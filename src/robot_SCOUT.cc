@@ -1784,9 +1784,14 @@ void RobotSCOUT::Debugging()
                 else if(timestamp == 30)
                 {
                     ((ScoutBot*)irobot)->OpenDocking(ScoutBot::Side(para.debug.para[9]));
-                    //SetDockingMotor(para.debug.para[9], OPEN);
                     printf("open docking unit %d\n", para.debug.para[9]);
                 }
+                else if(timestamp ==70 || (timestamp > 40 &&locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
+                {
+                    ((ScoutBot*)irobot)->MoveDocking(ScoutBot::Side(para.debug.para[9]), 0);
+                    printf("stop docking unit %d\n", para.debug.para[9]);
+                }
+
                 uint8_t rev = ((ScoutBot*)irobot)->GetDScrewRevolutions(ScoutBot::Side(para.debug.para[9]));
                 uint8_t ise = ((ScoutBot*)irobot)->GetDScrewISense(ScoutBot::Side(para.debug.para[9]));
                 printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
@@ -1802,8 +1807,12 @@ void RobotSCOUT::Debugging()
                 else if(timestamp == 30)
                 {
                     ((ScoutBot*)irobot)->CloseDocking(ScoutBot::Side(para.debug.para[9]));
-                    //SetDockingMotor(para.debug.para[9], CLOSE);
                     printf("close docking unit %d\n", para.debug.para[9]);
+                }
+                else if(timestamp ==70 || (timestamp > 40 &&locking_motor_isense_hist.Sum(para.debug.para[9]) >=2 ))
+                {
+                    ((ScoutBot*)irobot)->MoveDocking(ScoutBot::Side(para.debug.para[9]), 0);
+                    printf("stop docking unit %d\n", para.debug.para[9]);
                 }
                 uint8_t rev = ((ScoutBot*)irobot)->GetDScrewRevolutions(ScoutBot::Side(para.debug.para[9]));
                 uint8_t ise = ((ScoutBot*)irobot)->GetDScrewISense(ScoutBot::Side(para.debug.para[9]));
@@ -1811,19 +1820,25 @@ void RobotSCOUT::Debugging()
             }
             break;
         case 25:
-            if(timestamp == 2)
             {
-                OrganismSequence::Symbol sym;
-                sym.reBuild("SFAB");
-                docked[0] = sym.data;
-                sym.reBuild("SBAF");
-                docked[2] = sym.data;
-                neighbours_IP[0]=StringToIP("192.168.2.56");
-                neighbours_IP[1]=StringToIP("0.0.0.0");
-                neighbours_IP[2]=StringToIP("192.168.2.52");
-                neighbours_IP[3]=StringToIP("0.0.0.0");
+                if(timestamp ==2)
+                {
+                    irobot->enableDockingSense(para.debug.para[9], true);
+                    SetDockingMotor(ScoutBot::Side(para.debug.para[9]), CLOSE);
+                }
+                else if(timestamp == 100)
+                {
+                    irobot->enableDockingSense(para.debug.para[9], true);
+                    SetDockingMotor(ScoutBot::Side(para.debug.para[9]), OPEN);
+                }
+                
+                uint8_t rev = ((ScoutBot*)irobot)->GetDScrewRevolutions(ScoutBot::Side(para.debug.para[9]));
+                uint8_t ise = ((ScoutBot*)irobot)->GetDScrewISense(ScoutBot::Side(para.debug.para[9]));
+                printf("%d rev: %d\tisense:%d\n", timestamp, rev, ise );
+
             }
             break;
+
         case 26:
             if(timestamp ==2)
             {
