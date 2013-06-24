@@ -644,7 +644,13 @@ void Robot::Climbing()
                 current_action_sequence_index++;
                 as_ptr->counter = 0; //reset the counter
                 printf("%d the finished command is %s (%d)\n", timestamp, as_ptr->cmd_type == 0 ? "PUSH_DRAG":"LIFT_ONE", as_ptr->sequence_index);
-              //  memset(hinge_command, 0, sizeof(hinge_command));
+                if( as_ptr->cmd_type ==0)
+                    printf("%d the finished command is %s (%d)\n", timestamp, "PUSH_DRAG", as_ptr->sequence_index);
+                else if(as_ptr->cmd_type ==1)
+                    printf("%d the finished command is %s (%d)\n", timestamp, "LIFT_ONE", as_ptr->sequence_index);
+                else if(as_ptr->cmd_type ==2)
+                    printf("%d the finished command is %s (%d)\n", timestamp, "RESET_POSE", as_ptr->sequence_index);
+                //  memset(hinge_command, 0, sizeof(hinge_command));
               //  memset(locomotion_command, 0, sizeof(locomotion_command));
                 if((uint32_t)current_action_sequence_index < organism_actions.size())
                 {
@@ -666,7 +672,12 @@ void Robot::Climbing()
                         if(!flag)
                             front_aw_ip = 0;
                     }
-                    printf("%d next command is %s (%d)\n", timestamp, organism_actions[current_action_sequence_index].cmd_type == 0 ? "PUSH_DRAG":"LIFT_ONE", organism_actions[current_action_sequence_index].sequence_index);
+                    if(organism_actions[current_action_sequence_index].cmd_type ==0)
+                        printf("%d next command is %s (%d)\n", timestamp, "PUSH_DRAG", organism_actions[current_action_sequence_index].sequence_index);
+                    else if(organism_actions[current_action_sequence_index].cmd_type ==1)
+                        printf("%d next command is %s (%d)\n", timestamp, "LIFT_ONE", organism_actions[current_action_sequence_index].sequence_index);
+                    else if(organism_actions[current_action_sequence_index].cmd_type ==2)
+                        printf("%d next command is %s (%d)\n", timestamp, "RESET_POSE", organism_actions[current_action_sequence_index].sequence_index);
                 }
                 else
                     front_aw_ip = 0;
@@ -734,8 +745,15 @@ void Robot::Climbing()
 
                         IPCSendMessage(robot_ip, IPC_MSG_HINGE_3D_MOTION_REQ, (uint8_t*)motor_command, sizeof(motor_command));
                     }
-
+                    
                 }
+
+                //reset pose required? it is sent via the master to every robots
+                if(as_ptr->cmd_type == action_sequence::CMD_RESET_POSE)
+                {
+                    IPCSendMessage(IPC_MSG_RESET_POSE_REQ,NULL, 0);
+                }
+
             }
         }
         else

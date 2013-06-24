@@ -516,7 +516,7 @@ class Robot
                 int index;
                 int cmd_data[3];
             } robot_in_action_t;
-            enum cmd_type_t {CMD_PUSH_DRAG = 0, CMD_LIFT_ONE = 1};
+            enum cmd_type_t {CMD_PUSH_DRAG = 0, CMD_LIFT_ONE = 1, CMD_RESET_POSE = 2};
             int sequence_index;
             int cmd_type;
             uint32_t duration;
