@@ -1,0 +1,173 @@
+Index: IRobot.h
+===================================================================
+--- IRobot.h	(revision 5000)
++++ IRobot.h	(working copy)
+@@ -244,6 +244,7 @@
+     void MoveScrewRear(int8_t v);
+     void CloseDocking(KaBot::Side side);
+     void OpenDocking(KaBot::Side side);
++    void CalibrateDocking(KaBot::Side side);
+     // Use MoveDocking with caution!!
+     // It does not use the regulation on the motors, and is only useful
+     // if the sensors of the docking element are not working!!
+@@ -309,6 +310,7 @@
+     void Move(int8_t left, int8_t right);
+     void CloseDocking(ScoutBot::Side side);
+     void OpenDocking(ScoutBot::Side side);
++    void CalibrateDocking(ScoutBot::Side side);
+     // Use MoveDocking with caution!!
+     // It does not use the regulation on the motors, and is only useful
+     // if the sensors of the docking element are not working!!
+@@ -348,6 +350,9 @@
+ 
+     rgb_t GetRGB(ScoutBot::Side side);
+ 
++    uint8_t GetDScrewRevolutions(ScoutBot::Side side);
++    uint16_t GetDScrewISense(ScoutBot::Side side);
++
+ protected:
+     BoardFirmware* firmwares[4];
+     ScoutBot();
+Index: Makefile
+===================================================================
+--- Makefile	(revision 5000)
++++ Makefile	(working copy)
+@@ -29,8 +29,8 @@
+ # Default flags
+ # Anne: please, consider using -pedantic, because it is often not normal C, e.g. using b00000000 is a C extension
+ # and does not work with my compiler
+-CXXFLAGS = -O2 -g -Wall
+-CFLAGS = -O2 -g -Wall -std=gnu99
++CXXFLAGS = -O2 -Wall
++CFLAGS = -O2 -Wall -std=gnu99
+ 
+ # Define cross-compile target
+ TARGET=bfin-linux-uclibc-
+@@ -62,7 +62,7 @@
+ 	CFLAGS += -mcpu=bf561 
+ endif
+ 
+-COMPILE_LIB_AS=static
++COMPILE_LIB_AS=shared
+ 
+ ifeq ($(COMPILE_LIB_AS),shared)
+ LIB=libirobot.so
+@@ -81,9 +81,9 @@
+ IPATH = .
+ 
+ CXXFLAGS += $(patsubst %, -I%, $(IPATH))
+-LDFLAGS= -L./lib -lpthread -lirobot
++LDFLAGS= -L./lib -lpthread
+ ifeq ($(COMPILE_LIB_AS),shared)
+-LDFLAGS+=-shared
++LDFLAGS =-shared -Wl -lpthread
+ endif
+ 
+ ifeq ($(MULTI_CONTROLLER),true)
+@@ -114,24 +114,24 @@
+ 	mkdir bin
+ 
+ includes: include
+-	cp -u $(wildcard *.h) ./include
+-	cp -u $(wildcard comm/*.h) ./include/comm
++	cp  $(wildcard *.h) ./include
++	cp  $(wildcard comm/*.h) ./include/comm
+ ifeq ($(MULTI_CONTROLLER),true)
+ 	mkdir -p include/action
+-	cp -u $(wildcard action/*.h) ./include/action
++	cp  $(wildcard action/*.h) ./include/action
+ endif
+ 
+ lib/$(LIB): $(OBJECTS)
+ ifeq ($(COMPILE_LIB_AS),shared)
+ #	$(GCC) rcu $@ $^
+-	$(CXX) $(LDFLAGS) $^
++	$(CXX) -o $@ $^ $(LDFLAGS)
+ else
+ 	$(AR) rcu $@ $^
+ endif
+ 	$(OBJDUMP) -hS $@ > objects/$(LIB).lst
+ 
+ bin/$(TESTAPP): $(APPOBJECTS)
+-	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
++	$(CXX) $(CXXFLAGS) $^ -o $@ -L./lib -lirobot 
+ 	$(OBJDUMP) -hS $@ > objects/$(TESTAPP).lst
+ 	$(SIZE) -B $@
+ 
+Index: IRobot.cpp
+===================================================================
+--- IRobot.cpp	(revision 5000)
++++ IRobot.cpp	(working copy)
+@@ -728,7 +728,7 @@
+ 
+ void ActiveWheel::SetIRRX(ActiveWheel::Side side, bool topRX)
+ {
+-    RobotBase::SetIRRX(side, topRX);
++    RobotBase::SetIRRX(side, !topRX);
+ }
+ 
+ void ActiveWheel::GetIRMessage(ActiveWheel::Side side, uint8_t *buffer, uint8_t buffer_size)
+@@ -750,9 +750,9 @@
+ bool ActiveWheel::isEthernetPortConnected(ActiveWheel::Side side) {
+     switch (side) {
+     case RIGHT:
++        return RobotBase::getStatusOfSwitchPort(2);
++    case LEFT:
+         return RobotBase::getStatusOfSwitchPort(1);
+-    case LEFT:
+-        return RobotBase::getStatusOfSwitchPort(2);
+     default:
+         return false;
+     }
+@@ -893,6 +893,12 @@
+     SendCommand(side, CMD_DOCKING, -1);
+ }
+ 
++void KaBot::CalibrateDocking(KaBot::Side side)
++{
++    SendCommand(side, CMD_DOCKING_CALIBRATE, 0);
++}
++
++
+ void KaBot::MoveDocking(KaBot::Side side, int8_t v)
+ {
+ #if MULTI_CONTROLLER==true
+@@ -1040,7 +1046,7 @@
+     for (int i = 0; i < 4; i++)
+     {
+         firmwares[i] = new BoardFirmware();
+-        firmwares[i]->type = ACTIVEWHEEL;
++        firmwares[i]->type = SCOUTBOT;
+         firmwares[i]->version_major = 1;
+         firmwares[i]->version_minor = 0;
+         firmwares[i]->version_revision = 0;
+@@ -1118,6 +1124,11 @@
+     SendCommand(side, CMD_DOCKING, -1);
+ }
+ 
++void ScoutBot::CalibrateDocking(ScoutBot::Side side)
++{
++    SendCommand(side, CMD_DOCKING_CALIBRATE, 0);
++}
++
+ void ScoutBot::MoveDocking(ScoutBot::Side side, int8_t v)
+ {
+     SendCommand(side, CMD_DOCKING_NOTREG, v);
+@@ -1244,3 +1255,17 @@
+ {
+     return RobotBase::GetRGB(side);
+ }
++
++uint8_t ScoutBot::GetDScrewRevolutions(ScoutBot::Side side)
++{
++    uint8_t result;
++    Memmo::Get(side, DATA_DSCREW_REVOLUTION, &result, sizeof(uint8_t));
++    return result;
++}
++
++uint16_t ScoutBot::GetDScrewISense(ScoutBot::Side side)
++{
++    uint16_t result;
++    Memmo::Get(side, DATA_DSCREW_ISENSE, &result, sizeof(uint16_t));
++    return result;
++}

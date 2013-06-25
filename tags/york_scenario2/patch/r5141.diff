@@ -1,0 +1,79 @@
+Index: IRobot.cpp
+===================================================================
+--- IRobot.cpp	(revision 5143)
++++ IRobot.cpp	(working copy)
+@@ -180,7 +180,7 @@
+ 
+     Ethernet::Initialize();
+     EthSwitch::Initialize();
+-    UbisenseClient::init();
++ //   UbisenseClient::init();
+ #endif
+ 
+     printf("Symbricator robot interface %s initialized\n\n", VERSIONSTRING);
+Index: Makefile
+===================================================================
+--- Makefile	(revision 5143)
++++ Makefile	(working copy)
+@@ -29,8 +29,8 @@
+ # Default flags
+ # Anne: please, consider using -pedantic, because it is often not normal C, e.g. using b00000000 is a C extension
+ # and does not work with my compiler
+-CXXFLAGS = -O2 -g -Wall
+-CFLAGS = -O2 -g -Wall -std=gnu99
++CXXFLAGS = -O2 -Wall
++CFLAGS = -O2 -Wall -std=gnu99
+ 
+ # Define cross-compile target
+ TARGET=bfin-linux-uclibc-
+@@ -62,7 +62,7 @@
+ 	CFLAGS += -mcpu=bf561 
+ endif
+ 
+-COMPILE_LIB_AS=static
++COMPILE_LIB_AS=shared
+ 
+ ifeq ($(COMPILE_LIB_AS),shared)
+ LIB=libirobot.so
+@@ -81,9 +81,9 @@
+ IPATH = .
+ 
+ CXXFLAGS += $(patsubst %, -I%, $(IPATH))
+-LDFLAGS= -L./lib -lpthread -lirobot
++LDFLAGS= -L./lib -lpthread
+ ifeq ($(COMPILE_LIB_AS),shared)
+-LDFLAGS+=-shared
++LDFLAGS =-shared -Wl -lpthread
+ endif
+ 
+ ifeq ($(MULTI_CONTROLLER),true)
+@@ -114,24 +114,24 @@
+ 	mkdir bin
+ 
+ includes: include
+-	cp -u $(wildcard *.h) ./include
+-	cp -u $(wildcard comm/*.h) ./include/comm
++	cp  $(wildcard *.h) ./include
++	cp  $(wildcard comm/*.h) ./include/comm
+ ifeq ($(MULTI_CONTROLLER),true)
+ 	mkdir -p include/action
+-	cp -u $(wildcard action/*.h) ./include/action
++	cp  $(wildcard action/*.h) ./include/action
+ endif
+ 
+ lib/$(LIB): $(OBJECTS)
+ ifeq ($(COMPILE_LIB_AS),shared)
+ #	$(GCC) rcu $@ $^
+-	$(CXX) $(LDFLAGS) $^
++	$(CXX) -o $@ $^ $(LDFLAGS)
+ else
+ 	$(AR) rcu $@ $^
+ endif
+ 	$(OBJDUMP) -hS $@ > objects/$(LIB).lst
+ 
+ bin/$(TESTAPP): $(APPOBJECTS)
+-	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
++	$(CXX) $(CXXFLAGS) $^ -o $@ -L./lib -lirobot 
+ 	$(OBJDUMP) -hS $@ > objects/$(TESTAPP).lst
+ 	$(SIZE) -B $@
+ 

@@ -1,0 +1,94 @@
+Index: InterfaceTypes.h
+===================================================================
+--- InterfaceTypes.h	(revision 5144)
++++ InterfaceTypes.h	(working copy)
+@@ -14,6 +14,8 @@
+ #ifndef INTERFACETYPES_H_
+ #define INTERFACETYPES_H_
+ 
++#define ACTIVE_WHEEL 1
++
+ #include <stdint.h>
+ 
+ /* ALWAYS use format
+Index: IRobot.cpp
+===================================================================
+--- IRobot.cpp	(revision 5144)
++++ IRobot.cpp	(working copy)
+@@ -180,7 +180,7 @@
+ 
+     Ethernet::Initialize();
+     EthSwitch::Initialize();
+-    UbisenseClient::init();
++ //   UbisenseClient::init();
+ #endif
+ 
+     printf("Symbricator robot interface %s initialized\n\n", VERSIONSTRING);
+Index: Makefile
+===================================================================
+--- Makefile	(revision 5144)
++++ Makefile	(working copy)
+@@ -25,8 +25,8 @@
+ # Default flags
+ # Anne: please, consider using -pedantic, because it is often not normal C, e.g. using b00000000 is a C extension
+ # and does not work with my compiler
+-CXXFLAGS = -O2 -g -Wall
+-CFLAGS = -O2 -g -Wall -std=gnu99
++CXXFLAGS = -O2 -Wall
++CFLAGS = -O2 -Wall -std=gnu99
+ 
+ # Define cross-compile target
+ TARGET=bfin-linux-uclibc-
+@@ -52,7 +52,7 @@
+ 	CFLAGS += -mcpu=bf561 
+ endif
+ 
+-COMPILE_LIB_AS=static
++COMPILE_LIB_AS=shared
+ 
+ ifeq ($(COMPILE_LIB_AS),shared)
+ LIB=libirobot.so
+@@ -68,9 +68,10 @@
+ IPATH = .
+ 
+ CXXFLAGS += $(patsubst %, -I%, $(IPATH))
+-LDFLAGS= -L./lib -lpthread -lirobot
+ ifeq ($(COMPILE_LIB_AS),shared)
+-LDFLAGS+=-shared
++LDFLAGS =-shared -Wl -lpthread
++else
++LDFLAGS= -L./lib -lpthread
+ endif
+ 
+ TOBJECTS = $(SRC:%.cpp=objects/%.o)
+@@ -100,14 +101,18 @@
+ lib/$(LIB): $(OBJECTS)
+ ifeq ($(COMPILE_LIB_AS),shared)
+ #	$(GCC) rcu $@ $^
+-	$(CXX) $(LDFLAGS) $^
++	$(CXX) -o $@ $^ $(LDFLAGS)
+ else
+ 	$(AR) rcu $@ $^
+ endif
+ 	$(OBJDUMP) -hS $@ > objects/$(LIB).lst
+ 
+ bin/$(TESTAPP): $(APPOBJECTS)
+-	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
++ifeq ($(COMPILE_LIB_AS),shared)
++	$(CXX) $(CXXFLAGS) $^ -o $@ -L./lib -lirobot 
++else
++	$(CXX) $(CXXFLAGS) $^ -o $@ 
++endif
+ 	$(OBJDUMP) -hS $@ > objects/$(TESTAPP).lst
+ 	$(SIZE) -B $@
+ 
+@@ -121,9 +126,6 @@
+ 	@$(STRIP) bin/$(TESTAPP)
+ 
+ clean_install:
+-ifeq ($(MULTI_CONTROLLER),true)
+-	rm -f $(ROOTPATH)/include/action/*.h
+-endif
+ 	rm -f $(ROOTPATH)/include/comm/*.h
+ 	@rm -f $(ROOTPATH)/include/*.h
+ 

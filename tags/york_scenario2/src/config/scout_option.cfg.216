@@ -1,0 +1,118 @@
+Seeding
+(
+)
+Foraging
+(
+    foraging_time 80
+    waiting_time 20
+    assembly_time 1200
+    beacon_threshold [3 3 3 3 3 3 3 3]
+)
+LocateBeacon
+(
+   weight_left [-1 1 1 2 1 -1 -2 -1]
+   weight_right [1 -1 -1 -2 -1 1 2 1]
+   forward_speed [35 35 0]
+   locatebeacon_time 200
+)
+
+Alignment
+(
+   weight_left [-2 2 4 5 2 -2 -4 -5]
+   weight_right [2 -2 -4 -5 -2 2 4 5]
+   forward_speed [35 35 0]
+   reverse_speed [-35 -35 0]
+   reverse_time 30
+)
+Avoidance
+(
+   weight_left [3 -3 -1 -1 -3 3 1 1]
+   weight_right [-3 3 1 1 3 -3 -1 -1]
+   weight_side [0 0 -1 -1 0 0 1 1]
+   threshold [200 200 200 200 200 200 200 200]
+)
+
+Recruitment
+(
+    recruiting_beacon_signals_time 500
+    recruiting_guiding_signals_time 200
+)
+
+Docking
+(
+    docking_trials 15 
+    docking_time 200
+    turn_right_speed [0 0 0]
+    turn_left_speed [0 0 0]
+    forward_speed [30 30 0]
+    backward_speed [0 0 0]
+)
+
+Locking
+(
+    locking_motor_opening_time 35
+    locking_motor_closing_time 35
+    locking_motor_enabled [1 0 1 0]
+    locking_motor_opening_offset [0 0 0 0]
+    locking_motor_nonreg [1 0 1 0]
+    locking_motor_isense_threshold 240
+)
+
+MacroLocomotion
+(
+    hinge_motor_lifting_time 50 
+    hinge_motor_lowing_time 30
+    hinge_motor_speed 40
+    hinge_motor_angle 25
+    hinge_motor_default_pos 75
+    hinge_motor_enabled 0
+)
+
+
+Debugging
+(
+    mode 31 
+    para [56 0 0 0 0 3 2 0 211 0]
+)
+
+Global
+(
+	logtofile 0
+#refer to robot.hh for a full list of states
+	init_state 4 
+	print_proximity 0
+        print_beacon 0
+        print_reflective 0
+        print_ambient 0
+        print_status 1
+    	ir_msg_repeated_delay 20
+    	ir_msg_repeated_num 10
+	ir_msg_ack_delay 3
+        reflective_calibrated [1233 142 146 867 738 1196 976 1127]
+        ambient_calibrated [3232 3429 3037 3148 3334 3382 3333 3250]
+	#fail_in_state 20
+        #fail_after_delay 50
+
+)
+
+Motor
+(
+    speed_forward 30
+    speed_sideward 2
+    scout_wheels_direction [1 -1]
+    locomotion_motor_enabled 1
+        
+)
+
+ShapeInfo
+(
+    seq ""
+)
+
+ShapeInfo
+(
+    seq "ABSBSFABAFSFSBAF0000000000000000"
+)
+
+
+
