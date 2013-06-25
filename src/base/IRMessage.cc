@@ -21,5 +21,26 @@ IRMessage::~IRMessage()
 {
     //    printf("Deconstruct IRMessage\n");
 }
+std::ostream& operator<<(std::ostream& os, const IRMessage& msg)
+{
+    os <<"Type: "<< (int)msg.type <<std::endl;;
+    os <<"channel: "<< (int)msg.channel <<std::endl;;
+    os <<"data: ";
+    for(int i=0;i<msg.data_len;i++)
+        os <<(int)msg.data[i]<<" ";
+    os<<std::endl;
 
+    return os;
+}
 
+std::ostream& operator<<(std::ostream& os, const EthMessage& msg)
+{
+    os <<"Type: "<< (int)msg.type <<std::endl;;
+    os <<"channel: "<< (int)msg.channel <<std::endl;;
+    os <<"data: ";
+    for(int i=0;i<msg.data_len;i++)
+        os <<(int)msg.data[i]<<" ";
+    os<<std::endl;
+
+    return os;
+}

@@ -1,5 +1,5 @@
 
-SRC = main.cc hist.cc
+SRC = main.cc
 
 # Change this to your path to the irobot directory
 IROBOTPATH = ../irobot
@@ -7,29 +7,25 @@ IROBOTPATH = ../irobot
 # Change this to whatever name you like
 EXE = main
 
-CXXFLAGS =	-O2  -Wall -mcpu=bf561
-CFLAGS = -O2  -Wall -mcpu=bf561 -std=gnu99
+#CXXFLAGS =	-O2  -Wall -mcpu=bf561
+#CFLAGS = -O2  -Wall -mcpu=bf561 -std=gnu99
 
-CC = bfin-linux-uclibc-gcc
-CXX = bfin-linux-uclibc-g++ 
-AR = bfin-linux-uclibc-ar
-OBJDUMP = bfin-linux-uclibc-objdump
-STRIP = bfin-linux-uclibc-strip
+#CC = bfin-linux-uclibc-gcc
+#CXX = bfin-linux-uclibc-g++ 
+#AR = bfin-linux-uclibc-ar
+#OBJDUMP = bfin-linux-uclibc-objdump
+#STRIP = bfin-linux-uclibc-strip
 
 IPATH = .
-IPATH += $(IROBOTPATH)/include
-IPATH += ../src/base/utils
-
-VPATH = .
-VPATH += ../src/base/utils
+#IPATH += $(IROBOTPATH)/include
 
 CXXFLAGS += $(patsubst %, -I%, $(IPATH))
-LDFLAGS = -L$(IROBOTPATH)/lib -lpthread -lirobot
+#LDFLAGS = -L$(IROBOTPATH)/lib -lpthread -lirobot
 
 TOBJECTS = $(SRC:%.cc=objects/%.o)
 OBJECTS = $(TOBJECTS:%.c=objects/%.o)
 
-all: objects bin bin/$(EXE) strip
+all: objects bin bin/$(EXE)
 
 objects:
 	mkdir objects
@@ -49,8 +45,5 @@ objects/%.o: %.c
 objdump:
 	$(OBJDUMP) -hS bin/$(EXE) > objects/$(EXE).lst
 
-strip:
-	$(STRIP) bin/$(EXE)
-	
 clean:
 	rm -rf bin/$(EXE) $(OBJECTS) objects bin

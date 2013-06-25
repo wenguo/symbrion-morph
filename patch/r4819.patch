@@ -1,3 +1,110 @@
+Index: IRobot.cpp
+===================================================================
+--- IRobot.cpp	(revision 4819)
++++ IRobot.cpp	(working copy)
+@@ -749,7 +749,7 @@
+ 
+ void ActiveWheel::SetIRRX(ActiveWheel::Side side, bool topRX)
+ {
+-    RobotBase::SetIRRX(side, topRX);
++    RobotBase::SetIRRX(side, !topRX);
+ }
+ 
+ void ActiveWheel::GetIRMessage(ActiveWheel::Side side, uint8_t *buffer, uint8_t buffer_size)
+@@ -771,9 +771,9 @@
+ bool ActiveWheel::isEthernetPortConnected(ActiveWheel::Side side) {
+     switch (side) {
+     case RIGHT:
++        return RobotBase::getStatusOfSwitchPort(2);
++    case LEFT:
+         return RobotBase::getStatusOfSwitchPort(1);
+-    case LEFT:
+-        return RobotBase::getStatusOfSwitchPort(2);
+     default:
+         return false;
+     }
+@@ -913,6 +913,12 @@
+     SendCommand(side, CMD_DOCKING, -1);
+ }
+ 
++void KaBot::CalibrateDocking(KaBot::Side side)
++{
++    SendCommand(side, CMD_DOCKING_CALIBRATE, 0);
++}
++
++
+ void KaBot::MoveDocking(KaBot::Side side, int8_t v)
+ {
+ #if MULTI_CONTROLLER==true
+@@ -1060,7 +1066,7 @@
+     for (int i = 0; i < 4; i++)
+     {
+         firmwares[i] = new BoardFirmware();
+-        firmwares[i]->type = ACTIVEWHEEL;
++        firmwares[i]->type = SCOUTBOT;
+         firmwares[i]->version_major = 1;
+         firmwares[i]->version_minor = 0;
+         firmwares[i]->version_revision = 0;
+@@ -1138,6 +1144,11 @@
+     SendCommand(side, CMD_DOCKING, -1);
+ }
+ 
++void ScoutBot::CalibrateDocking(ScoutBot::Side side)
++{
++    SendCommand(side, CMD_DOCKING_CALIBRATE, 0);
++}
++
+ void ScoutBot::MoveDocking(ScoutBot::Side side, int8_t v)
+ {
+     SendCommand(side, CMD_DOCKING_NOTREG, v);
+@@ -1269,3 +1280,17 @@
+ {
+     return RobotBase::GetRGB(side);
+ }
++
++uint8_t ScoutBot::GetDScrewRevolutions(ScoutBot::Side side)
++{
++    uint8_t result;
++    Memmo::Get(side, DATA_DSCREW_REVOLUTION, &result, sizeof(uint8_t));
++    return result;
++}
++
++uint16_t ScoutBot::GetDScrewISense(ScoutBot::Side side)
++{
++    uint16_t result;
++    Memmo::Get(side, DATA_DSCREW_ISENSE, &result, sizeof(uint16_t));
++    return result;
++}
+Index: IRobot.h
+===================================================================
+--- IRobot.h	(revision 4819)
++++ IRobot.h	(working copy)
+@@ -236,6 +236,7 @@
+     void MoveScrewRear(int8_t v);
+     void CloseDocking(KaBot::Side side);
+     void OpenDocking(KaBot::Side side);
++    void CalibrateDocking(KaBot::Side side);
+     // Use MoveDocking with caution!!
+     // It does not use the regulation on the motors, and is only useful
+     // if the sensors of the docking element are not working!!
+@@ -302,6 +303,7 @@
+     void Move(int8_t left, int8_t right);
+     void CloseDocking(ScoutBot::Side side);
+     void OpenDocking(ScoutBot::Side side);
++    void CalibrateDocking(ScoutBot::Side side);
+     // Use MoveDocking with caution!!
+     // It does not use the regulation on the motors, and is only useful
+     // if the sensors of the docking element are not working!!
+@@ -341,6 +343,9 @@
+ 
+     rgb_t GetRGB(ScoutBot::Side side);
+ 
++    uint8_t GetDScrewRevolutions(ScoutBot::Side side);
++    uint16_t GetDScrewISense(ScoutBot::Side side);
++
+ protected:
+     BoardFirmware* firmwares[4];
+     ScoutBot();
 Index: Makefile
 ===================================================================
 --- Makefile	(revision 4819)
@@ -34,7 +141,20 @@ Index: Makefile
  endif
  
  ifeq ($(MULTI_CONTROLLER),true)
-@@ -123,14 +123,14 @@
+@@ -113,24 +113,24 @@
+ 	mkdir bin
+ 
+ includes: include
+-	cp -u $(wildcard *.h) ./include
+-	cp -u $(wildcard comm/*.h) ./include/comm
++	cp  $(wildcard *.h) ./include
++	cp  $(wildcard comm/*.h) ./include/comm
+ ifeq ($(MULTI_CONTROLLER),true)
+ 	mkdir -p include/action
+-	cp -u $(wildcard action/*.h) ./include/action
++	cp  $(wildcard action/*.h) ./include/action
+ endif
+ 
  lib/$(LIB): $(OBJECTS)
  ifeq ($(COMPILE_LIB_AS),shared)
  #	$(GCC) rcu $@ $^
@@ -51,31 +171,6 @@ Index: Makefile
  	$(OBJDUMP) -hS $@ > objects/$(TESTAPP).lst
  	$(SIZE) -B $@
  
-Index: IRobot.cpp
-===================================================================
---- IRobot.cpp	(revision 4819)
-+++ IRobot.cpp	(working copy)
-@@ -771,9 +771,9 @@
- bool ActiveWheel::isEthernetPortConnected(ActiveWheel::Side side) {
-     switch (side) {
-     case RIGHT:
-+        return RobotBase::getStatusOfSwitchPort(2);
-+    case LEFT:
-         return RobotBase::getStatusOfSwitchPort(1);
--    case LEFT:
--        return RobotBase::getStatusOfSwitchPort(2);
-     default:
-         return false;
-     }
-@@ -1060,7 +1060,7 @@
-     for (int i = 0; i < 4; i++)
-     {
-         firmwares[i] = new BoardFirmware();
--        firmwares[i]->type = ACTIVEWHEEL;
-+        firmwares[i]->type = SCOUTBOT;
-         firmwares[i]->version_major = 1;
-         firmwares[i]->version_minor = 0;
-         firmwares[i]->version_revision = 0;
 Index: comm/IRComm.cpp
 ===================================================================
 --- comm/IRComm.cpp	(revision 4819)
