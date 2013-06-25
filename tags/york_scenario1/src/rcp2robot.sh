@@ -5,7 +5,7 @@ if [ $# -ne 2 ] ; then
 	exit 1
 fi
 
-SRC_DIR=/home/wliu/workspace/symbrion-morph/branches/self_repair/src 
+SRC_DIR=/home/wliu/workspace/symbrion-morph/tags/york_scenario1/src 
 
 FILES="${SRC_DIR}/bin/morph \
     ${SRC_DIR}/base/lib/libmorph_base.so \
