@@ -60,7 +60,7 @@ MacroLocomotion
     hinge_motor_lowing_time 30
     hinge_motor_speed 40
     hinge_motor_angle 18
-    hinge_motor_default_pos 75
+    hinge_motor_default_pos 80
     hinge_motor_enabled 1
 )
 

@@ -101,7 +101,9 @@ void RobotSCOUT::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint
 void RobotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
 {
     if(!para.locomotion_motor_enabled)
+    {
         return;
+    }
 
     //note that the leftspeed is in fact set to the right motor of scouts, rightspeed is on the left motor
     if(leftspeed > 100)
@@ -373,23 +375,25 @@ void RobotSCOUT::Avoidance()
         return;
 */
     //default
-    Robot::Avoidance();
-/*
-    speed[0] = 30;
-    speed[1] = 30;
-
-    uint32_t temp=0;
-
-    for(int i=0;i<NUM_IRS;i++)
+    if(current_state == UNDOCKING)
+        Robot::Avoidance();
+    else
     {
-        if(reflective_hist[i].Avg() > 0)
+        speed[0] = 30;
+        speed[1] = 30;
+
+        uint32_t temp=0;
+
+        for(int i=0;i<NUM_IRS;i++)
         {
-            temp =  reflective_hist[i].Avg();
-            speed[0] +=(para.avoid_weightleft[i] * (temp>>3));
-            speed[1] += (para.avoid_weightright[i] * (temp >> 3));
+            if(reflective_hist[i].Avg() > 0)
+            {
+                temp =  reflective_hist[i].Avg();
+                speed[0] +=(para.avoid_weightleft[i] * (temp>>3));
+                speed[1] += (para.avoid_weightright[i] * (temp >> 3));
+            }
         }
     }
-*/
 }
 
 void RobotSCOUT::Exploring()
@@ -549,6 +553,9 @@ void RobotSCOUT::Assembly()
     }
     else
         Avoidance();
+
+    speed[0]=0;
+    speed[1]=0;
 }
 
 void RobotSCOUT::LocateEnergy()
