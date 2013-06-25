@@ -1434,6 +1434,8 @@ void Robot::Disassembly()
 
             current_state = UNDOCKING;
             last_state = DISASSEMBLY;
+
+            para.print_reflective = true;
         }
     }
 
@@ -1452,7 +1454,7 @@ void Robot::Undocking()
             SetRGBLED(i, RED,RED,RED,RED);
     }
 
-    if( undocking_count > 30 )
+    if( undocking_count > 100 )
     {
         speed[0] = 0;
         speed[1] = 0;
@@ -1483,9 +1485,14 @@ void Robot::Undocking()
 
         for(int i=0; i<SIDE_COUNT; i++)
             SetIRLED(i,IRLEDOFF,LED0|LED1|LED2,IRPULSE0|IRPULSE1);
+
+        para.print_reflective = false;
     }
     else
-        Robot::Avoidance();
+        Avoidance();
+
+    printf("%d: speed %d %d %d direction: %d\n", timestamp, speed[0], speed[1], speed[2], direction);
+
 }
 
 void Robot::Avoidance()

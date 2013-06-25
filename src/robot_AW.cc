@@ -97,7 +97,9 @@ void RobotAW::SetRGBLED(int channel, uint8_t tl, uint8_t tr, uint8_t bl, uint8_t
 void RobotAW::SetSpeed(int left, int right, int side)
 {
     if(!para.locomotion_motor_enabled)
+    {
         return;
+    }
 
     if(left > 100)
         left = 100;
@@ -552,6 +554,11 @@ void RobotAW::Assembly()
     }
     else
         Avoidance();
+
+
+    speed[0]=0;
+    speed[1]=0;
+    speed[2]=0;
 }
 void RobotAW::LocateEnergy()//same as RobotKIT
 {
@@ -1778,11 +1785,11 @@ void RobotAW::Debugging()
             {
                 acceleration_t acc = irobot->GetAcceleration();
                 hingeData hd = irobot->GetHingeStatus();
-                if(timestamp <= 100 )
+                if(timestamp <= 50 )
                 {
                     irobot->MoveHingeToAngle(para.debug.para[9],40);
                 }
-                else if(timestamp <= 150)
+                else if(timestamp <= 100)
                 {
                     irobot->MoveHingeToAngle(para.hinge_motor_default_pos/10, para.hinge_motor_default_pos%10, 30);
                 }

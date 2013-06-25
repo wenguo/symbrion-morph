@@ -442,6 +442,8 @@ void RobotKIT::Foraging()
 
     }
 
+    speed[0]=0;
+    speed[1]=0;
 
 }
 void RobotKIT::Waiting()
