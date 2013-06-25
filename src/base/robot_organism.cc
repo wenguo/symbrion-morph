@@ -766,11 +766,11 @@ void Robot::Climbing()
     if(timestamp - timestamp_locomotion_motors_cmd_received > 3)
         memset(locomotion_command, 0, sizeof(locomotion_command));
 
+    static int index = 0;
+    index = (timestamp / 2) % 6;
     if(flash_leds)
     {
         //flashing RGB leds
-        static int index = 0;
-        index = (timestamp / 2) % 6;
         for(int i=0;i<NUM_DOCKS;i++)
         {
             switch (index)
@@ -794,6 +794,34 @@ void Robot::Climbing()
             }
         }
     }
+    else
+    {
+        //flashing RGB leds
+        for(int i=0;i<NUM_DOCKS;i++)
+        {
+            switch (index)
+            {
+                case 0:
+                    SetRGBLED(i, GREEN, GREEN, 0, 0);
+                    break;
+                case 1:
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                case 2:
+                    SetRGBLED(i, 0, 0, GREEN, GREEN);
+                    break;
+                case 3: //
+                case 4: // short delay to better symbolise raising
+                case 5: //
+                    SetRGBLED(i, 0, 0, 0, 0);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+    }
+
 }
 
 void Robot::Lowering()
