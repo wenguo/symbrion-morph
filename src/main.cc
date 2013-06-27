@@ -44,6 +44,19 @@ int main(int argc, char * argv[])
     printf("Robot Initialize\n");
     RobotBase::RobotType robot_type = RobotBase::Initialize("morph");
 
+    //check if board is running
+    for(int i=0;i<4;i++)
+    {
+        if(!RobotBase::IsBoardRunning(i))
+        {
+            printf("One of the board is not working, please checking!\n");
+            for(int j=0;j<4;j++)
+                RobotBase::Instance()->SetLED(j,RED,RED,RED,RED);
+            usleep(1000000);
+            return -1;
+        }
+    }
+
     printf("Init IRComm\n");
     IRComm::Initialize();
 
