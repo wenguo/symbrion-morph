@@ -110,6 +110,18 @@ int main(int argc, char** args) {
     return 0;
 }
 
+void seeding(uint8_t *seq, uint32_t size)
+{
+    uint8_t cmd_data[size + 1];
+    cmd_data[0] = size;
+    if(seq != NULL)
+    {
+        for(int i=0;i<size;i++)
+            cmd_data[i+1]=seq[i];
+    }
+    master_IPC.SendData(DAEMON_MSG_SEEDING, cmd_data, sizeof(cmd_data));
+}
+
 void recruiting(uint8_t recruiting_side, uint8_t required_robot_type, uint8_t required_robot_side)
 {
     uint8_t cmd_data[3];
