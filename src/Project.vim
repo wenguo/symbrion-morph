@@ -24,6 +24,7 @@ set imsearch=0
 set nomodeline
 set mouse=a
 set printoptions=paper:a4
+set report=10000
 set ruler
 set runtimepath=~/.vim,/var/lib/vim/addons,/usr/share/vim/vimfiles,/usr/share/vim/vim73,/usr/share/vim/vimfiles/after,/var/lib/vim/addons/after,~/.vim/after
 set shiftwidth=4
@@ -34,43 +35,47 @@ set window=45
 let s:so_save = &so | let s:siso_save = &siso | set so=0 siso=0
 let v:this_session=expand("<sfile>:p")
 silent only
+cd ~/workspace/symbrion-morph/branches/self_repair/src
 if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
   let s:wipebuf = bufnr('%')
 endif
 set shortmess=aoO
-badd +1 ./base/og/organism.cc
-badd +1 ./base/og/organism_sequence.cc
-badd +1 ./base/og/organism.hh
+badd +462 ./base/og/organism.cc
+badd +1484 ./base/og/organism_sequence.cc
+badd +23 ./base/og/organism.hh
 badd +1 ./base/og/organism_sample.cc
 badd +1 ./base/og/organism_sample.hh
-badd +237 ./base/robot.hh
+badd +227 ./base/robot.hh
 badd +1 ./base/utils/support.cc
 badd +1 ./base/utils/worldfile.cc
 badd +1 ./base/utils/worldfile.hh
 badd +1 ./base/utils/support.hh
 badd +1 ./base/utils/hist.cc
 badd +1 ./base/utils/hist.hh
-badd +122 ./base/robot.cc
-badd +1 ./base/parameter.cc
-badd +1 ./base/parameter.hh
-badd +82 ./base/global.hh
-badd +1 ./base/global.cc
-badd +45 ./base/robot_debug.cc
-badd +40 ./base/robot_option.cc
+badd +594 ./base/robot.cc
+badd +27 ./base/parameter.cc
+badd +48 ./base/parameter.hh
+badd +193 ./base/global.hh
+badd +83 ./base/global.cc
+badd +22 ./base/robot_debug.cc
+badd +173 ./base/robot_option.cc
 badd +22 ./robot_KIT.hh
 badd +23 ./robot_AW.hh
 badd +1 ./main.cc
-badd +9 ./robot_KIT.cc
-badd +227 ./robot_AW.cc
+badd +1799 ./robot_KIT.cc
+badd +2401 ./robot_AW.cc
 badd +12 base/IRMessage.hh
 badd +4 base/IRMessage.cc
 badd +15 base/Makefile
-badd +5 base/robot_ircomm.cc
-badd +1 base/robot_self_repair.cc
+badd +631 base/robot_ircomm.cc
+badd +255 base/robot_ethcomm.cc
+badd +459 base/robot_self_repair.cc
 badd +1 robot_SCOUT.hh
-badd +1 robot_SCOUT.cc
+badd +119 robot_SCOUT.cc
+badd +15 base/robot_IPC.cc
+badd +0 base/robot_organism.cc
 args \[BufExplorer]
-edit robot_SCOUT.cc
+edit base/robot_organism.cc
 set splitbelow splitright
 set nosplitbelow
 set nosplitright
@@ -179,7 +184,7 @@ setlocal nowinfixwidth
 setlocal wrap
 setlocal wrapmargin=0
 silent! normal! zE
-let s:l = 1 - ((0 * winheight(0) + 23) / 46)
+let s:l = 1 - ((0 * winheight(0) + 24) / 48)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt

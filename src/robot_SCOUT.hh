@@ -17,12 +17,14 @@ class RobotSCOUT:public Robot
         virtual void SetRGBLED(int channel, uint8_t tl=LED_BLUE, uint8_t tr=0, uint8_t bl=0, uint8_t br=0); 
         virtual bool SetDockingMotor(int channel, int status);
         virtual bool SetHingeMotor(int status);
-        virtual void SetSpeed(int8_t leftspeed, int8_t rightspeed, int8_t sidespeed);
+        virtual bool MoveHingeMotor(int command[4]);
+        virtual bool RotateDockingUnit(int channel, int8_t angle) {};
+        virtual void SetSpeed(int leftspeed, int rightspeed, int sidespeed);
         virtual void Reset();
+        virtual void EnablePowerSharing(int side, bool on);
 
-        virtual int in_docking_region(int x[4]);
-        virtual int in_locking_region(int x[4]);
-        
+        virtual int32_t get_aux_reflective(uint8_t i){return 0;}
+
         virtual void UpdateSensors();
         virtual void UpdateActuators();
         // for self-repair
@@ -30,7 +32,6 @@ class RobotSCOUT:public Robot
 
         virtual void Exploring();
         virtual void Resting();
-        virtual void Seeding();
         virtual void Foraging();
         virtual void Assembly();
         virtual void Waiting();
@@ -39,20 +40,19 @@ class RobotSCOUT:public Robot
         virtual void Alignment();
         virtual void Recover();
         virtual void Docking();
-        virtual void Locking();
-        virtual void InOrganism();
-        virtual void Disassembly();
         virtual void Undocking();
+        virtual void Locking();
         virtual void Recruitment();
-        virtual void Raising();
-        virtual void Lowering();
-        virtual void Reshaping();
-        virtual void MacroLocomotion();
         virtual void Debugging();
+        virtual void Avoidance();
 
         virtual void Log();
     private:
-        void Avoidance();
+        ScoutBot * irobot;
+
+        hallSensorScout encoders, last_encoders;
+        Hist stalled_hist;
+
         ScoutBot * irobot;
 
 };

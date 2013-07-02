@@ -18,8 +18,8 @@ VPATH = .
 # Change this to whatever name you like
 EXE = morph
 
-CXXFLAGS =-O2 -Wall -Wno-reorder  -mcpu=bf561 
-CFLAGS = -O2 -Wall -Wno-reorder -mcpu=bf561 -std=gnu99 
+CXXFLAGS =-O2 -Wall -Wno-reorder  -mcpu=bf561
+CFLAGS = -O2 -Wall -Wno-reorder -mcpu=bf561 -std=gnu99
 
 CXXFLAGS += $(patsubst %, -I%, $(IPATH))
 LDFLAGS = -L$(IROBOTPATH)/lib -L$(MORPHBASEPATH)/lib -lirobot -lpthread -lmorph_base
