@@ -45,6 +45,7 @@ int main(int argc, char** args) {
 	RobotBase::RobotType robot_type = RobotBase::Initialize("test");
 
 	IRComm::Initialize();
+        Ethernet::Initialize();
 	
 	// Capture a SIGTERM signal (i.e. MSP reset before quitting)
 	struct sigaction a;

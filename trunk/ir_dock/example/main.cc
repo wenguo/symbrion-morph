@@ -26,6 +26,7 @@ int main(int argc, char** args)
         return -1;
     }
 
+    SPIVerbose = DEBUGALL;
 
     //Initialise IRobot instance
     RobotBase::Initialize("IRDocking");

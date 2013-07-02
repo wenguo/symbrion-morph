@@ -25,7 +25,7 @@ bool Robot::Initialise(RobotBase *robot)
 
     instance->Reset();
 
-    SPIVerbose = QUIET;
+    SPIVerbose = DEBUGALL;
 
     return true;
 }
