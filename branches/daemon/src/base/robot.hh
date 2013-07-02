@@ -94,6 +94,8 @@ class Robot
     virtual void UpdateSensors()=0;
     virtual void UpdateActuators()=0;
     virtual void Reset()=0;
+    virtual void Pause(bool flag) = 0;
+    virtual bool isPaused() = 0;
     virtual void EnablePowerSharing(int side, bool on)=0;
     // for self-repair
     virtual void UpdateFailures()=0;
@@ -122,6 +124,7 @@ class Robot
     virtual void Climbing();
     virtual void Debugging()=0;
     virtual void Log()=0;
+    virtual void Daemon();
 
     virtual void Avoidance();
 
@@ -215,6 +218,7 @@ class Robot
     static void MacroLocomotion(Robot * robot){robot->MacroLocomotion();}
     static void Climbing(Robot * robot){robot->Climbing();}
     static void Debugging(Robot * robot){robot->Debugging();}
+    static void Daemon(Robot * robot){robot->Daemon();}
 
     // for self-repair
     static void Failed(Robot * robot){robot->Failed();}
@@ -562,6 +566,12 @@ class Robot
     uint8_t disassembly_waiting_for_undock;
 
     int demo_count;
+
+    //working as a daemon for  external access
+    IPC::IPC daemon_IPC; //for external controller request
+    bool daemon_mode;
+    uint8_t request_in_processing;
+    static void Process_Daemon_command(const LolMessage*msg, void* connection, void *user_ptr);
 };
 
 #endif

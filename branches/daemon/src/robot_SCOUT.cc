@@ -55,6 +55,16 @@ void RobotSCOUT::Reset()
     irobot->MSPReset();
 }
 
+void RobotSCOUT::Pause(bool flag)
+{
+    irobot->pauseSPI(flag);
+}
+
+bool RobotSCOUT::isPaused()
+{
+    return irobot->isSPIPaused();
+}
+
 void RobotSCOUT::EnablePowerSharing(int side, bool on)
 {
     irobot->EnablePowerSharing(ScoutBot::Side(board_dev_num[side]), on);
@@ -240,6 +250,9 @@ bool RobotSCOUT::MoveHingeMotor(int command[4])
 
 void RobotSCOUT::UpdateSensors()
 {
+    if(isPaused())
+        return;
+
     //sensor no
     //0 -- front right
     //1 -- front left
@@ -325,6 +338,9 @@ void RobotSCOUT::UpdateSensors()
 
 void RobotSCOUT::UpdateActuators()
 {
+    if(isPaused())
+        return;
+
     CheckDockingMotor();
     //CheckHingeMotor();
     SetSpeed(speed[0], speed[1],speed[2]); 

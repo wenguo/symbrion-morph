@@ -53,6 +53,16 @@ void RobotKIT::Reset()
     irobot->MSPReset();
 }
 
+void RobotKIT::Pause(bool flag)
+{
+    irobot->pauseSPI(flag);
+}
+
+bool RobotKIT::isPaused()
+{
+    return irobot->isSPIPaused();
+}
+
 void RobotKIT::EnablePowerSharing(int side, bool on)
 {
    // irobot->EnablePowerSharing(KaBot::Side(board_dev_num[side]), on);
@@ -252,6 +262,9 @@ bool RobotKIT::MoveHingeMotor(int command[4])
 
 void RobotKIT::UpdateSensors()
 {
+    if(isPaused())
+        return;
+
     //sensor no
     //0 -- front right
     //1 -- front left
@@ -325,6 +338,9 @@ void RobotKIT::UpdateSensors()
 
 void RobotKIT::UpdateActuators()
 {
+    if(isPaused())
+        return;
+
     CheckDockingMotor();
     //CheckHingeMotor();
     SetSpeed(speed[0], speed[1],speed[2]); 

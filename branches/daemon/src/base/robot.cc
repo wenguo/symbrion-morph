@@ -46,6 +46,7 @@ Robot::Robot()
     RegisterBehaviour(&Robot::MacroLocomotion, MACROLOCOMOTION);
     RegisterBehaviour(&Robot::Climbing, CLIMBING);
     RegisterBehaviour(&Robot::Debugging, DEBUGGING);
+    RegisterBehaviour(&Robot::Daemon, DAEMON);
     // for self-repair
     RegisterBehaviour(&Robot::Failed, FAILED);
     RegisterBehaviour(&Robot::Support, SUPPORT);
@@ -64,6 +65,8 @@ Robot::Robot()
     commander_IPC.Name("commander");
 
     demo_count = 0;
+    daemon_mode = false;
+    request_in_processing = 0;
 }
 
 // Reset variables used during assembly
