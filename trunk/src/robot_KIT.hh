@@ -49,6 +49,5 @@ class RobotKIT:public Robot
         virtual void Log();
     private:
         KaBot * irobot;
-        KaBot * irobot;
 };
 #endif
