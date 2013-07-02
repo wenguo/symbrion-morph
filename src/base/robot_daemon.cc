@@ -4,6 +4,7 @@ enum daemon_msg_type_t
 {
     DAEMON_MSG_UNKNOWN = 0,
     DAEMON_MSG_RECRUITING = 0X1,
+    DAEMON_MSG_SEEDING,
     DAEMON_MSG_DOCKING,
     DAEMON_MSG_NEIGHBOUR_IP_REQ,
     DAEMON_MSG_NEIGHBOUR_IP,
@@ -19,6 +20,7 @@ enum daemon_msg_type_t
 const char *daemon_message_names[DAEMON_MSG_COUNT] = {
     "Unknown",
     "Recruiting",
+    "Seeding", 
     "Docking",
     "Neighbour's IP REQ",
     "Neighbour's IP",
@@ -59,6 +61,33 @@ void Robot::Process_Daemon_command(const LolMessage*msg, void* connection, void 
 
     switch(msg->command)
     {       
+        case DAEMON_MSG_SEEDING:
+            //msg->data
+            //[0] -- size of sequence
+            //[1] - [x] data;
+            {
+                if(robot->request_inprocessing)
+                {
+                    uint8_t buf = 0;
+                    ipc->SendData(DAEMON_MSG_ACK, &buf, 1);
+                }
+                else
+                {
+                    //resume SPI communication
+                    robot->Pause(false);
+                    for(int i=0;i<NUM_DOCKS;i++)
+                    {
+                        robot->SetRGBLED(i, 0, 0, 0, 0);
+                    }
+
+                    robot->request_in_processing |= 1<<msg->data[0];
+                    robot->mytree.reBuild(msg->data + 1, msg->data[0]);
+
+                    robot->current_state = SEEDING;
+                    robot->last_state = DAEMON;
+                }
+            }
+            break;
         case DAEMON_MSG_RECRUITING:
             // msg->data
             // [0] -- recruiting side
