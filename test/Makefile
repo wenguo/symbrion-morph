@@ -1,5 +1,5 @@
 
-SRC = main.cc hist.cc
+SRC = main.cc ipc.cc
 
 # Change this to your path to the irobot directory
 IROBOTPATH = ../irobot
@@ -18,10 +18,10 @@ STRIP = bfin-linux-uclibc-strip
 
 IPATH = .
 IPATH += $(IROBOTPATH)/include
-IPATH += ../src/base/utils
+IPATH += $(IROBOTPATH)/tools/ipc/ipc
 
 VPATH = .
-VPATH += ../src/base/utils
+VPATH += $(IROBOTPATH)/tools/ipc/ipc
 
 CXXFLAGS += $(patsubst %, -I%, $(IPATH))
 LDFLAGS = -L$(IROBOTPATH)/lib -lpthread -lirobot

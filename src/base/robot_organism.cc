@@ -94,11 +94,19 @@ void Robot::InOrganism()
             }*/
 
 
+            if(daemon_mode)
+            {
+                current_state = DAEMON;
+                last_state = INORGANISM;
+            }
+            else
+            {
 
-            macrolocomotion_count = 0;
-            raising_count = 0;
-            current_state = RAISING;
-            last_state = INORGANISM;
+                macrolocomotion_count = 0;
+                raising_count = 0;
+                current_state = RAISING;
+                last_state = INORGANISM;
+            }
 
             printf("my IP is %s\n", IPToString(my_IP));
             for(int i=0;i<NUM_DOCKS;i++)
@@ -169,10 +177,22 @@ void Robot::InOrganism()
             for(int i=0;i<NUM_DOCKS;i++)
                 SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
 
-            macrolocomotion_count = 0;
-            raising_count = 0;
-            current_state = RAISING;
-            last_state = INORGANISM;
+
+            if(daemon_mode)
+            {
+                RemoveFromAllQueues(IR_MSG_TYPE_IP_ADDR);
+
+                current_state = DAEMON;
+                last_state = INORGANISM;
+
+            }
+            else
+            {
+                macrolocomotion_count = 0;
+                raising_count = 0;
+                current_state = RAISING;
+                last_state = INORGANISM;
+            }
 
             /*
             msg_lowering_received = false;
@@ -1549,15 +1569,18 @@ void Robot::Avoidance()
 
 void Robot::Seeding()
 {
-    mytree.Clear();
-
-    if(!para.og_seq_list.empty())
+    if(!daemon_mode)
     {
-        mytree = target = para.og_seq_list[0];
-        std::cout<<mytree<<std::endl;
+        mytree.Clear();
+
+        if(!para.og_seq_list.empty())
+        {
+            mytree = target = para.og_seq_list[0];
+            std::cout<<mytree<<std::endl;
+        }
+        else
+            printf("Warning: empty organism sequence info\n");
     }
-    else
-        printf("Warning: empty organism sequence info\n");
 
 
     for(int i=0;i<SIDE_COUNT;i++)

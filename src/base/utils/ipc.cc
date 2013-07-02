@@ -258,7 +258,8 @@ bool IPC::StartServer(int port)
         serv_addr.sin_port = htons(port);
         if(bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
         {
-            perror("Socket bind failed:");
+            perror("Server socket bind failed:");
+            printf("failed on port: %d");
             binded = false;
             Close(sockfd);
             usleep(1000000);
