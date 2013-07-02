@@ -61,12 +61,7 @@ class RobotAW:public Robot
         int32_t aux_reflective[8];   //proximity sensors, using 350us pulse
         int32_t aux_proximity[8];   //proximity sensors, using 64Hz signals
         int32_t aux_beacon[8];
-        ActiveWheel * irobot;
-        int32_t aux_ambient[8];
-        int32_t aux_reflective[8];   //proximity sensors, using 350us pulse
-        int32_t aux_proximity[8];   //proximity sensors, using 64Hz signals
-        int32_t aux_beacon[8];
-        bool free_move;
+
         Hist aux_reflective_hist[NUM_IRS];
         Hist aux_ambient_hist[NUM_IRS];
 
