@@ -53,7 +53,5 @@ class RobotSCOUT:public Robot
         hallSensorScout encoders, last_encoders;
         Hist stalled_hist;
 
-        ScoutBot * irobot;
-
 };
 #endif
