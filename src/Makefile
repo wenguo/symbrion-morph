@@ -5,6 +5,7 @@ CXX = bfin-linux-uclibc-g++
 AR = bfin-linux-uclibc-ar
 OBJDUMP = bfin-linux-uclibc-objdump
 STRIP = bfin-linux-uclibc-strip
+SIZE = bfin-linux-uclibc-size
 
 # Change this to your paths
 IROBOTPATH = ../irobot
@@ -45,6 +46,7 @@ bin/$(EXE): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 	$(STRIP) bin/$(EXE)
 	$(OBJDUMP) -hS $@ > objects/$(EXE).lst
+	$(SIZE) -B $@
 
 objects/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@
