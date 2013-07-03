@@ -66,7 +66,7 @@ void Robot::Process_Daemon_command(const LolMessage*msg, void* connection, void 
             //[0] -- size of sequence
             //[1] - [x] data;
             {
-                if(robot->request_inprocessing)
+                if(robot->request_in_processing)
                 {
                     uint8_t buf = 0;
                     ipc->SendData(DAEMON_MSG_ACK, &buf, 1);
