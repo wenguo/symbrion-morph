@@ -158,7 +158,11 @@ void update(int64_t timestamp)
     if(timestamp == 20)
     {
         //recruiting(2, 1, 0);
-        docking();
+        //docking();
+        uint8_t buf[2] = {25, 0}; //test organism "KBKF0000"
+        seeding(buf, 2);
+
+        RobotBase::pauseSPI(true);
     }
     else if(timestamp > 20 && timestamp %5 == 0 && !processing_done)
     {
@@ -169,6 +173,8 @@ void update(int64_t timestamp)
     {
         query_neighbours_IP(2);
         printf("robot's docked! %d\n", neighbours_IP[2].i32>>24 & 0xFF);
+
+        RobotBase::pauseSPI(false);
     }
 
     /*
