@@ -59,6 +59,8 @@ void Robot::Process_Daemon_command(const LolMessage*msg, void* connection, void 
 
     bool valid = true;
 
+    printf("%d: Daemon received [%s]\n", robot->timestamp, daemon_message_names[msg->command]);
+
     switch(msg->command)
     {       
         case DAEMON_MSG_SEEDING:
@@ -80,11 +82,25 @@ void Robot::Process_Daemon_command(const LolMessage*msg, void* connection, void 
                         robot->SetRGBLED(i, 0, 0, 0, 0);
                     }
 
-                    robot->request_in_processing |= 1<<msg->data[0];
-                    robot->mytree.reBuild(msg->data + 1, msg->data[0]);
+                    printf("%d: Daemon received seeding request with data (%d) [",msg->data[0]);
+                    for(int i=0;i<msg->data[0];i++)
+                        printf(" %d ", msg->data[i+1]);
+                    printf("\n");
 
-                    robot->current_state = SEEDING;
-                    robot->last_state = DAEMON;
+                    rt_status ret = robot->mytree.reBuild(msg->data + 1, msg->data[0]);
+
+
+                    if(ret.status != RT_OK)
+                    {
+                        printf("%d: Daemon failed to rebuild the shape from the data received\n",robot->timestamp);
+                    }
+                    else
+                    {
+                        std::cout<<"target shape is: "<<robot->mytree<<std::endl;
+                        robot->request_in_processing = 1;
+                        robot->current_state = SEEDING;
+                        robot->last_state = DAEMON;
+                    }
                 }
             }
             break;
@@ -108,7 +124,6 @@ void Robot::Process_Daemon_command(const LolMessage*msg, void* connection, void 
                         robot->SetRGBLED(i, 0, 0, 0, 0);
                     }
 
-                    robot->request_in_processing |= 1<<msg->data[0];
                     OrganismSequence::Symbol sym;
                     sym.type1 = robot->type;
                     sym.side1 = msg->data[0];
@@ -117,10 +132,20 @@ void Robot::Process_Daemon_command(const LolMessage*msg, void* connection, void 
                     uint8_t tree_data[2];
                     tree_data[0] = sym.data;
                     tree_data[1] = 0;
-                    robot->mytree.reBuild(tree_data, 2);
+                    rt_status ret = robot->mytree.reBuild(tree_data, 2);
 
-                    robot->current_state = SEEDING;
-                    robot->last_state = DAEMON;
+                    if(ret.status != RT_OK)
+                    {
+                        printf("%d: Daemon failed to rebuild the shape from the data received: %d %d %d\n",robot->timestamp, msg->data[0], msg->data[1], msg->data[2]);
+                        robot->mytree.Clear();
+                    }
+                    else
+                    {
+                        std::cout<<"target shape is: "<<robot->mytree<<std::endl;
+                        robot->request_in_processing |= 1<<msg->data[0];
+                        robot->current_state = SEEDING;
+                        robot->last_state = DAEMON;
+                    }
                 }
             }
             break;
@@ -180,6 +205,5 @@ void Robot::Process_Daemon_command(const LolMessage*msg, void* connection, void 
             break;
     }
 
-//    printf("%d: Daemon received [%s]\n", robot->timestamp, daemon_message_names[msg->command]);
 
 }
