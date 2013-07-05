@@ -55,6 +55,7 @@ void RobotAW::Reset()
 
 void RobotAW::Pause(bool flag)
 {
+    printf("%d %s SPI", timestamp, flag ? "pause":"resume");
     irobot->pauseSPI(flag);
 }
 

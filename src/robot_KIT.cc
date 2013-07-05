@@ -55,6 +55,7 @@ void RobotKIT::Reset()
 
 void RobotKIT::Pause(bool flag)
 {
+    printf("%d %s SPI", timestamp, flag ? "pause":"resume");
     irobot->pauseSPI(flag);
 }
 
@@ -123,17 +124,17 @@ void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
     if(speed2 < -100)
         speed2 = -100;
     
-    printf("Move motors at speed: (%d %d %d) direction: %d ", speed[0], speed[1], speed[2], direction);
+    //printf("Move motors at speed: (%d %d %d) direction: %d ", speed[0], speed[1], speed[2], direction);
 
     if(fabs(speed2) > 10)
     {
-        printf("1: real value: %d %d\n ",para.speed_sideward * speed2 * direction, -para.speed_sideward* speed2 * direction);
+   //     printf("1: real value: %d %d\n ",para.speed_sideward * speed2 * direction, -para.speed_sideward* speed2 * direction);
         irobot->MoveScrewFront(para.speed_sideward * speed2 * direction);
         irobot->MoveScrewRear(-para.speed_sideward* speed2 * direction);
     }
     else
     {
-        printf("2: real value: %d %d\n", speed0 * direction, speed1 * direction);
+   //     printf("2: real value: %d %d\n", speed0 * direction, speed1 * direction);
         irobot->MoveScrewFront(speed0 * direction);
         irobot->MoveScrewRear(speed1 * direction);
     }
@@ -549,6 +550,10 @@ void RobotKIT::Assembly()
     }
     else
         Avoidance();
+
+    speed[0]=0;
+    speed[1]=0;
+    speed[2]=0;
 }
 
 void RobotKIT::LocateEnergy()
@@ -648,6 +653,9 @@ void RobotKIT::LocateBeacon()
     else
     {
         Avoidance();
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
     }
 
     printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tid: %d %d\n", beacon[0], beacon[1], beacon[2], beacon[3], beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, id0, id1);
