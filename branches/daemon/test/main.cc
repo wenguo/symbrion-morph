@@ -146,6 +146,16 @@ void query_progress()
     master_IPC.SendData(DAEMON_MSG_PROGRESS_REQ, NULL, 0);
 }
 
+void query_seed_ip()
+{
+    master_IPC.SendData(DAEMON_MSG_SEED_IP_REQ, NULL, 0);
+}
+
+void query_allrobots_ip()
+{
+    master_IPC.SendData(DAEMON_MSG_ALLROBOTS_IP_REQ, NULL, 0);
+}
+
 void query_neighbours_IP(uint8_t side)
 {
     uint8_t cmd_data;
@@ -157,10 +167,10 @@ void update(int64_t timestamp)
 {
     if(timestamp == 20)
     {
-        //recruiting(2, 1, 0);
-        //docking();
-        uint8_t buf[2] = {25, 0}; //test organism "KBKF0000"
-        seeding(buf, 2);
+        //recruiting(0, 1, 0);
+       docking();
+        //uint8_t buf[2] = {25, 0}; //test organism "KBKF0000"
+        //seeding(buf, 2);
 
         RobotBase::pauseSPI(true);
     }
@@ -171,10 +181,16 @@ void update(int64_t timestamp)
 
     if(processing_done)
     {
-        query_neighbours_IP(2);
+        query_neighbours_IP(0);
         printf("robot's docked! %d\n", neighbours_IP[2].i32>>24 & 0xFF);
 
         RobotBase::pauseSPI(false);
+
+        if(timestamp % 10 ==0)
+            query_seed_ip();
+        else if(timestamp % 10 ==5)
+            query_allrobots_ip();
+            
     }
 
     /*
@@ -202,6 +218,33 @@ void process_message(const LolMessage*msg, void* connection, void *user_ptr)
     {
         case DAEMON_MSG_NEIGHBOUR_IP:
             memcpy(&(neighbours_IP[msg->data[0]].i32), msg->data + 1, 4);
+            break;
+        case DAEMON_MSG_ALLROBOTS_IP:
+            if(msg->data[0] == 0)
+                printf("%d: can not get all robot's IP as organism is not formed yet, or I am not a seed robot\n", currentTime);
+            else
+            {
+                uint32_t ip[msg->data[0]];
+                memcpy((uint8_t*)ip, (uint8_t*)(&msg->data[1]), msg->data[0] * sizeof(uint32_t));
+                for(int i=0; i< msg->data[0];i++)
+                    printf("%d: %d (%d.%d.%d.%d)\n", i, ip[i], 
+                            ip[i] & 0xFF, 
+                            (ip[i] >> 8) & 0xFF,
+                            (ip[i] >> 16) & 0xFF,
+                            (ip[i] >> 24) & 0xFF);
+            }
+            break;
+        case DAEMON_MSG_SEED_IP:
+            {
+                uint32_t ip;
+                memcpy((uint8_t*)&ip, (uint8_t*)(msg->data), sizeof(uint32_t));
+                printf("seed's IP: %d (%d.%d.%d.%d)\n", ip, 
+                            ip & 0xFF, 
+                            (ip >> 8) & 0xFF,
+                            (ip >> 16) & 0xFF,
+                            (ip >> 24) & 0xFF);
+
+            }
             break;
         case DAEMON_MSG_PROGRESS:
             processing_done = msg->data[0];

@@ -8,6 +8,10 @@ enum daemon_msg_type_t
     DAEMON_MSG_DOCKING,
     DAEMON_MSG_NEIGHBOUR_IP_REQ,
     DAEMON_MSG_NEIGHBOUR_IP,
+    DAEMON_MSG_SEED_IP_REQ,
+    DAEMON_MSG_SEED_IP,
+    DAEMON_MSG_ALLROBOTS_IP_REQ,
+    DAEMON_MSG_ALLROBOTS_IP,
     DAEMON_MSG_PROGRESS_REQ,
     DAEMON_MSG_PROGRESS,
     DAEMON_MSG_FORCE_QUIT,
@@ -24,6 +28,10 @@ const char *daemon_message_names[DAEMON_MSG_COUNT] = {
     "Docking",
     "Neighbour's IP REQ",
     "Neighbour's IP",
+    "Seed's IP REQ",
+    "Seed's IP",
+    "AllRobot's IP REQ",
+    "AllRobot's IP",
     "Progress REQ",
     "Progress",
     "Force Quit"
@@ -44,6 +52,7 @@ void Robot::Daemon()
     {
         //pause SPI 
         Pause(true);
+
     }
 }
 
@@ -82,7 +91,7 @@ void Robot::Process_Daemon_command(const LolMessage*msg, void* connection, void 
                         robot->SetRGBLED(i, 0, 0, 0, 0);
                     }
 
-                    printf("%d: Daemon received seeding request with data (%d) [",msg->data[0]);
+                    printf("%d: Daemon received seeding request with data (%d) [",robot->timestamp, msg->data[0]);
                     for(int i=0;i<msg->data[0];i++)
                         printf(" %d ", msg->data[i+1]);
                     printf("\n");
@@ -183,6 +192,34 @@ void Robot::Process_Daemon_command(const LolMessage*msg, void* connection, void 
                 ip_data[0] = msg->data[0];
                 memcpy(ip_data + 1, &(robot->neighbours_IP[msg->data[0]].i32), 4);
                 ipc->SendData(DAEMON_MSG_NEIGHBOUR_IP, (uint8_t*)&ip_data, sizeof(ip_data)); 
+            }
+            break;
+        case DAEMON_MSG_SEED_IP_REQ:
+            {
+                ipc->SendData(DAEMON_MSG_SEED_IP, (uint8_t*)&(robot->commander_IP.i32), sizeof(uint32_t)); 
+            }
+            break;
+        case DAEMON_MSG_ALLROBOTS_IP_REQ:
+            {
+                uint8_t buf[robot->robot_in_organism_index_sorted.size() * sizeof(uint32_t) + 1];
+                memset(buf, 0, sizeof(buf));
+
+                uint32_t ip_array[robot->robot_in_organism_index_sorted.size()];
+                
+                if(robot->seed && robot->organism_formed && robot->last_state == INORGANISM)
+                {
+                    buf[0] = robot->robot_in_organism_index_sorted.size(); //the size of all ips
+                    int index = 0;
+                    std::map<int,uint32_t>::iterator it = robot->robot_in_organism_index_sorted.begin();
+                    for(it = robot->robot_in_organism_index_sorted.begin(); it != robot->robot_in_organism_index_sorted.end(); it++)
+                    {
+                        ip_array[index++] = it->second;
+                    }
+                    memcpy(buf+1, (uint8_t*)ip_array, robot->robot_in_organism_index_sorted.size() * sizeof(uint32_t));
+
+                }
+
+                ipc->SendData(DAEMON_MSG_ALLROBOTS_IP, buf, sizeof(buf));
             }
             break;
         case DAEMON_MSG_PROGRESS_REQ:
