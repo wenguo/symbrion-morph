@@ -28,8 +28,12 @@ class Parameter
         bool locomotion_motor_enabled;
         int scout_wheels_direction[2];
         int locatebeacon_forward_speed[3];
+        int locatebeacon_turn_left_speed[3];
+        int locatebeacon_turn_right_speed[3];
         int aligning_forward_speed[3];
         int aligning_reverse_speed[3];
+        int aligning_turn_left_speed[3];
+        int aligning_turn_right_speed[3];
         int docking_turn_left_speed[3];
         int docking_turn_right_speed[3];
         int docking_forward_speed[3];

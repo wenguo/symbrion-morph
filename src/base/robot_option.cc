@@ -89,6 +89,18 @@ bool Robot::LoadParameters(const char * filename)
                 para.locatebeacon_forward_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
                 para.locatebeacon_forward_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
             }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "turn_right_speed" ) )
+            {
+                para.locatebeacon_turn_right_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.locatebeacon_turn_right_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.locatebeacon_turn_right_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "turn_left_speed" ) )
+            {
+                para.locatebeacon_turn_left_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.locatebeacon_turn_left_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.locatebeacon_turn_left_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
 
             para.locatebeacon_time = optionfile->ReadInt(entity, "locatebeacon_time", 300);
 
@@ -118,6 +130,18 @@ bool Robot::LoadParameters(const char * filename)
                 para.aligning_reverse_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
                 para.aligning_reverse_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
                 para.aligning_reverse_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "turn_right_speed" ) )
+            {
+                para.aligning_turn_right_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.aligning_turn_right_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.aligning_turn_right_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
+            }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "turn_left_speed" ) )
+            {
+                para.aligning_turn_left_speed[0] =  atoi(optionfile->GetPropertyValue(prop, 0));
+                para.aligning_turn_left_speed[1] =  atoi(optionfile->GetPropertyValue(prop, 1));
+                para.aligning_turn_left_speed[2] =  atoi(optionfile->GetPropertyValue(prop, 2));
             }
 
             para.aligning_reverse_time = optionfile->ReadInt(entity, "reverse_time", 50);
