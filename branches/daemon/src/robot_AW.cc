@@ -1800,7 +1800,7 @@ void RobotAW::Debugging()
         
         case 27:
             {
-                acceleration_t acc = irobot->GetAcceleration();
+                acceleration_t acc = irobot->GetAcceleration(ActiveWheel::RIGHT);
                 hingeData hd = irobot->GetHingeStatus();
                 if(timestamp <= 50 )
                 {

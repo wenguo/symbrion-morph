@@ -240,8 +240,8 @@ class Robot
     void ProcessEthMessage(std::auto_ptr<Message>);
 
     //for organism control
-    static void Relay_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
-    static void Process_Organism_command(const LolMessage*msg, void * connection, void *user_ptr);
+    static void Relay_Organism_command(const ELolMessage*msg, void * connection, void *user_ptr);
+    static void Process_Organism_command(const ELolMessage*msg, void * connection, void *user_ptr);
     void UpdateOGIRSensors(uint8_t config[2], int data[NUM_IRS], int sensor_type);//config: 0 -- position in og, 1-- orientation related to seed
 
     protected:
@@ -571,7 +571,7 @@ class Robot
     IPC::IPC daemon_IPC; //for external controller request
     bool daemon_mode;
     uint8_t request_in_processing;
-    static void Process_Daemon_command(const LolMessage*msg, void* connection, void *user_ptr);
+    static void Process_Daemon_command(const ELolMessage*msg, void* connection, void *user_ptr);
 };
 
 #endif
