@@ -24,7 +24,7 @@ Alignment
    weight_right [1 -1 0 0 1 -1 0 0]
    forward_speed [25 25 0]
    reverse_speed [-25 -25 0]
-   reverse_time 10 
+   reverse_time 10
 )
 Avoidance
 (
