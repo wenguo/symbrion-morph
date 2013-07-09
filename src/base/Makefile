@@ -1,4 +1,4 @@
-SRC = robot.cc robot_ircomm.cc robot_ethcomm.cc robot_option.cc robot_self_repair.cc parameter.cc global.cc IRMessage.cc robot_IPC.cc robot_debug.cc robot_organism.cc
+SRC = robot.cc robot_ircomm.cc robot_ethcomm.cc robot_option.cc robot_self_repair.cc parameter.cc global.cc IRMessage.cc robot_IPC.cc robot_debug.cc robot_organism.cc robot_daemon.cc
 SRC+= organism.cc organism_sequence.cc organism_sample.cc
 SRC+= support.cc worldfile.cc hist.cc ipc.cc
 
@@ -7,6 +7,7 @@ CXX = bfin-linux-uclibc-g++
 AR = bfin-linux-uclibc-ar
 OBJDUMP = bfin-linux-uclibc-objdump
 STRIP = bfin-linux-uclibc-strip
+SIZE = bfin-linux-uclibc-size
 
 # Change this to your paths
 IROBOTPATH = ../../irobot
@@ -48,16 +49,19 @@ bin:
 lib/$(static_LIB): $(OBJECTS)
 	$(AR) rcu $@ $^
 	$(OBJDUMP) -hS $@ > objects/$(static_LIB).lst
+	$(SIZE) -B $@
 
 lib/$(shared_LIB): $(OBJECTS)
 	$(CXX) -o $@ $^ $(LDFLAGS_$(shared_LIB))
 	$(OBJDUMP) -hS $@ > objects/$(shared_LIB).lst
+	$(SIZE) -B $@
 
 
 bin/$(EXE): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 	$(STRIP) bin/$(EXE)
 	$(OBJDUMP) -hS $@ > objects/$(EXE).lst
+	$(SIZE) -B $@
 
 objects/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@

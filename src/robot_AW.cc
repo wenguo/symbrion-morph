@@ -53,6 +53,17 @@ void RobotAW::Reset()
     irobot->MSPReset();
 }
 
+void RobotAW::Pause(bool flag)
+{
+    printf("%d %s SPI", timestamp, flag ? "pause":"resume");
+    irobot->pauseSPI(flag);
+}
+
+bool RobotAW::isPaused()
+{
+    return irobot->isSPIPaused();
+}
+
 void RobotAW::EnablePowerSharing(int side, bool on)
 {
     irobot->EnablePowerSharing(ActiveWheel::Side(board_dev_num[side]), on);
@@ -223,6 +234,9 @@ bool RobotAW::RotateDockingUnit(int channel, int8_t angle)
 
 void RobotAW::UpdateSensors()
 {
+    if(isPaused())
+        return;
+
     IRValues ret_A = irobot->GetIRValues(ActiveWheel::RIGHT);
     IRValues ret_B = irobot->GetIRValues(ActiveWheel::FRONT);
     IRValues ret_C = irobot->GetIRValues(ActiveWheel::LEFT);
@@ -325,6 +339,9 @@ void RobotAW::UpdateSensors()
 
 void RobotAW::UpdateActuators()
 {
+    if(isPaused())
+        return;
+
     //CheckHingeMotor();
     SetSpeed(speed[0], speed[1], speed[2]); 
 }
@@ -1783,7 +1800,7 @@ void RobotAW::Debugging()
         
         case 27:
             {
-                acceleration_t acc = irobot->GetAcceleration();
+                acceleration_t acc = irobot->GetAcceleration(ActiveWheel::RIGHT);
                 hingeData hd = irobot->GetHingeStatus();
                 if(timestamp <= 50 )
                 {

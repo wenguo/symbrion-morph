@@ -440,8 +440,11 @@ std::ostream & operator<<(std::ostream& os, const OrganismNode& node)
 std::ostream& operator<<(std::ostream& os, const OrganismSequence::Symbol& sym)
 { 
     if(sym.type1!=0 || sym.type2!=0)
+    {
         //os<<side_names[sym.side1]<<side_names[sym.side2];
         os<<robottype_names[sym.type1]<<side_names[sym.side1]<<robottype_names[sym.type2]<<side_names[sym.side2];
+        os<<"("<<(int)sym.data<<")";
+    }
     else
         //os<<"00";
         os<<"0000";

@@ -152,7 +152,7 @@ void * Connection::Receiving(void * p)
     //main loop, keep reading
     unsigned char rx_buffer[IPCBLOCKSIZE];
 
-    lolmsgParseInit(&ptr->parseContext, new uint8_t[IPCLOLBUFFERSIZE], IPCLOLBUFFERSIZE);
+    ElolmsgParseInit(&ptr->parseContext, new uint8_t[IPCLOLBUFFERSIZE], IPCLOLBUFFERSIZE);
     ptr->receiving_thread_running = true;
 
     while(ptr->connected)
@@ -171,8 +171,8 @@ void * Connection::Receiving(void * p)
             int parsed = 0;
             while (parsed < received)
             {
-                parsed += lolmsgParse(&ptr->parseContext, rx_buffer + parsed, received - parsed);
-                LolMessage* msg = lolmsgParseDone(&ptr->parseContext);
+                parsed += ElolmsgParse(&ptr->parseContext, rx_buffer + parsed, received - parsed);
+                ELolMessage* msg = ElolmsgParseDone(&ptr->parseContext);
                 if(msg!=NULL && ptr->callback)
                 {
                     // printf("received data from %s : %d\n",inet_ntoa(ptr->addr.sin_addr),ntohs(ptr->addr.sin_port));
@@ -258,7 +258,8 @@ bool IPC::StartServer(int port)
         serv_addr.sin_port = htons(port);
         if(bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
         {
-            perror("Socket bind failed:");
+            perror("Server socket bind failed:");
+            printf("failed on port: %d");
             binded = false;
             Close(sockfd);
             usleep(1000000);
@@ -362,15 +363,15 @@ bool IPC::ConnectToServer(const char * host, int port)
 bool Connection::SendData(const uint8_t type, uint8_t *data, int data_size)
 {
     //printf("Send data [%s] to %s:%d\n", message_names[type], inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-    LolMessage msg;
+    ELolMessage msg;
 #ifdef IPC_TEST
-    lolmsgInit(&msg, 0, type, data, data_size);
+    ElolmsgInit(&msg, 0, type, data, data_size);
 #else
-    lolmsgInit(&msg, type, data, data_size);
+    ElolmsgInit(&msg, type, data, data_size);
 #endif
-    int len = lolmsgSerializedSize(&msg);
+    int len = ElolmsgSerializedSize(&msg);
     uint8_t buf[len];
-    lolmsgSerialize(&msg, buf);
+    ElolmsgSerialize(&msg, buf);
 
     pthread_mutex_lock(&mutex_txq);
     int write = BQSize(&txq) - BQCount(&txq);
