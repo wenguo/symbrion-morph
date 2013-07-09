@@ -2,6 +2,7 @@
 #include "comm/IRComm.h"
 #include "comm/Ethernet.h"
 #include "ipc.hh"
+#include "ethlolmsg.h"
 #include "ipc_interface.hh"
 #include <pthread.h>
 #include <signal.h>
@@ -9,8 +10,9 @@
 #include <string.h>
 #include <sys/time.h>
 
-void process_message(const LolMessage*msg, void* connection, void *user_ptr);
+void process_message(const ELolMessage*msg, void* connection, void *user_ptr);
 void update(int64_t timestamp);
+void testlolmsg();
 
 bool processing_done = false;
 
@@ -45,6 +47,10 @@ int main(int argc, char** args) {
         printf("signal(2) failed while setting up for SIGALRM");
         return -1;
     }
+
+   // testlolmsg();
+
+    //return 0;
 
 
 
@@ -143,7 +149,11 @@ void force_quit()
 
 void query_progress()
 {
-    master_IPC.SendData(DAEMON_MSG_PROGRESS_REQ, NULL, 0);
+    int size=2046;
+    uint8_t buf[size];
+    for(int i=0;i< size;i++)
+        buf[i] = i;
+    master_IPC.SendData(DAEMON_MSG_PROGRESS_REQ, buf, size);
 }
 
 void query_seed_ip()
@@ -174,7 +184,7 @@ void update(int64_t timestamp)
 
         RobotBase::pauseSPI(true);
     }
-    else if(timestamp > 20 && timestamp %5 == 0 && !processing_done)
+    else if(timestamp > 20 && timestamp %20 == 0 && !processing_done)
     {
         query_progress();
     }
@@ -204,7 +214,7 @@ void update(int64_t timestamp)
     }*/
 }
 
-void process_message(const LolMessage*msg, void* connection, void *user_ptr)
+void process_message(const ELolMessage*msg, void* connection, void *user_ptr)
 {
     if(!msg || !connection)
         return;
@@ -247,6 +257,7 @@ void process_message(const LolMessage*msg, void* connection, void *user_ptr)
             }
             break;
         case DAEMON_MSG_PROGRESS:
+            printf("%d: received progress ack %d\n", currentTime, msg->data[0]);
             processing_done = msg->data[0];
             break;
         case DAEMON_MSG_ACK:
@@ -268,4 +279,61 @@ void timerHandler(int dummy)
 {
     currentTime++;
 }
+
+
+void testlolmsg()
+{
+#define BUFFERSIZE 640*480
+#define PARSE_BUFFERSIZE 640*480 
+    uint8_t buf[BUFFERSIZE];
+    ByteQueue bq;
+
+
+    ELolParseContext parseContext;
+    BQInit(&bq, buf, BUFFERSIZE);
+    uint8_t *lolbuffer = new uint8_t[PARSE_BUFFERSIZE];
+    ElolmsgParseInit(&parseContext, lolbuffer, PARSE_BUFFERSIZE);
+
+
+    printf("size LolMessage --- %d\n", sizeof(ELolMessage));
+    printf("size uint8_t* --- %d\n", sizeof(uint8_t *));
+
+    int size=640*480 - 10;
+    uint8_t *data = new uint8_t[size];
+    for(int i=0;i<size;i++) 
+        data[i]=0x30 + i;
+
+    ELolMessage msg;
+    ElolmsgInit(&msg, 0x1, data, size);
+
+    int size2 = ElolmsgSerializedSize(&msg);
+    uint8_t *outbytes = new uint8_t[size2];
+    ElolmsgSerialize(&msg, outbytes);
+
+    /*
+    printf("");
+    for(int i=0;i<size2;i++)
+        printf("%#x\t", outbytes[i]);
+    printf("\n");
+    */
+
+    int parsed=0,read=size2 -5;
+    while (parsed < read)
+    {
+        printf("--- parsed %d --\n", parsed);
+        parsed += ElolmsgParse(&parseContext, outbytes + parsed, size2 - 5);
+        printf("--- parsed %d --\n", parsed);
+        parsed += ElolmsgParse(&parseContext, outbytes + parsed, size2 - 5);
+        printf("--- parsed %d --\n", parsed);
+        ELolMessage* msg = ElolmsgParseDone(&parseContext);
+        if(msg!=NULL)
+        {
+            ELolMessage*tt=(ELolMessage*)parseContext.buf;
+            printf("length: %d %#x %d\n", msg->length, msg->data, sizeof(ParseState));
+            //for(int i=0;i<msg->length;i++)
+            //    printf("%#x\n", msg->data[i]);
+        }
+
+    }
+};
 
