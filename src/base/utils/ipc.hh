@@ -17,17 +17,17 @@
 #include <unistd.h>
 #include <sstream>
 #include <vector>
-#include "lolmsg.h"
+#include "ethlolmsg.h"
 #include "bytequeue.h"
 
-#define IPCLOLBUFFERSIZE 264 //=256 + 8 
-#define IPCTXBUFFERSIZE 2048 
-#define IPCBLOCKSIZE 256 
+#define IPCLOLBUFFERSIZE 65535 
+#define IPCTXBUFFERSIZE 65535 
+#define IPCBLOCKSIZE 10240 
 
 namespace IPC{
 
 class Connection;
-typedef void (*Callback)(const LolMessage *msg, void * connection, void * user_ptr);
+typedef void (*Callback)(const ELolMessage *msg, void * connection, void * user_ptr);
 
 class Connection
 {
@@ -53,7 +53,7 @@ class Connection
         pthread_t transmiting_thread;
         static void * Receiving(void *ptr);
         static void * Transmiting(void *ptr);
-        LolParseContext parseContext;
+        ELolParseContext parseContext;
         Callback callback;
         void * user_data;
         ByteQueue txq;

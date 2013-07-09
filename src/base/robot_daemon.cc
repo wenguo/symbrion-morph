@@ -57,7 +57,7 @@ void Robot::Daemon()
 }
 
 
-void Robot::Process_Daemon_command(const LolMessage*msg, void* connection, void *user_ptr)
+void Robot::Process_Daemon_command(const ELolMessage*msg, void* connection, void *user_ptr)
 {
     if(!msg || !connection || !user_ptr)
         return;
