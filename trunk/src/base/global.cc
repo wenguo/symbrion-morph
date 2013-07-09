@@ -29,6 +29,7 @@ const char* state_names[STATE_COUNT]={
     "BroadcastScore",
     "Debugging",
     "Climbing",
+    "Daemon",
 };
 
 const char * message_names[MSG_TYPE_COUNT]={

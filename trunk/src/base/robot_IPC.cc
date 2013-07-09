@@ -1,5 +1,5 @@
 #include "robot.hh"
-void Robot::Relay_Organism_command(const LolMessage*msg, void* connection, void *user_ptr)
+void Robot::Relay_Organism_command(const ELolMessage*msg, void* connection, void *user_ptr)
 {
     if(!msg || !connection || !user_ptr)
         return;
@@ -23,7 +23,7 @@ void Robot::Relay_Organism_command(const LolMessage*msg, void* connection, void 
     }
 
 }
-void Robot::Process_Organism_command(const LolMessage*msg, void* connection, void *user_ptr)
+void Robot::Process_Organism_command(const ELolMessage*msg, void* connection, void *user_ptr)
 {
     if(!msg || !connection || !user_ptr)
         return;
