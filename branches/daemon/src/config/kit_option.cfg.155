@@ -14,7 +14,9 @@ LocateBeacon
 (
    weight_left [-1 1 1 2 1 -1 -2 -1]
    weight_right [1 -1 -1 -2 -1 1 2 1]
-   forward_speed [25 25 0]
+   turn_right_speed [10 -40 0]
+   turn_left_speed [40 -10 0]
+   forward_speed [25 25 32]
    locatebeacon_time 200
 )
 
@@ -22,7 +24,9 @@ Alignment
 (
    weight_left [-1 1 0 0 -1 1 0 0]
    weight_right [1 -1 0 0 1 -1 0 0]
-   forward_speed [25 25 0]
+   turn_right_speed [10 -40 0]
+   turn_left_speed [40 -10 0]
+   forward_speed [25 25 32]
    reverse_speed [-25 -25 0]
    reverse_time 10
 )
@@ -47,14 +51,14 @@ Docking
     turn_right_speed [10 -40 0]
     turn_left_speed [40 -10 0]
     forward_speed [30 30 0]
-    backward_speed [15 -45 0]
+    backward_speed [-30 -30 0]
 )
 
 Locking
 (
     locking_motor_opening_time 30
     locking_motor_closing_time 30
-    locking_motor_enabled [1 0 1 0]
+    locking_motor_enabled [0 0 0 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [0 0 1 0]
 )
@@ -79,7 +83,7 @@ Global
 (
 	logtofile 0
 #refer to robot.hh for a full list of states
-	init_state 26 
+	init_state 4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -99,7 +103,7 @@ Motor
     speed_forward 30
     speed_sideward 1
     scout_wheels_direction [1 -1]
-    locomotion_motor_enabled 0                       
+    locomotion_motor_enabled 1                       
         
 )
 

@@ -123,21 +123,39 @@ void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
         speed2 = 100;
     if(speed2 < -100)
         speed2 = -100;
-    
+
+    static int last_speed[2]={0,0};
+
     //printf("Move motors at speed: (%d %d %d) direction: %d ", speed[0], speed[1], speed[2], direction);
 
+    int front_speed = 0;
+    int rear_speed = 0;
     if(fabs(speed2) > 10)
     {
-   //     printf("1: real value: %d %d\n ",para.speed_sideward * speed2 * direction, -para.speed_sideward* speed2 * direction);
-        irobot->MoveScrewFront(para.speed_sideward * speed2 * direction);
-        irobot->MoveScrewRear(-para.speed_sideward* speed2 * direction);
+        front_speed = para.speed_sideward * speed2 * direction;
+        rear_speed = -para.speed_sideward* speed2 * direction;
     }
     else
     {
-   //     printf("2: real value: %d %d\n", speed0 * direction, speed1 * direction);
-        irobot->MoveScrewFront(speed0 * direction);
-        irobot->MoveScrewRear(speed1 * direction);
+        front_speed = speed0 * direction;
+        rear_speed = speed1 * direction;
     }
+
+    //if any direction changed, send speed 0 to msp
+    if( front_speed* last_speed[0] < 0 || rear_speed * last_speed[1] < 0)
+    {
+       // front_speed = 0;
+       // rear_speed = 0;
+        printf("-- zero speed as direction is changed\n");
+    }
+    last_speed[0] = front_speed;
+    last_speed[1] = rear_speed;
+
+
+
+
+    irobot->MoveScrewFront(front_speed);
+    irobot->MoveScrewRear(rear_speed);
 
 
 }
@@ -621,15 +639,19 @@ void RobotKIT::LocateBeacon()
         if(turning == -1)
         {
             printf("turn %s\n", direction ? "left" :"right");
-            speed[0] = direction > 0 ? 10 : 40;
-            speed[1] = direction > 0 ? -40 : -10;
+            speed[0] = direction > 0 ? para.locatebeacon_turn_right_speed[0] : (direction * para.locatebeacon_turn_right_speed[1]);
+
+            speed[1] = direction > 0 ? para.locatebeacon_turn_right_speed[1] : (direction * para.locatebeacon_turn_right_speed[0]);
+
             speed[2] = 0;
         }
         else if(turning == 1)
         {
             printf("turn %s\n", -direction ? "left" :"right");
-            speed[0] = direction > 0 ? 40 : 10;
-            speed[1] = direction > 0 ? -10 : -40;
+            speed[0] = direction > 0 ? para.locatebeacon_turn_left_speed[0] : (direction * para.locatebeacon_turn_left_speed[1]);
+
+            speed[1] = direction > 0 ? para.locatebeacon_turn_left_speed[1] : (direction * para.locatebeacon_turn_left_speed[0]);
+
             speed[2] = 0;
         }
         else
@@ -637,16 +659,14 @@ void RobotKIT::LocateBeacon()
             //using hist will filter out the noise from IRComm
             if(beacon_signals_detected_hist.Sum(id0) > 3 || beacon_signals_detected_hist.Sum(id1) > 3)
             {
-                int temp = beacon[id1] - beacon[id0];
                 speed[0] = para.locatebeacon_forward_speed[0];
                 speed[1] = para.locatebeacon_forward_speed[1];
-                speed[2] = 35 * sign(temp);
-            }
-            else
-            {
-                speed[0] = 25;
-                speed[1] = 25;
-                speed[2] = 0;
+
+                int temp = beacon[id1] - beacon[id0];
+                if(abs(temp) > 0.2 * std::max(beacon[id0], beacon[id1]))
+                    speed[2] = para.locatebeacon_forward_speed[2] * sign(temp);
+                else 
+                    speed[2] = 0;
             }
         }
     }
@@ -658,7 +678,7 @@ void RobotKIT::LocateBeacon()
         speed[2] = 0;
     }
 
-    printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tid: %d %d\n", beacon[0], beacon[1], beacon[2], beacon[3], beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, id0, id1);
+    printf("beacon: %d %d %d %d %d %d %d %d (%#x %#x %#x)\tid: %d %d speed: %d %d %d\n", beacon[0], beacon[1], beacon[2], beacon[3], beacon[4], beacon[5], beacon[6], beacon[7],beacon_signals_detected, beacon_signals_detected & 0xC, beacon_signals_detected & 0xC0, id0, id1, speed[0], speed[1], speed[2]);
 
 
     //checking
@@ -724,19 +744,20 @@ void RobotKIT::Alignment()
     int temp = beacon[id1]-beacon[id0]; 
     int temp2 = (reflective_hist[id1].Avg())-(reflective_hist[id0].Avg());
     int temp_max = std::max(beacon[id1], beacon[id0]);
+    int temp2_max = std::max(reflective_hist[id1].Avg(),reflective_hist[id0].Avg());
 
     if(beacon_signals_detected)
     {
         // Far away from recruiting robot - move sideways or forward
-        if( std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 200 )
+        if( temp2_max < 200 )
         {
             std::cout << "FAR " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
                 << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
-            if( abs(temp) > 0.1 * temp_max )
+            if( abs(temp) > 0.15 * temp_max )
             {
                 speed[0] = 0;
                 speed[1] = 0;
-                speed[2] = 35 * sign(temp);
+                speed[2] = para.aligning_forward_speed[2] * sign(temp);
             }
             else
             {
@@ -746,10 +767,10 @@ void RobotKIT::Alignment()
             }
         }
         //getting close to robot, but not too close
-        else if( (assembly_info.type1 == ROBOT_AW && (std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 500 || abs(temp2) > 250))
-                || (assembly_info.type1 != ROBOT_AW && std::max(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 800 ))
+        else if( (assembly_info.type1 == ROBOT_AW && (temp2_max < 500 || abs(temp2) > 250))
+                || (assembly_info.type1 != ROBOT_AW && (temp2_max < 800)))
         {
-            if(std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < 0)
+            if(std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) < -100)
             {
                 speed[0]=0;
                 speed[1]=0;
@@ -762,20 +783,21 @@ void RobotKIT::Alignment()
                         SetRGBLED(i, 0,0,0,0);
                 }
             }
-            else if( abs(temp2) > 150)
+            else if( abs(temp2) > 150 )
+            //else if( abs(temp2) > 0.6 * temp2_max && std::min(reflective_hist[id0].Avg(), reflective_hist[id1].Avg()) > 300  )
             {           
                 std::cout << " Zone 1, adjusting orientantion " << " beacon: " << beacon[id0] << "\t" << beacon[id1]
                     << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
                 if(temp2 > 0)
                 {
-                    speed[0] = direction > 0 ? para.docking_turn_left_speed[0] : (direction * para.docking_turn_left_speed[1]);
-                    speed[1] = direction > 0 ? para.docking_turn_left_speed[1] : (direction * para.docking_turn_left_speed[0]);
+                    speed[0] = direction > 0 ? para.aligning_turn_left_speed[0] : (direction * para.aligning_turn_left_speed[1]);
+                    speed[1] = direction > 0 ? para.aligning_turn_left_speed[1] : (direction * para.aligning_turn_left_speed[0]);
                     speed[2] = 0;
                 }
                 else
                 {   
-                    speed[0] = direction > 0 ? para.docking_turn_right_speed[0] : (direction * para.docking_turn_right_speed[1]);
-                    speed[1] = direction > 0 ? para.docking_turn_right_speed[1] : (direction * para.docking_turn_right_speed[0]);
+                    speed[0] = direction > 0 ? para.aligning_turn_right_speed[0] : (direction * para.aligning_turn_right_speed[1]);
+                    speed[1] = direction > 0 ? para.aligning_turn_right_speed[1] : (direction * para.aligning_turn_right_speed[0]);
                     speed[2] = 0;
                 }
             }
@@ -787,12 +809,12 @@ void RobotKIT::Alignment()
                         << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
                     speed[0] = 0;
                     speed[1] = 0;
-                    speed[2] = 35 * sign(temp);
+                    speed[2] = para.aligning_forward_speed[2] * sign(temp);
                 }
                 else
                 {
-                    speed[0] = 35;
-                    speed[1] = 35;
+                    speed[0] = para.aligning_forward_speed[0];
+                    speed[1] = para.aligning_forward_speed[1];
                     speed[2] = 0;
                 }
             }
@@ -1059,7 +1081,7 @@ void RobotKIT::Docking()
                 printf("docking_count %d reaches threshold\n", docking_count);
                 docking_blocked = true;
             }
-            else if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5)
+            else if(robots_in_range_detected_hist.Sum(id0) < 5 && robots_in_range_detected_hist.Sum(id1) < 5 || std::min(proximity[id0],proximity[id1]) <500)
             {
                 printf("No proximity signals detected\n");
                 docking_count +=36; // 18x2

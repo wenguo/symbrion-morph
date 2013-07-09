@@ -54,7 +54,7 @@ Locking
 (
     locking_motor_opening_time 30
     locking_motor_closing_time 30
-    locking_motor_enabled [1 0 1 0]
+    locking_motor_enabled [0 0 0 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [0 0 1 0]
 )

@@ -69,7 +69,11 @@ Parameter::Parameter():
     memset(docking_failed_reverse_speed, 0, 3 * sizeof(int));
     memset(aligning_forward_speed, 0, 3 * sizeof(int));
     memset(aligning_reverse_speed, 0, 3 * sizeof(int));
+    memset(aligning_turn_left_speed, 0, 3 * sizeof(int));
+    memset(aligning_turn_right_speed, 0, 3 * sizeof(int));
     memset(locatebeacon_forward_speed, 0, 3 * sizeof(int));
+    memset(locatebeacon_turn_left_speed, 0, 3 * sizeof(int));
+    memset(locatebeacon_turn_right_speed, 0, 3 * sizeof(int));
     debug.mode = 0;
     memset(debug.para, 0, 10* sizeof(int));
 }
