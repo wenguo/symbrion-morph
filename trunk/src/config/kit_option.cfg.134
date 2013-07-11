@@ -16,7 +16,7 @@ LocateBeacon
    weight_right [1 -1 -1 -2 -1 1 2 1]
    turn_right_speed [10 -40 0]
    turn_left_speed [40 -10 0]
-   forward_speed [25 25 25]
+   forward_speed [25 25 32]
    locatebeacon_time 200
 )
 
@@ -26,7 +26,7 @@ Alignment
    weight_right [1 -1 0 0 1 -1 0 0]
    turn_right_speed [10 -40 0]
    turn_left_speed [40 -10 0]
-   forward_speed [25 25 25]
+   forward_speed [25 25 32]
    reverse_speed [-25 -25 0]
    reverse_time 10 
 )
@@ -51,14 +51,14 @@ Docking
     turn_right_speed [10 -40 0]
     turn_left_speed [40 -10 0]
     forward_speed [30 30 0]
-    backward_speed [15 -45 0]
+    backward_speed [-30 -30 0]
 )
 
 Locking
 (
     locking_motor_opening_time 30
     locking_motor_closing_time 30
-    locking_motor_enabled [1 0 1 0]
+    locking_motor_enabled [0 0 0 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [1 0 1 0]
 
