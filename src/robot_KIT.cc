@@ -144,8 +144,8 @@ void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
     //if any direction changed, send speed 0 to msp
     if( front_speed* last_speed[0] < 0 || rear_speed * last_speed[1] < 0)
     {
-       // front_speed = 0;
-       // rear_speed = 0;
+        front_speed = 0;
+        rear_speed = 0;
         printf("-- zero speed as direction is changed\n");
     }
     last_speed[0] = front_speed;
@@ -455,6 +455,17 @@ void RobotKIT::Foraging()
     speed[1] = 0;
     }
     else*/
+
+    bool beacon_detected=false;
+    for(int i=0;i<NUM_IRS;i++)
+    {
+        if(beacon_signals_detected_hist.Sum(i) > 3)
+        {
+            beacon_detected = true;
+            break;
+        }
+    }
+
     {
         Avoidance();
 
@@ -463,8 +474,9 @@ void RobotKIT::Foraging()
             current_state = LOCATEENERGY;
             last_state = FORAGING;
         }
-        else if(organism_found || beacon_signals_detected)
+        else if(organism_found || beacon_detected)
         {
+            printf("organism found: %d, beacon_signals_detected: %#x\n", organism_found, beacon_signals_detected);
             for(int i=0;i<NUM_DOCKS;i++)
                 SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
 
