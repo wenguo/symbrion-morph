@@ -3,9 +3,9 @@
 enum daemon_msg_type_t
 {
     DAEMON_MSG_UNKNOWN = 0,
-    DAEMON_MSG_RECRUITING = 0X1,
-    DAEMON_MSG_SEEDING,
-    DAEMON_MSG_DOCKING,
+    DAEMON_MSG_RECRUITING_REQ = 0X1,
+    DAEMON_MSG_SEEDING_REQ,
+    DAEMON_MSG_DOCKING_REQ,
     DAEMON_MSG_NEIGHBOUR_IP_REQ,
     DAEMON_MSG_NEIGHBOUR_IP,
     DAEMON_MSG_SEED_IP_REQ,
@@ -14,7 +14,7 @@ enum daemon_msg_type_t
     DAEMON_MSG_ALLROBOTS_IP,
     DAEMON_MSG_PROGRESS_REQ,
     DAEMON_MSG_PROGRESS,
-    DAEMON_MSG_FORCE_QUIT,
+    DAEMON_MSG_FORCE_QUIT_REQ,
 
     DAEMON_MSG_ACK,
 
@@ -23,9 +23,9 @@ enum daemon_msg_type_t
 
 const char *daemon_message_names[DAEMON_MSG_COUNT] = {
     "Unknown",
-    "Recruiting",
-    "Seeding", 
-    "Docking",
+    "Recruiting REQ",
+    "Seeding REQ", 
+    "Docking REQ",
     "Neighbour's IP REQ",
     "Neighbour's IP",
     "Seed's IP REQ",
@@ -72,7 +72,7 @@ void Robot::Process_Daemon_command(const ELolMessage*msg, void* connection, void
 
     switch(msg->command)
     {       
-        case DAEMON_MSG_SEEDING:
+        case DAEMON_MSG_SEEDING_REQ:
             //msg->data
             //[0] -- size of sequence
             //[1] - [x] data;
@@ -113,7 +113,7 @@ void Robot::Process_Daemon_command(const ELolMessage*msg, void* connection, void
                 }
             }
             break;
-        case DAEMON_MSG_RECRUITING:
+        case DAEMON_MSG_RECRUITING_REQ:
             // msg->data
             // [0] -- recruiting side
             // [1] -- recruited robot type
@@ -158,7 +158,7 @@ void Robot::Process_Daemon_command(const ELolMessage*msg, void* connection, void
                 }
             }
             break;
-        case DAEMON_MSG_DOCKING:
+        case DAEMON_MSG_DOCKING_REQ:
             //no following data
             {
                 if(robot->request_in_processing)
@@ -225,11 +225,14 @@ void Robot::Process_Daemon_command(const ELolMessage*msg, void* connection, void
         case DAEMON_MSG_PROGRESS_REQ:
             //no following data
             {
-                uint8_t done = robot->isPaused() ? 1 : 0; //it will automatically return to state Daemon and pause the SPI once dockign is done
-                ipc->SendData(DAEMON_MSG_PROGRESS, &done, 1); 
+                uint8_t ret[2];
+                ret[0] = robot->isPaused() ? 1 : 0; //it will automatically return to state Daemon and pause the SPI once dockign is done
+                ret[1] = robot->current_state;
+
+                ipc->SendData(DAEMON_MSG_PROGRESS, ret, 2); 
             }
             break;
-        case DAEMON_MSG_FORCE_QUIT:
+        case DAEMON_MSG_FORCE_QUIT_REQ:
             {
                 robot->request_in_processing = 0;
                 robot->ResetAssembly();
