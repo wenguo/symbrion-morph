@@ -15,6 +15,7 @@ void update(int64_t timestamp);
 void testlolmsg();
 
 bool processing_done = false;
+uint8_t current_state = 0;
 
 bool userQuit = false;
 int64_t currentTime=0;
@@ -125,7 +126,7 @@ void seeding(uint8_t *seq, uint32_t size)
         for(int i=0;i<size;i++)
             cmd_data[i+1]=seq[i];
     }
-    master_IPC.SendData(DAEMON_MSG_SEEDING, cmd_data, sizeof(cmd_data));
+    master_IPC.SendData(DAEMON_MSG_SEEDING_REQ, cmd_data, sizeof(cmd_data));
 }
 
 void recruiting(uint8_t recruiting_side, uint8_t required_robot_type, uint8_t required_robot_side)
@@ -134,17 +135,17 @@ void recruiting(uint8_t recruiting_side, uint8_t required_robot_type, uint8_t re
     cmd_data[0] = recruiting_side; //recruiting side: 0 -- front, 1 -- left, 2 -- back, 3 -- right
     cmd_data[1] = required_robot_type; //recruited robot type: 1 -- KIT, 2 -- Scout, 3 -- ActiveWheel
     cmd_data[2] = required_robot_side; //recruited robot side: 0 -- front, 1 -- left, 2 -- back, 3 -- right
-    master_IPC.SendData(DAEMON_MSG_RECRUITING, cmd_data, sizeof(cmd_data));
+    master_IPC.SendData(DAEMON_MSG_RECRUITING_REQ, cmd_data, sizeof(cmd_data));
 }
 
 void docking()
 {
-    master_IPC.SendData(DAEMON_MSG_DOCKING, NULL, 0);
+    master_IPC.SendData(DAEMON_MSG_DOCKING_REQ, NULL, 0);
 }
 
 void force_quit()
 {
-    master_IPC.SendData(DAEMON_MSG_FORCE_QUIT, NULL, 0);
+    master_IPC.SendData(DAEMON_MSG_FORCE_QUIT_REQ, NULL, 0);
 }
 
 void query_progress()
@@ -259,6 +260,7 @@ void process_message(const ELolMessage*msg, void* connection, void *user_ptr)
         case DAEMON_MSG_PROGRESS:
             printf("%d: received progress ack %d\n", currentTime, msg->data[0]);
             processing_done = msg->data[0];
+            current_state = msg->data[1];
             break;
         case DAEMON_MSG_ACK:
             if(msg->data[0] ==0 )
