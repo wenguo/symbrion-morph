@@ -42,7 +42,7 @@ class vect2
     float y;
 };
 
-#define sign(x) (( x > 0 ) - ( x < 0 ))
+#define Sign(x) (( x > 0 ) - ( x < 0 ))
 
 double simple_normal_deviate( double mean, double stddev );
 string datetime_to_string(const tm& time, const char* format);

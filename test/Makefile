@@ -1,5 +1,6 @@
 
 SRC = main.cc ipc.cc
+SRC += capture.cc cmvision.cc v4l_helper.cc
 
 # Change this to your path to the irobot directory
 IROBOTPATH = ../irobot
@@ -19,9 +20,11 @@ STRIP = bfin-linux-uclibc-strip
 IPATH = .
 IPATH += $(IROBOTPATH)/include
 IPATH += $(IROBOTPATH)/tools/ipc/ipc
+IPATH += ../cmvision
 
 VPATH = .
 VPATH += $(IROBOTPATH)/tools/ipc/ipc
+VPATH += ../cmvision
 
 CXXFLAGS += $(patsubst %, -I%, $(IPATH))
 LDFLAGS = -L$(IROBOTPATH)/lib -lpthread -lirobot

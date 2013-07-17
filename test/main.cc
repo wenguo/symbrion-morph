@@ -10,6 +10,25 @@
 #include <string.h>
 #include <sys/time.h>
 
+
+#include "capture.h"
+#include "cmvision.h"
+#include "global.h"
+
+Capture cap;
+CMVision::CMVision vision;
+const Capture::Image *img;
+RawImageFrame frame;
+int img_width;
+int img_height;
+void * BlobDetection(void * ptr);
+#define PIXEL_FORMAT V4L2_PIX_FMT_UYVY
+const char *video_device = "/dev/video0";
+const char *color_filename = "colors.txt";
+pthread_t vision_thread;
+
+bool initVision();
+
 void process_message(const ELolMessage*msg, void* connection, void *user_ptr);
 void update(int64_t timestamp);
 void testlolmsg();
@@ -48,12 +67,11 @@ int main(int argc, char** args) {
         return -1;
     }
 
-   // testlolmsg();
+    testlolmsg();
 
-    //return 0;
+    return 0;
 
-
-
+/*
     RobotBase::RobotType robot_type = RobotBase::Initialize("test");
 
     IRComm::Initialize();
@@ -87,13 +105,15 @@ int main(int argc, char** args) {
     tick.it_interval.tv_sec = 0;
     tick.it_interval.tv_usec = 100000;
 
+
     //set timer
     if (setitimer(ITIMER_REAL, &tick, NULL))
     {
         printf("Set timer failed!!\n");
     }
 
-
+    initVision();
+    pthread_create(&vision_thread, NULL, BlobDetection, NULL);
     //main loop
     while (!userQuit) 
     {
@@ -112,7 +132,7 @@ int main(int argc, char** args) {
     }
 
     RobotBase::MSPReset();
-
+*/
     return 0;
 }
 
@@ -283,8 +303,8 @@ void timerHandler(int dummy)
 
 void testlolmsg()
 {
-#define BUFFERSIZE 640*480
-#define PARSE_BUFFERSIZE 640*480 
+#define BUFFERSIZE 640*480*3
+#define PARSE_BUFFERSIZE 640*480*3
     uint8_t buf[BUFFERSIZE];
     ByteQueue bq;
 
@@ -298,7 +318,7 @@ void testlolmsg()
     printf("size LolMessage --- %d\n", sizeof(ELolMessage));
     printf("size uint8_t* --- %d\n", sizeof(uint8_t *));
 
-    int size=640*480 - 10;
+    int size=65534;
     uint8_t *data = new uint8_t[size];
     for(int i=0;i<size;i++) 
         data[i]=0x30 + i;
@@ -309,6 +329,8 @@ void testlolmsg()
     int size2 = ElolmsgSerializedSize(&msg);
     uint8_t *outbytes = new uint8_t[size2];
     ElolmsgSerialize(&msg, outbytes);
+
+    printf("data size: %d, lolmsg size: %d\n", size, size2);
 
     /*
     printf("");
@@ -337,3 +359,82 @@ void testlolmsg()
     }
 };
 
+void * BlobDetection(void * ptr)
+{
+    printf("Blob detection thread is running\n");
+
+    static int count = 0;
+
+    timeval starttime, sys_time;
+    gettimeofday(&starttime, NULL);
+
+    while(userQuit!=1)
+    {
+//#if !defined(LAPTOP) 
+        count++;
+      //  pthread_mutex_lock(&vision_mutex);
+        img = cap.captureFrame();
+        if(img !=NULL)
+        {
+            frame.hdr.timestamp = img->timestamp;
+            frame.data = img->data;
+            vision.processFrame(reinterpret_cast<CMVision::image_pixel*>(img->data));
+            if(currentTime %10 ==0)
+            {
+                printf("processed frame @ %d fps\n", count);
+                count=0;
+            }
+        }
+        cap.releaseFrame(img);
+
+        gettimeofday(&sys_time, NULL);
+
+        for(int ch=0;ch<MAX_COLORS_TRACKED;ch++)
+        {
+            CMVision::CMVision::region* reg = vision.getRegions(ch);
+            int index=0;
+
+            while(reg)
+            {
+                reg = reg->next;
+                index++;
+                //if(index >= MAX_OBJECTS_TRACKED) 
+                //    break;
+            }
+        }
+
+        //pthread_mutex_unlock(&vision_mutex);
+//#endif
+    }
+
+    printf("Blob detection thread is exiting\n");
+    return NULL;
+}
+
+bool initVision()
+{
+    img_width=640;
+    img_height=480;
+
+    frame.hdr.type = RawImageFrame::ImageTypeRawYUV;
+    frame.hdr.width = img_width;
+    frame.hdr.height = img_height;
+
+    if(!cap.init(video_device,0,img_width,img_height,PIXEL_FORMAT))
+    {
+        printf("no success to load the camera driver, quit the program\n");
+        return false;
+    }
+
+
+    if(!vision.initialize(img_width, img_height))
+    {
+        printf("Error initializing vision");
+        return false;
+    }
+    if(!vision.loadOptions(color_filename))
+    {
+        printf("Error loading color file");
+        return false;
+    }
+}

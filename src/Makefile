@@ -11,6 +11,7 @@ SIZE = bfin-linux-uclibc-size
 IROBOTPATH = ../irobot
 MORPHBASEPATH = ./base
 IPATH = .
+IPATH += ../cmvision
 IPATH += $(IROBOTPATH)/include
 IPATH += $(MORPHBASEPATH)
 
