@@ -674,7 +674,7 @@ void RobotKIT::LocateBeacon()
 
                 int temp = beacon[id1] - beacon[id0];
                 if(abs(temp) > 0.2 * std::max(beacon[id0], beacon[id1]))
-                    speed[2] = para.locatebeacon_forward_speed[2] * sign(temp);
+                    speed[2] = para.locatebeacon_forward_speed[2] * Sign(temp);
                 else 
                     speed[2] = 0;
             }
@@ -767,7 +767,7 @@ void RobotKIT::Alignment()
             {
                 speed[0] = 0;
                 speed[1] = 0;
-                speed[2] = para.aligning_forward_speed[2] * sign(temp);
+                speed[2] = para.aligning_forward_speed[2] * Sign(temp);
             }
             else
             {
@@ -819,7 +819,7 @@ void RobotKIT::Alignment()
                         << " reflective: " << reflective_hist[id0].Avg() << "\t" << reflective_hist[id1].Avg() << std::endl;
                     speed[0] = 0;
                     speed[1] = 0;
-                    speed[2] = para.aligning_forward_speed[2] * sign(temp);
+                    speed[2] = para.aligning_forward_speed[2] * Sign(temp);
                 }
                 else
                 {

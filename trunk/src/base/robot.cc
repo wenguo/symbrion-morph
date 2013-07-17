@@ -289,6 +289,8 @@ bool Robot::Init(const char * optionfile)
 
     InitHardware();
 
+    InitVision();
+
     my_IP = Ethernet::GetLocalIP();
     commander_IP = my_IP;
     commander_port = COMMANDER_PORT_BASE + COMMANDER_PORT;

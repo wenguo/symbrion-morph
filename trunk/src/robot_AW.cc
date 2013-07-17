@@ -625,7 +625,7 @@ void RobotAW::LocateBeacon()
 
             speed[0] = 0;
             speed[1] = 0;
-            speed[2] = -30 * sign(temp);
+            speed[2] = -30 * Sign(temp);
         }
         else
         {
@@ -726,7 +726,7 @@ void RobotAW::Alignment()
             {
                 speed[0] = 0;
                 speed[1] = 0;
-                speed[2] = -25 * sign(temp);
+                speed[2] = -25 * Sign(temp);
             }
             else
             {
@@ -744,7 +744,7 @@ void RobotAW::Alignment()
             {
                 speed[0] = 0;
                 speed[1] = 0;
-                speed[2] = -30 * sign(temp) ;
+                speed[2] = -30 * Sign(temp) ;
             }
             else
             {
@@ -759,8 +759,8 @@ void RobotAW::Alignment()
         {
             if( abs(reflective_diff) > 150)
             {           
-                speed[0] = 10 * sign(reflective_diff) * direction;
-                speed[1] = -25 * sign(reflective_diff) * direction;
+                speed[0] = 10 * Sign(reflective_diff) * direction;
+                speed[1] = -25 * Sign(reflective_diff) * direction;
                 speed[2] = 0;
                 printf("Zone 1, adjusting orientation - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
             }
@@ -770,7 +770,7 @@ void RobotAW::Alignment()
                 {
                     speed[0] = 0;
                     speed[1] = 0;
-                    speed[2] = -25 * sign(temp);
+                    speed[2] = -25 * Sign(temp);
                     printf("Zone 1, adjusting pose - beacon: %d %d, reflective: %d %d, speed: %d %d %d\n",beacon[id0], beacon[id1], reflective_hist[id0].Avg(), reflective_hist[id1].Avg(), speed[0], speed[1], speed[2]);
                 }
                 else

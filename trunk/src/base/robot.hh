@@ -32,6 +32,11 @@
 #include "utils/support.hh"
 #include "IRMessage.hh"
 
+#include "capture.h"
+#include "cmvision.h"
+#include "vision_def.h"
+#include "VisualMemory.hh"
+
 
 class Robot
 {
@@ -572,6 +577,29 @@ class Robot
     bool daemon_mode;
     uint8_t request_in_processing;
     static void Process_Daemon_command(const ELolMessage*msg, void* connection, void *user_ptr);
+
+    //for vision
+    pthread_mutex_t vision_mutex;
+    pthread_cond_t vision_cond;
+    pthread_t vision_thread;
+    Capture cap;
+    CMVision::CMVision vision;
+    const Capture::Image *img;
+    RawImageFrame frame;
+    int img_width;
+    int img_height;
+    Blob_info blob_data[MAX_OBJECTS_TRACKED];
+    Hist blob_hist;
+
+    VisualMemory *vm;
+    
+
+
+    IPC::IPC monitoringIPC;
+    static void Monitoring(const ELolMessage*msg, void* connection, void *user_ptr);
+    static void *BlobDetection(void * ptr);
+    bool InitVision();
+    void addBlob(int x1, int y1, int x2, int y2, unsigned char * img, int width, int height, CMVision::rgb color);
 };
 
 #endif

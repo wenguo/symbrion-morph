@@ -44,6 +44,7 @@ int main(int argc, char * argv[])
     printf("Robot Initialize\n");
     RobotBase::RobotType robot_type = RobotBase::Initialize("morph");
 
+#ifdef ALL_BOARDS_REQUIRED 
     //check if board is running
     for(int i=0;i<4;i++)
     {
@@ -56,6 +57,7 @@ int main(int argc, char * argv[])
             return -1;
         }
     }
+#endif
 
     printf("Init IRComm\n");
     IRComm::Initialize();
