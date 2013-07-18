@@ -226,7 +226,7 @@ void ImageBox::Monitoring(const ELolMessage * msg, void* connection,void *ptr)
             break;
     }
 
-    imgbox->RequestInfo(REQ_IMAGE_FRAME);
+    //imgbox->RequestInfo(REQ_BLOB_INFO);
 
     printf("receive message done. %d\n", __LINE__);
  

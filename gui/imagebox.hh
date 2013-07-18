@@ -41,7 +41,7 @@ struct color_info{
 class ImageBox
 {
     public:
-        ImageBox(int port, int width=320, int height=240, iDisplay*parent=NULL);
+        ImageBox(int port, int width=IMAGE_WIDTH, int height=IMAGE_HEIGHT, iDisplay*parent=NULL);
         ~ImageBox();
 
 
@@ -103,7 +103,7 @@ class ImageBox
 class iDisplay
 {
     public:
-        iDisplay(Canvas *parent, int x, int y, int w=320, int h=240);
+        iDisplay(Canvas *parent, int x, int y, int w=IMAGE_WIDTH, int h=IMAGE_HEIGHT);
         bool SetImageBox(ImageBox *box);
         bool InRegion(int x, int y);//check if mouse clicked 
 

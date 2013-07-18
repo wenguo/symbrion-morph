@@ -142,7 +142,7 @@ void Canvas::draw_overlay()
         {
             fl_color(FL_RED);
             fl_line_style(FL_SOLID, 5);
-            fl_rect((*it)->startx,(*it)->starty,320,240);
+            fl_rect((*it)->startx,(*it)->starty,IMAGE_WIDTH, IMAGE_HEIGHT);
             fl_color(FL_BLACK);
             fl_line_style(FL_SOLID, 1);
         }

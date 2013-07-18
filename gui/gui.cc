@@ -21,8 +21,8 @@
 
 using namespace std;
 
-const int width  = 320;
-const int height = 240;
+const int width  = IMAGE_WIDTH;
+const int height = IMAGE_HEIGHT;
 
 int channel_index = 0;
 color_info channel_info;
@@ -225,7 +225,8 @@ void GetChannelInfo(Fl_Widget * o, void *input)
                     imgbox->channel_index = 1;
                 pthread_mutex_unlock(&imgbox->mutex);
 
-                imgbox->RequestInfo(REQ_CHANNEL_INFO);
+                imgbox->RequestInfo(REQ_IMAGE_FRAME);
+                //imgbox->RequestInfo(REQ_CHANNEL_INFO);
             }
             break;
         }
