@@ -1845,11 +1845,14 @@ void RobotKIT::Debugging()
             }
             break;
         case 20://testing motors
-            if(timestamp > 2 )
+            if(timestamp == 30 )
             { 
                 speed[0] = para.debug.para[4];
                 speed[1] = para.debug.para[5];
                 speed[2] = para.debug.para[6];
+
+                irobot->MoveScrewFront(speed[0]);
+                irobot->MoveScrewRear(speed[1]);
             }
             break;
         case 21://test RGB

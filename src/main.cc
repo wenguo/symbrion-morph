@@ -43,6 +43,8 @@ int main(int argc, char * argv[])
 
     printf("Robot Initialize\n");
     RobotBase::RobotType robot_type = RobotBase::Initialize("morph");
+    
+    RobotBase::MSPReset();
 
 #ifdef ALL_BOARDS_REQUIRED 
     //check if board is running

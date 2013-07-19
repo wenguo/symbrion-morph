@@ -283,35 +283,17 @@ void *Robot::BlobDetection(void * ptr)
             robot->frame.hdr.timestamp = robot->img->timestamp;
             robot->frame.data = robot->img->data;
             robot->vision.processFrame(reinterpret_cast<CMVision::image_pixel*>(robot->img->data));
+            /*
             if(robot->timestamp %10 ==0)
             {
                 printf("%d processed frame @ %d fps\n",robot->timestamp, count);
                 count=0;
-            }
+            }*/
         }
         robot->cap.releaseFrame(robot->img);
 
         gettimeofday(&sys_time, NULL);
 
-#if 0
-        for(int ch=0;ch<MAX_COLORS_TRACKED;ch++)
-        {
-            CMVision::rgb c = robot->vision.getColorVisual(ch);
-            CMVision::CMVision::region* reg = robot->vision.getRegions(ch);
-            int index=0;
-
-            while(reg)
-            {
-                printf("%d detected %d:%d: %d %d %d %d\n", robot->timestamp, ch,index, reg->x1, reg->y1, reg->x2, reg->y2);
-                
-                robot->vm->AddTrackingData(reg->x1, reg->y1, reg->x2, reg->y2, robot->timestamp, (sys_time.tv_sec - starttime.tv_sec)*1000 + sys_time.tv_usec/1000 , ch);
-                reg = reg->next;
-                index++;
-                if(index >= MAX_OBJECTS_TRACKED) 
-                    break;
-            }
-        }
-#else
         bool detected = false;
         blob_info_t blob_info[MAX_COLORS_TRACKED];
 
@@ -324,14 +306,13 @@ void *Robot::BlobDetection(void * ptr)
 
             while(reg)
             {
-               // robot->vm->AddTrackingData(reg->x1, reg->y1, reg->x2, reg->y2, robot->timestamp, (sys_time.tv_sec - starttime.tv_sec)*1000 + sys_time.tv_usec/1000 , ch);
-               // printf("%d detected %d:%d: %d %d %d %d\n", robot->timestamp, ch,index, reg->x1, reg->y1, reg->x2, reg->y2);
+                //robot->vm->AddTrackingData(reg->x1, reg->y1, reg->x2, reg->y2, robot->timestamp, (sys_time.tv_sec - starttime.tv_sec)*1000 + sys_time.tv_usec/1000 , ch);
                 blob_info[ch].blobs[index].offset.x = ((reg->x1 + reg->x2) - IMAGE_WIDTH) / 2;
                 blob_info[ch].blobs[index].offset.y = (IMAGE_HEIGHT - (reg->y1 + reg->y2)) / 2;
                 blob_info[ch].blobs[index].size.x = reg->x2 - reg->x1;
                 blob_info[ch].blobs[index].size.y = reg->y2 - reg->y1;
                 blob_info[ch].blobs[index].id = index;
-                printf("%d detected %d:%d: (%d %d %d %d) (%d %d)\n", robot->timestamp, ch,index, reg->x1, reg->y1, reg->x2, reg->y2,blob_info[ch].blobs[index].offset.x, blob_info[ch].blobs[index].offset.y);
+                //printf("%d detected %d:%d: (%d %d %d %d) (%d %d)\n", robot->timestamp, ch,index, reg->x1, reg->y1, reg->x2, reg->y2,blob_info[ch].blobs[index].offset.x, blob_info[ch].blobs[index].offset.y);
 
                 reg = reg->next;
 
@@ -347,15 +328,11 @@ void *Robot::BlobDetection(void * ptr)
         }
 
         if(detected)
-        {
-            printf("sizeof(blob_info_t): %d %d %d\n", sizeof(blob_info_t), sizeof(blob_info), MAX_COLORS_TRACKED);
             robot->monitoringIPC.SendData(REQ_BLOB_INFO_ACK, (uint8_t*)blob_info, MAX_COLORS_TRACKED * sizeof(blob_info_t));
-        }
 
-#endif
         pthread_mutex_unlock(&robot->vision_mutex);
 
-        usleep(200000);
+        usleep(100000);
     }
 
     printf("Blob detection thread is exiting\n");
