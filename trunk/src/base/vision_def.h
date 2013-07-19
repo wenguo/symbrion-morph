@@ -6,6 +6,10 @@
 #define PORT_SERVER 10000
 #define PORT_CLIENT_START 11000
 
+#define IMAGE_WIDTH 640
+#define IMAGE_HEIGHT 480
+#define FRAME_SEGMENTS 32
+
 #define RGB2YUV(r, g, b, y, u, v)\
 	y = (306*r + 601*g + 117*b)  >> 10;\
 u = ((-172*r - 340*g + 512*b) >> 10)  + 128;\
@@ -33,7 +37,7 @@ struct vect_2
 {
     int16_t x;
     int16_t y;
-};
+}__attribute__ ((__packed__));
 
 struct blob_rect {
     vect_2 offset;
@@ -42,10 +46,10 @@ struct blob_rect {
 }__attribute__ ((__packed__));
 
 struct blob_info_t{
-	unsigned char channel;
-	unsigned char num_blobs;
+	uint8_t channel;
+	uint8_t num_blobs;
 	blob_rect blobs[MAX_BLOBS_PER_CHANNEL];
-        unsigned int timestamp;
+        uint32_t timestamp;
 	uint16_t crc;
 }__attribute__ ((__packed__));
 
@@ -64,6 +68,8 @@ enum comm_status_t {
 	REQ_BLOB_INFO_ACK = 0X1B,
         REQ_ID = 0X1C,
         REQ_ID_ACK = 0X1D,
+        IMAGE_FRAME_HEADER,
+        IMAGE_FRAME_SEGMENT,
 	UNKNOWN = 0XEF};
 
 class RawImageFrame{

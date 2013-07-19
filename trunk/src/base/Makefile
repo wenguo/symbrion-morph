@@ -30,6 +30,10 @@ shared_LIB = libmorph_base.so
 CXXFLAGS =-O2 -Wall -Wno-reorder  -mcpu=bf561 -DWITH_MOTION -DWIP -DTEST_CLIMBING
 CFLAGS = -O2 -Wall -Wno-reorder -mcpu=bf561 -std=gnu99 -DWITH_MOTION -DWIP -DTEST_CLIMBING
 
+#for cmvision
+CXXFLAGS += -DLAPTOP
+CFLAGS += -DLAPTOP
+
 
 CXXFLAGS += $(patsubst %, -I%, $(IPATH))
 LDFLAGS = -L$(IROBOTPATH)/lib -lpthread -lirobot
