@@ -41,6 +41,7 @@ Connection::Connection()
 {
     ipc = NULL;
     callback = NULL;
+    callback_raw = NULL;
     connected = true;
     BQInit(&txq, txbuffer, IPCTXBUFFERSIZE);
     pthread_mutex_init(&mutex_txq, NULL);
@@ -77,6 +78,7 @@ IPC::IPC()
     host = NULL;
     server = true;
     callback = NULL;
+    callback_raw = NULL;
     user_data = NULL;
     monitoring_thread_running = false;
 }
@@ -168,15 +170,22 @@ void * Connection::Receiving(void * p)
         }
         else
         {
-            int parsed = 0;
-            while (parsed < received)
+            if(ptr->callback_raw)
             {
-                parsed += ElolmsgParse(&ptr->parseContext, rx_buffer + parsed, received - parsed);
-                ELolMessage* msg = ElolmsgParseDone(&ptr->parseContext);
-                if(msg!=NULL && ptr->callback)
+                ptr->callback_raw(rx_buffer, received, ptr, ptr->user_data);
+            }
+            else
+            {
+                int parsed = 0;
+                while (parsed < received)
                 {
-                    // printf("received data from %s : %d\n",inet_ntoa(ptr->addr.sin_addr),ntohs(ptr->addr.sin_port));
-                    ptr->callback(msg, ptr, ptr->user_data);
+                    parsed += ElolmsgParse(&ptr->parseContext, rx_buffer + parsed, received - parsed);
+                    ELolMessage* msg = ElolmsgParseDone(&ptr->parseContext);
+                    if(msg!=NULL && ptr->callback)
+                    {
+                        // printf("received data from %s : %d\n",inet_ntoa(ptr->addr.sin_addr),ntohs(ptr->addr.sin_port));
+                        ptr->callback(msg, ptr, ptr->user_data);
+                    }
                 }
             }
         }
@@ -297,6 +306,7 @@ bool IPC::StartServer(int port)
             conn->ipc = this;
             conn->connected = true;
             conn->SetCallback(callback, user_data);
+            conn->SetCallbackRaw(callback_raw, user_data);
             connections.push_back(conn);
             conn->Start();
         }
@@ -339,6 +349,7 @@ bool IPC::ConnectToServer(const char * host, int port)
     conn->addr = serv_addr;
     conn->connected = true;
     conn->SetCallback(callback, user_data);
+    conn->SetCallbackRaw(callback_raw, user_data);
     connections.push_back(conn);
     conn->Start();
     conn->transmiting_thread_running = true;
@@ -362,24 +373,37 @@ bool IPC::ConnectToServer(const char * host, int port)
 
 bool Connection::SendData(const uint8_t type, uint8_t *data, int data_size)
 {
-    //printf("Send data [%s] to %s:%d\n", message_names[type], inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-    ELolMessage msg;
-#ifdef IPC_TEST
-    ElolmsgInit(&msg, 0, type, data, data_size);
-#else
-    ElolmsgInit(&msg, type, data, data_size);
-#endif
-    int len = ElolmsgSerializedSize(&msg);
-    uint8_t buf[len];
-    ElolmsgSerialize(&msg, buf);
+    int len;
+    int write;
+    if(type == 0)
+    {
+        printf("Send Raw data (%d bytes) to %s:%d\n",data_size, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+        len = data_size;
 
-    pthread_mutex_lock(&mutex_txq);
-    int write = BQSize(&txq) - BQCount(&txq);
-    if (len < write)
-        write = len;
-    BQPushBytes(&txq, buf, write);       
+        pthread_mutex_lock(&mutex_txq);
+        write = BQSize(&txq) - BQCount(&txq);
+        if (len < write)
+            write = len;
+        BQPushBytes(&txq, data, write);       
 
-    pthread_mutex_unlock(&mutex_txq);
+        pthread_mutex_unlock(&mutex_txq);
+    }
+    else
+    {
+        ELolMessage msg;
+        ElolmsgInit(&msg, type, data, data_size);
+        len = ElolmsgSerializedSize(&msg);
+        uint8_t buf[len];
+        ElolmsgSerialize(&msg, buf);
+
+        pthread_mutex_lock(&mutex_txq);
+        write = BQSize(&txq) - BQCount(&txq);
+        if (len < write)
+            write = len;
+        BQPushBytes(&txq, buf, write);       
+
+        pthread_mutex_unlock(&mutex_txq);
+    }
     return write == len;
 
 }

@@ -594,9 +594,14 @@ class Robot
     VisualMemory *vm;
     
 
+    char * monitoring_host;
+    bool subscribed;
 
     IPC::IPC monitoringIPC;
+    IPC::IPC subscriptionIPC;
+    IPC::IPC rawimageIPC;//workaround as memory issue in blackfin
     static void Monitoring(const ELolMessage*msg, void* connection, void *user_ptr);
+    static void Subscribe(const ELolMessage*msg, void* connection, void *user_ptr);
     static void *BlobDetection(void * ptr);
     bool InitVision();
     void addBlob(int x1, int y1, int x2, int y2, unsigned char * img, int width, int height, CMVision::rgb color);
