@@ -10,6 +10,8 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include <sys/resource.h>
+
 
 #include "capture.h"
 #include "cmvision.h"
@@ -303,8 +305,30 @@ void timerHandler(int dummy)
 
 void testlolmsg()
 {
-#define BUFFERSIZE 640*480*3
-#define PARSE_BUFFERSIZE 640*480*3
+  const rlim_t kStackSize = 16 * 1024 * 1024;   // min stack size = 16 MB
+    struct rlimit rl;
+    int result;
+
+    result = getrlimit(RLIMIT_STACK, &rl);
+
+    printf("%d %d\n", result, rl.rlim_cur);
+
+    if (result == 0)
+    {
+        if (rl.rlim_cur < kStackSize)
+        {
+            rl.rlim_cur = kStackSize;
+            result = setrlimit(RLIMIT_STACK, &rl);
+            if (result != 0)
+            {
+                fprintf(stderr, "setrlimit returned result = %d\n", result);
+            }
+        }
+    }
+
+
+#define BUFFERSIZE 640*480
+#define PARSE_BUFFERSIZE 640*480
     uint8_t buf[BUFFERSIZE];
     ByteQueue bq;
 
@@ -318,19 +342,21 @@ void testlolmsg()
     printf("size LolMessage --- %d\n", sizeof(ELolMessage));
     printf("size uint8_t* --- %d\n", sizeof(uint8_t *));
 
-    int size=65534;
+    int size=300000;
     uint8_t *data = new uint8_t[size];
     for(int i=0;i<size;i++) 
         data[i]=0x30 + i;
 
     ELolMessage msg;
     ElolmsgInit(&msg, 0x1, data, size);
+    delete []data;
 
     int size2 = ElolmsgSerializedSize(&msg);
     uint8_t *outbytes = new uint8_t[size2];
     ElolmsgSerialize(&msg, outbytes);
 
     printf("data size: %d, lolmsg size: %d\n", size, size2);
+
 
     /*
     printf("");
@@ -342,11 +368,11 @@ void testlolmsg()
     int parsed=0,read=size2 -5;
     while (parsed < read)
     {
-        printf("--- parsed %d --\n", parsed);
-        parsed += ElolmsgParse(&parseContext, outbytes + parsed, size2 - 5);
-        printf("--- parsed %d --\n", parsed);
-        parsed += ElolmsgParse(&parseContext, outbytes + parsed, size2 - 5);
-        printf("--- parsed %d --\n", parsed);
+      //  printf("--- parsed %d --\n", parsed);
+        parsed += ElolmsgParse(&parseContext, outbytes + parsed, 10240);
+       // printf("--- parsed %d --\n", parsed);
+        parsed += ElolmsgParse(&parseContext, outbytes + parsed, 10240);
+       // printf("--- parsed %d --\n", parsed);
         ELolMessage* msg = ElolmsgParseDone(&parseContext);
         if(msg!=NULL)
         {
@@ -355,8 +381,10 @@ void testlolmsg()
             //for(int i=0;i<msg->length;i++)
             //    printf("%#x\n", msg->data[i]);
         }
-
     }
+    delete []outbytes;
+    printf("done\n");
+
 };
 
 void * BlobDetection(void * ptr)

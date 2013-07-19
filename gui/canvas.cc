@@ -81,7 +81,7 @@ void Canvas::draw_overlay()
             fl_draw(timestring,(*it)->startx + 250, (*it)->starty+20);
             fl_color(FL_BLACK);
 
-            int orig_x = (*it)->startx+ imagebox->img_width/2;
+            int orig_x = (*it)->startx + imagebox->img_width/2;
             int orig_y = (*it)->starty + imagebox->img_height/2;
 
 
@@ -92,21 +92,28 @@ void Canvas::draw_overlay()
                     blob_rect * blob = &(imagebox->blob_info[i].blobs[j]);
                     fl_color(colors[i]);
                     fl_rect(blob->offset.x -  blob->size.x / 2 + orig_x,
-                            blob->offset.y - blob->size.y / 2 + orig_y,
+                            - blob->offset.y - blob->size.y / 2 + orig_y,
                             blob->size.x,
                             blob->size.y);
                     fl_color(FL_WHITE);
+
+                    /*
+                    printf("draw %d on (%d %d) size (%d %d)\n", blob->id,
+                            blob->offset.x -  blob->size.x / 2 + orig_x,
+                            -blob->offset.y - blob->size.y / 2 + orig_y,
+                            blob->size.x,
+                            blob->size.y);*/
                     /*fl_rect(blob->offset.x + startx - 2,
                       blob->offset.y + starty - 2,
                       4,
                       4);*/
-                    fl_line(blob->offset.x -10 + orig_x, blob->offset.y + orig_y,
-                            blob->offset.x + 10 + orig_x, blob->offset.y + orig_y);
-                    fl_line(blob->offset.x + orig_x, blob->offset.y - 10 + orig_y,
-                            blob->offset.x+ orig_x, blob->offset.y + 10 + orig_y);
+                    fl_line(blob->offset.x -10 + orig_x, -blob->offset.y + orig_y,
+                            blob->offset.x + 10 + orig_x, -blob->offset.y + orig_y);
+                    fl_line(blob->offset.x + orig_x, -blob->offset.y - 10 + orig_y,
+                            blob->offset.x+ orig_x, -blob->offset.y + 10 + orig_y);
                     sprintf(str, "%d", blob->id);
                     fl_color(FL_YELLOW);
-                    fl_draw(str,blob->offset.x + orig_x, blob->offset.y + orig_y);
+                    fl_draw(str,blob->offset.x + orig_x, -blob->offset.y + orig_y);
                     fl_color(FL_BLACK);
                 }
             }
