@@ -51,6 +51,10 @@ ImageBox::ImageBox(int p, int width, int height, iDisplay* parent)
     monitoringIPC.SetCallback(Monitoring, this);
     monitoringIPC.Name("ImageBox");
     monitoringIPC.Start("localhost", port, true);
+    
+    rawimageIPC.SetCallbackRaw(ReceivingImage, this);
+    rawimageIPC.Name("Raw Image");
+    rawimageIPC.Start("localhost", port + 1000, true);
 }
 
 ImageBox::~ImageBox()
@@ -131,9 +135,68 @@ bool ImageBox::InitCapturing(const char *folder)
 
 }
 
+static uint8_t temp_img_buff[614416];
+
+void ImageBox::ReceivingImage(uint8_t *data, int len, void*connection, void *ptr)
+{   
+    if(!data || !ptr)
+        return;
+
+
+    ImageBox *imgbox = (ImageBox*)ptr;
+
+
+    static uint32_t img_buffer_pos = 0;
+
+    int image_size = imgbox->img_width * imgbox->img_height * 2;
+#ifdef TEST
+    int header_size =  sizeof(RawImageFrame::RawImageFileHdr); //TODO note that the size is different in 32bit vs 64 bit system
+#else
+    int header_size = 16; 
+#endif
+    
+
+    if(img_buffer_pos + len <= image_size + header_size)
+    {
+        memcpy(temp_img_buff + img_buffer_pos, data, len);
+        img_buffer_pos +=len;
+        //printf("data@ %#x, size %d img_buffer_pos %d (%d %d %d %d)\n", data, len, img_buffer_pos, header_size, image_size, header_size+image_size, sizeof(timeval));
+        if (img_buffer_pos == image_size + header_size)
+        {
+            img_buffer_pos = 0;
+            printf("%d received new image\n", imgbox->id);
+            pthread_mutex_lock(&imgbox->mutex);
+            memcpy(&imgbox->frame.hdr, temp_img_buff, header_size );
+            memcpy(imgbox->frame.data, temp_img_buff + header_size, image_size);
+            YUV422toRGB888(imgbox->img_width, imgbox->img_height, imgbox->frame.data, imgbox->img_rgb_buffer);
+
+            if(imgbox->flipped_image)
+            {
+               // flip(imgbox->img_width, imgbox->img_height, imgbox->img_rgb_buffer); 
+            }
+            pthread_mutex_unlock(&imgbox->mutex);
+
+            if(imgbox->capturing)
+            {
+                pthread_mutex_lock(&imgbox->mutex);
+                imgbox->image_ready = true;
+                pthread_cond_signal(&imgbox->image_ready_cond);
+                pthread_mutex_unlock(&imgbox->mutex);
+            }
+            imgbox->display->canvas->redraw_overlay();
+        }
+    }
+    else
+    {
+        img_buffer_pos = 0;
+        printf("Error! overfloat %d bytes\n", 0);
+    }
+
+    return;
+}
+
 void ImageBox::Monitoring(const ELolMessage * msg, void* connection,void *ptr)
 {
-    printf("receive message. %d\n", __LINE__);
     if(!msg || !ptr)
         return;
 
@@ -144,6 +207,49 @@ void ImageBox::Monitoring(const ELolMessage * msg, void* connection,void *ptr)
 
     switch (msg->command)
     {
+        case IMAGE_FRAME_HEADER:
+            {
+                printf("%d received new image header\n", imgbox->id);
+                pthread_mutex_lock(&imgbox->mutex);
+                memcpy(&imgbox->frame.hdr, msg->data, header_size );
+                pthread_mutex_unlock(&imgbox->mutex);
+
+            }
+            break;
+        case IMAGE_FRAME_SEGMENT:
+            {
+                printf("%d received new image segment %d\n", imgbox->id, msg->data[0]);
+                pthread_mutex_lock(&imgbox->mutex);
+                int index = msg->data[0];
+                if(index < FRAME_SEGMENTS)
+                {
+                    memcpy(imgbox->frame.data + index * (image_size*2/FRAME_SEGMENTS), msg->data + 1, image_size *2 /FRAME_SEGMENTS);
+                    if(index == FRAME_SEGMENTS -1)
+                    {
+                        YUV422toRGB888(imgbox->img_width, imgbox->img_height, imgbox->frame.data, imgbox->img_rgb_buffer);
+
+                        if(imgbox->flipped_image)
+                        {
+                            flip(imgbox->img_width, imgbox->img_height, imgbox->img_rgb_buffer); 
+                        }
+                        pthread_mutex_unlock(&imgbox->mutex);
+
+                        if(imgbox->capturing)
+                        {
+                            pthread_mutex_lock(&imgbox->mutex);
+                            imgbox->image_ready = true;
+                            pthread_cond_signal(&imgbox->image_ready_cond);
+                            pthread_mutex_unlock(&imgbox->mutex);
+                        }
+
+                        printf("full picture recieved\n");
+                    }
+                }
+                else
+                    printf("ERROR, should be no more than 8 segment for each frame\n");
+                pthread_mutex_unlock(&imgbox->mutex);
+            }
+            break;
         case REQ_IMAGE_FRAME_ACK:
             {
                 printf("%d received new image\n", imgbox->id);
@@ -190,11 +296,12 @@ void ImageBox::Monitoring(const ELolMessage * msg, void* connection,void *ptr)
             }
         case REQ_BLOB_INFO_ACK:
             {
+                /*
                 printf("%d received blobs info ", imgbox->id);
                 for(int i=0;i<msg->length;i++)
                     printf("%d\t", msg->data[i]);
                 printf("\n");
-
+*/
                 //blob_info_t *blob_info = new blob_info_t;
                 memcpy(imgbox->blob_info, msg->data, MAX_COLORS_TRACKED*sizeof(blob_info_t));
 
@@ -228,7 +335,6 @@ void ImageBox::Monitoring(const ELolMessage * msg, void* connection,void *ptr)
 
     //imgbox->RequestInfo(REQ_BLOB_INFO);
 
-    printf("receive message done. %d\n", __LINE__);
  
     return;
 }

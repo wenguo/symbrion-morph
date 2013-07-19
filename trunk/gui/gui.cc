@@ -58,8 +58,8 @@ int main(int argc, char **argv) {
     Input = new UserInput;
     canvas =  new Canvas(900, 600, Input);
 
-    Fl_Button but_start( 70, 520, 80, 40,"Start" );
-    Fl_Button but_stop( 220, 520, 80, 40,"Stop" );
+    Fl_Button but_start( 70, 520, 80, 40,"BlobInfo" );
+    Fl_Button but_stop( 220, 520, 80, 40,"ImageFrame" );
     Fl_Button but_snapshot( 370, 520, 80, 40,"Snapshot" );
     Fl_Button but_flip( 520, 520, 80, 40,"Capture" );
     Fl_Check_Button but_stream(700, 20, 200, 20, "Streaming Image");
@@ -126,12 +126,56 @@ void callback(void*input)
 
 void Start(Fl_Widget* o, void* input)
 {
- //   Fl::add_timeout(0.1, callback, input);
+    printf("Get blob info clicked\n");
+    std::list<iDisplay*>::iterator it;
+    for(it = canvas->displays.begin(); it!= canvas->displays.end();it++)
+    {
+        if((*it)->clicked > 0)
+        {
+            ImageBox * imgbox = (*it)->imagebox;
+            if(imgbox)
+            {
+                pthread_mutex_lock(&imgbox->mutex);
+                if(strcmp(Input->channel_selection->value(), STR_CHANNEL_BODY)==0)
+                    imgbox->channel_index = 0;
+                else if(strcmp(Input->channel_selection->value(), STR_CHANNEL_LED)==0)
+                    imgbox->channel_index = 1;
+                pthread_mutex_unlock(&imgbox->mutex);
+
+                //imgbox->RequestInfo(REQ_IMAGE_FRAME);
+                imgbox->RequestInfo(REQ_BLOB_INFO);
+            }
+            break;
+        }
+    }
+
 }
 
 void Stop(Fl_Widget * o, void * input)
 {
 //    Fl::remove_timeout(callback);
+    printf("Get Image Frame clicked\n");
+    std::list<iDisplay*>::iterator it;
+    for(it = canvas->displays.begin(); it!= canvas->displays.end();it++)
+    {
+        if((*it)->clicked > 0)
+        {
+            ImageBox * imgbox = (*it)->imagebox;
+            if(imgbox)
+            {
+                pthread_mutex_lock(&imgbox->mutex);
+                if(strcmp(Input->channel_selection->value(), STR_CHANNEL_BODY)==0)
+                    imgbox->channel_index = 0;
+                else if(strcmp(Input->channel_selection->value(), STR_CHANNEL_LED)==0)
+                    imgbox->channel_index = 1;
+                pthread_mutex_unlock(&imgbox->mutex);
+
+                imgbox->RequestInfo(REQ_IMAGE_FRAME);
+            }
+            break;
+        }
+    }
+
 }
 
 void Snapshot(Fl_Widget * o, void *input)
@@ -225,8 +269,8 @@ void GetChannelInfo(Fl_Widget * o, void *input)
                     imgbox->channel_index = 1;
                 pthread_mutex_unlock(&imgbox->mutex);
 
-                imgbox->RequestInfo(REQ_IMAGE_FRAME);
-                //imgbox->RequestInfo(REQ_CHANNEL_INFO);
+                //imgbox->RequestInfo(REQ_IMAGE_FRAME);
+                imgbox->RequestInfo(REQ_CHANNEL_INFO);
             }
             break;
         }

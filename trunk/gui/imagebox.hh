@@ -97,7 +97,9 @@ class ImageBox
         bool capturing;
 
         IPC::IPC monitoringIPC;
+        IPC::IPC rawimageIPC;
         static void Monitoring(const ELolMessage *msg, void*connection, void *ptr);
+        static void ReceivingImage(uint8_t *data, int len, void*connection, void *ptr);
 };
 
 class iDisplay
