@@ -14,15 +14,19 @@ LocateBeacon
 (
    weight_left [-1 1 1 2 1 -1 -2 -1]
    weight_right [1 -1 -1 -2 -1 1 2 1]
-   forward_speed [25 25 0]
+   turn_right_speed [10 -40 0]
+   turn_left_speed [40 -10 0]
+   forward_speed [25 25 32]
    locatebeacon_time 200
-)
+   )
 
 Alignment
 (
    weight_left [-1 1 0 0 -1 1 0 0]
    weight_right [1 -1 0 0 1 -1 0 0]
-   forward_speed [25 25 0]
+   turn_right_speed [10 -40 0]
+   turn_left_speed [40 -10 0]
+   forward_speed [25 25 32]
    reverse_speed [-25 -25 0]
    reverse_time 10
 )
@@ -47,7 +51,7 @@ Docking
     turn_right_speed [10 -40 0]
     turn_left_speed [40 -10 0]
     forward_speed [30 30 0]
-    backward_speed [15 -45 0]
+    backward_speed [-30 -30 0]
 )
 
 Locking
