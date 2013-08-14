@@ -68,10 +68,17 @@ int main(int argc, char * argv[])
     Robot * robot = NULL;
     char cf_path[64];
     char cf_name[128];
-    if(argc == 2)
-        sprintf(cf_path,"%s", argv[1]);
-    else
+    int daemon_port;
+    if(argc == 3) {
+        sprintf(cf_path,"%s", argv[2]);
+        daemon_port = atoi(argv[1]);
+    } else if (argc == 2) {
         sprintf(cf_path,"/flash/morph");
+        daemon_port = atoi(argv[1]);
+    } else {
+       fprintf(stderr, "Usage: %s daemon_port_number [cfg_path]\n", argv[0]);
+       exit(1);
+    }
 
 
     if(robot_type == RobotBase::KABOT)
@@ -94,10 +101,12 @@ int main(int argc, char * argv[])
         printf("unknow robot type, quit\n");
         return -1;
     }
-
+    robot->daemon_port = daemon_port;
+    printf("Init with %s\n", cf_name);
     if(!robot->Init(cf_name))
         return -1;
 
+   // robot->current_state = DAEMON;
 
     //set timer to be every 100 ms
     struct itimerval tick;

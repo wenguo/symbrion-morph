@@ -37,6 +37,7 @@
 #include "vision_def.h"
 #include "VisualMemory.hh"
 
+extern int userQuit;
 
 class Robot
 {
@@ -93,6 +94,7 @@ class Robot
 
     // reset variables required for self-assembly
     void ResetAssembly(bool reset_ipc = true);
+    int daemon_port;
 
     protected:    
     virtual void InitHardware()=0;
