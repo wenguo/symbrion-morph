@@ -288,6 +288,13 @@ bool Robot::LoadParameters(const char * filename)
                 for(int i=0;i<NUM_IRS;i++)
                     para.aux_ambient_calibrated[i] = atoi(optionfile->GetPropertyValue(prop, i));
             }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "vision_aspect_ratio_range" ) ) 
+            {
+                for(int i=0;i<2;i++)
+                    para.vision_aspect_ratio_range[i] = atof(optionfile->GetPropertyValue(prop, i));
+                printf("vision_aspection_ratio_range [%f %f]\n", para.vision_aspect_ratio_range[0], para.vision_aspect_ratio_range[1]);
+            }
+
         }
         else if( strcmp( typestr, "ShapeInfo" ) == 0 )
         {

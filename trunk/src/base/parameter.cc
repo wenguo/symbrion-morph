@@ -13,7 +13,7 @@ Parameter::Parameter():
     init_state(0),
     speed_forward(30),
     speed_sideward(2),
-    aw_adjustment_ratio(0.9),
+    aw_adjustment_ratio(1.0),
     locomotion_motor_enabled(true),
     recruiting_guiding_signals_time(200),
     recruiting_beacon_signals_time(500),
@@ -76,6 +76,8 @@ Parameter::Parameter():
     memset(locatebeacon_turn_right_speed, 0, 3 * sizeof(int));
     debug.mode = 0;
     memset(debug.para, 0, 10* sizeof(int));
+    vision_aspect_ratio_range[0] = 0.1;
+    vision_aspect_ratio_range[1] = 10;
 }
 
 Parameter::~Parameter()

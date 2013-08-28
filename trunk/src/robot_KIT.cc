@@ -1845,14 +1845,24 @@ void RobotKIT::Debugging()
             }
             break;
         case 20://testing motors
-            if(timestamp == 30 )
+            if(timestamp  == 2)
+            {
+                SetRGBLED(2,RED,RED,RED,RED);
+            }
+            else if(timestamp  == 10)
             { 
-                speed[0] = para.debug.para[4];
-                speed[1] = para.debug.para[5];
-                speed[2] = para.debug.para[6];
-
-                irobot->MoveScrewFront(speed[0]);
-                irobot->MoveScrewRear(speed[1]);
+                SetRGBLED(2,0,0,0,0);
+                speed[0] =para.debug.para[4];
+                speed[1] =  para.debug.para[5];
+                speed[2] =para.debug.para[6];
+                printf("Move motors at speed (%d %d %d)\n", para.debug.para[4], para.debug.para[5], para.debug.para[6]);
+            }
+            else if(timestamp  == para.debug.para[9])
+            { 
+                speed[0] = 0;
+                speed[1] = 0;
+                speed[2] = 0;
+                printf("Move motors at speed (%d %d %d)\n", para.debug.para[4], para.debug.para[5], para.debug.para[6]);
             }
             break;
         case 21://test RGB
