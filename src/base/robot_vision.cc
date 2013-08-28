@@ -57,7 +57,6 @@ bool Robot::InitVision()
         return false;
     }
 
-    vm = new VisualMemory(img_width, img_height);
 
     pthread_create(&vision_thread, NULL, BlobDetection, this);
 
@@ -203,48 +202,6 @@ void Robot::Monitoring(const ELolMessage*msg, void* connection, void *user_ptr)
                         ymin,ymax,umin,umax,vmin,vmax);
             }
             break;
-        case REQ_BLOB_INFO:
-            {
-                printf("recieved request for blob_info\n");
-                blob_info_t blob_info[MAX_COLORS_TRACKED];
-                memset(&blob_info, 0, MAX_COLORS_TRACKED*sizeof(blob_info_t));
-
-                std::list<Object*>::iterator it;
-                if(robot->vm)
-                {
-                    std::list<Object*> objects = robot->vm->Objects();
-                    int num_blobs[MAX_COLORS_TRACKED] = {0};
-                    for(it = objects.begin();it!=objects.end();it++)
-                    {
-                        Object * obj = *it;
-                        if(obj)
-                        {
-                            for(int ch=0;ch<MAX_COLORS_TRACKED;ch++)
-                            {
-                                Blob_info blob = obj->GetLatestAveragedBlobInfo(robot->timestamp, ch);
-                                blob_info[ch].channel = ch;
-                                if(blob.sys_timestamp!=-1)
-                                {
-                                    if(num_blobs[ch] >= MAX_BLOBS_PER_CHANNEL)
-                                        break;
-                                    blob_info[ch].blobs[num_blobs[ch]].offset.x = blob.offset.x;
-                                    blob_info[ch].blobs[num_blobs[ch]].offset.y = blob.offset.y;
-                                    blob_info[ch].blobs[num_blobs[ch]].size.x = blob.size.x;
-                                    blob_info[ch].blobs[num_blobs[ch]].size.y = blob.size.y;
-                                    blob_info[ch].blobs[num_blobs[ch]].id = obj->id;
-                                    num_blobs[ch]++;
-                                }
-                            }
-                        }
-                    }
-                    for(int ch=0;ch<MAX_COLORS_TRACKED;ch++)
-                        blob_info[ch].num_blobs=num_blobs[ch];
-
-                }
-                //memcpy(tx_buffer, blob_info, MAX_COLORS_TRACKED * sizeof(blob_info_t));
-                robot->monitoringIPC.SendData(REQ_BLOB_INFO_ACK, (uint8_t*)blob_info, MAX_COLORS_TRACKED * sizeof(blob_info_t));
-            }
-            break;
         case REQ_ID:
             {
                 printf("received request for ID\n");
@@ -293,9 +250,10 @@ void *Robot::BlobDetection(void * ptr)
         robot->cap.releaseFrame(robot->img);
 
         gettimeofday(&sys_time, NULL);
+        
+        blob_info_t blob_info[MAX_COLORS_TRACKED];
 
         bool detected = false;
-        blob_info_t blob_info[MAX_COLORS_TRACKED];
 
         for(int ch=0;ch<MAX_COLORS_TRACKED;ch++)
         {
@@ -306,7 +264,12 @@ void *Robot::BlobDetection(void * ptr)
 
             while(reg)
             {
-                //robot->vm->AddTrackingData(reg->x1, reg->y1, reg->x2, reg->y2, robot->timestamp, (sys_time.tv_sec - starttime.tv_sec)*1000 + sys_time.tv_usec/1000 , ch);
+                if(((reg->x2 - reg->x1) - robot->para.vision_aspect_ratio_range[1]*(reg->y2 - reg->y1)) > 1e-6)
+                {
+                    reg = reg->next;
+                    continue;
+                }
+                    
                 blob_info[ch].blobs[index].offset.x = ((reg->x1 + reg->x2) - IMAGE_WIDTH) / 2;
                 blob_info[ch].blobs[index].offset.y = (IMAGE_HEIGHT - (reg->y1 + reg->y2)) / 2;
                 blob_info[ch].blobs[index].size.x = reg->x2 - reg->x1;

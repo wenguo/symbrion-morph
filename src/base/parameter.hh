@@ -98,6 +98,8 @@ class Parameter
         int fail_in_state;
         int fail_after_delay;
 
+        float vision_aspect_ratio_range[2];
+
         std::vector<OrganismSequence> og_seq_list;
 
         struct{

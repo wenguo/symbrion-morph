@@ -35,7 +35,6 @@
 #include "capture.h"
 #include "cmvision.h"
 #include "vision_def.h"
-#include "VisualMemory.hh"
 
 extern int userQuit;
 
@@ -590,10 +589,7 @@ class Robot
     RawImageFrame frame;
     int img_width;
     int img_height;
-    Blob_info blob_data[MAX_OBJECTS_TRACKED];
-    Hist blob_hist;
 
-    VisualMemory *vm;
     
 
     char * monitoring_host;

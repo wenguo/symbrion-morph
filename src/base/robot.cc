@@ -348,24 +348,41 @@ bool Robot::InitLog()
     if(para.logtofile > 1)
     {
         std::ostringstream oss;
-        oss << "./log/";
+        oss << "/flash/morph/log/";
         mkdir(oss.str().c_str(), 0777);
         oss << (char *)name <<"_"<< time_string<< ".log";
+
+        //in case the file exists
+        std::ifstream tmpfile(oss.str().c_str());
+        if (tmpfile)
+            oss << "_";
+
         logFile.open(oss.str().c_str());
 
         std::ostringstream oss1;
-        oss1 << "./log/";
+        oss1 << "/flash/morph/log/";
         oss1 << (char *)name <<"_"<< time_string<< ".state";
         logstateFile.open(oss1.str().c_str());
 
     }    
     else if(para.logtofile == 1)
     {
-        std::ostringstream oss1;
-        oss1 << "./log/";
-        mkdir(oss1.str().c_str(), 0777);
-        oss1 << (char *)name <<"_"<< time_string<< ".state";
-        logstateFile.open(oss1.str().c_str());
+        std::ostringstream oss, oss1;
+        oss << "/flash/morph/log/";
+        mkdir(oss.str().c_str(), 0777);
+        //oss << (char *)name <<"_"<< time_string<< ".state";
+        oss << (char *)name <<".state";
+        //in case the file exists
+        std::ifstream tmpfile;//(oss.str().c_str());
+        tmpfile.open(oss.str().c_str());
+        while (tmpfile.is_open())
+        {
+            tmpfile.close();
+            oss << "_" ;
+            tmpfile.open(oss.str().c_str());
+        }
+        tmpfile.close();
+        logstateFile.open(oss.str().c_str());
     }
 
 
@@ -788,10 +805,14 @@ void Robot::LogState()
         logstateFile << "("<<speed[0] <<"\t" << speed[1] <<"\t" << speed[2]<<")\t";
         logstateFile << beacon[docking_approaching_sensor_id[0]] <<"\t" << beacon[docking_approaching_sensor_id[1]]<<"\t";
         logstateFile <<"[";
-        logstateFile << (int)(recruitment_stage[0])<<"\t";
-        logstateFile << (int)(recruitment_stage[1])<<"\t";
-        logstateFile << (int)(recruitment_stage[2])<<"\t";
-        logstateFile << (int)(recruitment_stage[3])<<"]";
+        //logstateFile << (int)(recruitment_stage[0])<<"\t";
+        //logstateFile << (int)(recruitment_stage[1])<<"\t";
+        //logstateFile << (int)(recruitment_stage[2])<<"\t";
+        //logstateFile << (int)(recruitment_stage[3])<<"]";
+        logstateFile << reflective_hist[docking_approaching_sensor_id[0]].Avg()<<"\t";
+        logstateFile << reflective_hist[docking_approaching_sensor_id[1]].Avg()<<"\t";
+        logstateFile << proximity[docking_approaching_sensor_id[0]]<<"\t";
+        logstateFile << proximity[docking_approaching_sensor_id[1]]<<"]";
         logstateFile <<std::endl;
     }
 }

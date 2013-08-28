@@ -1,7 +1,7 @@
 SRC = robot.cc robot_ircomm.cc robot_ethcomm.cc robot_option.cc robot_self_repair.cc parameter.cc global.cc IRMessage.cc robot_IPC.cc robot_debug.cc robot_organism.cc robot_daemon.cc robot_vision.cc
 SRC += organism.cc organism_sequence.cc organism_sample.cc
 SRC += support.cc worldfile.cc hist.cc ipc.cc
-SRC += capture.cc cmvision.cc v4l_helper.cc VisualMemory.cc
+SRC += capture.cc cmvision.cc v4l_helper.cc
 SRC += CMessage.cc
 
 CC = bfin-linux-uclibc-gcc
