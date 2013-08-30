@@ -31,7 +31,7 @@ Avoidance
    weight_left [3 -3 -1 -1 -3 3 1 1]
    weight_right [-3 3 1 1 3 -3 -1 -1]
    weight_side [0 0 -1 -1 0 0 1 1]
-   threshold [200 200 200 200 200 200 200 200]
+   threshold [100 100 200 200 200 200 200 200]
 )
 
 Recruitment
@@ -54,7 +54,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 35
-    locking_motor_enabled [1 0 1 0]
+    locking_motor_enabled [0 0 0 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [1 0 1 0]
     locking_motor_isense_threshold 240
@@ -72,8 +72,8 @@ MacroLocomotion
 
 Debugging
 (
-    mode 31 
-    para [61 0 0 0 0 3 2 0 211 0]
+    mode 20 
+    para [61 0 0 0 20 20 2 0 211 0]
 )
 
 Global
@@ -91,8 +91,10 @@ Global
 	ir_msg_ack_delay 3
         reflective_calibrated [1168 97 258 83 977 980 1075 1005]
         ambient_calibrated [3646 3880 3755 3797 3883 3959 3649 3686]
-fail_in_state 20
-	fail_after_delay 100
+#fail_in_state 20
+#	fail_after_delay 100
+	vision_region_ratio_region [1 10]
+	blob_threshold [100 500]
 )
 
 Motor
@@ -100,6 +102,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     scout_wheels_direction [1 -1]
+    aw_adjustment_ratio 1
     locomotion_motor_enabled 1
         
 )
@@ -174,13 +177,9 @@ Climbing
 #shape0
 ShapeInfo
 (
-    seq ""
+    seq "SBKF0000"
 )
-#shape1
-ShapeInfo
-(
-    seq "SBAFABSBSFAB000000000000"
-)
+
 
 
 
