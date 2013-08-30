@@ -294,6 +294,12 @@ bool Robot::LoadParameters(const char * filename)
                     para.vision_aspect_ratio_range[i] = atof(optionfile->GetPropertyValue(prop, i));
                 printf("vision_aspection_ratio_range [%f %f]\n", para.vision_aspect_ratio_range[0], para.vision_aspect_ratio_range[1]);
             }
+            if( Morph::CProperty* prop = optionfile->GetProperty( entity, "blob_threshold" ) ) 
+            {
+                for(int i=0;i<2;i++)
+                    para.blob_threshold[i] = atoi(optionfile->GetPropertyValue(prop, i));
+                printf("blob_threshold [%d %d]\n", para.blob_threshold[0], para.blob_threshold[1]);
+            }
 
         }
         else if( strcmp( typestr, "ShapeInfo" ) == 0 )

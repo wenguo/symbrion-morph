@@ -17,6 +17,7 @@ Robot::Robot()
     timestamp_hinge_motor_cmd_received =0;
     timestamp_locomotion_motors_cmd_received =0;
     timestamp_user_input_received = 0;
+    timestamp_blob_info_updated = 0;
     type = ROBOT_KIT;
 
     LED0 = 0x1;

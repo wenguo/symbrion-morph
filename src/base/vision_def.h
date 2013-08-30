@@ -41,6 +41,7 @@ struct vect_2
 
 struct blob_rect {
     vect_2 offset;
+    vect_2 offset_deriv;
     vect_2 size;
     uint8_t id;
 }__attribute__ ((__packed__));

@@ -256,6 +256,7 @@ class Robot
     uint32_t timestamp_propagated_msg_received;
     uint32_t timestamp_hinge_motor_cmd_received; //the last time motor command received from the commander
     uint32_t timestamp_locomotion_motors_cmd_received; //the last time motor command received from the commander
+    uint32_t timestamp_blob_info_updated;
     uint8_t id;
     robot_type type;
     char *name;
@@ -590,7 +591,7 @@ class Robot
     int img_width;
     int img_height;
 
-    
+    blob_info_t blob_info[MAX_COLORS_TRACKED];
 
     char * monitoring_host;
     bool subscribed;

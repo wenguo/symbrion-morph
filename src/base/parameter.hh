@@ -99,6 +99,7 @@ class Parameter
         int fail_after_delay;
 
         float vision_aspect_ratio_range[2];
+        int blob_threshold[2];
 
         std::vector<OrganismSequence> og_seq_list;
 

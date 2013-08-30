@@ -334,6 +334,15 @@ void RobotSCOUT::UpdateSensors()
         stalled |= 0x2;
 
     stalled_hist.Push2(stalled);
+
+    powersource_found = false;
+    if(fabs(timestamp_blob_info_updated  - timestamp) < 1)
+    {
+        printf("blob found\n");
+        if(blob_info[0].blobs[0].size.x > para.blob_threshold[0])
+            powersource_found = true;
+    }
+
 }
 
 void RobotSCOUT::UpdateActuators()
@@ -434,49 +443,42 @@ void RobotSCOUT::Foraging()
     speed[0]=0;
     speed[1]=0;
     foraging_count++;
-    /*
-    //time up?
-    if(foraging_count >= para.foraging_time)
-    {
-    foraging_count = 0;//DEFAULT_FORAGING_COUNT;
-    waiting_count = 0;//DEFAULT_WAITING_COUNT;
 
-    //switch off all ir leds
-    for(uint8_t i=0; i< NUM_DOCKS; i++)
-    {
-    SetIRLED(i, IRLEDOFF, LED1, 0x0);
-    SetRGBLED(i, 0,0,0,0);
-    }
-    current_state = WAITING;
-    last_state = FORAGING;
+    if(foraging_count >= para.foraging_time + 20)
+        foraging_count = 0;
 
-    speed[0] = 0;
-    speed[1] = 0;
-    }
-    else*/
+
+    if(bumped & 0x3)
     {
         Avoidance();
+    }
+    else
+    {
+        speed[0] = 20;
+        speed[1] = 20;
 
-        if(powersource_found)
+        if(foraging_count >= para.foraging_time)
         {
-            current_state = LOCATEENERGY;
-            last_state = FORAGING;
+            speed[0] = 35;
+            speed[1] = -35;
         }
-        else if(organism_found || beacon_signals_detected)
-        {
-            for(int i=0;i<NUM_DOCKS;i++)
-                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-
-            assembly_count = 0;
-            current_state = ASSEMBLY;
-            last_state = WAITING;
-        }
-
+                
     }
 
-    speed[0]=0;
-    speed[1]=0;
-    speed[2]=0;
+    if(powersource_found)
+    {
+        current_state = LOCATEENERGY;
+        last_state = FORAGING;
+    }
+    else if(organism_found || beacon_signals_detected)
+    {
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+
+        assembly_count = 0;
+        current_state = ASSEMBLY;
+        last_state = FORAGING;
+    }
 
 
 }
@@ -495,13 +497,6 @@ void RobotSCOUT::Waiting()
     {
         waiting_count = 0;//DEFAULT_WAITING_COUNT;
         foraging_count = 0;//DEFAULT_FORAGING_COUNT;
-
-        for(int i=0;i< NUM_IRS;i++)
-            reflective_hist[i].Reset();
-
-        //switch on proximity ir leds and ir pulsing
-        for(uint8_t i=0; i< NUM_DOCKS; i++)
-            SetIRLED(i, IRLEDOFF, LED1, IRPULSE0|IRPULSE1);
 
         current_state = FORAGING;
         last_state = WAITING;
@@ -576,14 +571,29 @@ void RobotSCOUT::Assembly()
 
 void RobotSCOUT::LocateEnergy()
 {
-    speed[0] = 0;
-    speed[1] = 0;
+    direction = FORWARD;
 
-    if(1)
+    speed[0] = 30; //right wheel
+    speed[1] = 30; //left wheel
+    float p_coeff = 0.1;
+    float d_coeff = 0.1;
+
+    if(fabs(timestamp_blob_info_updated  - timestamp) < 1)
     {
-        current_state = SEEDING;
-        last_state = LOCATEENERGY;
-        return;
+        speed[0] -= blob_info[0].blobs[0].offset.x  * p_coeff + blob_info[0].blobs[0].offset_deriv.x * d_coeff;
+        speed[1] += blob_info[0].blobs[0].offset.x  * p_coeff + blob_info[0].blobs[0].offset_deriv.x * d_coeff;
+
+        int ch=0,index=0;
+
+        printf("%d: channel %d index %d size: (%d %d) offset: (%d %d) speed: (%d %d)\n",timestamp, ch, index,blob_info[ch].blobs[index].size.x, blob_info[ch].blobs[index].size.y,blob_info[ch].blobs[index].offset.x, blob_info[ch].blobs[index].offset.y, speed[0], speed[1] );
+
+        if(blob_info[0].blobs[0].size.x > 600)
+        {
+            current_state = SEEDING;
+            last_state = LOCATEENERGY;
+            return;
+        }
+
     }
 }
 

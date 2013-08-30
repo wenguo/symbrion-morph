@@ -78,6 +78,8 @@ Parameter::Parameter():
     memset(debug.para, 0, 10* sizeof(int));
     vision_aspect_ratio_range[0] = 0.1;
     vision_aspect_ratio_range[1] = 10;
+    blob_threshold[0] = 100;
+    blob_threshold[1] = 600;
 }
 
 Parameter::~Parameter()
