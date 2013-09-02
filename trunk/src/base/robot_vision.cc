@@ -275,6 +275,11 @@ void *Robot::BlobDetection(void * ptr)
 
                 robot->blob_info[ch].blobs[index].offset.x = ((reg->x1 + reg->x2) - IMAGE_WIDTH) / 2;
                 robot->blob_info[ch].blobs[index].offset.y = (IMAGE_HEIGHT - (reg->y1 + reg->y2)) / 2;
+                if(robot->type == ROBOT_AW)
+                {
+                    robot->blob_info[ch].blobs[index].offset.x = -robot->blob_info[ch].blobs[index].offset.x;
+                    robot->blob_info[ch].blobs[index].offset.y = -robot->blob_info[ch].blobs[index].offset.y;
+                }
                 robot->blob_info[ch].blobs[index].offset_deriv.x = robot->blob_info[ch].blobs[index].offset.x - offset_old_x;
                 robot->blob_info[ch].blobs[index].offset_deriv.y = robot->blob_info[ch].blobs[index].offset.y - offset_old_y;
                 robot->blob_info[ch].blobs[index].size.x = reg->x2 - reg->x1;
