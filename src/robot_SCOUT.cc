@@ -338,10 +338,14 @@ void RobotSCOUT::UpdateSensors()
     powersource_found = false;
     if(fabs(timestamp_blob_info_updated  - timestamp) < 1)
     {
-        printf("blob found\n");
         if(blob_info[0].blobs[0].size.x > para.blob_threshold[0])
             powersource_found = true;
     }
+
+    if(powersource_found)
+        SetRGBLED(1, RED,RED,RED,RED);
+    else
+        SetRGBLED(1, 0,0,0,0);
 
 }
 
@@ -419,6 +423,7 @@ void RobotSCOUT::Avoidance()
             }
         }
     }
+
 }
 
 void RobotSCOUT::Exploring()
@@ -444,8 +449,14 @@ void RobotSCOUT::Foraging()
     speed[1]=0;
     foraging_count++;
 
+    SetRGBLED(2, GREEN,GREEN,GREEN,GREEN);
+
+    static int turn_speed = 35;
     if(foraging_count >= para.foraging_time + 20)
+    {
+        turn_speed = IRandom(1,100) > 50 ? -35: 35;
         foraging_count = 0;
+    }
 
 
     if(bumped & 0x3)
@@ -457,10 +468,11 @@ void RobotSCOUT::Foraging()
         speed[0] = 20;
         speed[1] = 20;
 
+
         if(foraging_count >= para.foraging_time)
         {
-            speed[0] = 35;
-            speed[1] = -35;
+            speed[0] = turn_speed;
+            speed[1] = -turn_speed;
         }
                 
     }
@@ -479,7 +491,6 @@ void RobotSCOUT::Foraging()
         current_state = ASSEMBLY;
         last_state = FORAGING;
     }
-
 
 }
 void RobotSCOUT::Waiting()
@@ -519,6 +530,8 @@ void RobotSCOUT::Assembly()
     speed[1]=0;
 
     assembly_count++;
+
+    SetRGBLED(2, RED,RED,RED,RED);
 
     if(assembly_count >= (uint32_t)para.assembly_time)
     {
@@ -563,10 +576,18 @@ void RobotSCOUT::Assembly()
         }
     }
     else
-        Avoidance();
+    {    
+        if(bumped & 0x3)
+        {
+            Avoidance();
+        }
+        else
+        {
+            speed[0] = 20;
+            speed[1] = 20;
+        }
+    }
 
-    speed[0]=0;
-    speed[1]=0;
 }
 
 void RobotSCOUT::LocateEnergy()
@@ -577,9 +598,22 @@ void RobotSCOUT::LocateEnergy()
     speed[1] = 30; //left wheel
     float p_coeff = 0.1;
     float d_coeff = 0.1;
+    
+    SetRGBLED(2, WHITE,WHITE,GREEN,GREEN);
 
-    if(fabs(timestamp_blob_info_updated  - timestamp) < 1)
+    if(organism_found || beacon_signals_detected)
     {
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+
+        current_state = ASSEMBLY;
+        last_state = LOCATEENERGY;
+
+        assembly_count = 0;
+    }
+    else if(fabs(timestamp_blob_info_updated  - timestamp) < 2)
+    {
+
         speed[0] -= blob_info[0].blobs[0].offset.x  * p_coeff + blob_info[0].blobs[0].offset_deriv.x * d_coeff;
         speed[1] += blob_info[0].blobs[0].offset.x  * p_coeff + blob_info[0].blobs[0].offset_deriv.x * d_coeff;
 
@@ -587,14 +621,21 @@ void RobotSCOUT::LocateEnergy()
 
         printf("%d: channel %d index %d size: (%d %d) offset: (%d %d) speed: (%d %d)\n",timestamp, ch, index,blob_info[ch].blobs[index].size.x, blob_info[ch].blobs[index].size.y,blob_info[ch].blobs[index].offset.x, blob_info[ch].blobs[index].offset.y, speed[0], speed[1] );
 
-        if(blob_info[0].blobs[0].size.x > 600)
+        if(blob_info[0].blobs[0].size.x > para.blob_threshold[1])
         {
             current_state = SEEDING;
             last_state = LOCATEENERGY;
-            return;
         }
 
     }
+    else if(timestamp - timestamp_blob_info_updated > 30)
+    {
+        current_state = FORAGING;
+        last_state = LOCATEENERGY;
+    }
+
+
+
 }
 
 

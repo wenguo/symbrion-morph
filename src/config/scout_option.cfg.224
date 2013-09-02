@@ -7,7 +7,8 @@ Foraging
     foraging_time 80
     waiting_time 20
     assembly_time 1200
-    beacon_threshold [2 2 2 2 2 2 2 2]
+    beacon_threshold [20 20 20 20 20 20 20 20]
+#    beacon_threshold [2 2 2 2 2 2 2 2]
 )
 
 LocateBeacon
@@ -43,7 +44,7 @@ Recruitment
 Docking
 (
     docking_trials 15 
-    docking_time 400
+    docking_time 200
     turn_right_speed [0 0 0]
     turn_left_speed [0 0 0]
     forward_speed [20 20 0]
@@ -54,7 +55,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 35
-    locking_motor_enabled [0 0 0 0]
+    locking_motor_enabled [1 0 1 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [1 0 1 0]
     locking_motor_isense_threshold 240
@@ -72,7 +73,7 @@ MacroLocomotion
 
 Debugging
 (
-    mode 20 
+    mode 1 
     para [61 0 0 0 20 20 2 0 211 0]
 )
 
@@ -80,7 +81,7 @@ Global
 (
 	logtofile 0
 #refer to robot.hh for a full list of states
-	init_state 4 
+	init_state 26 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -177,7 +178,7 @@ Climbing
 #shape0
 ShapeInfo
 (
-    seq "SBKF0000"
+    seq "SBAFABSFSBABAFSB0000000000000000"
 )
 
 

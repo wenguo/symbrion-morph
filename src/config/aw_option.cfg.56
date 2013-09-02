@@ -60,21 +60,21 @@ MacroLocomotion
     hinge_motor_lowing_time 30 
     hinge_motor_speed 40
     hinge_motor_angle 18
-    hinge_motor_default_pos 85
-    hinge_motor_enabled 1
+    hinge_motor_default_pos 82
+    hinge_motor_enabled 0
 )
 
 Debugging
 (
-    mode 27 
-    para [211 0 216 0 0 2 2 0 211 15]
+    mode 20 
+    para [211 0 216 0 0 25 0 0 211 250]
 )
 
 Global
 (
 	logtofile 0
 #refer to global.hh for a full list of states
-	init_state  4 
+	init_state 4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -83,12 +83,14 @@ Global
     	ir_msg_repeated_delay 20
     	ir_msg_repeated_num 10
 	ir_msg_ack_delay  3
-        reflective_calibrated [284 171 433 1974 206 143 3673 3250]
-        ambient_calibrated [3761 3765 0 0 3865 3796 0 0]
-        aux_reflective_calibrated [444 298 259 393 382 259 277 810]
+        reflective_calibrated [257 157 363 947 195 138 3649 3217]
+        ambient_calibrated [3892 3924 0 0 3835 3718 0 0]
+        aux_reflective_calibrated [320 272 302 2039 540 336 292 379]
         aux_ambient_calibrated [0 0 0 0 0 0 0 0]
 #	fail_in_state 20
 #	fail_after_delay 100
+	vision_region_ratio_region [1 10]
+	blob_threshold [100 500]
 )
 
 Motor
