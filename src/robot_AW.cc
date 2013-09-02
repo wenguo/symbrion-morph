@@ -458,7 +458,7 @@ void RobotAW::Foraging() //the same as RobotKIT
     }
 
 
-    if(bumped & 0x3 || aux_bumped)
+    if(bumped || aux_bumped)
     {
         Avoidance();
     }
