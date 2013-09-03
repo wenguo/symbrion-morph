@@ -42,6 +42,7 @@ Docking
     turn_left_speed [-20 20 0]
     forward_speed [30 30 0]
     backward_speed [-20 -20 0]
+    docking_trials 255
     docking_failed_reverse_time 30
     failed_reverse_speed [-30 -30 0]
 )
@@ -65,15 +66,15 @@ MacroLocomotion
 
 Debugging
 (
-    mode 31 
-    para [224 0 216 0 2 2 2 0 211 61]
+    mode 20 
+    para [224 0 216 -20 -20 0 2 0 211 15]
 )
 
 Global
 (
 	logtofile 0
 #refer to global.hh for a full list of states
-	init_state 26 
+	init_state 4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -88,6 +89,8 @@ Global
         aux_ambient_calibrated [0 0 0 0 0 0 0 0]
 #	fail_in_state 20
 #	fail_after_delay 100
+	vision_region_ratio_region [1 10]
+	blob_threshold [100 500]
 )
 
 Motor

@@ -37,7 +37,7 @@ Recruitment
 Docking
 (
     docking_trials 15 
-    docking_time 80
+    docking_time 200
     turn_right_speed [20 -20 0]
     turn_left_speed [-20 20 0]
     forward_speed [30 30 0]

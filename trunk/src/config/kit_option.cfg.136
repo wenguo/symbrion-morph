@@ -75,15 +75,15 @@ MacroLocomotion
 
 Debugging
 (
-    mode 31 
-    para [0 0 134 0 0 0 0 1 134 134]
+    mode 20 
+    para [0 0 134 0 0 0 30 1 134 134]
 )
 
 Global
 (
 	logtofile 0
 #refer to robot.hh for a full list of states
-	init_state 3 
+	init_state 4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -96,6 +96,8 @@ Global
         ambient_calibrated [3816 3917 3786 3843 3496 3631 3735 3948]
 	#fail_in_state 20
 	#fail_after_delay 100
+	vision_region_ratio_region [1 10]
+	blob_threshold [100 500]
 )
 
 Motor

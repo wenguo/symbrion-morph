@@ -126,7 +126,6 @@ void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
 
     static int last_speed[2]={0,0};
 
-    //printf("Move motors at speed: (%d %d %d) direction: %d ", speed[0], speed[1], speed[2], direction);
 
     int front_speed = 0;
     int rear_speed = 0;
@@ -150,8 +149,7 @@ void RobotKIT::SetSpeed(int speed0, int speed1, int speed2)
     }
     last_speed[0] = front_speed;
     last_speed[1] = rear_speed;
-
-
+    
     irobot->MoveScrewFront(front_speed);
     irobot->MoveScrewRear(rear_speed);
 
@@ -351,6 +349,22 @@ void RobotKIT::UpdateSensors()
         reflective_hist[i].Push(reflective[i]-para.reflective_calibrated[i]);
         ambient_hist[i].Push(para.ambient_calibrated[i] - ambient[i]);
     }
+
+
+    /*
+    powersource_found = false;
+    if(fabs(timestamp_blob_info_updated  - timestamp) < 1)
+    {
+        if(blob_info[0].blobs[0].size.x > para.blob_threshold[0])
+            powersource_found = true;
+    }
+
+    if(powersource_found)
+        SetRGBLED(1, RED,RED,RED,RED);
+    else
+        SetRGBLED(1, 0,0,0,0);
+*/
+
 }
 
 void RobotKIT::UpdateActuators()
@@ -433,68 +447,60 @@ void RobotKIT::Foraging()
 {
     speed[0]=0;
     speed[1]=0;
-
+    speed[2]=0;
     foraging_count++;
-    /*
-    //time up?
-    if(foraging_count >= para.foraging_time)
-    {
-    foraging_count = 0;//DEFAULT_FORAGING_COUNT;
-    waiting_count = 0;//DEFAULT_WAITING_COUNT;
 
-    //switch off all ir leds
-    for(uint8_t i=0; i< NUM_DOCKS; i++)
-    {
-    SetIRLED(i, IRLEDOFF, LED1, 0x0);
-    SetRGBLED(i, 0,0,0,0);
-    }
-    current_state = WAITING;
-    last_state = FORAGING;
+    SetRGBLED(2, GREEN,GREEN,GREEN,GREEN);
 
-    speed[0] = 0;
-    speed[1] = 0;
-    }
-    else*/
-
-    bool beacon_detected=false;
-    for(int i=0;i<NUM_IRS;i++)
+    static int turn_speed_left = 40;
+    static int turn_speed_right = -10;
+    if(foraging_count >= para.foraging_time + 40)
     {
-        if(beacon_signals_detected_hist.Sum(i) > 3)
-        {
-            beacon_detected = true;
-            break;
-        }
+        bool flag=IRandom(1,100)>50;
+        turn_speed_left = flag ? 40: 10;
+        turn_speed_right = flag ? -10: -40;
+        foraging_count = 0;
     }
 
+
+    if(bumped)
     {
         Avoidance();
+    }
+    else
+    {
+        speed[0] = 10;
+        speed[1] = 10;
 
-        if(powersource_found)
+        if(foraging_count >= para.foraging_time)
         {
-            current_state = LOCATEENERGY;
-            last_state = FORAGING;
+            speed[0] = turn_speed_left;
+            speed[1] = turn_speed_right;
         }
-        else if(organism_found || beacon_detected)
-        {
-            printf("organism found: %d, beacon_signals_detected: %#x\n", organism_found, beacon_signals_detected);
-            for(int i=0;i<NUM_DOCKS;i++)
-                SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
-
-            assembly_count = 0;
-            current_state = ASSEMBLY;
-            last_state = FORAGING;
-        }
-
+                
     }
 
-    speed[0]=0;
-    speed[1]=0;
+    if(powersource_found)
+    {
+        current_state = LOCATEENERGY;
+        last_state = FORAGING;
+    }
+    else if(organism_found || beacon_signals_detected)
+    {
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+
+        assembly_count = 0;
+        current_state = ASSEMBLY;
+        last_state = FORAGING;
+    }
 
 }
 void RobotKIT::Waiting()
 {
     speed[0] = 0;
     speed[1] = 0;
+    speed[2] = 0;
 
     msg_unlockme_received = 0;
     msg_locked_received = 0;
@@ -537,6 +543,8 @@ void RobotKIT::Assembly()
 
     assembly_count++;
 
+    SetRGBLED(2, RED,0,RED,0);
+
     if(assembly_count >= (unsigned int) para.assembly_time)
     {
         organism_found = false;
@@ -576,25 +584,64 @@ void RobotKIT::Assembly()
                 BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING_REQ,0); 
         }
     }
-    else
-        Avoidance();
 
-    speed[0]=0;
-    speed[1]=0;
-    speed[2]=0;
+    if(bumped)
+    {
+        Avoidance();
+    }
+    else
+    {
+        speed[0] = 10;
+        speed[1] = 10;
+    }
+
 }
 
 void RobotKIT::LocateEnergy()
 {
-    speed[0] = 0;
-    speed[1] = 0;
+    direction = FORWARD;
 
-    if(1)
+    speed[0] = 30; //right wheel
+    speed[1] = 30; //left wheel
+    float p_coeff = 0.1;
+    float d_coeff = 0.1;
+    
+    SetRGBLED(2, WHITE,WHITE,GREEN,GREEN);
+
+    if(organism_found || beacon_signals_detected)
     {
-        current_state = SEEDING;
+        for(int i=0;i<NUM_DOCKS;i++)
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+
+        current_state = ASSEMBLY;
         last_state = LOCATEENERGY;
-        return;
+
+        assembly_count = 0;
     }
+    else if(fabs(timestamp_blob_info_updated  - timestamp) < 2)
+    {
+
+        speed[0] -= blob_info[0].blobs[0].offset.x  * p_coeff + blob_info[0].blobs[0].offset_deriv.x * d_coeff;
+        speed[1] += blob_info[0].blobs[0].offset.x  * p_coeff + blob_info[0].blobs[0].offset_deriv.x * d_coeff;
+
+        int ch=0,index=0;
+
+        printf("%d: channel %d index %d size: (%d %d) offset: (%d %d) speed: (%d %d)\n",timestamp, ch, index,blob_info[ch].blobs[index].size.x, blob_info[ch].blobs[index].size.y,blob_info[ch].blobs[index].offset.x, blob_info[ch].blobs[index].offset.y, speed[0], speed[1] );
+
+        if(blob_info[0].blobs[0].size.x > para.blob_threshold[1])
+        {
+            current_state = SEEDING;
+            last_state = LOCATEENERGY;
+        }
+
+    }
+    else if(timestamp - timestamp_blob_info_updated > 30)
+    {
+        current_state = FORAGING;
+        last_state = LOCATEENERGY;
+    }
+
+
 }
 
 void RobotKIT::LocateBeacon()

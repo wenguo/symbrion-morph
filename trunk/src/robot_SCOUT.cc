@@ -124,6 +124,18 @@ void RobotSCOUT::SetSpeed(int leftspeed, int rightspeed, int speed3)
         rightspeed = 100;
     else if(rightspeed < -100)
         rightspeed = -100;
+
+    if(leftspeed - rightspeed > 100)
+    {
+        leftspeed = 50;
+        rightspeed = -50;
+    }
+    else if(rightspeed - leftspeed > 100)
+    {
+        rightspeed = 50;
+        leftspeed = -50;
+    }
+
     irobot->Move(direction * para.scout_wheels_direction[0] * leftspeed, direction * para.scout_wheels_direction[1] * rightspeed * para.aw_adjustment_ratio);
 }
 
@@ -290,6 +302,7 @@ void RobotSCOUT::UpdateSensors()
     proximity[5] = ret_C.sensor[1].proximity;
     beacon[4] = ret_C.sensor[0].docking;
     beacon[5] = ret_C.sensor[1].docking;
+#if 0
     ambient[6] = ret_D.sensor[0].ambient;
     ambient[7] = ret_D.sensor[1].ambient;
     reflective[6] = ret_D.sensor[0].reflective;
@@ -298,6 +311,17 @@ void RobotSCOUT::UpdateSensors()
     proximity[7] = ret_D.sensor[1].proximity;
     beacon[6] = ret_D.sensor[0].docking;
     beacon[7] = ret_D.sensor[1].docking;
+#else
+    ambient[6] = 0;
+    ambient[7] = 0;
+    reflective[6] = 0;
+    reflective[7] = 0;
+    proximity[6] = 0;
+    proximity[7] = 0;
+    beacon[6] = 0;
+    beacon[7] = 0;
+
+#endif
 
     uint8_t ethernet_status=0;
     uint8_t isense=0;
@@ -403,6 +427,8 @@ void RobotSCOUT::Avoidance()
     if(!triggered)
         return;
 */
+    Robot::Avoidance();
+    return;
     //default
     if(current_state == UNDOCKING)
         Robot::Avoidance();
@@ -459,7 +485,7 @@ void RobotSCOUT::Foraging()
     }
 
 
-    if(bumped & 0x3)
+    if(bumped & 0x33)
     {
         Avoidance();
     }
@@ -575,17 +601,15 @@ void RobotSCOUT::Assembly()
                 BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING_REQ,0); 
         }
     }
+
+    if(bumped & 0x33)
+    {
+        Avoidance();
+    }
     else
-    {    
-        if(bumped & 0x3)
-        {
-            Avoidance();
-        }
-        else
-        {
-            speed[0] = 20;
-            speed[1] = 20;
-        }
+    {
+        speed[0] = 20;
+        speed[1] = 20;
     }
 
 }
