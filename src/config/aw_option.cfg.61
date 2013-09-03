@@ -37,7 +37,7 @@ Recruitment
 Docking
 (
     docking_trials 15 
-    docking_time 80
+    docking_time 200
     turn_right_speed [20 -20 0]
     turn_left_speed [-20 20 0]
     forward_speed [30 30 0]
@@ -60,14 +60,14 @@ MacroLocomotion
     hinge_motor_lowing_time 30
     hinge_motor_speed 40
     hinge_motor_angle 18
-    hinge_motor_default_pos 80
+    hinge_motor_default_pos 78
     hinge_motor_enabled 1
 )
 
 Debugging
 (
     mode 27 
-    para [211 0 224 0 0 2 0 0 211 15]
+    para [211 0 224 -20 -20 0 0 0 211 15]
 )
 
 Global
@@ -83,12 +83,14 @@ Global
     	ir_msg_repeated_delay 20
     	ir_msg_repeated_num 10
 	ir_msg_ack_delay  3
-        reflective_calibrated [141 250 2422 949 237 238 3444 3794]
-        ambient_calibrated [3920 3848 0 0 3946 3878 0 0]
-        aux_reflective_calibrated [531 280 598 228 548 301 351 513]
+        reflective_calibrated [128 251 2409 1214 214 215 3403 3767]
+        ambient_calibrated [3707 3562 0 0 4030 4006 0 0]
+        aux_reflective_calibrated [521 358 352 227 495 244 331 674]
         aux_ambient_calibrated [0 0 0 0 0 0 0 0]
 #	fail_in_state 20
 #	fail_after_delay 100
+	vision_region_ratio_region [1 10]
+	blob_threshold [100 500]
 )
 
 Motor

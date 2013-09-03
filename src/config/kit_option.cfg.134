@@ -7,7 +7,7 @@ Foraging
     foraging_time 80
     waiting_time 20
     assembly_time 1200
-    beacon_threshold [2 2 20 2 2 2 2 2]
+    beacon_threshold [7 7 30 7 7 7 7 7]
 )
 
 LocateBeacon
@@ -28,7 +28,7 @@ Alignment
    turn_left_speed [40 -10 0]
    forward_speed [25 25 32]
    reverse_speed [-25 -25 0]
-   reverse_time 10 
+   reverse_time 15 
 )
 Avoidance
 (
@@ -76,8 +76,8 @@ MacroLocomotion
 
 Debugging
 (
-    mode 31 
-    para [136 0 155 0 0 1 2 0 136 136]
+    mode 20
+    para [136 0 155 0 0 0 35 0 136 500]
 )
 
 Global
@@ -93,10 +93,12 @@ Global
     	ir_msg_repeated_delay 20
     	ir_msg_repeated_num 10
 	ir_msg_ack_delay 3
-        reflective_calibrated [174 117 1870 1090 1246 1306 334 1709]
-        ambient_calibrated [3815 3917 3725 3815 3526 3720 3785 3861]
+        reflective_calibrated [96 118 1939 1182 1363 1904 698 1774]
+        ambient_calibrated [3771 3923 3690 3834 3598 3865 3705 3717]
 #	fail_in_state 20
 #	fail_after_delay 100
+	vision_region_ratio_region [1 10]
+	blob_threshold [100 500]
 )
 
 Motor

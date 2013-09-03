@@ -6,7 +6,7 @@ Foraging
     foraging_time 80
     waiting_time 20
     assembly_time 1200
-    beacon_threshold [20 20 20 20 20 20 20 20]
+    beacon_threshold [7 7 7 7 7 7 7 7]
 )
 LocateBeacon
 (
@@ -29,7 +29,7 @@ Avoidance
    weight_left [3 -3 -1 -1 -3 3 1 1]
    weight_right [-3 3 1 1 3 -3 -1 -1]
    weight_side [0 0 -1 -1 0 0 1 1]
-   threshold [100 100 200 200 200 200 200 200]
+   threshold [200 200 200 200 200 200 200 200]
 )
 
 Recruitment
@@ -52,7 +52,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 35
-    locking_motor_enabled [1 0 1 0]
+    locking_motor_enabled [0 0 0 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [1 0 1 0]
     locking_motor_isense_threshold 240
@@ -71,8 +71,8 @@ MacroLocomotion
 
 Debugging
 (
-    mode 31 
-    para [56 0 0 0 0 3 2 0 211 0]
+    mode 20 
+    para [56 0 0 0 -25 25 0 0 211 900]
 )
 
 Global
@@ -88,8 +88,8 @@ Global
     	ir_msg_repeated_delay 20
     	ir_msg_repeated_num 10
 	ir_msg_ack_delay 3
-        reflective_calibrated [1233 142 146 867 738 1196 976 1127]
-        ambient_calibrated [3232 3429 3037 3148 3334 3382 3333 3250]
+        reflective_calibrated [1298 116 93 917 721 1224 1016 1178]
+        ambient_calibrated [3870 3971 3978 3994 4056 4066 4018 3971]
 	#fail_in_state 20
         #fail_after_delay 50
 	vision_region_ratio_region [1 10]
@@ -101,14 +101,14 @@ Motor
     speed_forward 30
     speed_sideward 2
     scout_wheels_direction [1 -1]
-    aw_adjustment_ratio 1
+    aw_adjustment_ratio 1 
     locomotion_motor_enabled 1
-        
+
 )
 
 ShapeInfo
 (
-    seq ""
+    seq "SFKF0000"
 )
 
 ShapeInfo

@@ -1547,9 +1547,9 @@ void Robot::Avoidance()
     if((bumped & (1<<2 | 1<<3)) !=0 && (bumped & (1<<6 | 1<<7)) !=0)
         speed[2] = 0;
     else if((bumped & (1<<2 | 1<<3)) !=0)
-        speed[2] = -60;
+        speed[2] = -40 * direction;
     else if((bumped & (1<<6 | 1<<7)) !=0)
-        speed[2] = 60;
+        speed[2] = 40 * direction;
     else
         speed[2] = 0;
 

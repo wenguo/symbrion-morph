@@ -417,9 +417,9 @@ void RobotAW::Avoidance()
         if(((org_bumped & (1<<2 | 1<<3)) !=0 || (aux_bumped & (1<<1 | 1<<2))!=0 )&& ((org_bumped & (1<<6 | 1<<7)) !=0 ||(aux_bumped & (1<<5 | 1<<6))!=0 ))
             speed[2] = 0;
         else if((org_bumped & (1<<2 | 1<<3)) !=0 || (aux_bumped & (1<<1 | 1<<2))!=0)
-            speed[2] = -60;
+            speed[2] = -60 * direction;
         else if((org_bumped & (1<<6 | 1<<7)) !=0 || (aux_bumped & (1<<5 | 1<<6))!=0)
-            speed[2] = 60;
+            speed[2] = 60 * direction;
     }
 }
 
@@ -580,18 +580,16 @@ void RobotAW::Assembly()
                 BroadcastIRMessage(i, IR_MSG_TYPE_RECRUITING_REQ,0); 
         }
     }
+
+    if(bumped || aux_bumped)
+    {
+        Avoidance();
+    }
     else
-    {    
-        if(bumped & 0x3 || aux_bumped)
-        {
-            Avoidance();
-        }
-        else
-        {
-            speed[0] = 20;
-            speed[1] = 20;
-            speed[2]=0;
-        }
+    {
+        speed[0] = 20;
+        speed[1] = 20;
+        speed[2]=0;
     }
 
 }
