@@ -286,7 +286,6 @@ void Robot::Raising()
                     }
                     //reset the count
                     commander_acks[it->first] = 0;
-                    printf("%d : ip: %s acks %d --%d \n", timestamp, IPToString(it->first), commander_acks[it->first], robot_pose_in_organism.size() );
                 }
             }
 
@@ -468,7 +467,7 @@ void Robot::MacroLocomotion()
         }
 #endif
         //printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
-        if(macrolocomotion_count > 50)
+        if(macrolocomotion_count > 100)
         { 
             if(!msg_climbing_start_received) //this will prevent the message being sent twice 
             {
@@ -1004,7 +1003,6 @@ void Robot::Lowering()
                     }
                     //reset the count
                     commander_acks[it->first] = 0;
-                    printf("%d : ip: %s acks %d --%d \n", timestamp, IPToString(it->first), commander_acks[it->first], robot_pose_in_organism.size() );
                 }
             }
 

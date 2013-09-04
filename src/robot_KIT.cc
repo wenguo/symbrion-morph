@@ -472,6 +472,13 @@ void RobotKIT::Foraging()
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
     }
 
+    if(ambient_hist[2].Avg() > 3000 || ambient_hist[3].Avg() > 3000) //left
+    {
+        current_state = SEEDING;
+        last_state = FORAGING;
+    }
+
+
 
     if(bumped)
     {
