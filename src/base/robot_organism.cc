@@ -286,6 +286,7 @@ void Robot::Raising()
                     }
                     //reset the count
                     commander_acks[it->first] = 0;
+                    printf("%d : ip: %s acks %d --%d \n", timestamp, IPToString(it->first), commander_acks[it->first], robot_pose_in_organism.size() );
                 }
             }
 
@@ -467,8 +468,7 @@ void Robot::MacroLocomotion()
         }
 #endif
         //printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
-        //go to climbing for york scenario2
-        if(macrolocomotion_count > 50 && demo_count ==1)
+        if(macrolocomotion_count > 50)
         { 
             if(!msg_climbing_start_received) //this will prevent the message being sent twice 
             {
@@ -560,6 +560,9 @@ void Robot::MacroLocomotion()
         macrolocomotion_count=0;
         hinge_motor_operating_count = 0;
 
+        if(seed)
+            current_action_sequence_index  = action_demo_index[demo_count][0];
+
     }
 
     if(locomotion_command[0] != 0)
@@ -634,7 +637,7 @@ void Robot::Climbing()
     {
         direction = FORWARD;
 
-        if((uint32_t)current_action_sequence_index < organism_actions.size())
+        if((uint32_t)current_action_sequence_index < std::min((int)organism_actions.size(), action_demo_index[demo_count][1]))
         {
             action_sequence * as_ptr = &organism_actions[current_action_sequence_index];
             as_ptr->counter++;
@@ -938,6 +941,7 @@ void Robot::Lowering()
         else if(IPC_health)
         {
             hinge_motor_operating_count++;
+            printf("%d: hinge_motor_operating_count %d\n", timestamp, hinge_motor_operating_count);
 
             if(hinge_motor_operating_count < (uint32_t)para.hinge_motor_lowing_time)
             {
@@ -953,51 +957,41 @@ void Robot::Lowering()
 
                 //if no msg_failed received
 //                if(!msg_failed_received)
-#if 0
+#if 1
+                if(demo_count < para.og_seq_list.size() - 1)
                 {
-                    if(demo_count ==2)
+                    if(!msg_reshaping_start_received)
                     {
-                        if(!msg_reshaping_start_received)
-                        {
-                            if(para.debug.para[9] !=0)
-                            {
-                                //prepare the buffer for new shaping + new seed
-                                OrganismSequence::OrganismSequence &seq = para.og_seq_list[1];
-                                int size = seq.Size() + 3;
-                                uint8_t buf[size];
-                                buf[0] = para.debug.para[9];
-                                buf[1] = COMMANDER_PORT;
-                                buf[2] = seq.Size();
-                                for(unsigned int i=0; i < buf[2];i++)
-                                    buf[i+3] =seq.Encoded_Seq()[i].data;
+                        printf("%d: demo_count %d\n", timestamp, demo_count);
+                        //prepare the buffer for new shaping + new seed
+                        OrganismSequence::OrganismSequence &seq = para.og_seq_list[demo_count + 1];
+                        int size = seq.Size() + 3;
+                        uint8_t buf[size];
+                        buf[0] = my_IP.i32>>24 & 0xFF;//para.debug.para[9];
+                        buf[1] = COMMANDER_PORT;
+                        buf[2] = seq.Size();
+                        for(unsigned int i=0; i < buf[2];i++)
+                            buf[i+3] =seq.Encoded_Seq()[i].data;
 
-                                IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
-                                printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
-                                seed = false;
-                            }
-                        }
+                        IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
+                        printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
+                        seed = false;
                     }
-                    else
+                }
+                else
+                {
+                    if(!msg_disassembly_received ) //this will prevent the message being sent twice 
                     {
-                        if(!msg_raising_start_received) //this will prevent the message being sent twice 
-                        {
-                            IPCSendMessage(IPC_MSG_RAISING_START, NULL, 0);
-                            msg_raising_start_received = true;
-                        }
+                        IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
+                        msg_disassembly_received  = true;
                     }
                 }
 
 #endif
-                if(!msg_disassembly_received && demo_count ==1) //this will prevent the message being sent twice 
-                {
-                    IPCSendMessage(MSG_TYPE_DISASSEMBLY, NULL, 0);
-                    msg_disassembly_received = true;
-                }
-                
                 lowering_count = 0;
             }
             //check if all robot 
-            if(raising_count % 10 == 9)
+            if(lowering_count % 10 == 9)
             {
                 std::map<uint32_t, robot_pose>::iterator it;
                 for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
@@ -1010,6 +1004,7 @@ void Robot::Lowering()
                     }
                     //reset the count
                     commander_acks[it->first] = 0;
+                    printf("%d : ip: %s acks %d --%d \n", timestamp, IPToString(it->first), commander_acks[it->first], robot_pose_in_organism.size() );
                 }
             }
 
@@ -1083,6 +1078,7 @@ void Robot::Lowering()
             IP_collection_done = false;
 
             commander_acks.clear();
+            printf("%d: commander_acks cleared\n", timestamp);
             
             current_state = RESHAPING;
             last_state = LOWERING;
@@ -1228,7 +1224,7 @@ void Robot::Reshaping()
         }
     }
 
-    //send reshaping done message to grigger unwanted robot to disassemble
+    //send reshaping done message to trigger unwanted robot to disassemble
     if(reshaping_count == 50 && seed)
     {
         printf("%d: send reshaping_done\n", timestamp);
@@ -1274,6 +1270,7 @@ void Robot::Reshaping()
         {
             msg_unlocked_received &= ~(1<<i);
             docked[i]=0;
+            neighbours_IP[i]=0;
             reshaping_waiting_for_undock &= ~(1<<i);
             msg_subog_seq_expected &= ~(1<<i);
             
@@ -1489,13 +1486,7 @@ void Robot::Undocking()
         else
         {
             //this will enable the seed to switch to forager, forager switch to seed
-            if( demo_count > 0)
-            {
-                demo_count = 0;
-                current_state = FORAGING;
-            }
-            else
-                current_state = SEEDING;
+            current_state = FORAGING;
         }
 
         last_state = UNDOCKING;
