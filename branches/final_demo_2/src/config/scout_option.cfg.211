@@ -6,7 +6,7 @@ Foraging
     foraging_time 80
     waiting_time 20
     assembly_time 1200
-    beacon_threshold [20 20 20 20 20 20 10000 10000]
+    beacon_threshold [7 7 7 7 7 7 10000 10000]
 )
 LocateBeacon
 (
@@ -36,7 +36,7 @@ Avoidance
 # weight_left [3 -3 -1 -1 -3 3 1 1]
 #   weight_right [-3 3 1 1 3 -3 -1 -1]
 #   weight_side [0 0 -1 -1 0 0 1 1]
-   threshold [100 100 200 200 200 200 20000 20000]
+   threshold [200 200 200 200 200 200 20000 20000]
 )
 
 Recruitment
@@ -78,8 +78,8 @@ MacroLocomotion
 
 Debugging
 (
-    mode 25 
-    para [61 0 56 0 0 0 0 1 0 56]
+    mode 20 
+    para [61 0 56 0 20 20 0 1 0 200]
 )
 
 Global
@@ -101,6 +101,7 @@ Global
 #        fail_after_delay 100
 	vision_region_ratio_region [1 10]
 	blob_threshold [100 500]
+
 )
 
 Motor
@@ -109,7 +110,7 @@ Motor
     speed_sideward 2
     scout_wheels_direction [1 -1]
     aw_adjustment_ratio 1
-    locomotion_motor_enabled 1
+    locomotion_motor_enabled 0
 )
 
 Climbing
@@ -120,10 +121,8 @@ Climbing
     (
         sequence_id 0 
         cmd_type    0 #push_drag
-        duration    50 
-        robot_in_action (index -4 cmd_data [30 30 0])
-        robot_in_action (index -3 cmd_data [30 30 0])
-        robot_in_action (index -1 cmd_data [30 30 0])
+        duration    90 
+        robot_in_action (index 3 cmd_data [30 30 0])
         robot_in_action (index 1 cmd_data [30 30 0])
     )
     action_seq 
@@ -131,62 +130,59 @@ Climbing
         sequence_id 1 
         cmd_type    1 #lift
         duration    50 
-        robot_in_action (index -3 cmd_data [2 30 0])
+        robot_in_action (index 1 cmd_data [2 30 0])
     )
     action_seq 
     (
         sequence_id 2 
         cmd_type    0 #push_drag
         duration    90 
-        robot_in_action (index -4 cmd_data [30 30 0])
-        robot_in_action (index -2 cmd_data [30 30 0])
-        robot_in_action (index -1 cmd_data [30 30 0])
-        robot_in_action (index 1 cmd_data [30 30 0])
+        robot_in_action (index 0 cmd_data [30 30 0])
+        robot_in_action (index 2 cmd_data [30 30 0])
+        robot_in_action (index 3 cmd_data [30 30 0])
     )
     action_seq 
     (
         sequence_id 3 
         cmd_type    1 #lift
         duration    50 
-        robot_in_action(index -1 cmd_data [2 30 0])
+        robot_in_action(index 3 cmd_data [2 30 0])
     )
     action_seq 
     (
         sequence_id 4 
         cmd_type    0 #push_drag
         duration    90 
-        robot_in_action (index -4 cmd_data [30 30 0])
-        robot_in_action (index -2 cmd_data [30 30 0])
         robot_in_action (index 0 cmd_data [30 30 0])
-        robot_in_action (index 1 cmd_data [30 30 0])
+        robot_in_action (index 2 cmd_data [30 30 0])
+        robot_in_action (index 4 cmd_data [30 30 0])
     )
+#after moving
     action_seq 
     (
         sequence_id 5 
-        cmd_type    1  #lift
-        duration    50 
-        robot_in_action (index 1 cmd_data [2 30 0])
+        cmd_type    2 #reset pose
+        duration    5 
     )
     action_seq 
     (
         sequence_id 6 
         cmd_type    0  #push_drag
-        duration    90 
-        robot_in_action (index -4 cmd_data [30 30 0])
-        robot_in_action (index -2 cmd_data [30 30 0])
-        robot_in_action (index 0 cmd_data [30 30 0])
+        duration    20 
+        robot_in_action (index 1 cmd_data [30 30 0])
+        robot_in_action (index 3 cmd_data [30 30 0])
     )
 
  )
 
- ShapeInfo
+ShapeInfo
 (
-     seq "SFAFABSF00000000SBAFABSF00000000"
+     seq "SBAFABSFSBABAFSF0000000000000000"
 )
 
 ShapeInfo
 (
-    seq "AFSFSBAFABSF000000000000"
+     seq "SBAFABSFSBAB000000000000"
 )
 
 

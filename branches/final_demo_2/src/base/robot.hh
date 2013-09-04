@@ -573,6 +573,7 @@ class Robot
     uint8_t disassembly_waiting_for_undock;
 
     int demo_count;
+    int action_demo_index[3][2];
 
     //working as a daemon for  external access
     IPC::IPC daemon_IPC; //for external controller request
