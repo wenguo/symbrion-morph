@@ -107,7 +107,7 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
         case IR_MSG_TYPE_RECRUITING:
             {
                 OrganismSequence::Symbol sym(data[2]);
-                if(current_state==FORAGING || current_state == WAITING || current_state == ASSEMBLY)
+                if(current_state==FORAGING || current_state == WAITING || current_state == ASSEMBLY || current_state == LOCATEENERGY)
                 {
                     //if(sym.type2 == type)
                     {
@@ -125,11 +125,15 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         assembly_info = sym;
                         printf("assembly_info: %c%c\n", robottype_names[assembly_info.type2], side_names[assembly_info.side2]);
                     }
+
+                    if(sym.type2 == type)
+                        BroadcastIRMessage(channel, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
                 }
                 else if(current_state == LOCATEBEACON && sym.type2 == type)
                 {
                     BroadcastIRMessage(channel, IR_MSG_TYPE_DOCKING_SIGNALS_REQ, 0);
                 }
+
             }
             break;
         case IR_MSG_TYPE_RECRUITING_REQ:
