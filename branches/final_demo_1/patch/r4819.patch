@@ -1,0 +1,104 @@
+Index: Makefile
+===================================================================
+--- Makefile	(revision 4819)
++++ Makefile	(working copy)
+@@ -28,8 +28,8 @@
+ # Default flags
+ # Anne: please, consider using -pedantic, because it is often not normal C, e.g. using b00000000 is a C extension
+ # and does not work with my compiler
+-CXXFLAGS = -O2 -g -Wall
+-CFLAGS = -O2 -g -Wall -std=gnu99
++CXXFLAGS = -O2 -Wall
++CFLAGS = -O2 -Wall -std=gnu99
+ 
+ # Define cross-compile target
+ TARGET=bfin-linux-uclibc-
+@@ -61,7 +61,7 @@
+ 	CFLAGS += -mcpu=bf561 
+ endif
+ 
+-COMPILE_LIB_AS=static
++COMPILE_LIB_AS=shared
+ 
+ ifeq ($(COMPILE_LIB_AS),shared)
+ LIB=libirobot.so
+@@ -80,9 +80,9 @@
+ IPATH = .
+ 
+ CXXFLAGS += $(patsubst %, -I%, $(IPATH))
+-LDFLAGS= -L./lib -lpthread -lirobot
++LDFLAGS= -L./lib -lpthread
+ ifeq ($(COMPILE_LIB_AS),shared)
+-LDFLAGS+=-shared
++LDFLAGS =-shared -Wl -lpthread
+ endif
+ 
+ ifeq ($(MULTI_CONTROLLER),true)
+@@ -123,14 +123,14 @@
+ lib/$(LIB): $(OBJECTS)
+ ifeq ($(COMPILE_LIB_AS),shared)
+ #	$(GCC) rcu $@ $^
+-	$(CXX) $(LDFLAGS) $^
++	$(CXX) -o $@ $^ $(LDFLAGS)
+ else
+ 	$(AR) rcu $@ $^
+ endif
+ 	$(OBJDUMP) -hS $@ > objects/$(LIB).lst
+ 
+ bin/$(TESTAPP): $(APPOBJECTS)
+-	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
++	$(CXX) $(CXXFLAGS) $^ -o $@ -L./lib -lirobot 
+ 	$(OBJDUMP) -hS $@ > objects/$(TESTAPP).lst
+ 	$(SIZE) -B $@
+ 
+Index: IRobot.cpp
+===================================================================
+--- IRobot.cpp	(revision 4819)
++++ IRobot.cpp	(working copy)
+@@ -771,9 +771,9 @@
+ bool ActiveWheel::isEthernetPortConnected(ActiveWheel::Side side) {
+     switch (side) {
+     case RIGHT:
++        return RobotBase::getStatusOfSwitchPort(2);
++    case LEFT:
+         return RobotBase::getStatusOfSwitchPort(1);
+-    case LEFT:
+-        return RobotBase::getStatusOfSwitchPort(2);
+     default:
+         return false;
+     }
+@@ -1060,7 +1060,7 @@
+     for (int i = 0; i < 4; i++)
+     {
+         firmwares[i] = new BoardFirmware();
+-        firmwares[i]->type = ACTIVEWHEEL;
++        firmwares[i]->type = SCOUTBOT;
+         firmwares[i]->version_major = 1;
+         firmwares[i]->version_minor = 0;
+         firmwares[i]->version_revision = 0;
+Index: comm/IRComm.cpp
+===================================================================
+--- comm/IRComm.cpp	(revision 4819)
++++ comm/IRComm.cpp	(working copy)
+@@ -57,7 +57,7 @@
+ 	rxMessages.push_back(msg);
+ 	pthread_mutex_unlock(&mutex);
+ 	if (rxCallback)
+-		rxCallback();
++		rxCallback(msg);
+ }
+ 
+ int HasMessage()
+Index: comm/IRComm.h
+===================================================================
+--- comm/IRComm.h	(revision 4819)
++++ comm/IRComm.h	(working copy)
+@@ -30,7 +30,7 @@
+ 	// in the "sender" field of the message for now. This might need to be improved.
+ 	std::auto_ptr<Message> ReadMessage();
+ 	
+-	typedef void (*Callback)(void);	
++	typedef void (*Callback)(Message *);	
+ 	void SetMessageCallback(Callback callback);
+ }
+ 

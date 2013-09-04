@@ -1,0 +1,58 @@
+# makefile configuration
+SRC	=  capture.cc cmvision.cc v4l_helper.cc client.cc
+SRC +=hist.cc ipc.cc VisualMemory.cc ethlolmsg.c bytequeue.c crc8.c
+
+TARGET_PROG = client
+
+OBJDIR = build_$(TARGET_PROG)
+TOBJECTS = $(SRC:%.cc=$(OBJDIR)/%.o)
+OBJECTS = $(TOBJECTS:%.c=$(OBJDIR)/%.o)
+
+IPATH = .
+IPATH += ../
+IPATH += ../cmvision
+IPATH += ../irobot
+IPATH += ../irobot/tools/ipc/ipc
+
+CC = bfin-linux-uclibc-gcc
+CXX = bfin-linux-uclibc-g++ 
+AR = bfin-linux-uclibc-ar
+OBJDUMP = bfin-linux-uclibc-objdump
+STRIP = bfin-linux-uclibc-strip
+SIZE = bfin-linux-uclibc-size
+
+CXXFLAGS =-O2 -Wall -Wno-reorder  -mcpu=bf561 -g -DLAPTOP
+CFLAGS = -O2 -Wall -Wno-reorder -mcpu=bf561 -g -std=gnu99 -DLAPTOP
+CFLAGS += ${patsubst %,-I%,${IPATH}}
+CXXFLAGS += ${patsubst %,-I%,${IPATH}}
+CFLAGS += -ffast-math
+
+VPATH = .
+VPATH +=../
+VPATH += ../cmvision 
+VPATH += ../irobot
+VPATH += ../irobot/tools/ipc/ipc
+
+LIBS =  -L. -lpthread
+
+.Phony: clean
+
+all: mkobjectsdir $(TARGET_PROG) 
+
+mkobjectsdir:
+	mkdir -p $(OBJDIR)
+
+$(TARGET_PROG): ${OBJECTS}
+	${CXX} ${CXXFLAGS} $^ -o  $@ ${LIBS}
+	$(STRIP) $(TARGET_PROG)
+	$(OBJDUMP) -hS $@ > $(OBJDIR)/$(TARGET_PROG).lst
+	$(SIZE) -B $@
+
+$(OBJDIR)/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.o: %.cc
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+clean:
+	${RM} -rf $(OBJDIR) ${BINDIR}/$(TARGET_PROG)
