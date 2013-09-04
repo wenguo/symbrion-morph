@@ -58,7 +58,7 @@ Locking
 (
     locking_motor_opening_time 30
     locking_motor_closing_time 30
-    locking_motor_enabled [0 0 0 0]
+    locking_motor_enabled [1 0 1 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [1 0 1 0]
 
@@ -121,6 +121,7 @@ Climbing
         duration    20 
         robot_in_action (index 0 cmd_data [20 20 0])
         robot_in_action (index -1 cmd_data [20 20 0])
+        robot_in_action (index 1 cmd_data [20 20 0])
     )
     action_seq 
     (
@@ -129,6 +130,7 @@ Climbing
         duration    20 
         robot_in_action (index 0 cmd_data [-20 -20 0])
         robot_in_action (index -1 cmd_data [-20 -20 0])
+        robot_in_action (index 1 cmd_data [-20 -20 0])
     )
     action_seq 
     (
@@ -137,6 +139,7 @@ Climbing
         duration    50 
         robot_in_action (index 0 cmd_data [30 -30 0])
         robot_in_action (index -1 cmd_data [30 -30 0])
+        robot_in_action (index 1 cmd_data [30 -30 0])
     )
     action_seq 
     (
@@ -145,6 +148,7 @@ Climbing
         duration    50 
         robot_in_action (index 0 cmd_data [-30 30 0])
         robot_in_action (index -1 cmd_data [-30 30 0])
+        robot_in_action (index 1 cmd_data [-30 30 0])
     )
     action_seq 
     (
@@ -152,7 +156,8 @@ Climbing
         cmd_type    0 #rotate left
         duration    50 
         robot_in_action (index 0 cmd_data [-10 10 0])
-        robot_in_action (index -1 cmd_data [60 -10 0])
+        robot_in_action (index -1 cmd_data [50 -10 0])
+        robot_in_action (index 1 cmd_data [-30 -10 0])
     )
     action_seq 
     (
@@ -162,16 +167,51 @@ Climbing
         robot_in_action (index 0 cmd_data [-60 10 0])
         robot_in_action (index -1 cmd_data [10 -10 0])
     )
-
+    action_seq 
+    (
+        sequence_id 6 
+        cmd_type    0 #forward
+        duration    20 
+        robot_in_action (index 0 cmd_data [20 20 0])
+        robot_in_action (index -1 cmd_data [20 20 0])
+    )
+    action_seq 
+    (
+        sequence_id 7 
+        cmd_type    0 #backward
+        duration    20 
+        robot_in_action (index 0 cmd_data [-20 -20 0])
+        robot_in_action (index -1 cmd_data [-20 -20 0])
+    )
+    action_seq 
+    (
+        sequence_id 8 
+        cmd_type    0 #left
+        duration    50 
+        robot_in_action (index 0 cmd_data [30 -30 0])
+        robot_in_action (index -1 cmd_data [30 -30 0])
+    )
+    action_seq 
+    (
+        sequence_id 9 
+        cmd_type    0 #right
+        duration    50 
+        robot_in_action (index 0 cmd_data [-30 30 0])
+        robot_in_action (index -1 cmd_data [-30 30 0])
+    )
  )
 
 
 ShapeInfo
 (
-    seq "KFKB0000"
+    seq "KFKB0000KBKF0000"
 )
 
 ShapeInfo
 (
     seq "KBKF0000"
+)
+ShapeInfo
+(
+    seq "KBKF0000KLKF0000"
 )
