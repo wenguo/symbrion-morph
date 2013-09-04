@@ -460,6 +460,9 @@ void RobotKIT::Foraging()
         turn_speed_left = flag ? 40: 10;
         turn_speed_right = flag ? -10: -40;
         foraging_count = 0;
+
+        for(uint8_t i=0; i< NUM_DOCKS; i++)
+            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
     }
 
 
@@ -485,14 +488,28 @@ void RobotKIT::Foraging()
         current_state = LOCATEENERGY;
         last_state = FORAGING;
     }
-    else if(organism_found || beacon_signals_detected)
+    else if(organism_found && assembly_info.type2 == type && beacon_signals_detected)
     {
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+        std::cout<<"assembly_info: "<<assembly_info<<"\tdirection: "<<direction<<std::endl;
 
-        assembly_count = 0;
-        current_state = ASSEMBLY;
+        if(assembly_info.side2 == FRONT)
+        {
+            docking_approaching_sensor_id[0] = 0;
+            docking_approaching_sensor_id[1] = 1;
+            direction = FORWARD;
+        }
+        else
+        {
+            docking_approaching_sensor_id[0] = 4;
+            docking_approaching_sensor_id[1] = 5;
+            direction = BACKWARD;
+        }
+
+        current_state = LOCATEBEACON;
         last_state = FORAGING;
+
+        locatebeacon_count = 0;
+
     }
 
 }
@@ -608,15 +625,27 @@ void RobotKIT::LocateEnergy()
     
     SetRGBLED(2, WHITE,WHITE,GREEN,GREEN);
 
-    if(organism_found || beacon_signals_detected)
+    if(organism_found && assembly_info.type2 == type && beacon_signals_detected)
     {
-        for(int i=0;i<NUM_DOCKS;i++)
-            SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
+        std::cout<<"assembly_info: "<<assembly_info<<"\tdirection: "<<direction<<std::endl;
 
-        current_state = ASSEMBLY;
+        if(assembly_info.side2 == FRONT)
+        {
+            docking_approaching_sensor_id[0] = 0;
+            docking_approaching_sensor_id[1] = 1;
+            direction = FORWARD;
+        }
+        else
+        {
+            docking_approaching_sensor_id[0] = 4;
+            docking_approaching_sensor_id[1] = 5;
+            direction = BACKWARD;
+        }
+
+        current_state = LOCATEBEACON;
         last_state = LOCATEENERGY;
 
-        assembly_count = 0;
+        locatebeacon_count = 0;
     }
     else if(fabs(timestamp_blob_info_updated  - timestamp) < 2)
     {
