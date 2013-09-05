@@ -55,7 +55,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 35
-    locking_motor_enabled [1 0 1 0]
+    locking_motor_enabled [0 0 0 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [1 0 1 0]
     locking_motor_isense_threshold 240
@@ -73,15 +73,15 @@ MacroLocomotion
 
 Debugging
 (
-    mode 1 
-    para [61 0 0 0 20 20 2 0 211 0]
+    mode 31 
+    para [61 0 0 0 0 0 0 0 211 0]
 )
 
 Global
 (
 	logtofile 0
 #refer to robot.hh for a full list of states
-	init_state 4 
+	init_state 26 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -177,7 +177,7 @@ Climbing
 #shape0
 ShapeInfo
 (
-    seq "SBAFABSFSBABAFSB0000000000000000"
+    seq ""
 )
 
 
