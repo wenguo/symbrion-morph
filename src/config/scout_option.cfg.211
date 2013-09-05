@@ -59,7 +59,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 35
-    locking_motor_enabled [0 0 0 0]
+    locking_motor_enabled [1 0 1 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [1 0 1 0]
     locking_motor_isense_threshold 240
@@ -72,7 +72,7 @@ MacroLocomotion
     hinge_motor_speed 40
     hinge_motor_angle 28
     hinge_motor_default_pos 75
-    hinge_motor_enabled 0
+    hinge_motor_enabled 1
 )
 
 
@@ -86,7 +86,7 @@ Global
 (
 	logtofile 0
 #refer to robot.hh for a full list of states
-	init_state 26 
+	init_state 4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -110,7 +110,7 @@ Motor
     speed_sideward 2
     scout_wheels_direction [1 -1]
     aw_adjustment_ratio 1
-    locomotion_motor_enabled 0
+    locomotion_motor_enabled 1
 )
 
 Climbing
@@ -122,8 +122,8 @@ Climbing
         sequence_id 0 
         cmd_type    0 #push_drag
         duration    90 
-        robot_in_action (index 3 cmd_data [30 30 0])
         robot_in_action (index 1 cmd_data [30 30 0])
+        robot_in_action (index 3 cmd_data [30 30 0])
     )
     action_seq 
     (
@@ -155,35 +155,43 @@ Climbing
         duration    90 
         robot_in_action (index 0 cmd_data [30 30 0])
         robot_in_action (index 2 cmd_data [30 30 0])
-        robot_in_action (index 4 cmd_data [30 30 0])
     )
 #after moving
     action_seq 
     (
         sequence_id 5 
+        cmd_type    1 #lift
+        duration    50 
+        robot_in_action(index 1 cmd_data [20 30 0])
+        robot_in_action(index 3 cmd_data [20 30 0])
+    )
+    action_seq 
+    (
+        sequence_id 6 
         cmd_type    2 #reset pose
         duration    5 
     )
     action_seq 
     (
-        sequence_id 6 
+        sequence_id 7 
         cmd_type    0  #push_drag
         duration    20 
         robot_in_action (index 1 cmd_data [30 30 0])
         robot_in_action (index 3 cmd_data [30 30 0])
     )
+    action_seq 
+    (
+        sequence_id 8 
+        cmd_type    0  #rotate
+        duration    60 
+        robot_in_action (index 1 cmd_data [30 -30 0])
+        robot_in_action (index 3 cmd_data [30 -30 0])
+    )
 
- )
-
-ShapeInfo
-(
-     seq "SBAFABSBSFABAFSF0000000000000000"
 )
 
 ShapeInfo
 (
-     seq "SBAFABSFSBAB000000000000"
+     seq "SBAFABSBSFAB000000000000"
+#seq "SBAFABSBSFABAFSF0000000000000000"
 )
-
-
-
