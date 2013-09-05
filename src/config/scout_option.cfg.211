@@ -59,7 +59,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 35
-    locking_motor_enabled [1 0 1 0]
+    locking_motor_enabled [0 0 0 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [1 0 1 0]
     locking_motor_isense_threshold 240
@@ -70,7 +70,7 @@ MacroLocomotion
     hinge_motor_lifting_time 50 
     hinge_motor_lowing_time 30
     hinge_motor_speed 40
-    hinge_motor_angle 18
+    hinge_motor_angle 28
     hinge_motor_default_pos 75
     hinge_motor_enabled 0
 )
@@ -78,15 +78,15 @@ MacroLocomotion
 
 Debugging
 (
-    mode 20 
-    para [61 0 56 0 20 20 0 1 0 200]
+    mode 31 
+    para [0 0 56 0 0 0 0 1 0 0]
 )
 
 Global
 (
 	logtofile 0
 #refer to robot.hh for a full list of states
-	init_state 3 
+	init_state 26 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -116,7 +116,7 @@ Motor
 Climbing
 (
 #cmd (sequence_id cmd_type duration robot(index_in_og speed[0 1 2]))
-#cmd_type 0 -- push_drat, 1 -- lift
+#cmd_type 0 -- push_drag, 1 -- lift
     action_seq 
     (
         sequence_id 0 
@@ -177,7 +177,7 @@ Climbing
 
 ShapeInfo
 (
-     seq "SBAFABSFSBABAFSF0000000000000000"
+     seq "SBAFABSBSFABAFSF0000000000000000"
 )
 
 ShapeInfo

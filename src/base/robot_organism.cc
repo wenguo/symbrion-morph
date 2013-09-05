@@ -575,6 +575,8 @@ void Robot::MacroLocomotion()
         memset(locomotion_command, 0, sizeof(locomotion_command));
 
 
+    /*
+
     //check ambient light to catch up some user input
     if(type != ROBOT_AW &&timestamp - timestamp_user_input_received > 10)
     {
@@ -597,7 +599,7 @@ void Robot::MacroLocomotion()
             para.print_ambient = 0;
 
     }
-
+*/
 
     //flashing RGB leds
     static int index = 0;

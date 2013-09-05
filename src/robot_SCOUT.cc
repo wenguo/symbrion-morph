@@ -29,6 +29,14 @@ RobotSCOUT::RobotSCOUT(ScoutBot * robot):Robot()
     LED2 = 0x4;
 
     printf("Consctruction RobotSCOUT\n");
+
+    action_demo_index[0][0] = 0;
+    action_demo_index[0][1] = 6;
+    action_demo_index[1][0] = 7;
+    action_demo_index[1][1] = 9;
+    action_demo_index[2][0] = 10;
+    action_demo_index[2][1] = 14;
+
 }
 
 RobotSCOUT::~RobotSCOUT()

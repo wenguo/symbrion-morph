@@ -66,15 +66,15 @@ MacroLocomotion
 
 Debugging
 (
-    mode 27 
-    para [211 0 224 -20 -20 0 0 0 211 15]
+    mode 31 
+    para [224 0 216 0 2 2 0 0 211 0]
 )
 
 Global
 (
 	logtofile 0
 #refer to global.hh for a full list of states
-	init_state  4 
+	init_state  26 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -172,7 +172,7 @@ Climbing
 
 ShapeInfo
 (
- seq "ABSF0000"
+     seq "AFSF0000"
 )
 
 ShapeInfo
