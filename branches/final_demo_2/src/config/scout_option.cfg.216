@@ -52,7 +52,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 35
-    locking_motor_enabled [0 0 0 0]
+    locking_motor_enabled [1 0 1 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [1 0 1 0]
     locking_motor_isense_threshold 240
@@ -79,7 +79,7 @@ Global
 (
 	logtofile 0
 #refer to robot.hh for a full list of states
-	init_state 26 
+	init_state 4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -102,12 +102,13 @@ Motor
     speed_sideward 2
     scout_wheels_direction [1 -1]
     aw_adjustment_ratio 1 
-    locomotion_motor_enabled 0
+    locomotion_motor_enabled 1
 )
 
 ShapeInfo
 (
-     seq "SFABAFSF00000000"
+     seq "SFAB0000"
+#seq "SFABAFSF00000000"
 )
 
 ShapeInfo

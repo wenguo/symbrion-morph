@@ -74,7 +74,7 @@ Global
 (
 	logtofile 0
 #refer to global.hh for a full list of states
-	init_state 26 
+	init_state 4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -98,7 +98,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     aw_adjustment_ratio 1.5
-    locomotion_motor_enabled 0
+    locomotion_motor_enabled 1
 )
 
 Climbing
@@ -171,7 +171,8 @@ Climbing
 
 ShapeInfo
 (
-     seq "ABSBSFABAFSF000000000000"
+     seq "ABSBSFAB00000000"
+#seq "ABSBSFABAFSF000000000000"
 )
 
 ShapeInfo

@@ -279,13 +279,16 @@ void Robot::Raising()
                 for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                 {
                     //check if lost received some messages
-                    if(commander_acks[it->first] < 1) //no response at all?
+                    if(it->first !=0 )
                     {
-                        IPC_health = false;
-                        printf("%d : WARNING! ip: %s acks %d\n", timestamp, IPToString(it->first), commander_acks[it->first] );
+                        if(commander_acks[it->first] < 1) //no response at all?
+                        {
+                            IPC_health = false;
+                            printf("%d : WARNING! ip: %s acks %d\n", timestamp, IPToString(it->first), commander_acks[it->first] );
+                        }
+                        //reset the count
+                        commander_acks[it->first] = 0;
                     }
-                    //reset the count
-                    commander_acks[it->first] = 0;
                 }
             }
 
@@ -644,7 +647,7 @@ void Robot::Climbing()
             as_ptr->counter++;
 
             //check if front_aw_ip is initialised fron the beginning
-            if(current_action_sequence_index == 0 && front_aw_ip ==0)
+            if(current_action_sequence_index == action_demo_index[demo_count][0] && front_aw_ip ==0)
             {
                 std::map<uint32_t, robot_pose>::iterator it;
                 bool flag = false;
@@ -684,11 +687,14 @@ void Robot::Climbing()
                         bool flag = false;
                         for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                         {
-                            if(it->second.og_irsensor_index == robot_pose_in_organism[front_aw_ip].og_irsensor_index + 1)
+                            if(front_aw_ip !=0)
                             {
-                                flag = true;
-                                front_aw_ip = it->first;
-                                break;
+                                if(it->second.og_irsensor_index == robot_pose_in_organism[front_aw_ip].og_irsensor_index + 1)
+                                {
+                                    flag = true;
+                                    front_aw_ip = it->first;
+                                    break;
+                                }
                             }
                         }
 
@@ -998,13 +1004,16 @@ void Robot::Lowering()
                 for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                 {
                     //check if lost received some messages
-                    if(commander_acks[it->first] < 1) //no response at all?
+                    if(it->first!=0)
                     {
-                        IPC_health = false;
-                        printf("%d : WARNING! ip: %s acks %d\n", timestamp, IPToString(it->first), commander_acks[it->first] );
+                        if(commander_acks[it->first] < 1) //no response at all?
+                        {
+                            IPC_health = false;
+                            printf("%d : WARNING! ip: %s acks %d\n", timestamp, IPToString(it->first), commander_acks[it->first] );
+                        }
+                        //reset the count
+                        commander_acks[it->first] = 0;
                     }
-                    //reset the count
-                    commander_acks[it->first] = 0;
                 }
             }
 

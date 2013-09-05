@@ -31,10 +31,10 @@ RobotSCOUT::RobotSCOUT(ScoutBot * robot):Robot()
     printf("Consctruction RobotSCOUT\n");
 
     action_demo_index[0][0] = 0;
-    action_demo_index[0][1] = 6;
-    action_demo_index[1][0] = 7;
-    action_demo_index[1][1] = 9;
-    action_demo_index[2][0] = 10;
+    action_demo_index[0][1] = 8;
+    action_demo_index[1][0] = 9;
+    action_demo_index[1][1] = 10;
+    action_demo_index[2][0] = 11;
     action_demo_index[2][1] = 14;
 
 }
