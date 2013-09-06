@@ -1,11 +1,10 @@
 #!/bin/bash    
-robotIPs=(61 211 216 224 52)
-#robotIPs=(136 134 155 224)
+robotIPs=(211 56 216 61)
 
 for i in ${robotIPs[@]}
 do
     echo copy files to 192.168.52.$i
-    ./rcp_from_robot.sh $i ${1}
+    ./rcp_to_robot.sh $i
 
 done    
 

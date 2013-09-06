@@ -7,7 +7,7 @@ Foraging
     foraging_time 80
     waiting_time 20
     assembly_time 1200
-    beacon_threshold [3 3 3 3 3 3 3 3]
+    beacon_threshold [5 5 5 5 5 5 5 5]
 )
 LocateBeacon
 (
@@ -25,8 +25,8 @@ Avoidance
     weight_left [-2 -2 0 0 2 2 0 0]
     weight_right [-2 -2 0 0 2 2 0 0]
     weight_side [0 0 -1 -1 0 0 1 1]
-    threshold [2000 2000 2000 2000 2000 2000 2000 2000]
-    threshold_aux [3500 3500 3500 3500 3500 3500 3500 3500]
+    threshold [200 200 200 200 200 200 200 200]
+    threshold_aux [350 350 350 350 350 350 350 350]
 )
 Recruitment
 (
@@ -61,7 +61,7 @@ MacroLocomotion
    hinge_motor_speed 40
    hinge_motor_angle 40
    hinge_motor_default_pos 75 
-   hinge_motor_enabled 0
+   hinge_motor_enabled 1
 )
 
 Debugging
@@ -90,7 +90,7 @@ Global
 #	fail_in_state 20
 #	fail_after_delay 100
 	vision_region_ratio_region [1 10]
-	blob_threshold [100 500]
+	blob_threshold [1000 5000]
 )
 
 Motor
@@ -98,7 +98,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     aw_adjustment_ratio 1.5
-    locomotion_motor_enabled 1
+    locomotion_motor_enabled 0
 )
 
 ShapeInfo

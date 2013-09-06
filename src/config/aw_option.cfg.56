@@ -7,7 +7,7 @@ Foraging
     foraging_time 80
     waiting_time 20
     assembly_time 1200
-    beacon_threshold [3 3 3 3 3 3 3 3]
+    beacon_threshold [5 5 5 5 5 5 5 5]
 )
 LocateBeacon
 (
@@ -25,7 +25,7 @@ Avoidance
     weight_left [-2 -2 0 0 2 2 0 0]
     weight_right [-2 -2 0 0 2 2 0 0]
     weight_side [0 0 -1 -1 0 0 1 1]
-    threshold [2000 2000 2000 2000 2000 2000 2000 2000]
+    threshold [400 400 2000 2000 400 400 400 400]
     threshold_aux [2000 2000 2000 2000 2000 2000 2000 2000]
 )
 Recruitment
@@ -37,7 +37,7 @@ Recruitment
 Docking
 (
     docking_trials 15 
-    docking_time 200
+    docking_time 80
     turn_right_speed [20 -20 0]
     turn_left_speed [-20 20 0]
     forward_speed [30 30 0]
@@ -61,13 +61,13 @@ MacroLocomotion
     hinge_motor_speed 40
     hinge_motor_angle 18
     hinge_motor_default_pos 82
-    hinge_motor_enabled 0
+    hinge_motor_enabled 1
 )
 
 Debugging
 (
-    mode 20 
-    para [211 0 216 0 0 25 0 0 211 250]
+    mode 31 
+    para [211 0 216 0 0 2 2 0 211 0]
 )
 
 Global
@@ -83,14 +83,14 @@ Global
     	ir_msg_repeated_delay 20
     	ir_msg_repeated_num 10
 	ir_msg_ack_delay  3
-        reflective_calibrated [257 157 363 947 195 138 3649 3217]
-        ambient_calibrated [3892 3924 0 0 3835 3718 0 0]
-        aux_reflective_calibrated [320 272 302 2039 540 336 292 379]
+        reflective_calibrated [464 80 263 457 194 138 3719 3282]
+        ambient_calibrated [4086 4087 0 0 3983 3947 0 0]
+        aux_reflective_calibrated [233 230 249 643 408 264 216 259]
         aux_ambient_calibrated [0 0 0 0 0 0 0 0]
 #	fail_in_state 20
 #	fail_after_delay 100
 	vision_region_ratio_region [1 10]
-	blob_threshold [100 500]
+	blob_threshold [1000 5000]
 )
 
 Motor
@@ -171,7 +171,8 @@ Climbing
 
 ShapeInfo
 (
-    seq "ABSF0000"
+     seq "ABSBSFAB00000000"
+#seq "ABSBSFABAFSF000000000000"
 )
 
 ShapeInfo

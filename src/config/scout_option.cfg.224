@@ -29,10 +29,10 @@ Alignment
 )
 Avoidance
 (
-   weight_left [3 -3 -1 -1 -3 3 1 1]
-   weight_right [-3 3 1 1 3 -3 -1 -1]
+   weight_left [3 -3 -1 -1 -2 2 1 1]
+   weight_right [-3 3 1 1 2 -2 -1 -1]
    weight_side [0 0 -1 -1 0 0 1 1]
-   threshold [100 100 200 200 200 200 200 200]
+   threshold [100 100 100 100 100 100 100 100]
 )
 
 Recruitment
@@ -44,7 +44,7 @@ Recruitment
 Docking
 (
     docking_trials 15 
-    docking_time 200
+    docking_time 400
     turn_right_speed [0 0 0]
     turn_left_speed [0 0 0]
     forward_speed [20 20 0]
@@ -55,7 +55,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 35
-    locking_motor_enabled [1 0 1 0]
+    locking_motor_enabled [0 0 0 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [1 0 1 0]
     locking_motor_isense_threshold 240
@@ -73,8 +73,8 @@ MacroLocomotion
 
 Debugging
 (
-    mode 1 
-    para [61 0 0 0 20 20 2 0 211 0]
+    mode 31 
+    para [61 0 0 0 0 0 0 0 211 0]
 )
 
 Global
@@ -95,7 +95,7 @@ Global
 #fail_in_state 20
 #	fail_after_delay 100
 	vision_region_ratio_region [1 10]
-	blob_threshold [100 500]
+	blob_threshold [1000 5000]
 )
 
 Motor
@@ -104,8 +104,7 @@ Motor
     speed_sideward 2
     scout_wheels_direction [1 -1]
     aw_adjustment_ratio 1
-    locomotion_motor_enabled 1
-        
+    locomotion_motor_enabled 0
 )
 
 Climbing
@@ -178,7 +177,7 @@ Climbing
 #shape0
 ShapeInfo
 (
-    seq "SBAFABSFSBABAFSB0000000000000000"
+    seq ""
 )
 
 

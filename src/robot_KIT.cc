@@ -28,6 +28,13 @@ RobotKIT::RobotKIT(KaBot * robot):Robot()
     LED2 = 0x4;
 
     printf("Consctruction RobotKIT\n");
+
+    action_demo_index[0][0] = 0;
+    action_demo_index[0][1] = 4;
+    action_demo_index[1][0] = 5;
+    action_demo_index[1][1] = 9;
+    action_demo_index[2][0] = 10;
+    action_demo_index[2][1] = 14;
 }
 
 RobotKIT::~RobotKIT()
@@ -464,6 +471,13 @@ void RobotKIT::Foraging()
         for(uint8_t i=0; i< NUM_DOCKS; i++)
             SetIRLED(i, IRLEDOFF, LED0|LED1|LED2, IRPULSE0|IRPULSE1);
     }
+
+    if(ambient_hist[2].Avg() > 3000 || ambient_hist[3].Avg() > 3000) //left
+    {
+        current_state = SEEDING;
+        last_state = FORAGING;
+    }
+
 
 
     if(bumped)

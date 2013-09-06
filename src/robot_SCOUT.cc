@@ -29,6 +29,14 @@ RobotSCOUT::RobotSCOUT(ScoutBot * robot):Robot()
     LED2 = 0x4;
 
     printf("Consctruction RobotSCOUT\n");
+
+    action_demo_index[0][0] = 0;
+    action_demo_index[0][1] = 8;
+    action_demo_index[1][0] = 9;
+    action_demo_index[1][1] = 10;
+    action_demo_index[2][0] = 11;
+    action_demo_index[2][1] = 14;
+
 }
 
 RobotSCOUT::~RobotSCOUT()
@@ -302,7 +310,7 @@ void RobotSCOUT::UpdateSensors()
     proximity[5] = ret_C.sensor[1].proximity;
     beacon[4] = ret_C.sensor[0].docking;
     beacon[5] = ret_C.sensor[1].docking;
-#if 0
+#if 1
     ambient[6] = ret_D.sensor[0].ambient;
     ambient[7] = ret_D.sensor[1].ambient;
     reflective[6] = ret_D.sensor[0].reflective;
