@@ -1,0 +1,217 @@
+Seeding
+(
+)
+
+Foraging
+(
+    foraging_time 80
+    waiting_time 20
+    assembly_time 1200
+    beacon_threshold [7 7 30 7 7 7 7 7]
+)
+
+LocateBeacon
+(
+   weight_left [-1 1 1 2 1 -1 -2 -1]
+   weight_right [1 -1 -1 -2 -1 1 2 1]
+   turn_right_speed [0 -40 0]
+   turn_left_speed [40 -10 0]
+   forward_speed [25 25 32]
+   locatebeacon_time 200
+)
+
+Alignment
+(
+   weight_left [-1 1 0 0 -1 1 0 0]
+   weight_right [1 -1 0 0 1 -1 0 0]
+   turn_right_speed [10 -40 0]
+   turn_left_speed [40 -10 0]
+   forward_speed [25 25 32]
+   reverse_speed [-25 -25 0]
+   reverse_time 10
+)
+Avoidance
+(
+   weight_left [0 0 0 0 0 0 0 0]
+   weight_right [0 0 0 0 0 0 0 0]
+   weight_side [0 0 -1 -1 0 0 1 1]
+   threshold [200 200 200 200 200 200 200 200]
+)
+
+Recruitment
+(
+    recruiting_beacon_signals_time 500
+    recruiting_guiding_signals_time 200
+)
+
+Docking
+(
+    docking_trials 15 
+    docking_time 400
+    turn_right_speed [10 -40 0]
+    turn_left_speed [40 -10 0]
+    forward_speed [30 30 0]
+    backward_speed [-30 -30 0]
+)
+
+Locking
+(
+    locking_motor_opening_time 30
+    locking_motor_closing_time 30
+    locking_motor_enabled [1 0 1 0]
+    locking_motor_opening_offset [0 0 0 0]
+    locking_motor_nonreg [1 0 1 0]
+)
+
+MacroLocomotion
+(
+    hinge_motor_lifting_time 50 
+    hinge_motor_lowing_time 30
+    hinge_motor_speed 40
+    hinge_motor_angle 25
+    hinge_motor_default_pos 75
+    hinge_motor_enabled 1
+)
+
+Debugging
+(
+    mode 2 
+    para [134 0 224 0 0 0 15 0 136 0]
+)
+
+Global
+(
+	logtofile 0
+#refer to robot.hh for a full list of states
+	init_state  4
+	print_proximity 0
+        print_beacon 0
+        print_reflective 0
+        print_ambient 0
+        print_status 1
+    	ir_msg_repeated_delay 20
+    	ir_msg_repeated_num 10
+	ir_msg_ack_delay 3
+        reflective_calibrated [89 123 263 1206 174 220 180 114]
+        ambient_calibrated [3785 3876 3885 3889 3606 3758 3628 3735]
+#fail_in_state 20
+#	fail_after_delay 100
+)
+
+Motor
+(
+    speed_forward 30
+    speed_sideward 1
+    scout_wheels_direction [1 -1]
+    locomotion_motor_enabled 1
+        
+)
+
+Climbing
+(
+#cmd (sequence_id cmd_type duration robot(index_in_og speed[0 1 2]))
+#cmd_type 0 -- push_drat, 1 -- lift
+    action_seq 
+    (
+        sequence_id 0 
+        cmd_type    0 #forward
+        duration    20 
+        robot_in_action (index 0 cmd_data [20 20 0])
+        robot_in_action (index -1 cmd_data [20 20 0])
+        robot_in_action (index 1 cmd_data [20 20 0])
+    )
+    action_seq 
+    (
+        sequence_id 1 
+        cmd_type    0 #backward
+        duration    20 
+        robot_in_action (index 0 cmd_data [-20 -20 0])
+        robot_in_action (index -1 cmd_data [-20 -20 0])
+        robot_in_action (index 1 cmd_data [-20 -20 0])
+    )
+    action_seq 
+    (
+        sequence_id 2 
+        cmd_type    0 #left
+        duration    50 
+        robot_in_action (index 0 cmd_data [30 -30 0])
+        robot_in_action (index -1 cmd_data [30 -30 0])
+        robot_in_action (index 1 cmd_data [30 -30 0])
+    )
+    action_seq 
+    (
+        sequence_id 3 
+        cmd_type    0 #right
+        duration    50 
+        robot_in_action (index 0 cmd_data [-30 30 0])
+        robot_in_action (index -1 cmd_data [-30 30 0])
+        robot_in_action (index 1 cmd_data [-30 30 0])
+    )
+    action_seq 
+    (
+        sequence_id 4 
+        cmd_type    0 #rotate left
+        duration    50 
+        robot_in_action (index 0 cmd_data [-10 10 0])
+        robot_in_action (index -1 cmd_data [50 -10 0])
+        robot_in_action (index 1 cmd_data [-30 -10 0])
+    )
+    action_seq 
+    (
+        sequence_id 5 
+        cmd_type    0 #rotate right
+        duration    50 
+        robot_in_action (index 0 cmd_data [-60 10 0])
+        robot_in_action (index -1 cmd_data [10 -10 0])
+    )
+    action_seq 
+    (
+        sequence_id 6 
+        cmd_type    0 #forward
+        duration    20 
+        robot_in_action (index 0 cmd_data [20 20 0])
+        robot_in_action (index -1 cmd_data [20 20 0])
+    )
+    action_seq 
+    (
+        sequence_id 7 
+        cmd_type    0 #backward
+        duration    20 
+        robot_in_action (index 0 cmd_data [-20 -20 0])
+        robot_in_action (index -1 cmd_data [-20 -20 0])
+    )
+    action_seq 
+    (
+        sequence_id 8 
+        cmd_type    0 #left
+        duration    50 
+        robot_in_action (index 0 cmd_data [30 -30 0])
+        robot_in_action (index -1 cmd_data [30 -30 0])
+    )
+    action_seq 
+    (
+        sequence_id 9 
+        cmd_type    0 #right
+        duration    50 
+        robot_in_action (index 0 cmd_data [-30 30 0])
+        robot_in_action (index -1 cmd_data [-30 30 0])
+    )
+ )
+
+
+ShapeInfo
+(
+   seq "KFKB0000KBKF0000"
+)
+
+ShapeInfo
+(
+    seq "KFKB0000"
+)
+
+ShapeInfo
+(
+    seq "KFKB0000KLKF0000"
+)
+
+
