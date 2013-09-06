@@ -67,7 +67,7 @@ MacroLocomotion
 Debugging
 (
     mode 31 
-    para [211 0 216 0 0 2 2 0 211 0]
+    para [211 0 216 0 0 2 2 0 211 61]
 )
 
 Global
@@ -90,7 +90,7 @@ Global
 #	fail_in_state 20
 #	fail_after_delay 100
 	vision_region_ratio_region [1 10]
-	blob_threshold [1000 5000]
+	blob_threshold [100 300]
 )
 
 Motor
@@ -171,13 +171,12 @@ Climbing
 
 ShapeInfo
 (
-     seq "ABSBSFAB00000000"
-#seq "ABSBSFABAFSF000000000000"
+     seq "AFSFSBAFABSF000000000000ABSF0000"
 )
 
 ShapeInfo
 (
- seq "AFSFSBAFABSF000000000000"
+     seq "AFSBSFAFABSF000000000000"
 )
 
 

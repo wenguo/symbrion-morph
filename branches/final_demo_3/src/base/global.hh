@@ -85,7 +85,7 @@ enum fsm_state_t {
     RAISING,
     LOWERING,
     RESHAPING,
-    MACROLOCOMOTION,
+    MACROLOCOMOTION, //20
     FAILED,
     SUPPORT,
     LEADREPAIR,

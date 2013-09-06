@@ -424,9 +424,9 @@ void RobotAW::Avoidance()
         if(((org_bumped & (1<<2 | 1<<3)) !=0 || (aux_bumped & (1<<1 | 1<<2))!=0 )&& ((org_bumped & (1<<6 | 1<<7)) !=0 ||(aux_bumped & (1<<5 | 1<<6))!=0 ))
             speed[2] = 0;
         else if((org_bumped & (1<<2 | 1<<3)) !=0 || (aux_bumped & (1<<1 | 1<<2))!=0)
-            speed[2] = -60 * direction;
+            speed[2] = -40 * direction;
         else if((org_bumped & (1<<6 | 1<<7)) !=0 || (aux_bumped & (1<<5 | 1<<6))!=0)
-            speed[2] = 60 * direction;
+            speed[2] = 40 * direction;
     }
 }
 

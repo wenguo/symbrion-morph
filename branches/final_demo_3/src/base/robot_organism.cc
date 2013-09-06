@@ -379,59 +379,108 @@ void Robot::MacroLocomotion()
 
     if(seed)
     {
-        PrintOGIRSensor(IR_REFLECTIVE_DATA);
+        //PrintOGIRSensor(IR_REFLECTIVE_DATA);
         //request IRSensors
         RequestOGIRSensors(IR_REFLECTIVE_DATA);
 
         int cmd_speed[3] = {0,0,0};
 
-        //make a decision for the speed of organism
+        if(demo_count == 1)
+        { 
+            static bool object_found = false;
+            if(!object_found)
+            {
+                //no beacon signals detected, keep turnning
+                if(macrolocomotion_count > 20)
+                //if(beacon[4] < 10 || beacon[5] < 10)
+                {
+                    cmd_speed[0] = 30;
+                    cmd_speed[1] = -30;
+                    cmd_speed[2] = 0;
+                }
+                else
+                {
+                    cmd_speed[0] = 0;
+                    cmd_speed[1] = 0;
+                    cmd_speed[2] = 0;
+                    object_found = true;
+                    macrolocomotion_count = 0;
+                }
+            }
+            else
+            {
 
-        uint8_t organism_bumped = 0;
-        //check front and back side
-        for(int i=0;i<2;i++)
-        {
-            if(og_reflective_sensors.front[i] > 400)
-                organism_bumped |= 1;
-            if(og_reflective_sensors.back[i] > 400)
-                organism_bumped |= 1<<2;
-        }
+                if(macrolocomotion_count > 150)
+                {
+                    if(!msg_lowering_received)
+                    {
+                        printf("%d: send lowering start\n", timestamp);
+                        IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+                        msg_lowering_received = true;
 
-        if((organism_bumped & 0x5) == 0x5) //both front and back are bumped
-        {
-            cmd_speed[0] = 0;
-            cmd_speed[1] = 0;
-            direction = FORWARD;
+                    }
+                }
+                else
+                {
+                    cmd_speed[0] = -30;
+                    cmd_speed[1] = -30;
+                    cmd_speed[2] = 0;
+                }
+
+
+            }
+
         }
         else
         {
-            cmd_speed[0] = 30;
-            cmd_speed[1] = 30;
+            //make a decision for the speed of organism
 
-            if((organism_bumped & 0x5) == 0x1)//front bumped
-                direction = BACKWARD;
-            else if((organism_bumped & 0x5) == 0x4)//back bumped
+            uint8_t organism_bumped = 0;
+            //check front and back side
+            for(int i=0;i<2;i++)
+            {
+                if(og_reflective_sensors.front[i] > 400)
+                    organism_bumped |= 1;
+                if(og_reflective_sensors.back[i] > 400)
+                    organism_bumped |= 1<<2;
+            }
+
+            if((organism_bumped & 0x5) == 0x5) //both front and back are bumped
+            {
+                cmd_speed[0] = 0;
+                cmd_speed[1] = 0;
                 direction = FORWARD;
-        }
+            }
+            else
+            {
+                cmd_speed[0] = 30;
+                cmd_speed[1] = 30;
 
-        //check left and right side
-        for(uint32_t i=0;i<og_reflective_sensors.left.size();i++)
-        {
-            if(og_reflective_sensors.left[i] > 2500)
-                organism_bumped |= 1<<1;
-            if(og_reflective_sensors.right[i] > 2500)
-                organism_bumped |= 1<<3;
-        }
+                if((organism_bumped & 0x5) == 0x1)//front bumped
+                    direction = BACKWARD;
+                else if((organism_bumped & 0x5) == 0x4)//back bumped
+                    direction = FORWARD;
+            }
 
-        //left and right
-        if((organism_bumped & 0xA) == 0xA) //both left and right are bumped
-            cmd_speed[2] = 0;
-        else if((organism_bumped & 0xA) == 0x2) //left bumped
-            cmd_speed[2] = -60;
-        else if((organism_bumped & 0xA) == 0x8) //right bumped
-            cmd_speed[2] = 60;
-        else
-            cmd_speed[2] = 0;
+            //check left and right side
+            for(uint32_t i=0;i<og_reflective_sensors.left.size();i++)
+            {
+                if(og_reflective_sensors.left[i] > 2500)
+                    organism_bumped |= 1<<1;
+                if(og_reflective_sensors.right[i] > 2500)
+                    organism_bumped |= 1<<3;
+            }
+
+            //left and right
+            if((organism_bumped & 0xA) == 0xA) //both left and right are bumped
+                cmd_speed[2] = 0;
+            else if((organism_bumped & 0xA) == 0x2) //left bumped
+                cmd_speed[2] = -60;
+            else if((organism_bumped & 0xA) == 0x8) //right bumped
+                cmd_speed[2] = 60;
+            else
+                cmd_speed[2] = 0;
+        }
 
         //only moves when user_input ==1
       //  if(user_input != 1)
@@ -470,16 +519,8 @@ void Robot::MacroLocomotion()
         }
 #endif
         //printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
-        if(macrolocomotion_count > 100)
-        { 
-            if(!msg_climbing_start_received) //this will prevent the message being sent twice 
-            {
-                IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
-                msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
-            }
 
-        }
-
+#if 0
         if(macrolocomotion_count > 100000)
         {
             cmd_speed[0] = 0;
@@ -510,6 +551,7 @@ void Robot::MacroLocomotion()
             macrolocomotion_count = 0;
             hinge_motor_operating_count = 0;
         }
+#endif
 
         //set the speed of all AW robots in the organism
         std::map<uint32_t, robot_pose>::iterator it;
@@ -967,30 +1009,7 @@ void Robot::Lowering()
             {
                 hinge_motor_operating_count = 0;
 
-                //if no msg_failed received
-//                if(!msg_failed_received)
-#if 1
-                if(demo_count < para.og_seq_list.size() - 1)
-                {
-                    if(!msg_reshaping_start_received)
-                    {
-                        printf("%d: demo_count %d\n", timestamp, demo_count);
-                        //prepare the buffer for new shaping + new seed
-                        OrganismSequence::OrganismSequence &seq = para.og_seq_list[demo_count + 1];
-                        int size = seq.Size() + 3;
-                        uint8_t buf[size];
-                        buf[0] = my_IP.i32>>24 & 0xFF;//para.debug.para[9];
-                        buf[1] = COMMANDER_PORT;
-                        buf[2] = seq.Size();
-                        for(unsigned int i=0; i < buf[2];i++)
-                            buf[i+3] =seq.Encoded_Seq()[i].data;
-
-                        IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
-                        printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
-                        seed = false;
-                    }
-                }
-                else
+                if(demo_count == 1)
                 {
                     if(!msg_disassembly_received ) //this will prevent the message being sent twice 
                     {
@@ -999,7 +1018,6 @@ void Robot::Lowering()
                     }
                 }
 
-#endif
                 lowering_count = 0;
             }
             //check if all robot 
