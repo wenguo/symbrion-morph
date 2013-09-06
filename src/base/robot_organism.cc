@@ -379,7 +379,7 @@ void Robot::MacroLocomotion()
 
     if(seed)
     {
-        //PrintOGIRSensor(IR_REFLECTIVE_DATA);
+        PrintOGIRSensor(IR_REFLECTIVE_DATA);
         //request IRSensors
         RequestOGIRSensors(IR_REFLECTIVE_DATA);
 
@@ -391,9 +391,9 @@ void Robot::MacroLocomotion()
         //check front and back side
         for(int i=0;i<2;i++)
         {
-            if(og_reflective_sensors.front[i] > 2000)
+            if(og_reflective_sensors.front[i] > 400)
                 organism_bumped |= 1;
-            if(og_reflective_sensors.back[i] > 2000)
+            if(og_reflective_sensors.back[i] > 400)
                 organism_bumped |= 1<<2;
         }
 
@@ -417,9 +417,9 @@ void Robot::MacroLocomotion()
         //check left and right side
         for(uint32_t i=0;i<og_reflective_sensors.left.size();i++)
         {
-            if(og_reflective_sensors.left[i] > 2000)
+            if(og_reflective_sensors.left[i] > 2500)
                 organism_bumped |= 1<<1;
-            if(og_reflective_sensors.right[i] > 2000)
+            if(og_reflective_sensors.right[i] > 2500)
                 organism_bumped |= 1<<3;
         }
 
@@ -562,8 +562,8 @@ void Robot::MacroLocomotion()
         macrolocomotion_count=0;
         hinge_motor_operating_count = 0;
 
-        if(seed)
-            current_action_sequence_index  = action_demo_index[demo_count][0];
+      //  if(seed)
+      //      current_action_sequence_index  = action_demo_index[demo_count][0];
 
     }
 
@@ -641,13 +641,14 @@ void Robot::Climbing()
     {
         direction = FORWARD;
 
-        if((uint32_t)current_action_sequence_index < std::min((int)organism_actions.size(), action_demo_index[demo_count][1]))
+        if((uint32_t)current_action_sequence_index < organism_actions.size())//std::min((int)organism_actions.size(), action_demo_index[demo_count][1]))
         {
             action_sequence * as_ptr = &organism_actions[current_action_sequence_index];
             as_ptr->counter++;
 
-            //check if front_aw_ip is initialised fron the beginning
-            if(current_action_sequence_index == action_demo_index[demo_count][0] && front_aw_ip ==0)
+            //check if front_aw_ip is initialised from the beginning
+            //if(current_action_sequence_index == action_demo_index[demo_count][0] && front_aw_ip ==0)
+            if(current_action_sequence_index == 0 && front_aw_ip ==0)
             {
                 std::map<uint32_t, robot_pose>::iterator it;
                 bool flag = false;
@@ -676,6 +677,8 @@ void Robot::Climbing()
                     printf("%d the finished command is %s (%d)\n", timestamp, "LIFT_ONE", as_ptr->sequence_index);
                 else if(as_ptr->cmd_type ==2)
                     printf("%d the finished command is %s (%d)\n", timestamp, "RESET_POSE", as_ptr->sequence_index);
+                else if(as_ptr->cmd_type ==3)
+                    printf("%d the finished command is %s (%d)\n", timestamp, "LIFT_ALL", as_ptr->sequence_index);
                 //  memset(hinge_command, 0, sizeof(hinge_command));
               //  memset(locomotion_command, 0, sizeof(locomotion_command));
                 if((uint32_t)current_action_sequence_index < organism_actions.size())
@@ -707,6 +710,8 @@ void Robot::Climbing()
                         printf("%d next command is %s (%d)\n", timestamp, "LIFT_ONE", organism_actions[current_action_sequence_index].sequence_index);
                     else if(organism_actions[current_action_sequence_index].cmd_type ==2)
                         printf("%d next command is %s (%d)\n", timestamp, "RESET_POSE", organism_actions[current_action_sequence_index].sequence_index);
+                    else if(organism_actions[current_action_sequence_index].cmd_type ==3)
+                        printf("%d next command is %s (%d)\n", timestamp, "LIFT_ALL", organism_actions[current_action_sequence_index].sequence_index);
                 }
                 else
                     front_aw_ip = 0;
@@ -757,7 +762,7 @@ void Robot::Climbing()
                         }
                         IPCSendMessage(robot_ip, IPC_MSG_LOCOMOTION_2D_REQ, (uint8_t*)motor_command, sizeof(motor_command));
                     }
-                    else if(as_ptr->cmd_type == action_sequence::CMD_LIFT_ONE)
+                    else if(as_ptr->cmd_type == action_sequence::CMD_LIFT_ONE || as_ptr->cmd_type == 3)
                     { 
                         if(as_ptr->counter + 1 >= as_ptr->duration)
                         {
