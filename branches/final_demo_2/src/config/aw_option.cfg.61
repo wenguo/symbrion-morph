@@ -25,7 +25,7 @@ Avoidance
     weight_left [-2 -2 0 0 2 2 0 0]
     weight_right [-2 -2 0 0 2 2 0 0]
     weight_side [0 0 -1 -1 0 0 1 1]
-    threshold [2000 2000 2000 2000 2000 2000 2000 2000]
+    threshold [400 400 2000 2000 400 400 2000 2000]
     threshold_aux [2000 2000 2000 2000 2000 2000 2000 2000]
 )
 Recruitment
@@ -78,7 +78,7 @@ Global
 	init_state  4 
 	print_proximity 0
         print_beacon 0
-        print_reflective 0
+        print_reflective 1
         print_ambient 0
         print_status 1
     	ir_msg_repeated_delay 20

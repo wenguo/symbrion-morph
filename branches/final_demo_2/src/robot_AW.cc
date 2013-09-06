@@ -1915,7 +1915,7 @@ void RobotAW::Debugging()
                 hingeData hd = irobot->GetHingeStatus();
                 if(timestamp <= 50 )
                 {
-                    irobot->MoveHingeToAngle(para.debug.para[9],40);
+                    irobot->MoveHingeToAngle(15,40);
                 }
                 else if(timestamp <= 100)
                 {
