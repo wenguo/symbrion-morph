@@ -1,0 +1,63 @@
+# makefile configuration
+SRC	=  gui.cc utils.cc canvas.cc imagebox.cc bytequeue.c ethlolmsg.c crc8.c
+SRC += ipc.cc
+
+TARGET_PROG = gui
+
+OBJDIR = build_$(TARGET_PROG)
+TOBJECTS = $(SRC:%.cc=$(OBJDIR)/%.o)
+OBJECTS = $(TOBJECTS:%.c=$(OBJDIR)/%.o)
+
+BINDIR = .
+
+IPATH = .
+IPATH += ../
+IPATH += ../utils/
+IPATH += ../irobot
+IPATH += ../irobot/tools/ipc/ipc
+
+VPATH = .
+VPATH = ../
+VPATH = ../utils/
+VPATH = ../irobot
+VPATH += ../irobot/tools/ipc/ipc
+
+CC = gcc
+CXX = g++
+CFLAGS  = -O2 -Wall -ggdb -D_GNU_SOURCE -std=gnu99
+CXXFLAGS  = -O2 -Wall -ggdb -D_GNU_SOURCE 
+CFLAGS +=-DLAPTOP 
+CXXFLAGS +=-DLAPTOP
+#CFLAGS  = -O2 -Wall -g -D_GNU_SOURCE -DLAPTOP
+#CFLAGS += -DTRANSFER_RGB
+CFLAGS += ${patsubst %,-I%,${IPATH}}
+CXXFLAGS += ${patsubst %,-I%,${IPATH}}
+CXXFLAGS +=`fltk-config --cflags`
+
+LIBS = 
+LIBS += `fltk-config --ldflags --libs`
+
+#FFMPEG_LIBS=libavdevice libavformat libavfilter libavcodec libswscale libavutil
+#CFLAGS+=$(shell pkg-config  --cflags $(FFMPEG_LIBS))
+#LIBS+=$(shell pkg-config --libs $(FFMPEG_LIBS))
+
+
+.Phony: clean
+
+all: mkobjectsdir $(TARGET_PROG) 
+
+mkobjectsdir:
+	mkdir -p $(OBJDIR)
+
+$(TARGET_PROG): ${OBJECTS}
+	${CXX} ${CXXFLAGS} $^ -o  $@ ${LIBS}
+	#${CXX} ${CXXFLAGS} -o  ${BINDIR}/$@ $^ ${LIBS}
+
+$(OBJDIR)/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.o: %.cc
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+clean:
+	${RM} -rf $(OBJDIR) ${BINDIR}/$(TARGET_PROG)
