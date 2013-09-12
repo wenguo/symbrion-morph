@@ -310,7 +310,7 @@ void RobotSCOUT::UpdateSensors()
     proximity[5] = ret_C.sensor[1].proximity;
     beacon[4] = ret_C.sensor[0].docking;
     beacon[5] = ret_C.sensor[1].docking;
-#if 0
+#if 1
     ambient[6] = ret_D.sensor[0].ambient;
     ambient[7] = ret_D.sensor[1].ambient;
     reflective[6] = ret_D.sensor[0].reflective;
@@ -469,7 +469,7 @@ void RobotSCOUT::Exploring()
 void RobotSCOUT::Resting()
 {
     resting_count++;
-    if(resting_count > 100)
+    if(resting_count > 100000)
     {
         current_state = FORAGING;
         last_state = RESTING;
@@ -554,6 +554,12 @@ void RobotSCOUT::Foraging()
             }
 
         }
+    }
+
+    if(module_failed)
+    {
+        current_state = RESTING;
+        last_state = FORAGING;
     }
     
 }

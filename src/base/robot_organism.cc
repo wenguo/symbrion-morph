@@ -387,11 +387,12 @@ void Robot::MacroLocomotion()
 
         if(demo_count == 1)
         { 
+            direction = FORWARD;
             static bool object_found = false;
             if(!object_found)
             {
                 //no beacon signals detected, keep turnning
-                if(macrolocomotion_count > 20)
+                if(macrolocomotion_count < 150)
                 //if(beacon[4] < 10 || beacon[5] < 10)
                 {
                     cmd_speed[0] = 30;
@@ -410,7 +411,7 @@ void Robot::MacroLocomotion()
             else
             {
 
-                if(macrolocomotion_count > 150)
+                if(macrolocomotion_count > 50)
                 {
                     if(!msg_lowering_received)
                     {
