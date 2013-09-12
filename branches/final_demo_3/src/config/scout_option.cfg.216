@@ -71,8 +71,8 @@ MacroLocomotion
 
 Debugging
 (
-    mode 31 
-    para [61 0 56 0 2 3 2 0 211 0]
+    mode 23 
+    para [61 0 56 0 2 3 2 0 211 2]
 )
 
 Global

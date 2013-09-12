@@ -66,7 +66,7 @@ MacroLocomotion
 
 Debugging
 (
-    mode 31 
+    mode 27 
     para [0 0 216 0 2 2 0 0 211 0]
 #para [224 0 216 0 2 2 0 0 211 0]
 )
@@ -78,7 +78,7 @@ Global
 	init_state  4 
 	print_proximity 0
         print_beacon 0
-        print_reflective 1
+        print_reflective 0
         print_ambient 0
         print_status 1
     	ir_msg_repeated_delay 20
@@ -104,78 +104,8 @@ Motor
 
 Climbing
 (
-#cmd (sequence_id cmd_type duration robot(index_in_og speed[0 1 2]))
-#cmd_type 0 -- push_drat, 1 -- lift
-    action_seq 
-    (
-        sequence_id 0 
-        cmd_type    1 #lift
-        duration    50 
-        robot_in_action (index 0 cmd_data [30 30 0])
-        robot_in_action (index -2 cmd_data [30 30 0])
-    )
-    action_seq 
-    (
-        sequence_id 1 
-        cmd_type    2 #reset pose
-        duration    5 
-    )
-    action_seq 
-    (
-        sequence_id 2 
-        cmd_type    0 #move forward
-        duration    50 
-        robot_in_action (index 0 cmd_data [30 30 0])
-        robot_in_action (index -2 cmd_data [30 30 0])
-    )
-    action_seq 
-    (
-        sequence_id 3 
-        cmd_type    0 #move backward
-        duration    50 
-        robot_in_action (index 0 cmd_data [-30 -30 0])
-        robot_in_action (index -2 cmd_data [-30 -30 0])
-    )
-    action_seq 
-    (
-        sequence_id 4 
-        cmd_type    0 #move left
-        duration    50 
-        robot_in_action (index 0 cmd_data [0 0 60])
-        robot_in_action (index -2 cmd_data [0 0 60])
-    )
-    action_seq 
-    (
-        sequence_id 5 
-        cmd_type    0 #move right
-        duration    50 
-        robot_in_action (index 0 cmd_data [0 0 -60])
-        robot_in_action (index -2 cmd_data [0 0 -60])
-    )
-    action_seq 
-    (
-        sequence_id 6 
-        cmd_type    1 #lift
-        duration    50 
-        robot_in_action (index 0 cmd_data [15 30 0])
-        robot_in_action (index -2 cmd_data [15 30 0])
-    )
-    action_seq 
-    (
-        sequence_id 7 
-        cmd_type    2 #reset pose
-        duration    5 
-    )
-
 
  )
-
-
-ShapeInfo
-(
-     seq ""
-#seq "AFSF0000"
-)
 
 ShapeInfo
 (

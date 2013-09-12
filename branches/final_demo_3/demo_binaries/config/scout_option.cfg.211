@@ -72,13 +72,13 @@ MacroLocomotion
     hinge_motor_speed 40
     hinge_motor_angle 20
     hinge_motor_default_pos 75
-    hinge_motor_enabled 1
+    hinge_motor_enabled 0
 )
 
 
 Debugging
 (
-    mode 31 
+    mode 23 
     para [0 0 56 0 0 0 0 1 0 0]
 )
 
@@ -100,7 +100,7 @@ Global
 #fail_in_state 20
 #        fail_after_delay 100
 	vision_region_ratio_region [1 10]
-	blob_threshold [100 500]
+	blob_threshold [1000 5000]
 
 )
 
@@ -206,6 +206,6 @@ Climbing
 
 ShapeInfo
 (
-     seq "SBAFABSBSFAB000000000000"
+     seq ""
 #seq "SBAFABSBSFABAFSF0000000000000000"
 )
