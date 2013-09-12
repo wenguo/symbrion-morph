@@ -10,11 +10,9 @@ void Robot::InOrganism()
         if( mytree.Edges() + 1 == (unsigned int)num_robots_inorganism)
             printf("%d total number of robots in organism is %d\n", timestamp, mytree.Edges() + 1);
 
-        if(mytree.isAllIPSet() && !IP_collection_done)
+        if(IP_collection_done && master_IPC.Connections()->size() == mytree.Edges() + 1)
         {
             organism_formed = true;
-            IP_collection_done = true;
-
             textcolor(BRIGHT, SCR_RED, SCR_BLACK);  
             printf("%d -- organism formed !!\n", timestamp);
             textcolor(RESET, SCR_WHITE, SCR_BLACK); 
@@ -26,6 +24,32 @@ void Robot::InOrganism()
             for(uint32_t i = 0; i< target.Encoded_Seq().size(); i++)
                 buf[i + 1] = target.Encoded_Seq()[i].data;
             IPCSendMessage(MSG_TYPE_ORGANISM_FORMED, buf, sizeof(buf));
+
+            if(daemon_mode)
+            {
+                current_state = DAEMON;
+                last_state = INORGANISM;
+            }
+            else
+            {
+
+                macrolocomotion_count = 0;
+                raising_count = 0;
+                current_state = RAISING;
+                last_state = INORGANISM;
+            }
+
+            printf("my IP is %s\n", IPToString(my_IP));
+            for(int i=0;i<NUM_DOCKS;i++)
+            {
+                printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
+                EnablePowerSharing(i, true);
+            }
+
+        }
+        else if(mytree.isAllIPSet() && !IP_collection_done)
+        {
+            IP_collection_done = true;
 
             
             //init the client list and the acks
@@ -92,31 +116,6 @@ void Robot::InOrganism()
                    // printf("\tnot in organism ip list: %d\n", ip>>24 & 0xFF);
                 }
             }*/
-
-
-            if(daemon_mode)
-            {
-                current_state = DAEMON;
-                last_state = INORGANISM;
-            }
-            else
-            {
-
-                macrolocomotion_count = 0;
-                raising_count = 0;
-                current_state = RAISING;
-                last_state = INORGANISM;
-            }
-
-            printf("my IP is %s\n", IPToString(my_IP));
-            for(int i=0;i<NUM_DOCKS;i++)
-            {
-                printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
-                EnablePowerSharing(i, true);
-                
-              //  if(docked[i])
-              //      msg_subog_seq_expected |= i<<branch_side;
-            }
         }
     }
     //otherwise check if new info received
@@ -279,13 +278,16 @@ void Robot::Raising()
                 for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                 {
                     //check if lost received some messages
-                    if(commander_acks[it->first] < 1) //no response at all?
+                    if(it->first !=0)
                     {
-                        IPC_health = false;
-                        printf("%d : WARNING! ip: %s acks %d\n", timestamp, IPToString(it->first), commander_acks[it->first] );
+                        if(commander_acks[it->first] < 1) //no response at all?
+                        {
+                            IPC_health = false;
+                            printf("%d : WARNING! ip: %s acks %d\n", timestamp, IPToString(it->first), commander_acks[it->first] );
+                        }
+                        //reset the count
+                        commander_acks[it->first] = 0;
                     }
-                    //reset the count
-                    commander_acks[it->first] = 0;
                 }
             }
 
@@ -376,7 +378,7 @@ void Robot::MacroLocomotion()
 
     if(seed)
     {
-        //PrintOGIRSensor(IR_REFLECTIVE_DATA);
+    //    PrintOGIRSensor(IR_REFLECTIVE_DATA);
         //request IRSensors
         RequestOGIRSensors(IR_REFLECTIVE_DATA);
 
@@ -388,9 +390,9 @@ void Robot::MacroLocomotion()
         //check front and back side
         for(int i=0;i<2;i++)
         {
-            if(og_reflective_sensors.front[i] > 2000)
+            if(og_reflective_sensors.front[i] > 1500)
                 organism_bumped |= 1;
-            if(og_reflective_sensors.back[i] > 2000)
+            if(og_reflective_sensors.back[i] > 1500)
                 organism_bumped |= 1<<2;
         }
 
@@ -414,9 +416,9 @@ void Robot::MacroLocomotion()
         //check left and right side
         for(uint32_t i=0;i<og_reflective_sensors.left.size();i++)
         {
-            if(og_reflective_sensors.left[i] > 2000)
+            if(og_reflective_sensors.left[i] > 1000)
                 organism_bumped |= 1<<1;
-            if(og_reflective_sensors.right[i] > 2000)
+            if(og_reflective_sensors.right[i] > 1000)
                 organism_bumped |= 1<<3;
         }
 
@@ -466,7 +468,7 @@ void Robot::MacroLocomotion()
             user_input = 0;
         }
 #endif
-        //printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
+    //    printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
         if(macrolocomotion_count > 100)
         { 
             if(!msg_climbing_start_received) //this will prevent the message being sent twice 
@@ -513,7 +515,7 @@ void Robot::MacroLocomotion()
         for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
         {
             int motor_command[4];
-            if(it->second.type == ROBOT_AW)
+            if(it->second.type == ROBOT_AW || it->second.type == ROBOT_KIT)
             {
                 motor_command[0] = direction * it->second.direction;
                 motor_command[1] = motor_command[0] >0 ? cmd_speed[0] : cmd_speed[1];
@@ -671,6 +673,8 @@ void Robot::Climbing()
                     printf("%d the finished command is %s (%d)\n", timestamp, "LIFT_ONE", as_ptr->sequence_index);
                 else if(as_ptr->cmd_type ==2)
                     printf("%d the finished command is %s (%d)\n", timestamp, "RESET_POSE", as_ptr->sequence_index);
+                else if(as_ptr->cmd_type ==3)
+                    printf("%d the finished command is %s (%d)\n", timestamp, "LIFT_ALL", as_ptr->sequence_index);
                 //  memset(hinge_command, 0, sizeof(hinge_command));
               //  memset(locomotion_command, 0, sizeof(locomotion_command));
                 if((uint32_t)current_action_sequence_index < organism_actions.size())
@@ -682,11 +686,14 @@ void Robot::Climbing()
                         bool flag = false;
                         for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                         {
-                            if(it->second.og_irsensor_index == robot_pose_in_organism[front_aw_ip].og_irsensor_index + 1)
+                            if(front_aw_ip !=0)
                             {
-                                flag = true;
-                                front_aw_ip = it->first;
-                                break;
+                                if(it->second.og_irsensor_index == robot_pose_in_organism[front_aw_ip].og_irsensor_index + 1)
+                                {
+                                    flag = true;
+                                    front_aw_ip = it->first;
+                                    break;
+                                }
                             }
                         }
 
@@ -699,6 +706,8 @@ void Robot::Climbing()
                         printf("%d next command is %s (%d)\n", timestamp, "LIFT_ONE", organism_actions[current_action_sequence_index].sequence_index);
                     else if(organism_actions[current_action_sequence_index].cmd_type ==2)
                         printf("%d next command is %s (%d)\n", timestamp, "RESET_POSE", organism_actions[current_action_sequence_index].sequence_index);
+                    else if(organism_actions[current_action_sequence_index].cmd_type ==3)
+                        printf("%d next command is %s (%d)\n", timestamp, "LIFT_ALL", organism_actions[current_action_sequence_index].sequence_index);
                 }
                 else
                     front_aw_ip = 0;
@@ -723,7 +732,7 @@ void Robot::Climbing()
                 for(uint32_t i=0;i<as_ptr->robots_in_action.size();i++)
                 {
                     uint32_t robot_ip=robot_in_organism_index_sorted[as_ptr->robots_in_action[i].index];
-                    //printf("Send command [%d] to %s\n",as_ptr->cmd_type, IPToString(robot_ip));
+                   // printf("Send command [%d] to %s\n",as_ptr->cmd_type, IPToString(robot_ip));
                     int motor_command[4];
 
 
@@ -922,7 +931,6 @@ void Robot::Lowering()
     speed[1] = 0;
     speed[2] = 0;
 
-
     // Leds symbolise the raising process
     bool flash_leds = false;
 
@@ -995,14 +1003,17 @@ void Robot::Lowering()
                 std::map<uint32_t, robot_pose>::iterator it;
                 for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
                 {
-                    //check if lost received some messages
-                    if(commander_acks[it->first] < 1) //no response at all?
+                    if(it->first !=0)
                     {
-                        IPC_health = false;
-                        printf("%d : WARNING! ip: %s acks %d\n", timestamp, IPToString(it->first), commander_acks[it->first] );
+                        //check if lost received some messages
+                        if(commander_acks[it->first] < 1) //no response at all?
+                        {
+                            IPC_health = false;
+                            printf("%d : WARNING! ip: %s acks %d\n", timestamp, IPToString(it->first), commander_acks[it->first] );
+                        }
+                        //reset the count
+                        commander_acks[it->first] = 0;
                     }
-                    //reset the count
-                    commander_acks[it->first] = 0;
                 }
             }
 

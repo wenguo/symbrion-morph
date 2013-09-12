@@ -84,7 +84,7 @@ Global
 (
 	logtofile 0
 #refer to robot.hh for a full list of states
-	init_state 4 
+	init_state 3 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -165,7 +165,7 @@ Climbing
         cmd_type    0 #rotate right
         duration    50 
         robot_in_action (index 0 cmd_data [-60 10 0])
-        robot_in_action (index -1 cmd_data [10 -10 0])
+        robot_in_action (index 1 cmd_data [10 -10 0])
     )
     action_seq 
     (
@@ -173,7 +173,7 @@ Climbing
         cmd_type    0 #forward
         duration    20 
         robot_in_action (index 0 cmd_data [20 20 0])
-        robot_in_action (index -1 cmd_data [20 20 0])
+        robot_in_action (index 1 cmd_data [20 20 0])
     )
     action_seq 
     (
@@ -181,7 +181,7 @@ Climbing
         cmd_type    0 #backward
         duration    20 
         robot_in_action (index 0 cmd_data [-20 -20 0])
-        robot_in_action (index -1 cmd_data [-20 -20 0])
+        robot_in_action (index 1 cmd_data [-20 -20 0])
     )
     action_seq 
     (
@@ -189,7 +189,7 @@ Climbing
         cmd_type    0 #left
         duration    50 
         robot_in_action (index 0 cmd_data [30 -30 0])
-        robot_in_action (index -1 cmd_data [30 -30 0])
+        robot_in_action (index 1 cmd_data [30 -30 0])
     )
     action_seq 
     (
@@ -197,7 +197,7 @@ Climbing
         cmd_type    0 #right
         duration    50 
         robot_in_action (index 0 cmd_data [-30 30 0])
-        robot_in_action (index -1 cmd_data [-30 30 0])
+        robot_in_action (index 1 cmd_data [-30 30 0])
     )
  )
 

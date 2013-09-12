@@ -920,7 +920,7 @@ void Robot::UpdateOGIRSensors(uint8_t config[2], int data[8], int sensor_type)
         //left and right
         if(robot_pose_in_organism[robot_ip].og_irsensor_index != -1)
         {
-            // printf("%d: update sensor data [%d] og from %s, push into og_irsensor[%d]\n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_og_irsensor_index);
+             //printf("%d: update sensor data [%d] og from %s, push into og_irsensor[%d]\n", timestamp, sensor_type, IPToString(getFullIP(config[0])), robot_og_irsensor_index);
             ir_sensors->left[2 * robot_og_irsensor_index]       = robot_direction == 1? data[2] : data[6];
             ir_sensors->left[2 * robot_og_irsensor_index + 1]   = robot_direction == 1? data[3] : data[7];
             ir_sensors->right[2 * robot_og_irsensor_index]      = robot_direction == 1? data[7] : data[3];
@@ -1026,7 +1026,7 @@ void Robot::InitRobotPoseInOrganism()
         robot_pose &p = robot_pose_in_organism[it1->second];
   //      printf("inside: %s's index: %d pose: %d type: %c\n", IPToString(it1->second), p.index,p.direction, robottype_names[p.type]);
         //set og_irsensor_index if it is AW
-        if(robot_pose_in_organism[it1->second].type == ROBOT_AW)
+        if(robot_pose_in_organism[it1->second].type == ROBOT_AW ||robot_pose_in_organism[it1->second].type == ROBOT_KIT )
             robot_pose_in_organism[it1->second].og_irsensor_index = og_irsensor_index++;
     }
     //set tail_header
@@ -1045,7 +1045,7 @@ void Robot::InitRobotPoseInOrganism()
     og_ambient_sensors.right.clear();
     for(it = robot_pose_in_organism.begin(); it != robot_pose_in_organism.end(); it++)
     {
-        if(it->second.type == ROBOT_AW)
+        if(it->second.type == ROBOT_AW || it->second.type == ROBOT_KIT)
         {
             //increase the size of left and right for 2
             og_reflective_sensors.left.push_back(0);
