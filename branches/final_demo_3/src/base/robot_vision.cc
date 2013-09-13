@@ -240,12 +240,11 @@ void *Robot::BlobDetection(void * ptr)
             robot->frame.hdr.timestamp = robot->img->timestamp;
             robot->frame.data = robot->img->data;
             robot->vision.processFrame(reinterpret_cast<CMVision::image_pixel*>(robot->img->data));
-            /*
-            if(robot->timestamp %10 ==0)
+            if(robot->timestamp %100 ==0)
             {
                 printf("%d processed frame @ %d fps\n",robot->timestamp, count);
                 count=0;
-            }*/
+            }
         }
         robot->cap.releaseFrame(robot->img);
 
