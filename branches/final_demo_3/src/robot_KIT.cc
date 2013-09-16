@@ -428,7 +428,14 @@ void RobotKIT::Avoidance()
     if(!triggered)
         return;*/
 
-    Robot::Avoidance();
+    if(module_failed)
+    {
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
+    }
+    else
+        Robot::Avoidance();
 }
 
 void RobotKIT::Exploring()
