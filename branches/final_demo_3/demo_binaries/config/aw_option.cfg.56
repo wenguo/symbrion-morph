@@ -74,7 +74,7 @@ Global
 (
 	logtofile 0
 #refer to global.hh for a full list of states
-	init_state 4 
+	init_state 3
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -171,12 +171,12 @@ Climbing
 
 ShapeInfo
 (
-     seq "AFSFSBAFABSF000000000000ABSF0000"
+     seq "AFKFKBAFABKF000000000000ABKF0000"
 )
 
 ShapeInfo
 (
-     seq "AFSBSFAFABSF000000000000"
+     seq "AFKBKFAFABKF000000000000"
 )
 
 
