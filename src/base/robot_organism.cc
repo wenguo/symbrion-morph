@@ -10,11 +10,9 @@ void Robot::InOrganism()
         if( mytree.Edges() + 1 == (unsigned int)num_robots_inorganism)
             printf("%d total number of robots in organism is %d\n", timestamp, mytree.Edges() + 1);
 
-        if(mytree.isAllIPSet() && !IP_collection_done)
+        if(IP_collection_done && master_IPC.Connections()->size() == mytree.Edges() + 1)
         {
             organism_formed = true;
-            IP_collection_done = true;
-
             textcolor(BRIGHT, SCR_RED, SCR_BLACK);  
             printf("%d -- organism formed !!\n", timestamp);
             textcolor(RESET, SCR_WHITE, SCR_BLACK); 
@@ -26,6 +24,32 @@ void Robot::InOrganism()
             for(uint32_t i = 0; i< target.Encoded_Seq().size(); i++)
                 buf[i + 1] = target.Encoded_Seq()[i].data;
             IPCSendMessage(MSG_TYPE_ORGANISM_FORMED, buf, sizeof(buf));
+
+            if(daemon_mode)
+            {
+                current_state = DAEMON;
+                last_state = INORGANISM;
+            }
+            else
+            {
+
+                macrolocomotion_count = 0;
+                raising_count = 0;
+                current_state = RAISING;
+                last_state = INORGANISM;
+            }
+
+            printf("my IP is %s\n", IPToString(my_IP));
+            for(int i=0;i<NUM_DOCKS;i++)
+            {
+                printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
+                EnablePowerSharing(i, true);
+            }
+
+        }
+        else if(mytree.isAllIPSet() && !IP_collection_done)
+        {
+            IP_collection_done = true;
 
             
             //init the client list and the acks
@@ -92,31 +116,6 @@ void Robot::InOrganism()
                    // printf("\tnot in organism ip list: %d\n", ip>>24 & 0xFF);
                 }
             }*/
-
-
-            if(daemon_mode)
-            {
-                current_state = DAEMON;
-                last_state = INORGANISM;
-            }
-            else
-            {
-
-                macrolocomotion_count = 0;
-                raising_count = 0;
-                current_state = RAISING;
-                last_state = INORGANISM;
-            }
-
-            printf("my IP is %s\n", IPToString(my_IP));
-            for(int i=0;i<NUM_DOCKS;i++)
-            {
-                printf("neighbour %d's IP is %s\n", i, IPToString(neighbours_IP[i]));
-                EnablePowerSharing(i, true);
-                
-              //  if(docked[i])
-              //      msg_subog_seq_expected |= i<<branch_side;
-            }
         }
     }
     //otherwise check if new info received
