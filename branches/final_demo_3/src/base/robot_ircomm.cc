@@ -120,7 +120,9 @@ void Robot::ProcessIRMessage(std::auto_ptr<Message> msg)
                         }
 
                         if(assembly_info!=0 && assembly_info!=sym)
-                            printf("Received conflicting assembly info, may need to check !!!\n");
+                        {
+                            printf("Received conflicting assembly info, may need to check %#x %#x!!!\n", assembly_info.data, sym.data);
+                        }
 
                         assembly_info = sym;
                         printf("assembly_info: %c%c\n", robottype_names[assembly_info.type2], side_names[assembly_info.side2]);

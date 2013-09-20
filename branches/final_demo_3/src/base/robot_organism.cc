@@ -1534,6 +1534,12 @@ void Robot::Undocking()
     else
         Avoidance();
 
+    if(module_failed)
+    {
+        speed[0] = 0;
+        speed[1] = 0;
+        speed[2] = 0;
+    }
     printf("%d: speed %d %d %d direction: %d\n", timestamp, speed[0], speed[1], speed[2], direction);
 
 }
