@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
     Fl_Button but_stop( 220, 520, 80, 40,"ImageFrame" );
     Fl_Button but_snapshot( 370, 520, 80, 40,"Snapshot" );
     Fl_Button but_flip( 520, 520, 80, 40,"Capture" );
-    Fl_Check_Button but_stream(700, 20, 200, 20, "Streaming Image");
+    Fl_Check_Button but_stream(700, 20, 200, 20, "Flip Image");
     but_start.callback(Start);
     but_stop.callback(Stop);
     but_snapshot.callback(Snapshot);
@@ -193,6 +193,20 @@ void Snapshot(Fl_Widget * o, void *input)
 void Stream(Fl_Widget * o, void * input)
 {
     Fl_Check_Button * btn = (Fl_Check_Button*) o;
+    printf("Get Image Frame clicked\n");
+    std::list<iDisplay*>::iterator it;
+    for(it = canvas->displays.begin(); it!= canvas->displays.end();it++)
+    {
+        if((*it)->clicked > 0)
+        {
+            ImageBox * imgbox = (*it)->imagebox;
+            if(imgbox)
+                imgbox->flipped_image = btn->value();
+            break;
+        }
+    }
+
+    /*
     comm_status_t req_type = btn->value() ? REQ_IMAGE_FRAME : REQ_BLOB_INFO;
     std::list<iDisplay*>::iterator it;
     for(it = canvas->displays.begin();it!=canvas->displays.end();it++)
@@ -202,7 +216,7 @@ void Stream(Fl_Widget * o, void * input)
             imagebox->SetREQType(req_type);
     }
 
-    printf("stream clicked %d\n", btn->value());
+    printf("stream clicked %d\n", btn->value());*/
 }
 
 void Capture(Fl_Widget * o, void * input)
@@ -285,17 +299,23 @@ void Monitoring(const ELolMessage* msg, void * connection, void *user_ptr)
     switch (msg->command)
     {
         case  REQ_SUBSCRIPTION:
+            {
             printf("received subscription request from: %s\n", msg->data);
-            if(canvas->AttachToiDisplay(new ImageBox(client_port)))
+            bool flag=canvas->AttachToiDisplay(new ImageBox(client_port));
+                printf("Send ack %d\n", flag);
+            if(flag)
             {
                 ((IPC::Connection*)connection)->SendData(REQ_SUBSCRIPTION_ACK, (uint8_t*)&client_port, 4);
             }
             client_port++;
+            }
             break;
         case REQ_UNSUBSCRIPTION:
             break;
         default:
             break;
     }
+
+    printf("Received message\n");
 
 }

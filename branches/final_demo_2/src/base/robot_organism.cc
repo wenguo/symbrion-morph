@@ -378,7 +378,7 @@ void Robot::MacroLocomotion()
 
     if(seed)
     {
-        PrintOGIRSensor(IR_REFLECTIVE_DATA);
+        //PrintOGIRSensor(IR_REFLECTIVE_DATA);
         //request IRSensors
         RequestOGIRSensors(IR_REFLECTIVE_DATA);
 
@@ -469,14 +469,19 @@ void Robot::MacroLocomotion()
         }
 #endif
         //printf("macrolocomotion speed: %d %d %d %d\t user_input:%d\n", cmd_speed[0], cmd_speed[1], cmd_speed[2], direction, user_input);
-        if(macrolocomotion_count > 100)
+        if(demo_count ==0 &&macrolocomotion_count > 100)
         { 
             if(!msg_climbing_start_received) //this will prevent the message being sent twice 
             {
                 IPCSendMessage(IPC_MSG_CLIMBING_START, NULL, 0);
                 msg_climbing_start_received = true; //a dirty fix to prevent message being sent twice as ethernet delay
             }
-
+        }
+        else if(demo_count ==1)
+        {
+            cmd_speed[0] = 0;
+            cmd_speed[0] = 0;
+            cmd_speed[0] = 0;
         }
 
         if(macrolocomotion_count > 100000)
@@ -978,7 +983,8 @@ void Robot::Lowering()
                         OrganismSequence::OrganismSequence &seq = para.og_seq_list[demo_count + 1];
                         int size = seq.Size() + 3;
                         uint8_t buf[size];
-                        buf[0] = my_IP.i32>>24 & 0xFF;//para.debug.para[9];
+                        //buf[0] = my_IP.i32>>24 & 0xFF;//para.debug.para[9];
+                        buf[0] = neighbours_IP[2].i32>>24 & 0xFF;//para.debug.para[9];
                         buf[1] = COMMANDER_PORT;
                         buf[2] = seq.Size();
                         for(unsigned int i=0; i < buf[2];i++)
