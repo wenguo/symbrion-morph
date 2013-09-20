@@ -1534,7 +1534,7 @@ void Robot::Undocking()
     else
         Avoidance();
 
-    if(module_failed)
+    if(module_failed || last_state == FAILED)
     {
         speed[0] = 0;
         speed[1] = 0;
