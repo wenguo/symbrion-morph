@@ -310,7 +310,7 @@ void RobotSCOUT::UpdateSensors()
     proximity[5] = ret_C.sensor[1].proximity;
     beacon[4] = ret_C.sensor[0].docking;
     beacon[5] = ret_C.sensor[1].docking;
-#if 1
+#if 0
     ambient[6] = ret_D.sensor[0].ambient;
     ambient[7] = ret_D.sensor[1].ambient;
     reflective[6] = ret_D.sensor[0].reflective;
