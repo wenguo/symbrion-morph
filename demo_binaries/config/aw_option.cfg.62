@@ -25,7 +25,7 @@ Avoidance
     weight_left [-2 -2 0 0 2 2 0 0]
     weight_right [-2 -2 0 0 2 2 0 0]
     weight_side [0 0 -1 -1 0 0 1 1]
-    threshold [400 400 2000 2000 2000 2000 400 400]
+    threshold [400 400 2000 2000 400 400 2000 2000]
     threshold_aux [2000 2000 2000 2000 2000 2000 2000 2000]
 )
 Recruitment
@@ -37,7 +37,7 @@ Recruitment
 Docking
 (
     docking_trials 15 
-    docking_time 80
+    docking_time 200
     turn_right_speed [20 -20 0]
     turn_left_speed [-20 20 0]
     forward_speed [30 30 0]
@@ -57,24 +57,24 @@ Locking
 MacroLocomotion
 (
     hinge_motor_lifting_time 50 
-    hinge_motor_lowing_time 30 
+    hinge_motor_lowing_time 30
     hinge_motor_speed 40
     hinge_motor_angle 18
-    hinge_motor_default_pos 82
+    hinge_motor_default_pos 74
     hinge_motor_enabled 0
 )
 
 Debugging
 (
-    mode 31 
-    para [211 0 216 0 0 2 2 0 211 0]
+    mode 27 
+    para [0 0 216 0 2 2 0 0 211 0]
 )
 
 Global
 (
 	logtofile 0
 #refer to global.hh for a full list of states
-	init_state 4 
+	init_state  4 
 	print_proximity 0
         print_beacon 0
         print_reflective 0
@@ -83,9 +83,9 @@ Global
     	ir_msg_repeated_delay 20
     	ir_msg_repeated_num 10
 	ir_msg_ack_delay  3
-        reflective_calibrated [464 80 263 457 194 138 3719 3282]
-        ambient_calibrated [4086 4087 0 0 3983 3947 0 0]
-        aux_reflective_calibrated [233 230 249 643 408 264 216 259]
+        reflective_calibrated [197 261 3051 1767 260 221 3914 3846]
+        ambient_calibrated [3808 3861 0 0 3834 3891 0 0]
+        aux_reflective_calibrated [452 656 385 725 209 245 308 764]
         aux_ambient_calibrated [0 0 0 0 0 0 0 0]
 #	fail_in_state 20
 #	fail_after_delay 100
@@ -169,15 +169,17 @@ Climbing
 
  )
 
+
 ShapeInfo
 (
-     seq "ABSBSFAB00000000"
-#seq "ABSBSFABAFSF000000000000"
+     seq ""
+#seq "AFSF0000"
 )
 
 ShapeInfo
 (
  seq "AFSFSBAFABSF000000000000"
 )
+
 
 

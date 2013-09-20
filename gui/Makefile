@@ -1,6 +1,5 @@
 all:
 	$(MAKE) -f Makefile.gui
-	$(MAKE) -f Makefile.client
 
 client:
 	$(MAKE) -f Makefile.client

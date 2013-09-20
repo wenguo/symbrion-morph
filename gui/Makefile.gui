@@ -25,7 +25,7 @@ VPATH += ../irobot/tools/ipc/ipc
 CC = gcc
 CXX = g++
 CFLAGS  = -O2 -Wall -ggdb -D_GNU_SOURCE -std=gnu99
-CXXFLAGS  = -O2 -Wall -ggdb -D_GNU_SOURCE 
+CXXFLAGS  = -O2 -Wall -ggdb -D_GNU_SOURCE
 CFLAGS +=-DLAPTOP 
 CXXFLAGS +=-DLAPTOP
 #CFLAGS  = -O2 -Wall -g -D_GNU_SOURCE -DLAPTOP

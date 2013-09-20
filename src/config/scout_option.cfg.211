@@ -207,5 +207,9 @@ Climbing
 ShapeInfo
 (
      seq "SBAFABSBSFAB000000000000"
-#seq "SBAFABSBSFABAFSF0000000000000000"
+)
+
+ShapeInfo
+(
+     seq "ABSBSFAB00000000"
 )
