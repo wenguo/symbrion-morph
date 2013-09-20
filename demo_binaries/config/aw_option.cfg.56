@@ -61,7 +61,7 @@ MacroLocomotion
     hinge_motor_speed 40
     hinge_motor_angle 18
     hinge_motor_default_pos 82
-    hinge_motor_enabled 1
+    hinge_motor_enabled 0
 )
 
 Debugging
@@ -98,7 +98,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     aw_adjustment_ratio 1.5
-    locomotion_motor_enabled 1
+    locomotion_motor_enabled 0
 )
 
 Climbing
@@ -171,12 +171,12 @@ Climbing
 
 ShapeInfo
 (
-     seq "AFKFKBAFABKF000000000000ABKF0000"
+     seq "AFSFSBAFABSF000000000000ABSB0000"
 )
 
 ShapeInfo
 (
-     seq "AFKBKFAFABKF000000000000"
+     seq "AFSBSFAFABSB000000000000"
 )
 
 
