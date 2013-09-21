@@ -19,6 +19,9 @@ void Robot::InOrganism()
             for(int i=0;i<NUM_DOCKS;i++)
                 SetRGBLED(i, WHITE, WHITE, WHITE, WHITE);
 
+            std::cout<<"1 mytree:"<<mytree<<std::endl;
+            std::cout<<"1 target:"<<target<<std::endl;
+
             uint8_t buf[target.Encoded_Seq().size()+1];
             buf[0] = target.Encoded_Seq().size();
             for(uint32_t i = 0; i< target.Encoded_Seq().size(); i++)
@@ -384,7 +387,24 @@ void Robot::MacroLocomotion()
 
         int cmd_speed[3] = {0,0,0};
 
-        if(demo_count == 1)
+        if(demo_count == 0)
+        {
+            if(macrolocomotion_count >= 30)
+            {
+                if(!msg_lowering_received)
+                {
+                    printf("%d: send lowering start\n", timestamp);
+                    IPCSendMessage(MSG_TYPE_LOWERING, NULL, 0);
+                    msg_lowering_received = true;
+
+                    IPC_health = true;
+                    lowering_count =0;
+                    macrolocomotion_count = 0;
+                    hinge_motor_operating_count = 0;
+                }
+            }
+        }
+        else if(demo_count == 2)
         { 
             direction = FORWARD;
             static bool object_found = false;
@@ -1009,7 +1029,28 @@ void Robot::Lowering()
             {
                 hinge_motor_operating_count = 0;
 
-                if(demo_count == 1)
+                if(demo_count == 0)
+                {
+                    if(!msg_reshaping_start_received)
+                    {
+                        printf("%d: demo_count %d\n", timestamp, demo_count);
+                        //prepare the buffer for new shaping + new seed
+                        OrganismSequence::OrganismSequence &seq = para.og_seq_list[1];
+                        int size = seq.Size() + 3;
+                        uint8_t buf[size];
+                        //buf[0] = my_IP.i32>>24 & 0xFF;//para.debug.para[9];
+                        buf[0] = para.debug.para[9];
+                        buf[1] = COMMANDER_PORT;
+                        buf[2] = seq.Size();
+                        for(unsigned int i=0; i < buf[2];i++)
+                            buf[i+3] =seq.Encoded_Seq()[i].data;
+
+                        IPCSendMessage(IPC_MSG_RESHAPING_START, buf, sizeof(buf));
+                        printf("%d: send reshaping info to %d\n", timestamp, buf[0]);
+                        seed = false;
+                    }
+                }
+                else if(demo_count == 2)
                 {
                     if(!msg_disassembly_received ) //this will prevent the message being sent twice 
                     {
@@ -1017,6 +1058,8 @@ void Robot::Lowering()
                         msg_disassembly_received  = true;
                     }
                 }
+
+
 
                 lowering_count = 0;
             }

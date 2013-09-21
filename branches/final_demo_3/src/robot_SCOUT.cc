@@ -310,7 +310,7 @@ void RobotSCOUT::UpdateSensors()
     proximity[5] = ret_C.sensor[1].proximity;
     beacon[4] = ret_C.sensor[0].docking;
     beacon[5] = ret_C.sensor[1].docking;
-#if 0
+#if 1
     ambient[6] = ret_D.sensor[0].ambient;
     ambient[7] = ret_D.sensor[1].ambient;
     reflective[6] = ret_D.sensor[0].reflective;
@@ -397,7 +397,7 @@ void RobotSCOUT::UpdateFailures()
     static int failure_delay = 0;
     if( !module_failed )
     {
-        if( current_state == para.fail_in_state  )
+        if( current_state == para.fail_in_state  && demo_count == 1 )
         {
             if( failure_delay++ > para.fail_after_delay )
             {
@@ -482,8 +482,6 @@ void RobotSCOUT::Foraging()
     speed[0]=0;
     speed[1]=0;
     foraging_count++;
-
-    SetRGBLED(2, GREEN,GREEN,GREEN,GREEN);
 
     static int turn_speed = 35;
     if(foraging_count >= para.foraging_time + 20)
@@ -601,7 +599,6 @@ void RobotSCOUT::Assembly()
 
     assembly_count++;
 
-    SetRGBLED(2, RED,RED,RED,RED);
 
     if(assembly_count >= (uint32_t)para.assembly_time)
     {
@@ -667,8 +664,6 @@ void RobotSCOUT::LocateEnergy()
     float p_coeff = 0.1;
     float d_coeff = 0.1;
     
-    SetRGBLED(2, WHITE,WHITE,GREEN,GREEN);
-
     if(organism_found && assembly_info.type2 ==type && beacon_signals_detected)
     {
         std::cout<<"assembly_info: "<<assembly_info<<"\tdirection: "<<direction<<std::endl;

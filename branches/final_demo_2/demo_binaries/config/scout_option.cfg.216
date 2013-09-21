@@ -52,7 +52,7 @@ Locking
 (
     locking_motor_opening_time 35
     locking_motor_closing_time 35
-    locking_motor_enabled [0 0 0 0]
+    locking_motor_enabled [1 0 1 0]
     locking_motor_opening_offset [0 0 0 0]
     locking_motor_nonreg [1 0 1 0]
     locking_motor_isense_threshold 240
@@ -88,8 +88,8 @@ Global
     	ir_msg_repeated_delay 20
     	ir_msg_repeated_num 10
 	ir_msg_ack_delay 3
-        reflective_calibrated [1298 116 93 917 721 1224 1016 1178]
-        ambient_calibrated [3870 3971 3978 3994 4056 4066 4018 3971]
+        reflective_calibrated [1286 121 91 933 785 1293 1033 1192]
+        ambient_calibrated [3859 3869 3745 3770 3557 3928 3746 3724]
 	#fail_in_state 20
         #fail_after_delay 50
 	vision_region_ratio_region [1 10]
@@ -102,7 +102,7 @@ Motor
     speed_sideward 2
     scout_wheels_direction [1 -1]
     aw_adjustment_ratio 1 
-    locomotion_motor_enabled 0
+    locomotion_motor_enabled 1
 )
 
 ShapeInfo

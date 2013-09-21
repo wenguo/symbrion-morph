@@ -455,7 +455,6 @@ void RobotAW::Foraging() //the same as RobotKIT
     speed[2]=0;
     foraging_count++;
 
-    SetRGBLED(2, GREEN,GREEN,GREEN,GREEN);
 
     static int turn_speed = 35;
     if(foraging_count >= para.foraging_time + 20)
@@ -639,7 +638,6 @@ void RobotAW::LocateEnergy()//same as RobotKIT
     float p_coeff = 0.1;
     float d_coeff = 0.1;
     
-    SetRGBLED(2, WHITE,WHITE,GREEN,GREEN);
 
     if(organism_found && assembly_info.type2 == type && beacon_signals_detected)
     {

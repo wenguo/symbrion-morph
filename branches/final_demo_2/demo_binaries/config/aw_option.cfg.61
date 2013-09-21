@@ -25,7 +25,7 @@ Avoidance
     weight_left [-2 -2 0 0 2 2 0 0]
     weight_right [-2 -2 0 0 2 2 0 0]
     weight_side [0 0 -1 -1 0 0 1 1]
-    threshold [400 400 2000 2000 400 400 2000 2000]
+    threshold [400 400 1000 1000 400 400 400 400]
     threshold_aux [2000 2000 2000 2000 2000 2000 2000 2000]
 )
 Recruitment
@@ -60,15 +60,14 @@ MacroLocomotion
     hinge_motor_lowing_time 30
     hinge_motor_speed 40
     hinge_motor_angle 18
-    hinge_motor_default_pos 78
+    hinge_motor_default_pos 70
     hinge_motor_enabled 1
 )
 
 Debugging
 (
-    mode 31 
+    mode 27 
     para [0 0 216 0 2 2 0 0 211 0]
-#para [224 0 216 0 2 2 0 0 211 0]
 )
 
 Global
@@ -78,15 +77,15 @@ Global
 	init_state  4 
 	print_proximity 0
         print_beacon 0
-        print_reflective 1
+        print_reflective 0
         print_ambient 0
         print_status 1
     	ir_msg_repeated_delay 20
     	ir_msg_repeated_num 10
 	ir_msg_ack_delay  3
-        reflective_calibrated [128 251 2409 1214 214 215 3403 3767]
-        ambient_calibrated [3707 3562 0 0 4030 4006 0 0]
-        aux_reflective_calibrated [521 358 352 227 495 244 331 674]
+        reflective_calibrated [133 252 3078 2348 243 235 3389 3749]
+        ambient_calibrated [3829 3722 0 0 3825 3708 0 0]
+        aux_reflective_calibrated [373 345 315 301 448 344 318 340]
         aux_ambient_calibrated [0 0 0 0 0 0 0 0]
 #	fail_in_state 20
 #	fail_after_delay 100
@@ -104,82 +103,12 @@ Motor
 
 Climbing
 (
-#cmd (sequence_id cmd_type duration robot(index_in_og speed[0 1 2]))
-#cmd_type 0 -- push_drat, 1 -- lift
-    action_seq 
-    (
-        sequence_id 0 
-        cmd_type    1 #lift
-        duration    50 
-        robot_in_action (index 0 cmd_data [30 30 0])
-        robot_in_action (index -2 cmd_data [30 30 0])
-    )
-    action_seq 
-    (
-        sequence_id 1 
-        cmd_type    2 #reset pose
-        duration    5 
-    )
-    action_seq 
-    (
-        sequence_id 2 
-        cmd_type    0 #move forward
-        duration    50 
-        robot_in_action (index 0 cmd_data [30 30 0])
-        robot_in_action (index -2 cmd_data [30 30 0])
-    )
-    action_seq 
-    (
-        sequence_id 3 
-        cmd_type    0 #move backward
-        duration    50 
-        robot_in_action (index 0 cmd_data [-30 -30 0])
-        robot_in_action (index -2 cmd_data [-30 -30 0])
-    )
-    action_seq 
-    (
-        sequence_id 4 
-        cmd_type    0 #move left
-        duration    50 
-        robot_in_action (index 0 cmd_data [0 0 60])
-        robot_in_action (index -2 cmd_data [0 0 60])
-    )
-    action_seq 
-    (
-        sequence_id 5 
-        cmd_type    0 #move right
-        duration    50 
-        robot_in_action (index 0 cmd_data [0 0 -60])
-        robot_in_action (index -2 cmd_data [0 0 -60])
-    )
-    action_seq 
-    (
-        sequence_id 6 
-        cmd_type    1 #lift
-        duration    50 
-        robot_in_action (index 0 cmd_data [15 30 0])
-        robot_in_action (index -2 cmd_data [15 30 0])
-    )
-    action_seq 
-    (
-        sequence_id 7 
-        cmd_type    2 #reset pose
-        duration    5 
-    )
-
 
  )
 
-
 ShapeInfo
 (
-     seq ""
-#seq "AFSF0000"
-)
-
-ShapeInfo
-(
- seq "AFSFSBAFABSF000000000000"
+ seq "AFKFKBAFABKF000000000000"
 )
 
 

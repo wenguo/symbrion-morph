@@ -405,7 +405,6 @@ void Robot::RegisterBehaviour(robot_callback_t fnp, fsm_state_t state)
 
 void Robot::Update(const uint32_t& ts)
 {
-
     //update Sensors
     UpdateSensors();
 
