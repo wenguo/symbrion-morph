@@ -27,7 +27,7 @@ bool Robot::InitVision()
 
 
     const char *video_device = "/dev/video0";
-    const char *color_filename = "colors.txt";
+    const char *color_filename = "/flash/morph/colors.txt";
 
 #define PIXEL_FORMAT V4L2_PIX_FMT_YUYV
 

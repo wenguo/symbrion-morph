@@ -810,7 +810,7 @@ void Robot::LeadRepair()
                     if( best_score == own_score )
                     {
 #if 1
-                        if(para.debug.para[9] != 0 )
+                       // if(para.debug.para[9] != 0 )
                         {
                             target.Clear();
                             target = para.og_seq_list[1];

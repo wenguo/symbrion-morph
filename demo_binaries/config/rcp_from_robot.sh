@@ -11,5 +11,5 @@ FILES="aw_option.cfg \
 counter=0
 for f in $FILES
 do
-    rcp root@192.168.52.${1}:/flash/morph/$f $f.${1}
+    rcp root@192.168.52.${1}:/flash/morph/demo3/$f $f.${1}
 done
