@@ -25,7 +25,7 @@ Avoidance
     weight_left [-2 -2 0 0 2 2 0 0]
     weight_right [-2 -2 0 0 2 2 0 0]
     weight_side [0 0 -1 -1 0 0 1 1]
-    threshold [400 400 2000 2000 2000 2000 400 400]
+    threshold [400 400 1000 1000 400 400 400 400]
     threshold_aux [2000 2000 2000 2000 2000 2000 2000 2000]
 )
 Recruitment
@@ -61,7 +61,7 @@ MacroLocomotion
     hinge_motor_speed 40
     hinge_motor_angle 18
     hinge_motor_default_pos 82
-    hinge_motor_enabled 0
+    hinge_motor_enabled 1
 )
 
 Debugging
@@ -77,15 +77,15 @@ Global
 	init_state 4 
 	print_proximity 0
         print_beacon 0
-        print_reflective 0
+        print_reflective 1
         print_ambient 0
         print_status 1
     	ir_msg_repeated_delay 20
     	ir_msg_repeated_num 10
 	ir_msg_ack_delay  3
-        reflective_calibrated [464 80 263 457 194 138 3719 3282]
-        ambient_calibrated [4086 4087 0 0 3983 3947 0 0]
-        aux_reflective_calibrated [233 230 249 643 408 264 216 259]
+        reflective_calibrated [262 167 435 2126 202 141 3659 3235]
+        ambient_calibrated [3871 3840 0 0 3827 3734 0 0]
+        aux_reflective_calibrated [338 311 267 409 411 286 272 524]
         aux_ambient_calibrated [0 0 0 0 0 0 0 0]
 #	fail_in_state 20
 #	fail_after_delay 100
@@ -98,7 +98,7 @@ Motor
     speed_forward 30
     speed_sideward 2
     aw_adjustment_ratio 1.5
-    locomotion_motor_enabled 0
+    locomotion_motor_enabled 1
 )
 
 Climbing

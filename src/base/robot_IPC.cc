@@ -320,6 +320,8 @@ void Robot::Process_Organism_command(const ELolMessage*msg, void* connection, vo
                         //rebuild mytree
                         rt_status ret = robot->mytree.reBuild((uint8_t*)&(data[3]), data[2]);
                         std::cout<<robot->ClockString()<<": receive new target tree: "<<robot->mytree<<std::endl;
+                        robot->target.Clear();
+                        robot->target = robot->mytree;
                         robot->parent_side = SIDE_COUNT;
                     }
                     printf("%d: reshaping start, new seed @ %s\n", robot->timestamp, IPToString(robot->commander_IP));
