@@ -10,14 +10,17 @@ SRC_DIR=./
 
 FILES="${SRC_DIR}/morph \
     ${SRC_DIR}/libmorph_base.so \
-    ${SRC_DIR}/libirobot.so"
+    ${SRC_DIR}/libirobot.so \
+    ${SRC_DIR}/run.sh \
+    ${SRC_DIR}/aw_option.cfg \
+    ${SRC_DIR}/colors.txt"
 counter=0
 for f in $FILES
 do
     counter=`expr ${counter} + 1`
     if [ ${counter} -le ${2} ]; then
         echo "  copying" $f 
-        rcp $f root@192.168.52.${1}:/flash/morph/demo2
+        rcp $f root@192.168.52.${1}:/flash/morph
         #    else
         #        echo "  skip" $f
     fi
