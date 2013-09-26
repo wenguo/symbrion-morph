@@ -13,7 +13,7 @@ for f in $FILES
 do
     if [ -f $f.${1} ]; then
         echo "  " $f.${1} " --> 192.168.52.${1}/flash/morph/$f"
-        rcp  $f.${1} root@192.168.52.${1}:/flash/morph/demo2/$f
+        rcp  $f.${1} root@192.168.52.${1}:/flash/morph/$f
     #else
     #    echo $f.${1} "is not found"
     fi
