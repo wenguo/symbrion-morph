@@ -4,15 +4,15 @@
 
 <wiki:video url="http://www.youtube.com/watch?v=0qrklH4OyBc"/>
 
- * Demonstration 1 at Final review meeting
+ * Demonstration 1 at the final review meeting
 
 <wiki:video url="http://www.youtube.com/watch?v=mo62Oj0k2CI"/>
 
- * Demonstration 2 at Final review meeting
+ * Demonstration 2 at the final review meeting
 
 <wiki:video url="http://www.youtube.com/watch?v=uobcdtwC3qs"/>
 
- * Demonstration 3 at Final review meeting
+ * Demonstration 3 at the final review meeting
 
 <wiki:video url="http://www.youtube.com/watch?v=cxUjr4pMS1U"/>
 
