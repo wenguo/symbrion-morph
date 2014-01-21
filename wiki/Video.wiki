@@ -1,6 +1,26 @@
 #Videos of SYMBRION robots self-assembly experiments
+= Latest results =
+ * Combined docking test
 
-= Docking experiments =
+<wiki:video url="http://www.youtube.com/watch?v=0qrklH4OyBc"/>
+
+ * Demonstration 1 at Final review meeting
+
+<wiki:video url="http://www.youtube.com/watch?v=mo62Oj0k2CI"/>
+
+ * Demonstration 2 at Final review meeting
+
+<wiki:video url="http://www.youtube.com/watch?v=uobcdtwC3qs"/>
+
+ * Demonstration 3 at Final review meeting
+
+<wiki:video url="http://www.youtube.com/watch?v=cxUjr4pMS1U"/>
+
+ * Macro obstacle avoidance
+
+<wiki:video url="http://www.youtube.com/watch?v=-AnKRzvfqX0>
+
+= Previous Docking experiments =
  * Scout-Scout docking
 
 <wiki:video url="http://www.youtube.com/watch?v=p_H7Hd0SDpc"/>
